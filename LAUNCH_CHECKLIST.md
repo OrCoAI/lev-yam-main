@@ -86,6 +86,7 @@ URL to test: `https://levyam.com`
 ## BRANDING
 
 - [ ] Logo from Elad appears correctly in header and footer (not text placeholder)
+- [ ] All icons in `img/icons/` reviewed and approved (palm, sun, house, wave, arch, heart, whatsapp, chevron)
 - [ ] Only 3 brand colors: blue `#2c92bf`, cream `#fff7ea`, orange `#f49834`
 - [ ] Wavy dividers appear between major sections
 

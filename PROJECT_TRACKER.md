@@ -121,6 +121,7 @@ Once you have the files, replace the `<!-- TODO -->` comments in `index.html` (l
 **This week:**
 - [ ] Ask Elad for logo SVG files (logo-full, logo-mono, logo-mark)
 - [ ] Download + convert Heebo and Assistant fonts to woff2
+- [ ] Review all icons in `img/icons/` — confirm each matches the brand book (palm, sun, house, wave, arch, heart, whatsapp, chevron)
 
 **Before photo shoot:**
 - [ ] Review shot list in §2.3 above
