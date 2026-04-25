@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#2c92bf">
 
-  <title>לב ים | מרחב חוף בכפר הדייגים ג׳יסר א-זרקא</title>
+  <title>לב ים | מרחב יזמות עסקית חברתית על קו המים</title>
   <meta name="description" content="לב ים — מרחב ליזמות עסקית חברתית בכפר הדייגים ג׳יסר א-זרקא. אירועים עסקיים, חגיגות פרטיות, סופי שבוע והשכרת המתחם. הזמינו ביקור בוואטסאפ.">
 
-  <meta property="og:title" content="לב ים | מרחב חוף בכפר הדייגים ג׳יסר א-זרקא">
+  <meta property="og:title" content="לב ים | מרחב יזמות עסקית חברתית על קו המים">
   <meta property="og:description" content="מרחב ליזמות עסקית חברתית על קו המים. אירועים, חגיגות פרטיות, סופי שבוע והשכרת מתחם.">
   <meta property="og:image" content="https://levyam.com/assets/og-image.jpg">
   <meta property="og:image:width" content="1200">
@@ -21,8 +21,8 @@
   <link rel="preload" href="fonts/Assistant-SemiBold.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" as="image" href="img/hero/hero-poster.webp" fetchpriority="high">
 
-  <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="alternate icon" href="favicon.ico">
+  <link rel="icon" href="img/logo/logo-mark.png" type="image/png">
+  <link rel="apple-touch-icon" href="img/logo/logo-mark.png">
 
   <link rel="stylesheet" href="css/styles.css">
 
@@ -110,20 +110,34 @@
   <header class="site-header" id="site-header">
     <div class="header-inner">
       <a href="#top" class="logo" aria-label="לב ים — דף הבית">
-        <!-- TODO: replace with real logo — /img/logo/logo-full.svg (120×40) -->
-        <span class="logo-placeholder">לב ים</span>
+        <img src="img/logo/logo-full.png" alt="לב ים" width="64" height="64">
       </a>
 
       <nav class="primary-nav" aria-label="תפריט ראשי">
         <ul>
           <li><a href="#space">המרחב</a></li>
-          <li><a href="#services">השירותים שלנו</a></li>
+          <li><a href="#services">השירותים</a></li>
           <li><a href="#why">למה לב ים</a></li>
           <li><a href="#gallery">גלריה</a></li>
           <li><a href="#faq">שאלות ותשובות</a></li>
           <li><a href="#contact">צור קשר</a></li>
         </ul>
       </nav>
+
+      <div class="header-social">
+        <a href="https://www.instagram.com/levyam_" target="_blank" rel="noopener" aria-label="לב ים באינסטגרם">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+            <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+            <circle cx="12" cy="12" r="4"/>
+            <circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none"/>
+          </svg>
+        </a>
+        <a href="https://m.facebook.com/profile.php?id=61585790351617" target="_blank" rel="noopener" aria-label="לב ים בפייסבוק">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+            <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/>
+          </svg>
+        </a>
+      </div>
 
       <a class="btn btn-primary header-cta"
          href="https://wa.me/972506669138?text=שלום%2C%20אשמח%20לפרטים%20על%20לב%20ים"
@@ -139,7 +153,7 @@
     <nav id="mobile-nav" class="mobile-nav" hidden aria-label="תפריט נייד">
       <ul>
         <li><a href="#space">המרחב</a></li>
-        <li><a href="#services">השירותים שלנו</a></li>
+        <li><a href="#services">השירותים</a></li>
         <li><a href="#why">למה לב ים</a></li>
         <li><a href="#gallery">גלריה</a></li>
         <li><a href="#faq">שאלות ותשובות</a></li>
@@ -164,8 +178,10 @@
       </div>
 
       <div class="hero-content">
-        <p class="hero-eyebrow">מרחב חוף אינטימי בכפר הדייגים ג׳יסר א-זרקא</p>
-        <h1 id="hero-title" class="hero-title">המקום שבו הלב פוגש את הים</h1>
+        <p class="hero-eyebrow">
+          <img src="img/hero/levyam1-nobg.png" alt="לב ים" class="hero-wordmark" width="338" height="106">
+        </p>
+        <h1 id="hero-title" class="hero-title">המקום שבו <span class="hero-accent">הלב</span> פוגש את הים</h1>
         <p class="hero-lead">
           מרחב פתוח על קו המים — לעבודה, מנוחה, מפגש ויצירה.<br>
           בקצב שלכם, מול האופק.
@@ -174,11 +190,17 @@
           <a class="btn btn-primary"
              href="https://wa.me/972506669138?text=שלום%2C%20אשמח%20לקבל%20פרטים%20על%20לב%20ים"
              target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 1.5C6.201 1.5 1.5 6.201 1.5 12c0 1.867.487 3.618 1.34 5.14L1.5 22.5l5.513-1.316A10.454 10.454 0 0012 22.5c5.799 0 10.5-4.701 10.5-10.5S17.799 1.5 12 1.5z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
             דברו איתנו בוואטסאפ
           </a>
           <a class="btn btn-ghost" href="#services">לכל השירותים</a>
         </div>
       </div>
+      <a class="hero-scroll-cue" href="#space" aria-label="גלול למטה">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M12 5v14M5 12l7 7 7-7"/>
+        </svg>
+      </a>
     </section>
 
     <!-- ═══ INTRO ═══ -->
@@ -205,7 +227,7 @@
       <div class="container">
         <header class="section-header reveal">
           <h2 id="services-title" class="section-title">השירותים שלנו</h2>
-          <p class="section-sub">בחרו את הדרך שמתאימה לכם — ונדבר.</p>
+          <p class="section-sub">מה אפשר לעשות ב'לב ים'?</p>
         </header>
 
         <div class="services-grid">
@@ -337,40 +359,6 @@
           <p class="lead">
             לב ים הוא בית על קו המים, עם פינות ישיבה מגוונות, עמדות עבודה, מרפסת מקורה, מדשאה ירוקה, מטבחון מאובזר, אינטרנט חזק, חיבור לחשמל, טלוויזיה חכמה, שירותים, מקלחת ועוד. הכל מוכן - צריך לבוא ולהרגיש.
           </p>
-          <ul class="amenities">
-            <li>
-              <img src="img/icons/house.svg" alt="" width="32" height="32" aria-hidden="true">
-              סלון פנימי
-            </li>
-            <li>
-              <img src="img/icons/palm.svg" alt="" width="32" height="32" aria-hidden="true">
-              פרגולה מול הים
-            </li>
-            <li>
-              <img src="img/icons/wave.svg" alt="" width="32" height="32" aria-hidden="true">
-              גישה ישירה לחוף
-            </li>
-            <li>
-              <img src="img/icons/sun.svg" alt="" width="32" height="32" aria-hidden="true">
-              מטבח מאובזר
-            </li>
-            <li>
-              <img src="img/icons/arch.svg" alt="" width="32" height="32" aria-hidden="true">
-              שירותים ומקלחות
-            </li>
-            <li>
-              <img src="img/icons/heart.svg" alt="" width="32" height="32" aria-hidden="true">
-              אינטרנט איכותי
-            </li>
-            <li>
-              <img src="img/icons/palm.svg" alt="" width="32" height="32" aria-hidden="true">
-              מדשאה
-            </li>
-            <li>
-              <img src="img/icons/house.svg" alt="" width="32" height="32" aria-hidden="true">
-              פינות ישיבה מגוונות
-            </li>
-          </ul>
         </div>
 
       </div>
@@ -585,7 +573,7 @@
       <div class="container">
         <header class="section-header reveal">
           <h2 id="contact-title" class="section-title">דברו איתנו</h2>
-          <p class="section-sub">יש דברים שצריך לחוות כדי להבין. בואו לבקר.</p>
+          <p class="section-sub">יש דברים שצריך לחוות כדי להבין. בואו לבקר בלב ים.</p>
         </header>
 
         <div class="contact-grid">
@@ -596,33 +584,37 @@
               referrerpolicy="no-referrer-when-downgrade"
               title="המיקום של לב ים על המפה"
               style="border:0;"></iframe>
-            <div class="map-links">
-              <a href="https://waze.com/ul/hsvbc45ng5" target="_blank" rel="noopener">פתח ב-<bdi>Waze</bdi></a>
-              <a href="https://maps.app.goo.gl/fFtCZYwK1KEcmFud6" target="_blank" rel="noopener">פתח ב-<bdi>Google Maps</bdi></a>
-            </div>
           </div>
 
           <div class="contact-actions reveal">
-            <p class="contact-intro">בחרו את הדרך שמתאימה לכם, ונחזור אליכם:</p>
-            <a class="btn btn-primary btn-block"
+            <p class="contact-intro">במה אנחנו יכולים לעזור?</p>
+            <a class="btn btn-contact btn-block"
                href="https://wa.me/972506669138?text=שלום%2C%20אנחנו%20צוות%20שמחפשים%20חוויה"
                target="_blank" rel="noopener">
-              אנחנו צוות שמחפש חוויה
+              <span class="btn-contact-icon"><img src="img/icons/icons-19-nobg.png" alt="" width="36" height="36"></span>
+              <span class="btn-contact-text"><strong>אנחנו צוות</strong><small>חוויה צוותית ויום גיבוש</small></span>
+              <svg class="btn-contact-arrow" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
             </a>
-            <a class="btn btn-primary btn-block"
+            <a class="btn btn-contact btn-block"
                href="https://wa.me/972506669138?text=שלום%2C%20אשמח%20להצטרף%20לקהילה"
                target="_blank" rel="noopener">
-              אני רוצה להצטרף למשפחה
+              <span class="btn-contact-icon"><img src="img/icons/icons-19-nobg.png" alt="" width="36" height="36"></span>
+              <span class="btn-contact-text"><strong>אני רוצה להצטרף</strong><small>קהילה ויזמות חברתית</small></span>
+              <svg class="btn-contact-arrow" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
             </a>
-            <a class="btn btn-primary btn-block"
+            <a class="btn btn-contact btn-block"
                href="https://wa.me/972506669138?text=שלום%2C%20אנחנו%20משפחה%20שמתכננת%20אירוע"
                target="_blank" rel="noopener">
-              אני רוצה אירוע פרטי
+              <span class="btn-contact-icon"><img src="img/icons/icons-19-nobg.png" alt="" width="36" height="36"></span>
+              <span class="btn-contact-text"><strong>אירוע פרטי</strong><small>חגיגה משפחתית או אישית</small></span>
+              <svg class="btn-contact-arrow" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
             </a>
-            <a class="btn btn-primary btn-block"
+            <a class="btn btn-contact btn-block"
                href="https://wa.me/972506669138?text=שלום%2C%20יש%20לי%20חלום%20שמחפש%20בית"
                target="_blank" rel="noopener">
-              יש לי חלום שמחפש בית
+              <span class="btn-contact-icon"><img src="img/icons/icons-19-nobg.png" alt="" width="36" height="36"></span>
+              <span class="btn-contact-text"><strong>יש לי חלום</strong><small>השכרת המרחב לפרויקט</small></span>
+              <svg class="btn-contact-arrow" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
             </a>
           </div>
         </div>
@@ -631,28 +623,18 @@
       <footer class="site-footer">
         <div class="container footer-inner">
           <div class="footer-brand">
-            <!-- TODO: replace with real logo — /img/logo/logo-mono.svg (100×40, white version) -->
-            <span class="logo-placeholder logo-placeholder--mono">לב ים</span>
-            <p>כפר הדייגים, ג׳יסר א-זרקא</p>
+            <img src="img/logo/logo-mono-nobg.png" alt="לב ים" class="footer-logo" width="40" height="40">
+            <p class="footer-tagline">מרחב יזמות עסקית חברתית על קו המים</p>
           </div>
+
           <div class="footer-contact">
-            <p><a href="tel:+972506669138"><bdi>050-6669138</bdi></a></p>
-            <p><a href="mailto:info@levyam.com">info@levyam.com</a></p>
+            <a href="tel:+972506669138"><bdi>050-6669138</bdi></a>
+            <span class="footer-dot" aria-hidden="true">·</span>
+            <a href="mailto:info@levyam.com">info@levyam.com</a>
+            <span class="footer-dot" aria-hidden="true">·</span>
+            <a href="https://maps.app.goo.gl/fFtCZYwK1KEcmFud6" target="_blank" rel="noopener">לב ים, כפר הדייגים ג׳יסר א-זרקא</a>
           </div>
-          <div class="footer-social">
-            <a href="https://www.instagram.com/levyam_" target="_blank" rel="noopener" aria-label="לב ים באינסטגרם">
-              <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
-                <circle cx="12" cy="12" r="4"/>
-                <circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none"/>
-              </svg>
-            </a>
-            <a href="https://m.facebook.com/profile.php?id=61585790351617" target="_blank" rel="noopener" aria-label="לב ים בפייסבוק">
-              <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true">
-                <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/>
-              </svg>
-            </a>
-          </div>
+
           <p class="footer-credit">© לב ים <bdi>2026</bdi></p>
         </div>
       </footer>
