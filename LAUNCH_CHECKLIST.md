@@ -13,7 +13,7 @@
 - [ ] All 5 service card photos in `img/services/` (offsite, community, private, rental, weekend)
 - [ ] `img/space/space-overview.webp` exists
 - [ ] 12 gallery images in `img/gallery/` (`01-large.webp` → `12-large.webp`)
-- [ ] `assets/og-image.jpg` exists (1200×630)
+- [ ] `assets/og-image.jpg` exists (1200×630) — **TODO: upload logo-full.png to levyam.com/assets/og-image.jpg and update `og:image` URL in index.html from GitHub Pages path to `https://levyam.com/assets/og-image.jpg`**
 - [ ] All placeholder `<div class="img-placeholder">` replaced with real `<img>` tags
 
 ---
