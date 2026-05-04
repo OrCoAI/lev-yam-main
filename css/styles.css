@@ -169,25 +169,27 @@ h1, h2, h3, h4 {
   font-family: var(--font-display);
   line-height: var(--leading-tight);
   color: var(--color-ink);
+  text-wrap: balance;
 }
 
 .section-title {
   font-size: var(--text-h2);
-  font-weight: 600;
-  margin-block-end: var(--space-4);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-block-end: var(--space-3);
 }
 
 .subsection-title {
-  font-size: clamp(1.25rem, 1.1rem + 0.6vw, 1.625rem);
+  font-size: clamp(1.125rem, 1rem + 0.5vw, 1.375rem);
   font-weight: 600;
-  margin-block-end: var(--space-4);
+  margin-block-end: var(--space-3);
 }
 
 .section-sub {
   font-size: var(--text-lead);
   color: var(--color-ink-soft);
-  margin-block-start: calc(-1 * var(--space-2));
-  margin-block-end: var(--space-6);
+  margin-block-start: calc(-1 * var(--space-1));
+  margin-block-end: var(--space-5);
 }
 
 .section-intro {
@@ -196,13 +198,13 @@ h1, h2, h3, h4 {
   line-height: 1.7;
   max-inline-size: 680px;
   margin-inline: auto;
-  margin-block-start: calc(-1 * var(--space-2));
-  margin-block-end: var(--space-6);
+  margin-block-start: calc(-1 * var(--space-1));
+  margin-block-end: var(--space-5);
 }
 
 .section-header {
   text-align: center;
-  margin-block-end: var(--space-6);
+  margin-block-end: var(--space-5);
 }
 
 .section-header .section-title {
@@ -213,7 +215,7 @@ h1, h2, h3, h4 {
   font-size: var(--text-lead);
   line-height: 1.7;
   color: var(--color-ink-soft);
-  margin-block-end: var(--space-4);
+  margin-block-end: var(--space-3);
 }
 
 p {
@@ -290,7 +292,7 @@ p:last-child {
   inline-size: 100%;
   block-size: 24px;
   overflow: visible;
-  margin-block: var(--space-2);
+  margin-block: 0;
 }
 
 /* ── Site Header ─────────────────────────────────────────────────────── */
@@ -581,7 +583,7 @@ p:last-child {
 
 /* ── Intro ───────────────────────────────────────────────────────────── */
 .intro {
-  padding-block: var(--space-8);
+  padding-block: var(--space-6);
   text-align: center;
 }
 
@@ -591,8 +593,13 @@ p:last-child {
 
 /* ── Services ────────────────────────────────────────────────────────── */
 .services {
-  padding-block: var(--space-8);
-  background-color: var(--color-cream);
+  padding-block: var(--space-7);
+  background-color: var(--color-blue);
+}
+
+.services .section-title,
+.services .section-intro {
+  color: var(--color-cream);
 }
 
 .services-grid {
@@ -603,7 +610,7 @@ p:last-child {
 }
 
 .service-card {
-  flex: 0 0 calc(33.333% - var(--space-4));
+  flex: 0 0 calc(33.333% - 1rem);
   background-color: var(--color-white);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
@@ -672,7 +679,7 @@ p:last-child {
 .services-divider {
   flex: 0 0 100%;
   height: 1px;
-  background: linear-gradient(to left, transparent, var(--color-line) 20%, var(--color-line) 80%, transparent);
+  background: linear-gradient(to left, transparent, rgba(255,247,234,0.3) 20%, rgba(255,247,234,0.3) 80%, transparent);
   margin-block: var(--space-4);
 }
 
@@ -751,14 +758,14 @@ p:last-child {
 
 /* ── Why ─────────────────────────────────────────────────────────────── */
 .why {
-  padding-block: var(--space-8);
+  padding-block: var(--space-7);
   background-color: var(--color-cream);
 }
 
 .why .container-narrow {
   margin-inline: auto;
   text-align: center;
-  margin-block-end: var(--space-7);
+  margin-block-end: var(--space-5);
 }
 
 .audience-grid {
@@ -810,7 +817,7 @@ p:last-child {
 
 /* ── Gallery ─────────────────────────────────────────────────────────── */
 .gallery {
-  padding-block: var(--space-8);
+  padding-block: var(--space-7);
   background-color: var(--color-blue);
 }
 
@@ -933,7 +940,7 @@ p:last-child {
 
 /* ── FAQ ─────────────────────────────────────────────────────────────── */
 .faq {
-  padding-block: var(--space-8);
+  padding-block: var(--space-7);
   background-color: var(--color-cream);
 }
 
@@ -1004,7 +1011,7 @@ p:last-child {
 }
 
 .contact > .container {
-  padding-block: var(--space-8);
+  padding-block: var(--space-7);
 }
 
 .contact .section-title,
@@ -1061,18 +1068,18 @@ p:last-child {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: var(--color-cream);
+  border: 1px solid var(--color-line);
   border-radius: var(--radius-md);
-  color: var(--color-cream);
+  color: var(--color-ink);
   padding: var(--space-3) var(--space-4);
   text-align: start;
   transition: background 0.2s, border-color 0.2s, transform 0.15s;
   white-space: normal;
 }
 .btn-contact:hover {
-  background: rgba(255, 255, 255, 0.11);
-  border-color: rgba(244, 152, 52, 0.5);
+  background: var(--color-line);
+  border-color: var(--color-line);
   transform: translateX(-3px);
 }
 .btn-contact-icon {
@@ -1459,12 +1466,24 @@ p:last-child {
     min-block-size: 100svh;
   }
 
+  .intro,
+  .services,
+  .why,
+  .gallery,
+  .faq {
+    padding-block: var(--space-5);
+  }
+
+  .contact > .container {
+    padding-block: var(--space-5);
+  }
+
   .village-block {
     padding: var(--space-4);
   }
 
   .contact-map iframe {
-    block-size: 280px;
+    block-size: 260px;
   }
 
   .wa-float {
@@ -1483,6 +1502,14 @@ p:last-child {
   }
 
   .section-header {
+    margin-block-end: var(--space-4);
+  }
+
+  .section-title {
+    margin-block-end: var(--space-2);
+  }
+
+  .why .container-narrow {
     margin-block-end: var(--space-4);
   }
 }

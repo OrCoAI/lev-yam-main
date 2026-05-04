@@ -23,7 +23,7 @@
 - [ ] No placeholder text visible anywhere on the page
 - [ ] Hero tagline: `המקום שבו הלב פוגש את הים` ✓
 - [ ] All 5 service cards have titles, descriptions, and WhatsApp CTAs
-- [ ] All 10 FAQ questions and answers present
+- [ ] All 7 FAQ questions and answers present
 - [ ] Footer shows: logo, tagline, phone, email, address with Google Maps link
 - [ ] Copyright: `© לב ים 2026`
 

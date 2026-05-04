@@ -18,7 +18,7 @@
 | המרחב section | Two-column top-aligned layout with photo placeholder |
 | למה לב ים section | Village story + features |
 | Gallery + lightbox | 12 placeholders, keyboard navigable |
-| FAQ (10 questions) | Accordion, keyboard accessible |
+| FAQ (7 questions) | Accordion, keyboard accessible |
 | Contact section | Map embed + 4 WhatsApp action cards with brand icons |
 | Footer | Minimal single-line bar — logo, tagline, contact, copyright |
 | Header | Logo, nav, social icons (Instagram + Facebook), WhatsApp CTA |
