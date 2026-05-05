@@ -150,13 +150,13 @@
     <!-- ═══ HERO ═══ -->
     <section class="hero" id="top" aria-labelledby="hero-title">
       <div class="hero-media">
-        <!-- SWAP: Add hero-poster.webp + hero.mp4 when available (1920×1080, ≤6MB) -->
         <video class="hero-video"
                autoplay muted loop playsinline
-               poster="/img/hero/hero-poster.webp"
+               poster="img/hero/hero-poster.jpg"
                preload="metadata">
           <source src="img/hero/hero.mp4" type="video/mp4">
         </video>
+        <img src="img/hero/hero-poster.jpg" alt="לב ים — שקיעה מול הים" class="hero-poster-fallback" aria-hidden="true">
         <div class="hero-overlay" aria-hidden="true"></div>
       </div>
 
@@ -175,7 +175,6 @@
             <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 1.5C6.201 1.5 1.5 6.201 1.5 12c0 1.867.487 3.618 1.34 5.14L1.5 22.5l5.513-1.316A10.454 10.454 0 0012 22.5c5.799 0 10.5-4.701 10.5-10.5S17.799 1.5 12 1.5z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
             דברו איתנו בוואטסאפ
           </a>
-          <a class="btn btn-ghost" href="#services">לכל השירותים</a>
         </div>
       </div>
       <a class="hero-scroll-cue" href="#services" aria-label="גלול למטה">
@@ -203,7 +202,7 @@
       <div class="container">
         <header class="section-header reveal">
           <h2 id="services-title" class="section-title">מה קורה בלב ים</h2>
-          <p class="section-intro">אל מול נוף עוצר נשימה, במרחב שהמציאות בו עולה על כל דמיון, תוכלו למצוא בלב ים מרחב עם אינסוף אפשרויות</p>
+          <p class="section-intro">אל מול נוף עוצר נשימה, ליד הדייגים בתוך הכפר, קורים הדברים הכי טובים</p>
         </header>
 
         <div class="services-grid">
@@ -211,15 +210,13 @@
           <!-- Card 1: Corporate events -->
           <article class="service-card reveal">
             <div class="service-media">
-              <!-- SWAP: <picture><source srcset="/img/services/offsite.webp" type="image/webp"><img src="img/services/offsite.jpg" alt="קבוצה יושבת סביב שולחן עץ בלב ים" width="800" height="600" loading="lazy"></picture> -->
-              <div class="img-placeholder">
-                <span class="placeholder-label">offsite.webp</span>
-                <small>קבוצה סביב שולחן — אירוע עסקי · <bdi>800×600</bdi></small>
-              </div>
+              <picture>
+                <img src="img/services/offsite.jpg" alt="יזם עובד על הלפטופ מול הים בלב ים" width="1000" height="750" loading="lazy">
+              </picture>
             </div>
             <div class="service-body">
               <h3>אירועים עסקיים</h3>
-              <p>ימי גיבוש, אסטרטגיה ויציאה מהשגרה - לחשוב יחד מול הים.</p>
+              <p>ימי גיבוש, אסטרטגיה ויציאה מהשגרה.</p>
               <a class="btn btn-primary"
                  href="https://wa.me/972506669138?text=שלום%2C%20אנחנו%20מחפשים%20חוויה%20צוותית%20בלב%20ים"
                  target="_blank" rel="noopener">
@@ -231,15 +228,13 @@
           <!-- Card 2: Private events -->
           <article class="service-card reveal">
             <div class="service-media">
-              <!-- SWAP: <picture><source srcset="/img/services/private.webp" type="image/webp"><img src="img/services/private.jpg" alt="שולחן ערוך לחגיגה משפחתית בלב ים" width="800" height="600" loading="lazy"></picture> -->
-              <div class="img-placeholder">
-                <span class="placeholder-label">private.webp</span>
-                <small>חגיגה פרטית — אוכל ואנשים · <bdi>800×600</bdi></small>
-              </div>
+              <picture>
+                <img src="img/services/private.jpg" alt="שולחן ערוך לארוחה מול סירות הדייגים בלב ים" width="1000" height="750" loading="lazy">
+              </picture>
             </div>
             <div class="service-body">
               <h3>אירועים פרטיים</h3>
-              <p>חגיגות אינטימיות עם אוכל מקומי טרי, מול הים.</p>
+              <p>חגיגות אינטימיות עם אוכל מקומי טרי.</p>
               <a class="btn btn-primary"
                  href="https://wa.me/972506669138?text=שלום%2C%20אשמח%20להגיע%20עם%20המשפחה%20לחגיגה"
                  target="_blank" rel="noopener">
@@ -251,11 +246,9 @@
           <!-- Card 3: Full venue rental -->
           <article class="service-card reveal">
             <div class="service-media">
-              <!-- SWAP: <picture><source srcset="/img/services/rental.webp" type="image/webp"><img src="img/services/rental.jpg" alt="המתחם של לב ים בשעת ערב" width="800" height="600" loading="lazy"></picture> -->
-              <div class="img-placeholder">
-                <span class="placeholder-label">rental.webp</span>
-                <small>המתחם בשעת ערב — השכרה · <bdi>800×600</bdi></small>
-              </div>
+              <picture>
+                <img src="img/services/rental.jpg" alt="אירוע קבוצתי גדול תחת הפרגולה של לב ים" width="1000" height="750" loading="lazy">
+              </picture>
             </div>
             <div class="service-body">
               <h3>השכרת המתחם</h3>
@@ -274,11 +267,9 @@
           <!-- Card 4: Community -->
           <article class="service-card reveal">
             <div class="service-media">
-              <!-- SWAP: <picture><source srcset="/img/services/community.webp" type="image/webp"><img src="img/services/community.jpg" alt="אנשים יושבים יחד על החוף בשעת בין הערביים" width="800" height="600" loading="lazy"></picture> -->
-              <div class="img-placeholder">
-                <span class="placeholder-label">community.webp</span>
-                <small>קבוצה קהילתית מול הים · <bdi>800×600</bdi></small>
-              </div>
+              <picture>
+                <img src="img/services/community.jpg" alt="קהילת לב ים — אנשים מתכנסים תחת הפרגולה מול הים" width="1000" height="750" loading="lazy">
+              </picture>
             </div>
             <div class="service-body">
               <h3>יום ראשון לקהילה</h3>
@@ -294,10 +285,9 @@
           <!-- Card 5: Weekend -->
           <article class="service-card reveal">
             <div class="service-media">
-              <div class="img-placeholder">
-                <span class="placeholder-label">weekend.webp</span>
-                <small>סוף שבוע בלב ים · <bdi>800×600</bdi></small>
-              </div>
+              <picture>
+                <img src="img/services/weekend.jpg" alt="חברים נהנים מסוף שבוע בלב ים עם שקיעה בים" width="1000" height="750" loading="lazy">
+              </picture>
             </div>
             <div class="service-body">
               <h3>סופי שבוע בלב ים</h3>
@@ -336,7 +326,10 @@
       <div class="container container-narrow village-block reveal">
         <h3 class="subsection-title">על ג׳יסר א-זרקא וכפר הדייגים</h3>
         <p>
-          ג׳יסר א-זרקא הוא הכפר הערבי-מוסלמי היחיד שנותר על קו החוף הישראלי, בלב רצועת חוף הכרמל. הפארק הלאומי, כפר הדייגים, בו ממוקם לב ים שומר על אופי ייחודי — סירות עץ, רשתות, ריח של ים והיסטוריה משפחתית. כל ביקור כאן הוא גם מפגש עם מקום, עם אנשים, ועם סיפור.
+          ג׳יסר א-זרקא הוא הכפר הערבי-מוסלמי היחיד שנותר על קו החוף הישראלי, בלב רצועת חוף הכרמל. הפארק הלאומי, כפר הדייגים, בו ממוקם לב ים שומר על אופי ייחודי - סירות עץ, רשתות, ריח של ים והיסטוריה משפחתית.
+        </p>
+        <p>
+          כל ביקור כאן הוא גם מפגש עם מקום, עם אנשים, ועם סיפור.
         </p>
       </div>
     </section>
@@ -354,42 +347,41 @@
         </header>
 
         <div class="gallery-grid">
-          <!-- SWAP each button: replace div.img-placeholder with <img src="img/gallery/XX-thumb.webp" alt="..." width="600" height="400" loading="lazy"> -->
-          <button class="gallery-item" data-full="img/gallery/01-large.webp" data-index="0" aria-label="פתח תמונה 1 — הגעה לכפר">
-            <div class="img-placeholder img-placeholder--gallery"><span>01</span><small>הגעה לכפר</small></div>
+          <button class="gallery-item" data-full="img/gallery/01.jpg" data-index="0" aria-label="פתח תמונה 1 — שקיעה עם סירת דייגים">
+            <img src="img/gallery/01.jpg" alt="שקיעה עם סירת דייגים בלב ים" width="900" height="675" loading="lazy">
           </button>
-          <button class="gallery-item" data-full="img/gallery/02-large.webp" data-index="1" aria-label="פתח תמונה 2 — הכניסה למתחם">
-            <div class="img-placeholder img-placeholder--gallery"><span>02</span><small>הכניסה למתחם</small></div>
+          <button class="gallery-item" data-full="img/gallery/02.jpg" data-index="1" aria-label="פתח תמונה 2 — מבט מהפרגולה">
+            <img src="img/gallery/02.jpg" alt="מבט מהפרגולה לכיוון הים בלב ים" width="900" height="675" loading="lazy">
           </button>
-          <button class="gallery-item" data-full="img/gallery/03-large.webp" data-index="2" aria-label="פתח תמונה 3 — נוף הכפר">
-            <div class="img-placeholder img-placeholder--gallery"><span>03</span><small>נוף הכפר</small></div>
+          <button class="gallery-item" data-full="img/gallery/03.jpg" data-index="2" aria-label="פתח תמונה 3 — אור זהוב מהפרגולה">
+            <img src="img/gallery/03.jpg" alt="אור זהוב מהפרגולה עם סירה מול הים" width="900" height="675" loading="lazy">
           </button>
-          <button class="gallery-item" data-full="img/gallery/04-large.webp" data-index="3" aria-label="פתח תמונה 4 — הדרך אל המים">
-            <div class="img-placeholder img-placeholder--gallery"><span>04</span><small>הדרך אל המים</small></div>
+          <button class="gallery-item" data-full="img/gallery/04.jpg" data-index="3" aria-label="פתח תמונה 4 — שקיעה כתומה">
+            <img src="img/gallery/04.jpg" alt="שקיעה כתומה עם סירה וגומא מול הים" width="900" height="675" loading="lazy">
           </button>
-          <button class="gallery-item" data-full="img/gallery/05-large.webp" data-index="4" aria-label="פתח תמונה 5 — הסלון הפנימי">
-            <div class="img-placeholder img-placeholder--gallery"><span>05</span><small>הסלון הפנימי</small></div>
+          <button class="gallery-item" data-full="img/gallery/05.jpg" data-index="4" aria-label="פתח תמונה 5 — עבודה מול הים">
+            <img src="img/gallery/05.jpg" alt="לפטופ על שולחן עץ מול הים בלב ים" width="900" height="675" loading="lazy">
           </button>
-          <button class="gallery-item" data-full="img/gallery/06-large.webp" data-index="5" aria-label="פתח תמונה 6 — הפרגולה מול הים">
-            <div class="img-placeholder img-placeholder--gallery"><span>06</span><small>הפרגולה מול הים</small></div>
+          <button class="gallery-item" data-full="img/gallery/06.jpg" data-index="5" aria-label="פתח תמונה 6 — חלון בשקיעה">
+            <img src="img/gallery/06.jpg" alt="חלון ישן עם נוף שקיעה מבפנים בלב ים" width="900" height="675" loading="lazy">
           </button>
-          <button class="gallery-item" data-full="img/gallery/07-large.webp" data-index="6" aria-label="פתח תמונה 7 — פרטים מהמרחב">
-            <div class="img-placeholder img-placeholder--gallery"><span>07</span><small>פרטים מהמרחב</small></div>
+          <button class="gallery-item" data-full="img/gallery/07.jpg" data-index="6" aria-label="פתח תמונה 7 — הסלון מבפנים">
+            <img src="img/gallery/07.jpg" alt="הסלון הפנימי של לב ים עם נוף הים" width="900" height="675" loading="lazy">
           </button>
-          <button class="gallery-item" data-full="img/gallery/08-large.webp" data-index="7" aria-label="פתח תמונה 8 — אנשים עובדים">
-            <div class="img-placeholder img-placeholder--gallery"><span>08</span><small>אנשים עובדים</small></div>
+          <button class="gallery-item" data-full="img/gallery/08.jpg" data-index="7" aria-label="פתח תמונה 8 — עבודה משותפת בחוץ">
+            <img src="img/gallery/08.jpg" alt="אנשים עובדים יחד בחוץ מול הים בלב ים" width="900" height="675" loading="lazy">
           </button>
-          <button class="gallery-item" data-full="img/gallery/09-large.webp" data-index="8" aria-label="פתח תמונה 9 — שיחה ומפגש">
-            <div class="img-placeholder img-placeholder--gallery"><span>09</span><small>שיחה ומפגש</small></div>
+          <button class="gallery-item" data-full="img/gallery/09.jpg" data-index="8" aria-label="פתח תמונה 9 — שיחה בכפר הדייגים">
+            <img src="img/gallery/09.jpg" alt="שיחה בין אנשים בכפר הדייגים" width="900" height="675" loading="lazy">
           </button>
-          <button class="gallery-item" data-full="img/gallery/10-large.webp" data-index="9" aria-label="פתח תמונה 10 — אוכל מהאש">
-            <div class="img-placeholder img-placeholder--gallery"><span>10</span><small>אוכל מהאש</small></div>
+          <button class="gallery-item" data-full="img/gallery/10.jpg" data-index="9" aria-label="פתח תמונה 10 — עבודה לבד מול הים">
+            <img src="img/gallery/10.jpg" alt="אדם עובד לבד מול הים בלב ים" width="900" height="675" loading="lazy">
           </button>
-          <button class="gallery-item" data-full="img/gallery/11-large.webp" data-index="10" aria-label="פתח תמונה 11 — שקיעה מול הים">
-            <div class="img-placeholder img-placeholder--gallery"><span>11</span><small>שקיעה מול הים</small></div>
+          <button class="gallery-item" data-full="img/gallery/11.jpg" data-index="10" aria-label="פתח תמונה 11 — מפגש קהילתי">
+            <img src="img/gallery/11.jpg" alt="מפגש קהילתי ושיחה בחוץ מול הים בלב ים" width="900" height="675" loading="lazy">
           </button>
-          <button class="gallery-item" data-full="img/gallery/12-large.webp" data-index="11" aria-label="פתח תמונה 12 — סירות הדייגים">
-            <div class="img-placeholder img-placeholder--gallery"><span>12</span><small>סירות הדייגים</small></div>
+          <button class="gallery-item" data-full="img/gallery/12.jpg" data-index="11" aria-label="פתח תמונה 12 — שולחן מול הים">
+            <img src="img/gallery/12.jpg" alt="שולחן וכיסאות תחת הפרגולה מול הים בלב ים" width="900" height="675" loading="lazy">
           </button>
         </div>
       </div>
@@ -489,7 +481,7 @@
         <div class="contact-grid">
           <div class="contact-map reveal">
             <iframe
-              src="https://maps.google.com/maps?q=32.5435,34.9078&output=embed"
+              src="https://maps.google.com/maps?q=32.5365499,34.9020949&output=embed"
               width="100%" height="400" loading="lazy"
               referrerpolicy="no-referrer-when-downgrade"
               title="המיקום של לב ים על המפה"

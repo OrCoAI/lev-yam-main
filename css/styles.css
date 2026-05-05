@@ -62,7 +62,7 @@
   --space-9: 8rem;
 
   /* Layout */
-  --container-max:    1200px;
+  --container-max:    1440px;
   --container-narrow: 760px;
 
   /* Radii */
@@ -319,6 +319,7 @@ p:last-child {
   inline-size: min(100%, var(--container-max));
   margin-inline: auto;
   padding-inline: var(--space-5);
+  position: relative;
 }
 
 .logo {
@@ -343,7 +344,9 @@ p:last-child {
 }
 
 .primary-nav {
-  flex: 1;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   justify-content: center;
 }
@@ -379,6 +382,7 @@ p:last-child {
   align-items: center;
   gap: var(--space-2);
   flex-shrink: 0;
+  margin-inline-start: auto;
 }
 .header-social a {
   color: var(--color-ink-soft);
@@ -465,7 +469,7 @@ p:last-child {
 /* ── Hero ────────────────────────────────────────────────────────────── */
 .hero {
   position: relative;
-  min-block-size: 88vh;
+  min-block-size: 94vh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -486,15 +490,30 @@ p:last-child {
   object-position: center;
 }
 
+.hero-poster-fallback {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  object-position: center;
+  z-index: -1;
+}
+
 .hero-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    to bottom,
-    rgba(26, 51, 64, 0.3) 0%,
-    rgba(26, 51, 64, 0.5) 60%,
-    rgba(26, 51, 64, 0.65) 100%
-  );
+  background:
+    linear-gradient(to bottom,
+      rgba(26, 51, 64, 0.08) 0%,
+      rgba(26, 51, 64, 0.38) 38%,
+      rgba(26, 51, 64, 0.65) 70%,
+      rgba(26, 51, 64, 0.88) 100%
+    ),
+    radial-gradient(ellipse 100% 70% at 50% 45%,
+      transparent 30%,
+      rgba(26, 51, 64, 0.22) 100%
+    );
 }
 
 .hero-content {
@@ -503,12 +522,23 @@ p:last-child {
   text-align: center;
   color: var(--color-cream);
   padding-inline: var(--space-5);
+  padding-block-end: 5vh;
   max-inline-size: 900px;
   margin-inline: auto;
 }
 
 .hero-eyebrow {
-  margin-block-end: var(--space-4);
+  margin-block-end: var(--space-3);
+}
+
+.hero-eyebrow::after {
+  content: '';
+  display: block;
+  width: 36px;
+  height: 2px;
+  background: var(--color-orange);
+  margin: var(--space-3) auto 0;
+  border-radius: 2px;
 }
 
 .hero-wordmark {
@@ -516,7 +546,9 @@ p:last-child {
   width: clamp(180px, 45vw, 300px);
   height: auto;
   margin-inline: auto;
-  filter: drop-shadow(0 2px 12px rgba(26, 51, 64, 0.5));
+  filter:
+    drop-shadow(0 4px 24px rgba(26, 51, 64, 0.7))
+    drop-shadow(0 0 48px rgba(26, 51, 64, 0.35));
 }
 
 .hero-title {
@@ -524,9 +556,10 @@ p:last-child {
   font-size: clamp(2.8rem, 2rem + 3.5vw, 5rem);
   font-weight: 700;
   line-height: 1.15;
+  letter-spacing: -0.02em;
   color: var(--color-cream);
   margin-block-end: var(--space-4);
-  text-shadow: 0 2px 24px rgba(26, 51, 64, 0.4);
+  text-shadow: 0 2px 16px rgba(26, 51, 64, 0.55), 0 4px 48px rgba(26, 51, 64, 0.3);
 }
 
 .hero-accent {
@@ -535,11 +568,12 @@ p:last-child {
 
 .hero-lead {
   font-size: clamp(1.1rem, 1rem + 0.4vw, 1.3rem);
-  line-height: 1.8;
-  color: var(--color-cream);
-  opacity: 0.88;
+  line-height: 1.85;
+  color: rgba(255, 247, 234, 0.9);
   margin-block-end: var(--space-6);
-  font-weight: 300;
+  margin-inline: auto;
+  font-weight: 400;
+  max-inline-size: 540px;
 }
 
 .hero-ctas {
@@ -566,12 +600,28 @@ p:last-child {
   transform: translateX(-50%) translateY(3px);
 }
 @media (prefers-reduced-motion: no-preference) {
-  .hero-scroll-cue {
-    animation: bounce-down 2s ease-in-out infinite;
+  @keyframes hero-enter {
+    from { opacity: 0; transform: translateY(22px); }
+    to   { opacity: 1; transform: none; }
+  }
+  @keyframes hero-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
   }
   @keyframes bounce-down {
     0%, 100% { transform: translateX(-50%) translateY(0); }
-    50%       { transform: translateX(-50%) translateY(6px); }
+    50%       { transform: translateX(-50%) translateY(7px); }
+  }
+
+  .hero-eyebrow { animation: hero-enter 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both; }
+  .hero-title   { animation: hero-enter 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.25s both; }
+  .hero-lead    { animation: hero-enter 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.42s both; }
+  .hero-ctas    { animation: hero-enter 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.58s both; }
+
+  .hero-scroll-cue {
+    animation:
+      hero-fade-in 0.8s ease 1s both,
+      bounce-down 2.2s ease-in-out 1.8s infinite;
   }
 }
 
@@ -583,13 +633,35 @@ p:last-child {
 
 /* ── Intro ───────────────────────────────────────────────────────────── */
 .intro {
-  padding-block: var(--space-6);
+  padding-block: var(--space-8) var(--space-7);
   text-align: center;
 }
 
 .intro .container-narrow {
   margin-inline: auto;
 }
+
+.intro .container-narrow::before {
+  content: '';
+  display: block;
+  width: 40px;
+  height: 3px;
+  background: var(--color-orange);
+  margin-inline: auto;
+  margin-block-end: var(--space-5);
+  border-radius: 2px;
+}
+
+.intro .lead {
+  font-size: clamp(1.25rem, 1.1rem + 0.6vw, 1.7rem);
+  font-weight: 500;
+  color: var(--color-ink);
+  line-height: 1.85;
+  text-wrap: balance;
+  max-inline-size: 720px;
+  margin-inline: auto;
+}
+
 
 /* ── Services ────────────────────────────────────────────────────────── */
 .services {
@@ -600,6 +672,17 @@ p:last-child {
 .services .section-title,
 .services .section-intro {
   color: var(--color-cream);
+}
+
+.services .section-header .section-title::after {
+  content: '';
+  display: block;
+  width: 48px;
+  height: 3px;
+  background: var(--color-orange);
+  margin-inline: auto;
+  margin-block-start: var(--space-3);
+  border-radius: 2px;
 }
 
 .services-grid {
@@ -658,6 +741,22 @@ p:last-child {
   font-size: clamp(1.1rem, 1rem + 0.5vw, 1.375rem);
   font-weight: 600;
   color: var(--color-blue-deep);
+}
+
+.service-body h3::after {
+  content: '';
+  display: block;
+  width: 24px;
+  height: 2px;
+  background: var(--color-blue);
+  margin-inline: auto;
+  margin-block-start: var(--space-2);
+  border-radius: 2px;
+  transition: width 0.25s ease;
+}
+
+.service-card:hover .service-body h3::after {
+  width: 44px;
 }
 
 .service-body p {
@@ -799,11 +898,12 @@ p:last-child {
 
 .village-block {
   margin-inline: auto;
-  padding: var(--space-6);
+  padding: var(--space-6) var(--space-7);
   background-color: var(--color-white);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
   border-block-start: 3px solid var(--color-orange);
+  margin-block-start: var(--space-6);
 }
 
 .village-block .subsection-title {
@@ -826,27 +926,39 @@ p:last-child {
   color: var(--color-cream);
 }
 
+.gallery .section-header .section-title::after {
+  content: '';
+  display: block;
+  width: 48px;
+  height: 3px;
+  background: var(--color-orange);
+  margin-inline: auto;
+  margin-block-start: var(--space-3);
+  border-radius: 2px;
+}
+
 .gallery-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: var(--space-3);
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
 
 .gallery-item {
   display: block;
   aspect-ratio: 3 / 2;
   overflow: hidden;
-  border-radius: var(--radius-md);
+  border-radius: 0;
   cursor: pointer;
   position: relative;
   background-color: rgba(255, 247, 234, 0.08);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: filter 0.25s ease, opacity 0.25s ease;
 }
 
 @media (prefers-reduced-motion: no-preference) {
   .gallery-item:hover {
-    transform: scale(1.02);
-    box-shadow: var(--shadow-md);
+    filter: brightness(0.78);
   }
 }
 
@@ -950,7 +1062,7 @@ p:last-child {
 
 .faq-item {
   border-block-end: 1px solid var(--color-line);
-  padding-block: var(--space-4);
+  padding-block: var(--space-5);
 }
 
 .faq-item:first-of-type {
@@ -1052,10 +1164,11 @@ p:last-child {
 }
 
 .contact-intro {
-  font-size: var(--text-lead);
-  color: var(--color-cream);
-  font-weight: 600;
-  margin-block-end: var(--space-4);
+  font-size: clamp(1.1rem, 1rem + 0.4vw, 1.3rem);
+  color: rgba(255, 247, 234, 0.95);
+  font-weight: 500;
+  margin-block-end: var(--space-5);
+  line-height: 1.75;
 }
 
 .contact-actions .btn-block {
@@ -1466,7 +1579,10 @@ p:last-child {
     min-block-size: 100svh;
   }
 
-  .intro,
+  .intro {
+    padding-block: var(--space-6);
+  }
+
   .services,
   .why,
   .gallery,
