@@ -20,6 +20,8 @@
   <link rel="preload" href="fonts/Heebo-hebrew.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="fonts/Assistant-hebrew.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" as="image" href="img/hero/hero-poster.jpg" fetchpriority="high">
+  <link rel="preload" as="image" href="img/hero/h1-aligned-opt.png">
+  <link rel="preload" as="image" href="img/hero/h2-opt.png">
 
   <link rel="icon" href="img/logo/logo-mark.png" type="image/png">
   <link rel="apple-touch-icon" href="img/logo/logo-mark.png">
@@ -98,7 +100,7 @@
 
       <div class="hero-topbar">
         <a href="#top" class="logo" aria-label="לב ים — דף הבית">
-          <img src="img/logo/logo-full.png" alt="לב ים" width="52" height="52">
+          <img src="img/logo/logo-mono-nobg.png" alt="לב ים" width="52" height="52">
         </a>
 
         <nav class="primary-nav" aria-label="תפריט ראשי">
@@ -135,6 +137,11 @@
       </div>
 
       <nav id="mobile-nav" class="mobile-nav" hidden aria-label="תפריט נייד">
+        <div class="mobile-nav-header">
+          <button class="mobile-nav-close" aria-label="סגור תפריט">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
         <ul>
           <li><a href="#services">מה קורה בלב ים</a></li>
           <li><a href="#why">למה לב ים</a></li>
@@ -157,7 +164,11 @@
 
       <div class="hero-content">
         <div class="hero-logo">
-          <img src="img/hero/logo-mono-nobg.png" alt="לב ים" class="hero-wordmark" width="280" height="370">
+          <div class="logo-build" role="img" aria-label="לב ים">
+            <img src="img/hero/h1-aligned-opt.png" alt="" aria-hidden="true" class="logo-build-frame lbf-1">
+            <img src="img/hero/h2-opt.png" alt="" aria-hidden="true" class="logo-build-frame lbf-2">
+            <img src="img/hero/h3-opt.png" alt="" aria-hidden="true" class="logo-build-frame lbf-3">
+          </div>
         </div>
         <h1 id="hero-title" class="hero-title">המקום שבו <span class="hero-accent">הלב</span> פוגש את <span class="hero-accent-blue">הים</span></h1>
         <p class="hero-lead">
@@ -241,7 +252,7 @@
           <article class="service-card reveal">
             <div class="service-media">
               <picture>
-                <img src="img/services/rent.jpeg" alt="שולחן וכיסאות מול הים תחת הפרגולה בלב ים" width="1000" height="750" loading="lazy">
+                <img src="img/services/Rent.jpg" alt="שקיעה כתומה מהפרגולה עם ספסל מול הים בלב ים" width="1000" height="750" loading="lazy">
               </picture>
             </div>
             <div class="service-body">
@@ -374,8 +385,8 @@
           <button class="gallery-item" data-full="img/gallery/11.jpg" data-index="10" aria-label="פתח תמונה 11 — מבט אווירי על כפר הדייגים">
             <img src="img/gallery/11.jpg" alt="מבט אווירי על כפר הדייגים בלב ים" width="900" height="675" loading="lazy">
           </button>
-          <button class="gallery-item" data-full="img/gallery/12.jpg" data-index="11" aria-label="פתח תמונה 12 — שקיעה מהפרגולה">
-            <img src="img/gallery/12.jpg" alt="שקיעה כתומה מהפרגולה עם ספסל מול הים בלב ים" width="900" height="675" loading="lazy">
+          <button class="gallery-item" data-full="img/gallery/12.jpg" data-index="11" aria-label="פתח תמונה 12 — עבודה מול חלונות הים">
+            <img src="img/gallery/12.jpg" alt="מחשב נייד ושולחן עבודה מול חלונות הים בלב ים" width="900" height="675" loading="lazy">
           </button>
           <button class="gallery-item" data-full="img/gallery/13.jpg" data-index="12" aria-label="פתח תמונה 13 — ארוחה מול הים">
             <img src="img/gallery/13.jpg" alt="ארוחה מקומית עם נוף הים בלב ים" width="900" height="675" loading="lazy">
@@ -385,6 +396,12 @@
           </button>
           <button class="gallery-item" data-full="img/gallery/15.jpg" data-index="14" aria-label="פתח תמונה 15 — חברים בלב ים">
             <img src="img/gallery/15.jpg" alt="חברים נהנים יחד מול הים בלב ים" width="900" height="675" loading="lazy">
+          </button>
+          <button class="gallery-item" data-full="img/gallery/16.jpg" data-index="15" aria-label="פתח תמונה 16 — שקיעה עם אנשים">
+            <img src="img/gallery/16.jpg" alt="אנשים ליד הים בשקיעה בכפר הדייגים בלב ים" width="900" height="675" loading="lazy">
+          </button>
+          <button class="gallery-item" data-full="img/gallery/17.jpg" data-index="16" aria-label="פתח תמונה 17 — שיחה מול הים">
+            <img src="img/gallery/17.jpg" alt="שיחה ועבודה מול חלונות הים בלב ים" width="900" height="675" loading="lazy">
           </button>
         </div>
       </div>
@@ -541,11 +558,29 @@
           </div>
 
           <div class="footer-contact">
-            <a href="tel:+972506669138"><bdi>050-6669138</bdi></a>
+            <a href="tel:+972506669138" aria-label="התקשרו ללב ים">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8 19.79 19.79 0 01.01 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14v2.92z"/></svg>
+            </a>
             <span class="footer-dot" aria-hidden="true">·</span>
-            <a href="mailto:info@levyam.com">info@levyam.com</a>
+            <a href="mailto:info@levyam.com" aria-label="שלחו מייל ללב ים">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg>
+            </a>
             <span class="footer-dot" aria-hidden="true">·</span>
-            <a href="https://maps.app.goo.gl/fFtCZYwK1KEcmFud6" target="_blank" rel="noopener">לב ים, כפר הדייגים ג׳יסר א-זרקא</a>
+            <a href="https://wa.me/972506669138" target="_blank" rel="noopener" aria-label="וואטסאפ לב ים">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 1.5C6.201 1.5 1.5 6.201 1.5 12c0 1.867.487 3.618 1.34 5.14L1.5 22.5l5.513-1.316A10.454 10.454 0 0012 22.5c5.799 0 10.5-4.701 10.5-10.5S17.799 1.5 12 1.5z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+            </a>
+            <span class="footer-dot" aria-hidden="true">·</span>
+            <a href="https://www.instagram.com/levyam_" target="_blank" rel="noopener" aria-label="אינסטגרם לב ים">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none"/></svg>
+            </a>
+            <span class="footer-dot" aria-hidden="true">·</span>
+            <a href="https://m.facebook.com/profile.php?id=61585790351617" target="_blank" rel="noopener" aria-label="פייסבוק לב ים">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+            </a>
+            <span class="footer-dot" aria-hidden="true">·</span>
+            <a href="https://maps.app.goo.gl/fFtCZYwK1KEcmFud6" target="_blank" rel="noopener" aria-label="מיקום לב ים">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+            </a>
           </div>
 
           <p class="footer-credit">© לב ים <bdi>2026</bdi></p>

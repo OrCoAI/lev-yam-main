@@ -24,6 +24,12 @@
     }
   });
 
+  // Close button inside the nav
+  var btnClose = mobileNav.querySelector('.mobile-nav-close');
+  if (btnClose) {
+    btnClose.addEventListener('click', function () { closeMenu(); toggle.focus(); });
+  }
+
   // Close when a nav link is clicked
   mobileNav.querySelectorAll('a').forEach(function (link) {
     link.addEventListener('click', closeMenu);
