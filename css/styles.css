@@ -157,7 +157,7 @@ button {
 .container {
   inline-size: min(100%, var(--container-max));
   margin-inline: auto;
-  padding-inline: var(--space-5);
+  padding-inline: clamp(1rem, 4vw, 2rem);
 }
 
 .container-narrow {
@@ -176,11 +176,34 @@ h1, h2, h3, h4 {
   font-size: var(--text-h2);
   font-weight: 700;
   letter-spacing: -0.01em;
-  margin-block-end: var(--space-3);
+  line-height: var(--leading-tight);
+  position: relative;
+  display: block;
+  inline-size: fit-content;
+  max-inline-size: 100%;
+  margin-inline: auto;
+  margin-block-end: var(--space-4);
+  padding-block-end: 0.55rem;
+  text-align: center;
+}
+.section-title::after {
+  content: '';
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline: 0;
+  block-size: 2px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(244, 152, 52, 0.55) 15%,
+    var(--color-orange) 50%,
+    rgba(244, 152, 52, 0.55) 85%,
+    transparent 100%);
+  box-shadow: 0 0 14px rgba(244, 152, 52, 0.40);
 }
 
 .subsection-title {
-  font-size: clamp(1.125rem, 1rem + 0.5vw, 1.375rem);
+  font-size: var(--text-lead);
   font-weight: 600;
   margin-block-end: var(--space-3);
 }
@@ -188,27 +211,29 @@ h1, h2, h3, h4 {
 .section-sub {
   font-size: var(--text-lead);
   color: var(--color-ink-soft);
-  margin-block-start: calc(-1 * var(--space-1));
-  margin-block-end: var(--space-5);
+  line-height: 1.5;
+  margin-block-start: 0;
+  margin-block-end: 0;
 }
 
 .section-intro {
   font-size: var(--text-lead);
   color: var(--color-ink-soft);
-  line-height: 1.7;
-  max-inline-size: 680px;
+  line-height: 1.6;
+  max-inline-size: 900px;
   margin-inline: auto;
-  margin-block-start: calc(-1 * var(--space-1));
-  margin-block-end: var(--space-5);
+  margin-block-start: 0;
+  margin-block-end: 0;
+  text-wrap: balance;
 }
 
 .section-header {
   text-align: center;
-  margin-block-end: var(--space-5);
+  margin-block-end: clamp(2rem, 4vw, 3rem);
 }
 
 .section-header .section-title {
-  margin-block-end: var(--space-2);
+  margin-block-end: var(--space-3);
 }
 
 .lead {
@@ -469,7 +494,7 @@ p:last-child {
 
 .mobile-nav-brand {
   font-family: var(--font-display);
-  font-size: 1rem;
+  font-size: var(--text-base);
   font-weight: 700;
   color: rgba(255, 247, 234, 0.55);
   letter-spacing: 0.04em;
@@ -700,51 +725,55 @@ p:last-child {
     50%       { transform: translateX(-50%) translateY(7px); }
   }
 
-  /* ── Logo build: frames appear slowly, glow grows with them ────────────── *
-   *  h1  0.3 →  1.3s  island · palm · waves  (no glow yet)                   *
-   *  h2  2.0 →  3.2s  + sun rises            (warm orange begins)             *
-   *  h3  3.8 →  5.2s  + לב ים text           (full glow + shine peak)         *
-   *  float + settled glow from 5.5s onward                                    *
+  /* ── Logo build: one logo materializing, glow climaxes at the end ─────── *
+   *  Frames cross-fade with soft blur — no pop, no scale jump.               *
+   *  Glow rises continuously through the build, then bursts at the climax.   *
+   *                                                                          *
+   *  Timeline (5.5s total):                                                   *
+   *   h1  0.4 →  1.9s   island · palm · waves                                 *
+   *   h2  1.6 →  3.1s   + sun rises  (overlaps h1 settle)                    *
+   *   h3  2.9 →  4.4s   + לב ים text (overlaps h2 settle)                    *
+   *   4.4 →  4.9s       glow CLIMAX — bright burst                            *
+   *   4.9 →  5.5s       settle into pulse baseline                            *
    * ─────────────────────────────────────────────────────────────────────── */
 
   @keyframes logo-frame-in {
-    from { opacity: 0; transform: scale(0.88); }
-    to   { opacity: 1; transform: scale(1); }
+    from { opacity: 0; filter: blur(5px); }
+    to   { opacity: 1; filter: blur(0); }
   }
   @keyframes logo-float {
     0%, 100% { transform: translateY(0); }
     50%       { transform: translateY(-10px); }
   }
 
-  /* Glow builds across the 5.5s animation — 4 identical filter functions
-     so CSS can interpolate every property smoothly the whole way through.
-     Timeline (% of 5.5s): h1 done=24%, h2 done=58%, h3 done=94%, shine=97% */
+  /* Glow builds smoothly with the frames, then climaxes at the end.
+     Timeline (% of 5.5s): h1 done=35%, h2 done=56%, h3 done=80%, peak=89%, settle=100% */
   @keyframes logo-glow-build {
     0%   { filter:
              drop-shadow(0 2px  6px rgba(  0,  0,  0, 0.20))
              drop-shadow(0 0    0px rgba(244,152, 52, 0.00))
              drop-shadow(0 0    0px rgba(255,255,255, 0.00))
              drop-shadow(0 0    0px rgba(244,152, 52, 0.00)); }
-    24%  { filter:
-             drop-shadow(0 3px  8px rgba(  0,  0,  0, 0.25))
-             drop-shadow(0 0    4px rgba(244,152, 52, 0.10))
+    35%  { filter:
+             drop-shadow(0 3px  8px rgba(  0,  0,  0, 0.26))
+             drop-shadow(0 0    6px rgba(244,152, 52, 0.18))
              drop-shadow(0 0    0px rgba(255,255,255, 0.00))
-             drop-shadow(0 0    6px rgba(244,152, 52, 0.05)); }
-    58%  { filter:
-             drop-shadow(0 4px 12px rgba(  0,  0,  0, 0.38))
-             drop-shadow(0 0   18px rgba(244,152, 52, 0.65))
-             drop-shadow(0 0    4px rgba(255,255,255, 0.25))
-             drop-shadow(0 0   36px rgba(244,152, 52, 0.28)); }
-    94%  { filter:
-             drop-shadow(0 5px 16px rgba(  0,  0,  0, 0.48))
-             drop-shadow(0 0   26px rgba(244,152, 52, 0.90))
-             drop-shadow(0 0   10px rgba(255,255,255, 0.65))
-             drop-shadow(0 0   58px rgba(244,152, 52, 0.50)); }
-    97%  { filter:
-             drop-shadow(0 5px 18px rgba(  0,  0,  0, 0.52))
-             drop-shadow(0 0   38px rgba(244,152, 52, 1.00))
-             drop-shadow(0 0   18px rgba(255,255,255, 0.95))
-             drop-shadow(0 0   82px rgba(244,152, 52, 0.68)); }
+             drop-shadow(0 0   10px rgba(244,152, 52, 0.10)); }
+    56%  { filter:
+             drop-shadow(0 4px 11px rgba(  0,  0,  0, 0.34))
+             drop-shadow(0 0   14px rgba(244,152, 52, 0.50))
+             drop-shadow(0 0    3px rgba(255,255,255, 0.18))
+             drop-shadow(0 0   28px rgba(244,152, 52, 0.22)); }
+    80%  { filter:
+             drop-shadow(0 5px 15px rgba(  0,  0,  0, 0.44))
+             drop-shadow(0 0   24px rgba(244,152, 52, 0.82))
+             drop-shadow(0 0    9px rgba(255,255,255, 0.55))
+             drop-shadow(0 0   50px rgba(244,152, 52, 0.42)); }
+    89%  { filter:
+             drop-shadow(0 6px 20px rgba(  0,  0,  0, 0.55))
+             drop-shadow(0 0   42px rgba(244,152, 52, 1.00))
+             drop-shadow(0 0   22px rgba(255,255,255, 1.00))
+             drop-shadow(0 0   90px rgba(244,152, 52, 0.78)); }
     100% { filter:
              drop-shadow(0 6px 20px rgba(  0,  0,  0, 0.55))
              drop-shadow(0 0   26px rgba(244,152, 52, 0.92))
@@ -771,12 +800,15 @@ p:last-child {
     0%   { filter:
              drop-shadow(0 2px  4px rgba(  0,  0,  0, 0.15))
              drop-shadow(0 0    0px rgba(244,152, 52, 0.00)); }
-    58%  { filter:
-             drop-shadow(0 3px  8px rgba(  0,  0,  0, 0.38))
-             drop-shadow(0 0   12px rgba(244,152, 52, 0.62)); }
-    97%  { filter:
-             drop-shadow(0 4px 10px rgba(  0,  0,  0, 0.50))
-             drop-shadow(0 0   28px rgba(244,152, 52, 1.00)); }
+    56%  { filter:
+             drop-shadow(0 3px  7px rgba(  0,  0,  0, 0.32))
+             drop-shadow(0 0   10px rgba(244,152, 52, 0.50)); }
+    80%  { filter:
+             drop-shadow(0 4px  9px rgba(  0,  0,  0, 0.42))
+             drop-shadow(0 0   18px rgba(244,152, 52, 0.78)); }
+    89%  { filter:
+             drop-shadow(0 4px 12px rgba(  0,  0,  0, 0.52))
+             drop-shadow(0 0   34px rgba(244,152, 52, 1.00)); }
     100% { filter:
              drop-shadow(0 4px 12px rgba(  0,  0,  0, 0.52))
              drop-shadow(0 0   20px rgba(244,152, 52, 0.88)); }
@@ -791,10 +823,11 @@ p:last-child {
                  drop-shadow(0 0   30px rgba(244,152, 52, 1.00)); }
   }
 
-  /* Frames: slow, deliberate — each stage has room to breathe */
-  .lbf-1 { animation: logo-frame-in 1.0s ease-out 0.3s both; }
-  .lbf-2 { animation: logo-frame-in 1.2s ease-out 2.0s both; }
-  .lbf-3 { animation: logo-frame-in 1.4s ease-out 3.8s both; }
+  /* Frames cross-fade: each one's tail overlaps the next one's head, so
+     the build feels like one logo gradually coming into focus, not three pops. */
+  .lbf-1 { animation: logo-frame-in 1.5s cubic-bezier(0.22, 1, 0.36, 1) 0.4s both; }
+  .lbf-2 { animation: logo-frame-in 1.5s cubic-bezier(0.22, 1, 0.36, 1) 1.6s both; }
+  .lbf-3 { animation: logo-frame-in 1.5s cubic-bezier(0.22, 1, 0.36, 1) 2.9s both; }
 
   /* Glow builds, then breathes + floats forever */
   .hero-logo {
@@ -826,7 +859,7 @@ p:last-child {
 
 /* ── Intro ───────────────────────────────────────────────────────────── */
 .intro {
-  padding-block: var(--space-8) var(--space-7);
+  padding-block: clamp(3rem, 4vw + 2rem, 5rem);
   text-align: center;
 }
 
@@ -837,21 +870,25 @@ p:last-child {
 .intro .container-narrow::before {
   content: '';
   display: block;
-  width: 40px;
-  height: 3px;
-  background: var(--color-orange);
+  inline-size: 64px;
+  block-size: 2px;
   margin-inline: auto;
   margin-block-end: var(--space-5);
-  border-radius: 2px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(90deg,
+    transparent 0%,
+    var(--color-orange) 50%,
+    transparent 100%);
+  box-shadow: 0 0 12px rgba(244, 152, 52, 0.45);
 }
 
 .intro .lead {
-  font-size: clamp(1.25rem, 1.1rem + 0.6vw, 1.7rem);
+  font-size: clamp(1.2rem, 1.05rem + 0.55vw, 1.6rem);
   font-weight: 500;
   color: var(--color-ink);
-  line-height: 1.85;
+  line-height: 1.7;
   text-wrap: balance;
-  max-inline-size: 720px;
+  max-inline-size: 700px;
   margin-inline: auto;
 }
 
@@ -863,24 +900,13 @@ p:last-child {
 
 /* ── Services ────────────────────────────────────────────────────────── */
 .services {
-  padding-block: var(--space-7);
+  padding-block: clamp(3rem, 4vw + 2rem, 5rem);
   background-color: var(--color-blue);
 }
 
 .services .section-title,
 .services .section-intro {
   color: var(--color-cream);
-}
-
-.services .section-header .section-title::after {
-  content: '';
-  display: block;
-  width: 48px;
-  height: 3px;
-  background: var(--color-orange);
-  margin-inline: auto;
-  margin-block-start: var(--space-3);
-  border-radius: 2px;
 }
 
 .services-grid {
@@ -955,7 +981,7 @@ p:last-child {
 }
 
 .service-body h3 {
-  font-size: clamp(1.1rem, 1rem + 0.5vw, 1.375rem);
+  font-size: var(--text-lead);
   font-weight: 600;
   color: var(--color-blue-deep);
 }
@@ -1074,7 +1100,7 @@ p:last-child {
 
 /* ── Why ─────────────────────────────────────────────────────────────── */
 .why {
-  padding-block: var(--space-7);
+  padding-block: clamp(3rem, 4vw + 2rem, 5rem);
   background-color: var(--color-cream);
 }
 
@@ -1100,8 +1126,8 @@ p:last-child {
 }
 
 .audience-card h4 {
-  font-size: 1.0625rem;
-  font-weight: 700;
+  font-size: var(--text-lead);
+  font-weight: 600;
   color: var(--color-blue-deep);
   margin-block-end: var(--space-2);
 }
@@ -1120,7 +1146,6 @@ p:last-child {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
   border-block-start: 3px solid var(--color-orange);
-  margin-block-start: var(--space-6);
 }
 
 .village-block .subsection-title {
@@ -1134,24 +1159,13 @@ p:last-child {
 
 /* ── Gallery ─────────────────────────────────────────────────────────── */
 .gallery {
-  padding-block: var(--space-7);
+  padding-block: clamp(3rem, 4vw + 2rem, 5rem);
   background-color: var(--color-blue);
 }
 
 .gallery .section-title,
 .gallery .section-sub {
   color: var(--color-cream);
-}
-
-.gallery .section-header .section-title::after {
-  content: '';
-  display: block;
-  width: 48px;
-  height: 3px;
-  background: var(--color-orange);
-  margin-inline: auto;
-  margin-block-start: var(--space-3);
-  border-radius: 2px;
 }
 
 .gallery-grid {
@@ -1278,7 +1292,7 @@ p:last-child {
 
 /* ── FAQ ─────────────────────────────────────────────────────────────── */
 .faq {
-  padding-block: var(--space-7);
+  padding-block: clamp(3rem, 4vw + 2rem, 5rem);
   background-color: var(--color-cream);
 }
 
@@ -1307,6 +1321,13 @@ p:last-child {
   list-style: none;
   padding-inline-end: var(--space-2);
   user-select: none;
+  transition: color 0.2s ease;
+}
+.faq-item summary:hover {
+  color: var(--color-orange-deep);
+}
+.faq-item[open] summary {
+  color: var(--color-blue-deep);
 }
 
 .faq-item summary::-webkit-details-marker {
@@ -1345,16 +1366,45 @@ p:last-child {
 
 /* ── Contact ─────────────────────────────────────────────────────────── */
 .contact {
-  background-color: var(--color-blue);
+  position: relative;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 0%,
+      rgba(244, 152, 52, 0.18) 0%,
+      rgba(244, 152, 52, 0.05) 40%,
+      transparent 70%),
+    linear-gradient(180deg,
+      var(--color-blue) 0%,
+      var(--color-blue-deep) 100%);
+  overflow: hidden;
+}
+
+/* Subtle shimmering top edge — separates contact from the section above */
+.contact::before {
+  content: '';
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  block-size: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(244, 152, 52, 0.5) 30%,
+    rgba(255, 247, 234, 0.6) 50%,
+    rgba(244, 152, 52, 0.5) 70%,
+    transparent 100%);
+  pointer-events: none;
 }
 
 .contact > .container {
-  padding-block: var(--space-7);
+  padding-block: clamp(3rem, 4vw + 2rem, 5rem);
+  position: relative;
+  z-index: 1;
 }
 
-.contact .section-title,
-.contact .section-sub {
+.contact .section-title {
   color: var(--color-cream);
+}
+.contact .section-sub {
+  color: rgba(255, 247, 234, 0.82);
 }
 
 .contact-grid {
@@ -1369,82 +1419,322 @@ p:last-child {
   flex-direction: column;
 }
 
-.map-embed-wrapper {
+.map-frame {
   position: relative;
   border-radius: var(--radius-md);
   overflow: hidden;
   flex: 1;
   min-block-size: 380px;
+  box-shadow:
+    0 24px 50px -22px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 247, 234, 0.10),
+    inset 0 0 0 1px rgba(255, 247, 234, 0.06);
+  isolation: isolate;
 }
 
-.map-embed-wrapper iframe {
+/* Soft inner vignette so the map blends into the section */
+.map-frame::after {
+  content: '';
   position: absolute;
   inset: 0;
-  inline-size: 100%;
-  block-size: 100%;
   pointer-events: none;
+  border-radius: inherit;
+  box-shadow: inset 0 0 80px rgba(26, 51, 64, 0.18);
+  z-index: 401;
 }
 
-.map-overlay-link {
+.map-canvas {
   position: absolute;
   inset: 0;
-  z-index: 1;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 50%,
+      rgba(44, 146, 191, 0.25) 0%,
+      rgba(31, 111, 147, 0.12) 60%,
+      transparent 100%),
+    var(--color-blue-deep);
+}
+
+/* Fallback shown until Leaflet renders tiles */
+.map-fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  color: rgba(255, 247, 234, 0.85);
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+.map-fallback img {
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.45));
+  opacity: 0.9;
+}
+.map-frame.is-ready .map-fallback {
+  opacity: 0;
+}
+
+/* "Open in Google Maps" pill — sits on top of the map */
+.map-cta {
+  position: absolute;
+  inset-block-end: var(--space-3);
+  inset-inline-start: var(--space-3);
+  z-index: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.95rem;
+  background: rgba(255, 247, 234, 0.96);
+  color: var(--color-ink);
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: var(--radius-pill);
+  text-decoration: none;
+  box-shadow:
+    0 8px 22px -8px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(26, 51, 64, 0.08);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+.map-cta:hover,
+.map-cta:focus-visible {
+  background: var(--color-cream);
+  transform: translateY(-1px);
+  box-shadow:
+    0 12px 28px -8px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(26, 51, 64, 0.12);
+}
+.map-cta svg {
+  color: var(--color-orange-deep);
+  flex-shrink: 0;
+}
+
+/* ── Custom Leaflet marker: brand-orange pin + pulsing ring ────────────── */
+.lev-yam-marker {
+  position: relative;
+  display: block;
+  width: 40px;
+  height: 52px;
   cursor: pointer;
+}
+.lev-yam-marker:focus-visible {
+  outline: none;
+}
+.lev-yam-marker:focus-visible .lym-pin {
+  filter: drop-shadow(0 0 0 3px rgba(244, 152, 52, 0.55))
+          drop-shadow(0 6px 10px rgba(0, 0, 0, 0.4));
+}
+
+/* Pulsing ring centered on the pin tip (the geographic point) */
+.lev-yam-marker .lym-pulse {
+  position: absolute;
+  inset-block-end: -6px;
+  inset-inline-start: 50%;
+  width: 36px;
+  height: 36px;
+  margin-inline-start: -18px;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    rgba(244, 152, 52, 0.60) 0%,
+    rgba(244, 152, 52, 0.28) 35%,
+    rgba(244, 152, 52, 0) 70%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.lev-yam-marker .lym-pin {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.35));
+  transform-origin: 50% 100%;
+  transition: transform 0.2s ease, filter 0.2s ease;
+  z-index: 2;
+}
+.lev-yam-marker:hover .lym-pin {
+  transform: scale(1.12);
+  filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.42));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .lev-yam-marker .lym-pulse {
+    animation: lym-pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes lym-pulse {
+    0%, 100% { transform: scale(0.7); opacity: 0.7; }
+    50%       { transform: scale(1.6); opacity: 0; }
+  }
+}
+
+/* Tone the Israel Hiking tiles to fit our palette: less green-saturated, slightly warmer */
+.map-canvas .leaflet-tile-pane {
+  filter: saturate(0.78) contrast(0.98) brightness(1.02) sepia(0.04);
+}
+
+/* Hide ugly default Leaflet attribution background, keep the link readable */
+.map-canvas .leaflet-control-attribution {
+  background: rgba(255, 247, 234, 0.85) !important;
+  color: var(--color-ink-soft) !important;
+  font-size: 10px !important;
+  padding: 2px 6px !important;
+  border-radius: var(--radius-sm) 0 0 0;
+}
+.map-canvas .leaflet-control-attribution a {
+  color: var(--color-ink) !important;
+}
+
+/* Custom-style the zoom buttons */
+.map-canvas .leaflet-control-zoom {
+  border: none !important;
+  box-shadow: 0 6px 16px -6px rgba(0, 0, 0, 0.35) !important;
+  border-radius: var(--radius-sm) !important;
+  overflow: hidden;
+}
+.map-canvas .leaflet-control-zoom a {
+  background: rgba(255, 247, 234, 0.95) !important;
+  color: var(--color-ink) !important;
+  border: none !important;
+  font-weight: 700 !important;
+  width: 32px !important;
+  height: 32px !important;
+  line-height: 32px !important;
+  transition: background 0.15s ease;
+}
+.map-canvas .leaflet-control-zoom a:hover {
+  background: var(--color-cream) !important;
+  color: var(--color-orange-deep) !important;
 }
 
 
 .contact-actions {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: center;
+  gap: var(--space-4);
 }
 
 .contact-intro {
-  font-size: clamp(1.1rem, 1rem + 0.4vw, 1.3rem);
+  font-size: var(--text-lead);
   color: rgba(255, 247, 234, 0.95);
   font-weight: 500;
   margin-block-end: 0;
-  line-height: 1.75;
+  line-height: 1.6;
   text-align: center;
+  position: relative;
+  padding-block-end: 0.6rem;
+  letter-spacing: 0.01em;
+}
+.contact-intro::after {
+  content: '';
+  display: block;
+  inline-size: 28px;
+  block-size: 2px;
+  margin: 0.6rem auto 0;
+  border-radius: var(--radius-pill);
+  background: rgba(244, 152, 52, 0.7);
 }
 
 .contact-buttons {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 
 .contact-actions .btn-block {
   text-align: center;
-  font-size: 1rem;
 }
 
 /* ── Contact action buttons ──────────────────────────────────────────── */
 .btn-contact {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  background: var(--color-cream);
-  border: 1px solid var(--color-line);
+  background: linear-gradient(135deg,
+    rgba(255, 247, 234, 1) 0%,
+    rgba(253, 240, 215, 1) 100%);
+  border: 1px solid rgba(232, 217, 184, 0.5);
   border-radius: var(--radius-md);
   color: var(--color-ink);
-  padding: 10px var(--space-4);
+  padding: 0.85rem 1.1rem;
   text-align: start;
-  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+  text-decoration: none;
+  box-shadow:
+    0 6px 18px -8px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease,
+    transform 0.2s ease,
+    box-shadow 0.25s ease;
   white-space: normal;
+  overflow: hidden;
 }
-.btn-contact:hover {
-  background: var(--color-line);
-  border-color: var(--color-line);
-  transform: translateX(-3px);
+/* Warm orange accent stripe on the inline-end edge */
+.btn-contact::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  inline-size: 3px;
+  background: linear-gradient(180deg,
+    transparent 0%,
+    var(--color-orange) 35%,
+    var(--color-orange-deep) 65%,
+    transparent 100%);
+  opacity: 0;
+  transition: opacity 0.25s ease;
 }
+.btn-contact:hover,
+.btn-contact:focus-visible {
+  background: linear-gradient(135deg,
+    rgba(255, 252, 244, 1) 0%,
+    rgba(254, 240, 210, 1) 100%);
+  border-color: rgba(244, 152, 52, 0.45);
+  transform: translateY(-2px);
+  box-shadow:
+    0 14px 28px -10px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  outline: none;
+}
+.btn-contact:hover::before,
+.btn-contact:focus-visible::before {
+  opacity: 1;
+}
+.btn-contact:active {
+  transform: translateY(-1px);
+  box-shadow:
+    0 6px 14px -6px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
 .btn-contact-icon {
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    rgba(244, 152, 52, 0.16) 0%,
+    rgba(244, 152, 52, 0.04) 60%,
+    transparent 100%);
+  transition: background 0.25s ease, transform 0.25s ease;
+}
+.btn-contact:hover .btn-contact-icon {
+  background: radial-gradient(circle,
+    rgba(244, 152, 52, 0.28) 0%,
+    rgba(244, 152, 52, 0.08) 60%,
+    transparent 100%);
+  transform: scale(1.05);
 }
 .btn-contact-icon img {
   width: 36px;
@@ -1458,22 +1748,25 @@ p:last-child {
   flex: 1;
 }
 .btn-contact-text strong {
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: var(--text-base);
+  font-weight: 700;
+  letter-spacing: -0.005em;
 }
 .btn-contact-text small {
-  font-size: 0.8125rem;
-  opacity: 0.7;
+  font-size: 0.825rem;
+  color: var(--color-ink-soft);
   font-weight: 400;
 }
 .btn-contact-arrow {
   flex-shrink: 0;
-  opacity: 0.5;
-  transition: opacity 0.15s, transform 0.15s;
+  color: var(--color-orange-deep);
+  opacity: 0.55;
+  transition: opacity 0.2s ease, transform 0.25s ease;
 }
-.btn-contact:hover .btn-contact-arrow {
+.btn-contact:hover .btn-contact-arrow,
+.btn-contact:focus-visible .btn-contact-arrow {
   opacity: 1;
-  transform: translateX(-3px);
+  transform: translateX(-5px);
 }
 
 /* ── Site Footer ─────────────────────────────────────────────────────── */
@@ -1701,9 +1994,9 @@ p:last-child {
     display: block;
   }
 
-  .map-embed-wrapper {
+  .map-frame {
     flex: none;
-    block-size: 260px;
+    block-size: 320px;
     min-block-size: unset;
   }
 
@@ -1766,10 +2059,6 @@ p:last-child {
 }
 
 @media (max-width: 640px) {
-  .container {
-    padding-inline: var(--space-4);
-  }
-
   .service-card {
     flex: 0 0 100%;
   }
@@ -1808,9 +2097,13 @@ p:last-child {
   }
 
   /* Map smaller on small screens */
-  .map-embed-wrapper {
-    block-size: 200px;
+  .map-frame {
+    block-size: 280px;
     min-block-size: unset;
+  }
+  .map-cta {
+    font-size: 0.78rem;
+    padding: 0.45rem 0.8rem;
   }
 
   .footer-inner {
@@ -1844,9 +2137,12 @@ p:last-child {
     display: none;
   }
 
-
   .faq-answer {
     padding-inline-end: var(--space-3);
+  }
+
+  .faq-item summary {
+    font-size: var(--text-base);
   }
 
   .lightbox {
@@ -1859,34 +2155,9 @@ p:last-child {
     block-size: 40px;
     inline-size: 40px;
   }
-}
 
-/* ── Responsive: Small mobile (≤400px) ──────────────────────────────── */
-@media (max-width: 400px) {
-  .gallery-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ── Mobile UX improvements ──────────────────────────────────────────── */
-@media (max-width: 640px) {
   .hero {
     min-block-size: 100svh;
-  }
-
-  .intro {
-    padding-block: var(--space-6);
-  }
-
-  .services,
-  .why,
-  .gallery,
-  .faq {
-    padding-block: var(--space-5);
-  }
-
-  .contact > .container {
-    padding-block: var(--space-5);
   }
 
   .village-block {
@@ -1904,19 +2175,15 @@ p:last-child {
     padding: var(--space-4);
   }
 
-  .faq-item summary {
-    font-size: var(--text-base);
-  }
-
-  .section-header {
-    margin-block-end: var(--space-4);
-  }
-
-  .section-title {
-    margin-block-end: var(--space-2);
-  }
-
   .why .container-narrow {
     margin-block-end: var(--space-4);
   }
 }
+
+/* ── Responsive: Small mobile (≤400px) ──────────────────────────────── */
+@media (max-width: 400px) {
+  .gallery-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
