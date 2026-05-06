@@ -434,66 +434,99 @@ p:last-child {
   inset-block-start: 0;
   inset-inline: 0;
   z-index: 999;
-  background-color: rgba(22, 43, 54, 0.97);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-block-end: 1px solid rgba(255, 247, 234, 0.08);
-  padding-block-start: var(--space-2);
-  padding-block-end: var(--space-3);
-  padding-inline: var(--space-4);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  background: rgba(12, 26, 36, 0.97);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: var(--space-2) var(--space-3) var(--space-3);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  border-block-end: 1px solid rgba(255, 247, 234, 0.07);
 }
 
 .mobile-nav[hidden] {
   display: none;
 }
 
-/* Header row: close button */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes nav-slide-down {
+    from { transform: translateY(-100%); opacity: 0; }
+    to   { transform: none; opacity: 1; }
+  }
+  .mobile-nav:not([hidden]) {
+    animation: nav-slide-down 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+
+/* Header row: brand + close button */
 .mobile-nav-header {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  margin-block-end: var(--space-1);
+  justify-content: space-between;
+  padding-block: var(--space-1);
+  margin-block-end: var(--space-2);
+  border-block-end: 1px solid rgba(255, 247, 234, 0.08);
+}
+
+.mobile-nav-brand {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  color: rgba(255, 247, 234, 0.55);
+  letter-spacing: 0.04em;
 }
 
 .mobile-nav-close {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  background: rgba(255, 247, 234, 0.08);
-  color: rgba(255, 247, 234, 0.6);
+  background: rgba(255, 247, 234, 0.10);
+  color: rgba(255, 247, 234, 0.80);
   transition: background 0.15s, color 0.15s;
   flex-shrink: 0;
 }
 .mobile-nav-close:hover {
-  background: rgba(255, 247, 234, 0.16);
+  background: rgba(255, 247, 234, 0.18);
   color: var(--color-cream);
 }
 
+/* 2-column grid — compact and tidy */
 .mobile-nav ul {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+/* Last item spans full width for balanced layout (5 items → 2+2+1) */
+.mobile-nav li:last-child {
+  grid-column: span 2;
 }
 
 .mobile-nav a {
-  display: block;
-  padding-block: 10px;
-  padding-inline: var(--space-2);
-  font-size: 0.9375rem;
-  font-weight: 500;
-  color: rgba(255, 247, 234, 0.78);
-  border-block-end: 1px solid rgba(255, 247, 234, 0.07);
-  transition: color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 10px var(--space-2);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: rgba(255, 247, 234, 0.82);
+  background: rgba(255, 247, 234, 0.06);
+  border: 1px solid rgba(255, 247, 234, 0.09);
+  border-radius: var(--radius-sm);
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
 }
-.mobile-nav a:hover {
+.mobile-nav a:hover,
+.mobile-nav a:focus {
   color: var(--color-cream);
+  background: rgba(255, 247, 234, 0.13);
+  border-color: rgba(255, 247, 234, 0.18);
 }
-.mobile-nav li:last-child a {
-  border-block-end: none;
+.mobile-nav a:focus-visible {
+  outline: 2px solid var(--color-orange);
+  outline-offset: 2px;
 }
 
 /* ── Hero ────────────────────────────────────────────────────────────── */
@@ -635,14 +668,14 @@ p:last-child {
 }
 
 .hero-lead {
-  font-size: clamp(1rem, 0.9rem + 0.4vw, 1.2rem);
+  font-size: clamp(0.75rem, 3.2vw, 1.1rem);
   line-height: 1.6;
   color: rgba(255, 247, 234, 0.95);
   margin-block-end: 0;
   margin-inline: auto;
   font-weight: 400;
-  max-inline-size: 460px;
-  letter-spacing: 0.02em;
+  white-space: nowrap;
+  letter-spacing: 0;
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
 }
 
@@ -694,29 +727,43 @@ p:last-child {
              drop-shadow(0 0    0px rgba(244,152, 52, 0.00)); }
     24%  { filter:
              drop-shadow(0 3px  8px rgba(  0,  0,  0, 0.25))
-             drop-shadow(0 0    3px rgba(244,152, 52, 0.08))
+             drop-shadow(0 0    4px rgba(244,152, 52, 0.10))
              drop-shadow(0 0    0px rgba(255,255,255, 0.00))
-             drop-shadow(0 0    5px rgba(244,152, 52, 0.03)); }
+             drop-shadow(0 0    6px rgba(244,152, 52, 0.05)); }
     58%  { filter:
              drop-shadow(0 4px 12px rgba(  0,  0,  0, 0.38))
-             drop-shadow(0 0   14px rgba(244,152, 52, 0.55))
-             drop-shadow(0 0    3px rgba(255,255,255, 0.20))
-             drop-shadow(0 0   28px rgba(244,152, 52, 0.22)); }
+             drop-shadow(0 0   18px rgba(244,152, 52, 0.65))
+             drop-shadow(0 0    4px rgba(255,255,255, 0.25))
+             drop-shadow(0 0   36px rgba(244,152, 52, 0.28)); }
     94%  { filter:
              drop-shadow(0 5px 16px rgba(  0,  0,  0, 0.48))
-             drop-shadow(0 0   20px rgba(244,152, 52, 0.85))
-             drop-shadow(0 0    7px rgba(255,255,255, 0.55))
-             drop-shadow(0 0   45px rgba(244,152, 52, 0.42)); }
+             drop-shadow(0 0   26px rgba(244,152, 52, 0.90))
+             drop-shadow(0 0   10px rgba(255,255,255, 0.65))
+             drop-shadow(0 0   58px rgba(244,152, 52, 0.50)); }
     97%  { filter:
-             drop-shadow(0 5px 18px rgba(  0,  0,  0, 0.50))
-             drop-shadow(0 0   28px rgba(244,152, 52, 1.00))
-             drop-shadow(0 0   14px rgba(255,255,255, 0.90))
-             drop-shadow(0 0   65px rgba(244,152, 52, 0.58)); }
+             drop-shadow(0 5px 18px rgba(  0,  0,  0, 0.52))
+             drop-shadow(0 0   38px rgba(244,152, 52, 1.00))
+             drop-shadow(0 0   18px rgba(255,255,255, 0.95))
+             drop-shadow(0 0   82px rgba(244,152, 52, 0.68)); }
     100% { filter:
              drop-shadow(0 6px 20px rgba(  0,  0,  0, 0.55))
-             drop-shadow(0 0   22px rgba(244,152, 52, 0.90))
-             drop-shadow(0 0    8px rgba(255,255,255, 0.55))
-             drop-shadow(0 0   50px rgba(244,152, 52, 0.45)); }
+             drop-shadow(0 0   26px rgba(244,152, 52, 0.92))
+             drop-shadow(0 0   10px rgba(255,255,255, 0.62))
+             drop-shadow(0 0   56px rgba(244,152, 52, 0.50)); }
+  }
+
+  /* Breathing glow after build — runs alongside logo-float */
+  @keyframes logo-glow-pulse {
+    0%, 100% { filter:
+                 drop-shadow(0 6px 20px rgba(  0,  0,  0, 0.55))
+                 drop-shadow(0 0   24px rgba(244,152, 52, 0.88))
+                 drop-shadow(0 0    9px rgba(255,255,255, 0.58))
+                 drop-shadow(0 0   52px rgba(244,152, 52, 0.46)); }
+    50%      { filter:
+                 drop-shadow(0 6px 24px rgba(  0,  0,  0, 0.58))
+                 drop-shadow(0 0   38px rgba(244,152, 52, 1.00))
+                 drop-shadow(0 0   16px rgba(255,255,255, 0.88))
+                 drop-shadow(0 0   74px rgba(244,152, 52, 0.62)); }
   }
 
   /* Mobile: same timeline, 2 shadows only to stay light on GPU */
@@ -726,13 +773,22 @@ p:last-child {
              drop-shadow(0 0    0px rgba(244,152, 52, 0.00)); }
     58%  { filter:
              drop-shadow(0 3px  8px rgba(  0,  0,  0, 0.38))
-             drop-shadow(0 0   10px rgba(244,152, 52, 0.55)); }
+             drop-shadow(0 0   12px rgba(244,152, 52, 0.62)); }
     97%  { filter:
-             drop-shadow(0 4px 10px rgba(  0,  0,  0, 0.48))
-             drop-shadow(0 0   22px rgba(244,152, 52, 1.00)); }
+             drop-shadow(0 4px 10px rgba(  0,  0,  0, 0.50))
+             drop-shadow(0 0   28px rgba(244,152, 52, 1.00)); }
     100% { filter:
-             drop-shadow(0 4px 12px rgba(  0,  0,  0, 0.50))
-             drop-shadow(0 0   16px rgba(244,152, 52, 0.85)); }
+             drop-shadow(0 4px 12px rgba(  0,  0,  0, 0.52))
+             drop-shadow(0 0   20px rgba(244,152, 52, 0.88)); }
+  }
+
+  @keyframes logo-glow-pulse-sm {
+    0%, 100% { filter:
+                 drop-shadow(0 4px 12px rgba(  0,  0,  0, 0.52))
+                 drop-shadow(0 0   18px rgba(244,152, 52, 0.85)); }
+    50%      { filter:
+                 drop-shadow(0 4px 14px rgba(  0,  0,  0, 0.60))
+                 drop-shadow(0 0   30px rgba(244,152, 52, 1.00)); }
   }
 
   /* Frames: slow, deliberate — each stage has room to breathe */
@@ -740,11 +796,12 @@ p:last-child {
   .lbf-2 { animation: logo-frame-in 1.2s ease-out 2.0s both; }
   .lbf-3 { animation: logo-frame-in 1.4s ease-out 3.8s both; }
 
-  /* Glow builds across the whole sequence, then the logo floats forever */
+  /* Glow builds, then breathes + floats forever */
   .hero-logo {
     animation:
       logo-glow-build 5.5s ease-in-out 0s both,
-      logo-float 5s ease-in-out 5.5s infinite;
+      logo-float      5s  ease-in-out  5.5s infinite,
+      logo-glow-pulse 3.5s ease-in-out 5.5s infinite;
   }
 
   /* Content enters immediately */
@@ -757,8 +814,9 @@ p:last-child {
 @media (prefers-reduced-motion: no-preference) and (max-width: 640px) {
   .hero-logo {
     animation:
-      logo-glow-build-sm 5.5s ease-in-out 0s both,
-      logo-float 5s ease-in-out 5.5s infinite;
+      logo-glow-build-sm  5.5s ease-in-out 0s   both,
+      logo-float          5s   ease-in-out  5.5s infinite,
+      logo-glow-pulse-sm  3.5s ease-in-out  5.5s infinite;
   }
 }
 
@@ -795,6 +853,11 @@ p:last-child {
   text-wrap: balance;
   max-inline-size: 720px;
   margin-inline: auto;
+}
+
+.intro-brand {
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 
@@ -1114,8 +1177,8 @@ p:last-child {
   transition: filter 0.25s ease, opacity 0.25s ease;
 }
 
-/* Items 1, 7, 13 span 2 cols — with 17 images this gives exactly 5×4=20 cells, no gaps */
-.gallery-item:nth-child(6n+1) {
+/* Items 1 and 10 span 2 cols — with 18 images: 16×1 + 2×2 = 20 units = 5 full rows, no gaps */
+.gallery-item:nth-child(9n+1) {
   grid-column: span 2;
 }
 
@@ -1739,14 +1802,9 @@ p:last-child {
     block-size: 100%;
   }
 
-  /* Override desktop 6n+1 — no col-spanning on mobile */
-  .gallery-item:nth-child(6n+1) {
+  /* Override desktop span — 18 items / 2 cols = 9 full rows, no gaps needed */
+  .gallery-item:nth-child(9n+1) {
     grid-column: span 1;
-  }
-
-  /* If total count is odd, last item spans full width to close the gap */
-  .gallery-item:last-child:nth-child(odd) {
-    grid-column: span 2;
   }
 
   /* Map smaller on small screens */
