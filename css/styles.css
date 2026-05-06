@@ -725,74 +725,117 @@ p:last-child {
     50%       { transform: translateX(-50%) translateY(7px); }
   }
 
-  /* ── Logo build: one logo materializing, glow climaxes at the end ─────── *
-   *  Frames cross-fade with soft blur — no pop, no scale jump.               *
-   *  Glow rises continuously through the build, then bursts at the climax.   *
+  /* ── Logo build: one slow inhale that culminates in the climax ────────── *
+   *  The whole build is the FIRST INHALE — chest rising, glow swelling,    *
+   *  scale expanding — peaking exactly at the climax burst. Then breath    *
+   *  takes over by EXHALING out of the climax position. No discontinuity.  *
+   *                                                                          *
+   *  Frames emerge from a soft haze (long blur curve) instead of hard-      *
+   *  fading; each layer is fully shaped by the time the next begins, so    *
+   *  the cross-fade reads as a single image coming into focus.             *
    *                                                                          *
    *  Timeline (5.5s total):                                                   *
-   *   h1  0.4 →  1.9s   island · palm · waves                                 *
-   *   h2  1.6 →  3.1s   + sun rises  (overlaps h1 settle)                    *
-   *   h3  2.9 →  4.4s   + לב ים text (overlaps h2 settle)                    *
-   *   4.4 →  4.9s       glow CLIMAX — bright burst                            *
-   *   4.9 →  5.5s       settle into pulse baseline                            *
+   *   h1   0.4 →  2.6s   island · palm · waves                                *
+   *   h2   1.5 →  3.7s   + sun rises                                         *
+   *   h3   2.7 →  4.9s   + לב ים text                                        *
+   *   4.84s              glow CLIMAX — bright burst (88%)                     *
+   *   4.84 → 5.5s        eases down to inhale-peak baseline (= breath peak)  *
+   *   5.5s → ∞           breath cycles forever (4.5s/cycle, exhale first)   *
    * ─────────────────────────────────────────────────────────────────────── */
 
+  /* Frame fade-in: emerges from haze. Blur stays thick while opacity rises,
+     then sharpens late — the layer "materializes" instead of cross-fading.
+     No transform here; .logo-build owns all scaling so layers stay aligned. */
   @keyframes logo-frame-in {
-    from { opacity: 0; filter: blur(5px); }
-    to   { opacity: 1; filter: blur(0); }
-  }
-  @keyframes logo-float {
-    0%, 100% { transform: translateY(0); }
-    50%       { transform: translateY(-10px); }
+    0%   { opacity: 0;    filter: blur(10px); }
+    35%  { opacity: 0.40; filter: blur(6px);  }
+    70%  { opacity: 0.85; filter: blur(2px);  }
+    100% { opacity: 1;    filter: blur(0);    }
   }
 
-  /* Glow builds smoothly with the frames, then climaxes at the end.
-     Timeline (% of 5.5s): h1 done=35%, h2 done=56%, h3 done=80%, peak=89%, settle=100% */
+  /* Build-phase rise: gradual lift through the second half of the build,
+     reaching the breath inhale-peak position exactly at t=5.5s. */
+  @keyframes logo-build-rise {
+    0%, 50% { transform: translateY(0); }
+    100%    { transform: translateY(-8px); }
+  }
+
+  /* Build-phase expand: gradual scale-up through the second half of the
+     build, landing at the breath inhale-peak scale exactly at t=5.5s. */
+  @keyframes logo-build-expand {
+    0%, 50% { transform: scale(1); }
+    100%    { transform: scale(1.022); }
+  }
+
+  /* Post-build float: peak at 0%/100%, trough at 50%. So at t=5.5s we ARE
+     at the peak (matching where the build left us); first half-cycle is
+     the EXHALE down, second half is the INHALE back up. */
+  @keyframes logo-float {
+    0%, 100% { transform: translateY(-8px); }
+    50%       { transform: translateY(0); }
+  }
+
+  /* Glow build: ramps continuously through the materialization, bursts at
+     88%, then eases the last 12% down to the breath inhale-peak values
+     (= breath glow 0%/100%). At 5.5s the filter handoff is invisible. */
   @keyframes logo-glow-build {
     0%   { filter:
              drop-shadow(0 2px  6px rgba(  0,  0,  0, 0.20))
              drop-shadow(0 0    0px rgba(244,152, 52, 0.00))
              drop-shadow(0 0    0px rgba(255,255,255, 0.00))
              drop-shadow(0 0    0px rgba(244,152, 52, 0.00)); }
-    35%  { filter:
-             drop-shadow(0 3px  8px rgba(  0,  0,  0, 0.26))
-             drop-shadow(0 0    6px rgba(244,152, 52, 0.18))
-             drop-shadow(0 0    0px rgba(255,255,255, 0.00))
-             drop-shadow(0 0   10px rgba(244,152, 52, 0.10)); }
-    56%  { filter:
-             drop-shadow(0 4px 11px rgba(  0,  0,  0, 0.34))
-             drop-shadow(0 0   14px rgba(244,152, 52, 0.50))
-             drop-shadow(0 0    3px rgba(255,255,255, 0.18))
-             drop-shadow(0 0   28px rgba(244,152, 52, 0.22)); }
-    80%  { filter:
+    44%  { filter:
+             drop-shadow(0 3px  9px rgba(  0,  0,  0, 0.28))
+             drop-shadow(0 0    8px rgba(244,152, 52, 0.22))
+             drop-shadow(0 0    1px rgba(255,255,255, 0.05))
+             drop-shadow(0 0   14px rgba(244,152, 52, 0.12)); }
+    62%  { filter:
+             drop-shadow(0 4px 12px rgba(  0,  0,  0, 0.36))
+             drop-shadow(0 0   16px rgba(244,152, 52, 0.55))
+             drop-shadow(0 0    4px rgba(255,255,255, 0.22))
+             drop-shadow(0 0   32px rgba(244,152, 52, 0.26)); }
+    78%  { filter:
              drop-shadow(0 5px 15px rgba(  0,  0,  0, 0.44))
-             drop-shadow(0 0   24px rgba(244,152, 52, 0.82))
-             drop-shadow(0 0    9px rgba(255,255,255, 0.55))
-             drop-shadow(0 0   50px rgba(244,152, 52, 0.42)); }
-    89%  { filter:
-             drop-shadow(0 6px 20px rgba(  0,  0,  0, 0.55))
-             drop-shadow(0 0   42px rgba(244,152, 52, 1.00))
-             drop-shadow(0 0   22px rgba(255,255,255, 1.00))
-             drop-shadow(0 0   90px rgba(244,152, 52, 0.78)); }
+             drop-shadow(0 0   26px rgba(244,152, 52, 0.85))
+             drop-shadow(0 0   10px rgba(255,255,255, 0.60))
+             drop-shadow(0 0   54px rgba(244,152, 52, 0.46)); }
+    88%  { filter:
+             drop-shadow(0 6px 22px rgba(  0,  0,  0, 0.58))
+             drop-shadow(0 0   46px rgba(244,152, 52, 1.00))
+             drop-shadow(0 0   26px rgba(255,255,255, 1.00))
+             drop-shadow(0 0   96px rgba(244,152, 52, 0.82)); }
     100% { filter:
-             drop-shadow(0 6px 20px rgba(  0,  0,  0, 0.55))
-             drop-shadow(0 0   26px rgba(244,152, 52, 0.92))
-             drop-shadow(0 0   10px rgba(255,255,255, 0.62))
-             drop-shadow(0 0   56px rgba(244,152, 52, 0.50)); }
+             drop-shadow(0 6px 22px rgba(  0,  0,  0, 0.58))
+             drop-shadow(0 0   38px rgba(244,152, 52, 1.00))
+             drop-shadow(0 0   16px rgba(255,255,255, 0.85))
+             drop-shadow(0 0   78px rgba(244,152, 52, 0.62)); }
   }
 
-  /* Breathing glow after build — runs alongside logo-float */
-  @keyframes logo-glow-pulse {
+  /* ── Breathing (post-climax) ─────────────────────────────────────────────
+     Slow sinusoidal breath: 4.5s per cycle (~13 bpm). Phase-shifted so 0%
+     is the INHALE PEAK — at t=5.5s we land here directly from the climax,
+     no jump. First half-cycle exhales (dim, contract, fall), second half
+     inhales back to peak. Float / scale / glow all share the same phase. */
+
+  /* Scale breath on .logo-build (parent of frames). Peak at 0%/100%. */
+  @keyframes logo-breathe-scale {
+    0%, 100% { transform: scale(1.022); }   /* inhale peak — matches build end */
+    50%      { transform: scale(1); }       /* exhale rest */
+  }
+
+  /* Glow breath on .hero-logo. 0%/100% values are IDENTICAL to the build
+     glow's 100% values, so the handoff at 5.5s is seamless. */
+  @keyframes logo-breathe-glow {
     0%, 100% { filter:
-                 drop-shadow(0 6px 20px rgba(  0,  0,  0, 0.55))
-                 drop-shadow(0 0   24px rgba(244,152, 52, 0.88))
-                 drop-shadow(0 0    9px rgba(255,255,255, 0.58))
-                 drop-shadow(0 0   52px rgba(244,152, 52, 0.46)); }
-    50%      { filter:
-                 drop-shadow(0 6px 24px rgba(  0,  0,  0, 0.58))
+                 drop-shadow(0 6px 22px rgba(  0,  0,  0, 0.58))
                  drop-shadow(0 0   38px rgba(244,152, 52, 1.00))
-                 drop-shadow(0 0   16px rgba(255,255,255, 0.88))
-                 drop-shadow(0 0   74px rgba(244,152, 52, 0.62)); }
+                 drop-shadow(0 0   16px rgba(255,255,255, 0.85))
+                 drop-shadow(0 0   78px rgba(244,152, 52, 0.62)); }
+    50%      { filter:
+                 drop-shadow(0 6px 20px rgba(  0,  0,  0, 0.55))
+                 drop-shadow(0 0   22px rgba(244,152, 52, 0.78))
+                 drop-shadow(0 0    8px rgba(255,255,255, 0.48))
+                 drop-shadow(0 0   48px rgba(244,152, 52, 0.40)); }
   }
 
   /* Mobile: same timeline, 2 shadows only to stay light on GPU */
@@ -800,41 +843,50 @@ p:last-child {
     0%   { filter:
              drop-shadow(0 2px  4px rgba(  0,  0,  0, 0.15))
              drop-shadow(0 0    0px rgba(244,152, 52, 0.00)); }
-    56%  { filter:
+    62%  { filter:
              drop-shadow(0 3px  7px rgba(  0,  0,  0, 0.32))
-             drop-shadow(0 0   10px rgba(244,152, 52, 0.50)); }
-    80%  { filter:
+             drop-shadow(0 0   12px rgba(244,152, 52, 0.55)); }
+    78%  { filter:
              drop-shadow(0 4px  9px rgba(  0,  0,  0, 0.42))
-             drop-shadow(0 0   18px rgba(244,152, 52, 0.78)); }
-    89%  { filter:
-             drop-shadow(0 4px 12px rgba(  0,  0,  0, 0.52))
-             drop-shadow(0 0   34px rgba(244,152, 52, 1.00)); }
+             drop-shadow(0 0   20px rgba(244,152, 52, 0.82)); }
+    88%  { filter:
+             drop-shadow(0 4px 13px rgba(  0,  0,  0, 0.55))
+             drop-shadow(0 0   38px rgba(244,152, 52, 1.00)); }
     100% { filter:
-             drop-shadow(0 4px 12px rgba(  0,  0,  0, 0.52))
-             drop-shadow(0 0   20px rgba(244,152, 52, 0.88)); }
+             drop-shadow(0 4px 13px rgba(  0,  0,  0, 0.55))
+             drop-shadow(0 0   30px rgba(244,152, 52, 1.00)); }
   }
 
-  @keyframes logo-glow-pulse-sm {
+  @keyframes logo-breathe-glow-sm {
     0%, 100% { filter:
-                 drop-shadow(0 4px 12px rgba(  0,  0,  0, 0.52))
-                 drop-shadow(0 0   18px rgba(244,152, 52, 0.85)); }
-    50%      { filter:
-                 drop-shadow(0 4px 14px rgba(  0,  0,  0, 0.60))
+                 drop-shadow(0 4px 13px rgba(  0,  0,  0, 0.55))
                  drop-shadow(0 0   30px rgba(244,152, 52, 1.00)); }
+    50%      { filter:
+                 drop-shadow(0 4px 12px rgba(  0,  0,  0, 0.52))
+                 drop-shadow(0 0   16px rgba(244,152, 52, 0.78)); }
   }
 
-  /* Frames cross-fade: each one's tail overlaps the next one's head, so
-     the build feels like one logo gradually coming into focus, not three pops. */
-  .lbf-1 { animation: logo-frame-in 1.5s cubic-bezier(0.22, 1, 0.36, 1) 0.4s both; }
-  .lbf-2 { animation: logo-frame-in 1.5s cubic-bezier(0.22, 1, 0.36, 1) 1.6s both; }
-  .lbf-3 { animation: logo-frame-in 1.5s cubic-bezier(0.22, 1, 0.36, 1) 2.9s both; }
+  /* Frames materialize one after another. Each new layer emerges from
+     a haze while the previous stays sharp underneath, so the cross-fade
+     reads as a single image gaining detail (not three layers stacking). */
+  .lbf-1 { animation: logo-frame-in 2.2s ease-in-out 0.3s both; }
+  .lbf-2 { animation: logo-frame-in 2.2s ease-in-out 1.4s both; }
+  .lbf-3 { animation: logo-frame-in 2.2s ease-in-out 2.5s both; }
 
-  /* Glow builds, then breathes + floats forever */
+  /* Build-phase transforms reach the inhale-peak by t=5.5s. After build
+     ends, the breath animations pick up FROM that peak — no jump. */
+  .logo-build {
+    animation:
+      logo-build-expand   5.5s ease-in-out 0s   both,
+      logo-breathe-scale  4.5s ease-in-out 5.5s infinite;
+  }
+
   .hero-logo {
     animation:
-      logo-glow-build 5.5s ease-in-out 0s both,
-      logo-float      5s  ease-in-out  5.5s infinite,
-      logo-glow-pulse 3.5s ease-in-out 5.5s infinite;
+      logo-glow-build   5.5s ease-in-out 0s   both,
+      logo-build-rise   5.5s ease-in-out 0s   both,
+      logo-float        4.5s ease-in-out 5.5s infinite,
+      logo-breathe-glow 4.5s ease-in-out 5.5s infinite;
   }
 
   /* Content enters immediately */
@@ -843,13 +895,14 @@ p:last-child {
   .hero-ctas  { animation: hero-enter 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.50s both; }
 }
 
-/* Mobile: lighter glow animation */
+/* Mobile: lighter glow animation, same breathing rhythm and seamless handoff */
 @media (prefers-reduced-motion: no-preference) and (max-width: 640px) {
   .hero-logo {
     animation:
-      logo-glow-build-sm  5.5s ease-in-out 0s   both,
-      logo-float          5s   ease-in-out  5.5s infinite,
-      logo-glow-pulse-sm  3.5s ease-in-out  5.5s infinite;
+      logo-glow-build-sm   5.5s ease-in-out 0s   both,
+      logo-build-rise      5.5s ease-in-out 0s   both,
+      logo-float           4.5s ease-in-out 5.5s infinite,
+      logo-breathe-glow-sm 4.5s ease-in-out 5.5s infinite;
   }
 }
 

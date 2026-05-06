@@ -1,6 +1,6 @@
 # Lev Yam — Project Tracker
 
-**Last updated:** April 2026
+**Last updated:** May 2026
 **Website:** levyam.com
 **Status:** Code complete — assets & hosting needed before launch
 
@@ -29,7 +29,7 @@
 | Map embed | Google Maps iframe + deep link |
 | Social links | Instagram + Facebook in header and footer |
 | JSON-LD schema | FAQPage + LocalBusiness structured data |
-| Meta / OG tags | Title, description, og:image, og:locale |
+| Meta / OG tags | Title, description (aligned across `<meta name="description">` and `og:description`), og:image, og:locale |
 | robots.txt | Allows crawling |
 | Mobile responsive | All breakpoints: 900px, 800px, 700px, 640px, 400px |
 | Animations | Reveal on scroll, reduced-motion respected |
@@ -53,7 +53,7 @@
 | `weekend.webp` | `img/services/` | Friday/Saturday atmosphere (800×600, ≤80 KB) |
 | `space-overview.webp` | `img/space/` | Pergola + sea, wide angle (900×700, ≤90 KB) |
 | `01–12-large.webp` | `img/gallery/` | 12 images across 4 themes (1600×1200, ≤180 KB each) |
-| `og-image.jpg` | `assets/` | Social preview — logo + tagline + hero (1200×630, ≤200 KB) |
+| `og-image.jpg` | `assets/` | Social preview — logo + tagline + hero (**must be 1200×630, ≤200 KB**; current `logo-full.png` placeholder is 600×599 square) |
 
 **Photography rules:** Every service card photo must show at least one person. Natural light always preferred.
 
