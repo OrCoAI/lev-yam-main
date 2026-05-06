@@ -1524,6 +1524,22 @@ p:last-child {
   .contact-grid {
     grid-template-columns: 1fr;
     gap: var(--space-6);
+    align-items: start;
+  }
+
+  .contact-map {
+    display: block;
+  }
+
+  .map-embed-wrapper {
+    flex: none;
+    block-size: 260px;
+    min-block-size: unset;
+  }
+
+  .contact-actions {
+    justify-content: flex-start;
+    gap: var(--space-4);
   }
 
   .space-media {
@@ -1686,10 +1702,6 @@ p:last-child {
 
   .village-block {
     padding: var(--space-4);
-  }
-
-  .map-embed-wrapper {
-    min-block-size: 260px;
   }
 
   .wa-float {
