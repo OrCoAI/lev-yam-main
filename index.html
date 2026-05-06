@@ -91,14 +91,50 @@
 
   <a class="skip-link" href="#main-content">דלג לתוכן הראשי</a>
 
-  <!-- ═══ HEADER ═══ -->
-  <header class="site-header" id="site-header">
-    <div class="header-inner">
-      <a href="#top" class="logo" aria-label="לב ים — דף הבית">
-        <img src="img/logo/logo-full.png" alt="לב ים" width="64" height="64">
-      </a>
+  <main id="main-content">
 
-      <nav class="primary-nav" aria-label="תפריט ראשי">
+    <!-- ═══ HERO ═══ -->
+    <section class="hero" id="top" aria-labelledby="hero-title">
+
+      <div class="hero-topbar">
+        <a href="#top" class="logo" aria-label="לב ים — דף הבית">
+          <img src="img/logo/logo-full.png" alt="לב ים" width="52" height="52">
+        </a>
+
+        <nav class="primary-nav" aria-label="תפריט ראשי">
+          <ul>
+            <li><a href="#services">מה קורה בלב ים</a></li>
+            <li><a href="#why">למה לב ים</a></li>
+            <li><a href="#gallery">גלריה</a></li>
+            <li><a href="#faq">שאלות ותשובות</a></li>
+            <li><a href="#contact">צור קשר</a></li>
+          </ul>
+        </nav>
+
+        <div class="header-social">
+          <a href="https://wa.me/972506669138?text=שלום%2C%20אשמח%20לפרטים%20על%20לב%20ים" target="_blank" rel="noopener" aria-label="לב ים בוואטסאפ">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.978-1.306A9.966 9.966 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+          </a>
+          <a href="mailto:info@levyam.com" aria-label="שלחו אימייל ללב ים">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg>
+          </a>
+          <a href="https://www.google.com/maps/place/Lev+Yam+-+%D7%9C%D7%91+%D7%99%D7%9D,+%D7%9B%D7%91%D7%99%D7%A9,+Jisr+az-Zarqa%E2%80%AD/@32.0867773,34.76303,3020m/data=!3m1!1e3!4m2!3m1!1s0x151d0d00273dd215:0x2c5f32d242e69755?entry=ttu" target="_blank" rel="noopener" aria-label="נווט ללב ים במפות">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+          </a>
+          <a href="https://www.instagram.com/levyam_" target="_blank" rel="noopener" aria-label="לב ים באינסטגרם">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none"/></svg>
+          </a>
+          <a href="https://m.facebook.com/profile.php?id=61585790351617" target="_blank" rel="noopener" aria-label="לב ים בפייסבוק">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+          </a>
+        </div>
+
+        <button class="nav-toggle" aria-label="פתיחת תפריט" aria-expanded="false" aria-controls="mobile-nav">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+
+      <nav id="mobile-nav" class="mobile-nav" hidden aria-label="תפריט נייד">
         <ul>
           <li><a href="#services">מה קורה בלב ים</a></li>
           <li><a href="#why">למה לב ים</a></li>
@@ -108,64 +144,6 @@
         </ul>
       </nav>
 
-      <div class="header-social">
-        <a href="https://wa.me/972506669138?text=שלום%2C%20אשמח%20לפרטים%20על%20לב%20ים" target="_blank" rel="noopener" aria-label="לב ים בוואטסאפ">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
-            <path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.978-1.306A9.966 9.966 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2z" fill="none" stroke="currentColor" stroke-width="1.5"/>
-          </svg>
-        </a>
-        <a href="tel:+972506669138" aria-label="התקשרו ללב ים">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-            <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.95 10.5a19.79 19.79 0 01-3.07-8.63A2 2 0 012.87 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L7.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
-          </svg>
-        </a>
-        <a href="mailto:info@levyam.com" aria-label="שלחו אימייל ללב ים">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-            <rect x="2" y="4" width="20" height="16" rx="2"/>
-            <path d="M2 7l10 7 10-7"/>
-          </svg>
-        </a>
-        <a href="https://maps.app.goo.gl/fFtCZYwK1KEcmFud6" target="_blank" rel="noopener" aria-label="נווט ללב ים במפות">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
-            <circle cx="12" cy="9" r="2.5"/>
-          </svg>
-        </a>
-        <a href="https://www.instagram.com/levyam_" target="_blank" rel="noopener" aria-label="לב ים באינסטגרם">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-            <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
-            <circle cx="12" cy="12" r="4"/>
-            <circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none"/>
-          </svg>
-        </a>
-        <a href="https://m.facebook.com/profile.php?id=61585790351617" target="_blank" rel="noopener" aria-label="לב ים בפייסבוק">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
-            <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/>
-          </svg>
-        </a>
-      </div>
-
-      <button class="nav-toggle" aria-label="פתיחת תפריט" aria-expanded="false" aria-controls="mobile-nav">
-        <span></span><span></span><span></span>
-      </button>
-    </div>
-
-    <nav id="mobile-nav" class="mobile-nav" hidden aria-label="תפריט נייד">
-      <ul>
-        <li><a href="#services">מה קורה בלב ים</a></li>
-        <li><a href="#why">למה לב ים</a></li>
-        <li><a href="#gallery">גלריה</a></li>
-        <li><a href="#faq">שאלות ותשובות</a></li>
-        <li><a href="#contact">צור קשר</a></li>
-      </ul>
-    </nav>
-  </header>
-
-  <main id="main-content">
-
-    <!-- ═══ HERO ═══ -->
-    <section class="hero" id="top" aria-labelledby="hero-title">
       <div class="hero-media">
         <video class="hero-video"
                autoplay muted loop playsinline

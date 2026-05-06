@@ -1,24 +1,5 @@
 'use strict';
 
-/* ── Sticky header ────────────────────────────────────────────────────── */
-(function () {
-  const header = document.getElementById('site-header');
-  if (!header) return;
-
-  const THRESHOLD = 80;
-  let ticking = false;
-
-  function onScroll() {
-    if (ticking) return;
-    ticking = true;
-    requestAnimationFrame(function () {
-      header.classList.toggle('is-scrolled', window.scrollY > THRESHOLD);
-      ticking = false;
-    });
-  }
-
-  window.addEventListener('scroll', onScroll, { passive: true });
-})();
 
 /* ── Mobile menu toggle ───────────────────────────────────────────────── */
 (function () {
