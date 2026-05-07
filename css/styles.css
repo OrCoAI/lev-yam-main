@@ -966,9 +966,29 @@ p:last-child {
   .hero-ctas  { animation: hero-enter 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.50s both; }
 }
 
-/* Mobile: lighter glow animation, same breathing rhythm and seamless handoff */
+/* ── Mobile hero logo: iOS WebKit fixes ──────────────────────────────────
+   All iOS browsers (Safari, Chrome, Firefox) run on WebKit/WKWebView, which
+   has two issues with the desktop approach:
+   1. filter:blur() on child elements prevents the parent's filter:drop-shadow()
+      from rendering — the GPU compositor discards the parent filter when any
+      child simultaneously holds a filter value (nested animated-filter bug).
+   2. will-change:transform promotes the element to its own compositing layer,
+      which on iOS WebKit blocks filter animation from compositing correctly.
+   Fix: opacity-only frame animation (no blur) + will-change:auto on mobile.  */
+
+@keyframes logo-frame-in-mobile {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
 @media (prefers-reduced-motion: no-preference) and (max-width: 640px) {
+  /* No blur on frames — removes the nested-filter compositor conflict */
+  .lbf-1 { animation: logo-frame-in-mobile 2.2s ease-in-out 0.3s  both; }
+  .lbf-2 { animation: logo-frame-in-mobile 2.2s ease-in-out 1.4s  both; }
+  .lbf-3 { animation: logo-frame-in-mobile 2.2s ease-in-out 2.5s  both; }
+
   .hero-logo {
+    will-change: auto; /* no pre-promoted layer — lets filter animate freely */
     animation:
       logo-glow-build-sm   5.5s ease-in-out 0s   both,
       logo-build-rise      5.5s ease-in-out 0s   both,
@@ -979,6 +999,14 @@ p:last-child {
 
 @media (prefers-reduced-motion: reduce) {
   .hero-video { display: none; }
+  /* Static glow so the logo always glows even without animation */
+  .hero-logo {
+    filter:
+      drop-shadow(0 4px 14px rgba(  0,  0,  0, 0.45))
+      drop-shadow(0 0   18px rgba(244,152, 52, 0.80))
+      drop-shadow(0 0    6px rgba(255,255,255, 0.45))
+      drop-shadow(0 0   40px rgba(244,152, 52, 0.35));
+  }
 }
 
 /* ── Intro ───────────────────────────────────────────────────────────── */
