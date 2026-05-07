@@ -888,38 +888,53 @@ p:last-child {
                  drop-shadow(0 0   48px rgba(244,152, 52, 0.40)); }
   }
 
-  /* Mobile: lighter than desktop (3 shadows instead of 4) but visibly glowing */
+  /* Mobile: same 4-shadow structure as desktop for smooth interpolation,
+     ~65% of desktop intensity — clearly glowing but not overpowering. */
   @keyframes logo-glow-build-sm {
     0%   { filter:
              drop-shadow(0 2px  4px rgba(  0,  0,  0, 0.15))
+             drop-shadow(0 0    0px rgba(244,152, 52, 0.00))
+             drop-shadow(0 0    0px rgba(255,255,255, 0.00))
              drop-shadow(0 0    0px rgba(244,152, 52, 0.00)); }
-    62%  { filter:
-             drop-shadow(0 3px  7px rgba(  0,  0,  0, 0.32))
-             drop-shadow(0 0    8px rgba(255,255,255, 0.55))
-             drop-shadow(0 0   20px rgba(244,152, 52, 0.70)); }
-    78%  { filter:
-             drop-shadow(0 4px  9px rgba(  0,  0,  0, 0.42))
+    24%  { filter:
+             drop-shadow(0 2px  6px rgba(  0,  0,  0, 0.20))
+             drop-shadow(0 0    2px rgba(244,152, 52, 0.05))
+             drop-shadow(0 0    0px rgba(255,255,255, 0.00))
+             drop-shadow(0 0    4px rgba(244,152, 52, 0.02)); }
+    58%  { filter:
+             drop-shadow(0 3px  8px rgba(  0,  0,  0, 0.30))
+             drop-shadow(0 0   10px rgba(244,152, 52, 0.45))
+             drop-shadow(0 0    2px rgba(255,255,255, 0.15))
+             drop-shadow(0 0   22px rgba(244,152, 52, 0.18)); }
+    94%  { filter:
+             drop-shadow(0 4px 14px rgba(  0,  0,  0, 0.45))
+             drop-shadow(0 0   18px rgba(244,152, 52, 0.78))
+             drop-shadow(0 0    7px rgba(255,255,255, 0.48))
+             drop-shadow(0 0   40px rgba(244,152, 52, 0.36)); }
+    97%  { filter:
+             drop-shadow(0 5px 16px rgba(  0,  0,  0, 0.50))
+             drop-shadow(0 0   26px rgba(244,152, 52, 0.95))
              drop-shadow(0 0   12px rgba(255,255,255, 0.72))
-             drop-shadow(0 0   32px rgba(244,152, 52, 0.92)); }
-    88%  { filter:
-             drop-shadow(0 4px 13px rgba(  0,  0,  0, 0.55))
-             drop-shadow(0 0   14px rgba(255,255,255, 0.88))
-             drop-shadow(0 0   52px rgba(244,152, 52, 1.00)); }
+             drop-shadow(0 0   56px rgba(244,152, 52, 0.50)); }
     100% { filter:
-             drop-shadow(0 4px 13px rgba(  0,  0,  0, 0.55))
-             drop-shadow(0 0   13px rgba(255,255,255, 0.78))
-             drop-shadow(0 0   46px rgba(244,152, 52, 1.00)); }
+             drop-shadow(0 5px 18px rgba(  0,  0,  0, 0.52))
+             drop-shadow(0 0   22px rgba(244,152, 52, 0.85))
+             drop-shadow(0 0    9px rgba(255,255,255, 0.55))
+             drop-shadow(0 0   48px rgba(244,152, 52, 0.42)); }
   }
 
   @keyframes logo-breathe-glow-sm {
+    /* Peak matches build's 100% exactly — seamless handoff at 5.5s */
     0%, 100% { filter:
-                 drop-shadow(0 4px 13px rgba(  0,  0,  0, 0.55))
-                 drop-shadow(0 0   13px rgba(255,255,255, 0.78))
-                 drop-shadow(0 0   46px rgba(244,152, 52, 1.00)); }
+                 drop-shadow(0 5px 18px rgba(  0,  0,  0, 0.52))
+                 drop-shadow(0 0   22px rgba(244,152, 52, 0.85))
+                 drop-shadow(0 0    9px rgba(255,255,255, 0.55))
+                 drop-shadow(0 0   48px rgba(244,152, 52, 0.42)); }
     50%      { filter:
-                 drop-shadow(0 4px 12px rgba(  0,  0,  0, 0.52))
-                 drop-shadow(0 0    7px rgba(255,255,255, 0.45))
-                 drop-shadow(0 0   28px rgba(244,152, 52, 0.78)); }
+                 drop-shadow(0 5px 15px rgba(  0,  0,  0, 0.48))
+                 drop-shadow(0 0   15px rgba(244,152, 52, 0.60))
+                 drop-shadow(0 0    5px rgba(255,255,255, 0.32))
+                 drop-shadow(0 0   34px rgba(244,152, 52, 0.26)); }
   }
 
   /* Frames materialize one after another. Each new layer emerges from
