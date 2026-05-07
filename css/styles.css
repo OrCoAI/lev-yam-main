@@ -2014,8 +2014,8 @@ p:last-child {
 /* ── WhatsApp Float ──────────────────────────────────────────────────── */
 .wa-float {
   position: fixed;
-  inset-block-end: 20px;
-  inset-inline-end: 20px;
+  bottom: 20px;
+  right: 20px; /* physical right — correct for RTL and LTR */
   z-index: 9999;
   inline-size: 56px;
   block-size: 56px;
@@ -2200,13 +2200,13 @@ p:last-child {
     margin-inline-start: 0;
   }
 
+  /* Social icons are in the footer — hide them in the topbar on mobile */
   .header-social {
-    margin-inline-start: 0;
-    order: 1;
+    display: none;
   }
 
   .lang-toggle {
-    order: 2;
+    order: 1;
     margin-inline-start: 0;
   }
   .lang-opt {
@@ -2330,8 +2330,8 @@ p:last-child {
   }
 
   .wa-float {
-    inset-block-end: 16px;
-    inset-inline-end: 16px;
+    bottom: 16px;
+    right: 16px;
     inline-size: 52px;
     block-size: 52px;
   }
