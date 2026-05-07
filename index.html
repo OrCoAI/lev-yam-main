@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#2c92bf">
 
-  <title>לב ים | מרחב יזמות עסקית חברתית על קו המים</title>
+  <title>לב ים | מרחב יזמות עסקית חברתית על קו המים</title>
   <meta name="description" content="מרחב ליזמות עסקית חברתית המבוסס על שותפות, פשטות וקבלה.">
 
-  <meta property="og:title" content="לב ים | מרחב יזמות עסקית חברתית על קו המים">
+  <meta property="og:title" content="לב ים | מרחב יזמות עסקית חברתית על קו המים">
   <meta property="og:description" content="מרחב ליזמות עסקית חברתית המבוסס על שותפות, פשטות וקבלה.">
   <meta property="og:image" content="https://orcoai.github.io/lev-yam-main/img/logo/logo-full.png">
   <meta property="og:image:width" content="1200">
@@ -28,6 +28,15 @@
 
   <link rel="stylesheet" href="css/styles.css">
 
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem('lev-yam-lang');
+        if (saved === 'ar') document.documentElement.lang = 'ar';
+      } catch (e) {}
+    })();
+  </script>
+
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -35,8 +44,8 @@
     "mainEntity": [
       {
         "@type": "Question",
-        "name": "איך מגיעים ללב ים?",
-        "acceptedAnswer": { "@type": "Answer", "text": "ג׳יסר א-זרקא נגישה ברכב מכביש 4, כשעה מתל אביב וכ-25 דקות מחיפה. בירידה בכפר לכיוון הים מגיעים לכפר הדייגים. יש חניה מסודרת בכניסה. הכי פשוט, שימו בוויז לב ים ותמצאו אותנו." }
+        "name": "איך מגיעים ללב ים?",
+        "acceptedAnswer": { "@type": "Answer", "text": "ג׳יסר א-זרקא נגישה ברכב מכביש 4, כשעה מתל אביב וכ-25 דקות מחיפה. בירידה בכפר לכיוון הים מגיעים לכפר הדייגים. יש חניה מסודרת בכניסה. הכי פשוט, שימו בוויז לב ים ותמצאו אותנו." }
       },
       {
         "@type": "Question",
@@ -61,7 +70,7 @@
       {
         "@type": "Question",
         "name": "מה לוח הזמנים של ימי הקהילה?",
-        "acceptedAnswer": { "@type": "Answer", "text": "ימי הקהילה מתקיימים בימי ראשון. כל הפרטים עוברים בקבוצת הוואטסאפ של חבורת לב ים. במידה ואתם מעוניינים לקחת חלק תפנו אלינו." }
+        "acceptedAnswer": { "@type": "Answer", "text": "ימי הקהילה מתקיימים בימי ראשון. כל הפרטים עוברים בקבוצת הוואטסאפ של חבורת לב ים. במידה ואתם מעוניינים לקחת חלק תפנו אלינו." }
       },
       {
         "@type": "Question",
@@ -76,7 +85,7 @@
   {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
-    "name": "לב ים",
+    "name": "לב ים",
     "image": "https://levyam.com/assets/og-image.jpg",
     "address": {
       "@type": "PostalAddress",
@@ -91,7 +100,7 @@
 </head>
 <body>
 
-  <a class="skip-link" href="#main-content">דלג לתוכן הראשי</a>
+  <a class="skip-link" href="#main-content" data-i18n="skip_link">דלג לתוכן הראשי</a>
 
   <main id="main-content">
 
@@ -99,56 +108,61 @@
     <section class="hero" id="top" aria-labelledby="hero-title">
 
       <div class="hero-topbar">
-        <a href="#top" class="logo" aria-label="לב ים — דף הבית">
-          <img src="img/logo/logo-mono-nobg.png" alt="לב ים" width="52" height="52">
+        <a href="#top" class="logo" aria-label="לב ים — דף הבית" data-i18n-aria-label="logo_aria">
+          <img src="img/logo/logo-mono-nobg.png" alt="לב ים" data-i18n-alt="brand" width="52" height="52">
         </a>
 
-        <nav class="primary-nav" aria-label="תפריט ראשי">
+        <nav class="primary-nav" aria-label="תפריט ראשי" data-i18n-aria-label="nav_main_aria">
           <ul>
-            <li><a href="#services">מה קורה בלב ים</a></li>
-            <li><a href="#why">למה לב ים</a></li>
-            <li><a href="#gallery">גלריה</a></li>
-            <li><a href="#faq">שאלות ותשובות</a></li>
-            <li><a href="#contact">צור קשר</a></li>
+            <li><a href="#services" data-i18n="nav_services">מה קורה בלב ים</a></li>
+            <li><a href="#why" data-i18n="nav_why">למה לב ים</a></li>
+            <li><a href="#gallery" data-i18n="nav_gallery">גלריה</a></li>
+            <li><a href="#faq" data-i18n="nav_faq">שאלות ותשובות</a></li>
+            <li><a href="#contact" data-i18n="nav_contact">צור קשר</a></li>
           </ul>
         </nav>
 
         <div class="header-social">
-          <a href="https://wa.me/972506669138?text=שלום%2C%20אשמח%20לפרטים%20על%20לב%20ים" target="_blank" rel="noopener" aria-label="לב ים בוואטסאפ">
+          <a href="https://wa.me/972506669138?text=שלום%2C%20אשמח%20לפרטים%20על%20לב%20ים" target="_blank" rel="noopener" aria-label="לב ים בוואטסאפ" data-i18n-aria-label="social_wa_aria" data-i18n-wa="wa_msg_general">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.978-1.306A9.966 9.966 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
           </a>
-          <a href="mailto:info@levyam.com" aria-label="שלחו אימייל ללב ים">
+          <a href="mailto:info@levyam.com" aria-label="שלחו אימייל ללב ים" data-i18n-aria-label="social_email_aria">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg>
           </a>
-          <a href="https://www.google.com/maps/place/Lev+Yam+-+%D7%9C%D7%91+%D7%99%D7%9D,+%D7%9B%D7%91%D7%99%D7%A9,+Jisr+az-Zarqa%E2%80%AD/@32.0867773,34.76303,3020m/data=!3m1!1e3!4m2!3m1!1s0x151d0d00273dd215:0x2c5f32d242e69755?entry=ttu" target="_blank" rel="noopener" aria-label="נווט ללב ים במפות">
+          <a href="https://www.google.com/maps/place/Lev+Yam+-+%D7%9C%D7%91+%D7%99%D7%9D,+%D7%9B%D7%91%D7%99%D7%A9,+Jisr+az-Zarqa%E2%80%AD/@32.0867773,34.76303,3020m/data=!3m1!1e3!4m2!3m1!1s0x151d0d00273dd215:0x2c5f32d242e69755?entry=ttu" target="_blank" rel="noopener" aria-label="נווט ללב ים במפות" data-i18n-aria-label="social_map_aria">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
           </a>
-          <a href="https://www.instagram.com/levyam_" target="_blank" rel="noopener" aria-label="לב ים באינסטגרם">
+          <a href="https://www.instagram.com/levyam_" target="_blank" rel="noopener" aria-label="לב ים באינסטגרם" data-i18n-aria-label="social_ig_aria">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none"/></svg>
           </a>
-          <a href="https://m.facebook.com/profile.php?id=61585790351617" target="_blank" rel="noopener" aria-label="לב ים בפייסבוק">
+          <a href="https://m.facebook.com/profile.php?id=61585790351617" target="_blank" rel="noopener" aria-label="לב ים בפייסבוק" data-i18n-aria-label="social_fb_aria">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
           </a>
         </div>
 
-        <button class="nav-toggle" aria-label="פתיחת תפריט" aria-expanded="false" aria-controls="mobile-nav">
+        <div class="lang-toggle" role="group" aria-label="שפה / اللغة" data-i18n-aria-label="lang_toggle_aria">
+          <button type="button" class="lang-opt is-active" data-lang-set="he" aria-pressed="true" lang="he">עב</button>
+          <button type="button" class="lang-opt" data-lang-set="ar" aria-pressed="false" lang="ar">عر</button>
+        </div>
+
+        <button class="nav-toggle" aria-label="פתיחת תפריט" data-i18n-aria-label="nav_open" aria-expanded="false" aria-controls="mobile-nav">
           <span></span><span></span><span></span>
         </button>
       </div>
 
-      <nav id="mobile-nav" class="mobile-nav" hidden aria-label="תפריט נייד">
+      <nav id="mobile-nav" class="mobile-nav" hidden aria-label="תפריט נייד" data-i18n-aria-label="mobile_nav_aria">
         <div class="mobile-nav-header">
-          <span class="mobile-nav-brand">לב ים</span>
-          <button class="mobile-nav-close" aria-label="סגור תפריט">
+          <span class="mobile-nav-brand" data-i18n="brand">לב ים</span>
+          <button class="mobile-nav-close" aria-label="סגור תפריט" data-i18n-aria-label="mobile_nav_close">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
         </div>
         <ul>
-          <li><a href="#services">מה קורה בלב ים</a></li>
-          <li><a href="#why">למה לב ים</a></li>
-          <li><a href="#gallery">גלריה</a></li>
-          <li><a href="#faq">שאלות ותשובות</a></li>
-          <li><a href="#contact">צור קשר</a></li>
+          <li><a href="#services" data-i18n="nav_services">מה קורה בלב ים</a></li>
+          <li><a href="#why" data-i18n="nav_why">למה לב ים</a></li>
+          <li><a href="#gallery" data-i18n="nav_gallery">גלריה</a></li>
+          <li><a href="#faq" data-i18n="nav_faq">שאלות ותשובות</a></li>
+          <li><a href="#contact" data-i18n="nav_contact">צור קשר</a></li>
         </ul>
       </nav>
 
@@ -159,32 +173,34 @@
                preload="metadata">
           <source src="img/hero/hero.mp4" type="video/mp4">
         </video>
-        <img src="img/hero/hero-poster.jpg" alt="לב ים — שקיעה מול הים" class="hero-poster-fallback" aria-hidden="true">
+        <img src="img/hero/hero-poster.jpg" alt="לב ים — שקיעה מול הים" data-i18n-alt="hero_video_alt" class="hero-poster-fallback" aria-hidden="true">
         <div class="hero-overlay" aria-hidden="true"></div>
       </div>
 
       <div class="hero-content">
         <div class="hero-logo">
-          <div class="logo-build" role="img" aria-label="לב ים">
+          <div class="logo-build" role="img" aria-label="לב ים" data-i18n-aria-label="brand">
             <img src="img/hero/h1-aligned-opt.png" alt="" aria-hidden="true" class="logo-build-frame lbf-1">
             <img src="img/hero/h2-opt.png" alt="" aria-hidden="true" class="logo-build-frame lbf-2">
             <img src="img/hero/h3-opt.png" alt="" aria-hidden="true" class="logo-build-frame lbf-3">
           </div>
         </div>
-        <h1 id="hero-title" class="hero-title">המקום שבו <span class="hero-accent">הלב</span> פוגש את <span class="hero-accent-blue">הים</span></h1>
-        <p class="hero-lead">
+        <h1 id="hero-title" class="hero-title" data-i18n-html="hero_title_html">המקום שבו <span class="hero-accent">הלב</span> פוגש את <span class="hero-accent-blue">הים</span></h1>
+        <p class="hero-lead" data-i18n="hero_lead">
           מרחב פתוח על קו המים - לעבודה, מפגש, יצירה ומנוחה.
         </p>
         <div class="hero-ctas">
           <a class="btn btn-primary"
              href="https://wa.me/972506669138?text=שלום%2C%20אשמח%20לקבל%20פרטים%20על%20לב%20ים"
+             data-i18n-wa="wa_msg_general"
              target="_blank" rel="noopener">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 1.5C6.201 1.5 1.5 6.201 1.5 12c0 1.867.487 3.618 1.34 5.14L1.5 22.5l5.513-1.316A10.454 10.454 0 0012 22.5c5.799 0 10.5-4.701 10.5-10.5S17.799 1.5 12 1.5z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
-            דברו איתנו בוואטסאפ
+            <span data-i18n="hero_cta_wa">דברו איתנו בוואטסאפ</span>
           </a>
           <a class="btn btn-ghost"
-             href="#services">
-            מה קורה בלב ים
+             href="#services"
+             data-i18n="hero_cta_services">
+            מה קורה בלב ים
           </a>
         </div>
       </div>
@@ -193,8 +209,8 @@
     <!-- ═══ INTRO ═══ -->
     <section class="intro reveal">
       <div class="container container-narrow">
-        <p class="lead">
-          על קו המים של כפר הדייגים הקסום, האחרון מסוגו בישראל, הקמנו את <strong class="intro-brand">לב ים</strong> - מרחב ליזמות עסקית חברתית המבוסס על שותפות, פשטות וקבלה.
+        <p class="lead" data-i18n-html="intro_p_html">
+          על קו המים של כפר הדייגים הקסום, האחרון מסוגו בישראל, הקמנו את <strong class="intro-brand">לב ים</strong> - מרחב ליזמות עסקית חברתית המבוסס על שותפות, פשטות וקבלה.
         </p>
       </div>
     </section>
@@ -207,8 +223,8 @@
     <section class="services" id="services" aria-labelledby="services-title">
       <div class="container">
         <header class="section-header reveal">
-          <h2 id="services-title" class="section-title">מה קורה בלב ים</h2>
-          <p class="section-intro">אל מול נוף עוצר נשימה, ליד הדייגים - בתוך הכפר, קורים הדברים הכי טובים</p>
+          <h2 id="services-title" class="section-title" data-i18n="services_title">מה קורה בלב ים</h2>
+          <p class="section-intro" data-i18n="services_intro">אל מול נוף עוצר נשימה, ליד הדייגים - בתוך הכפר, קורים הדברים הכי טובים</p>
         </header>
 
         <div class="services-grid">
@@ -217,14 +233,16 @@
           <article class="service-card reveal">
             <div class="service-media">
               <picture>
-                <img src="img/services/offsite.jpeg" alt="אירוע עסקי קבוצתי תחת הפרגולה של לב ים" width="1000" height="750" loading="lazy">
+                <img src="img/services/offsite.jpeg" alt="אירוע עסקי קבוצתי תחת הפרגולה של לב ים" data-i18n-alt="service_corp_alt" width="1000" height="750" loading="lazy">
               </picture>
             </div>
             <div class="service-body">
-              <h3>אירועים עסקיים</h3>
-              <p>ימי גיבוש, אסטרטגיה ויציאה מהשגרה.</p>
+              <h3 data-i18n="service_corp_title">אירועים עסקיים</h3>
+              <p data-i18n="service_corp_desc">ימי גיבוש, אסטרטגיה ויציאה מהשגרה.</p>
               <a class="btn btn-primary"
                  href="https://wa.me/972506669138?text=שלום%2C%20אנחנו%20מחפשים%20חוויה%20צוותית%20בלב%20ים"
+                 data-i18n-wa="wa_msg_corp"
+                 data-i18n="service_corp_cta"
                  target="_blank" rel="noopener">
                 השאירו פרטים
               </a>
@@ -235,14 +253,16 @@
           <article class="service-card reveal">
             <div class="service-media">
               <picture>
-                <img src="img/services/private.jpg" alt="שולחן ערוך לארוחה מול סירות הדייגים בלב ים" width="1000" height="750" loading="lazy">
+                <img src="img/services/private.jpg" alt="שולחן ערוך לארוחה מול סירות הדייגים בלב ים" data-i18n-alt="service_priv_alt" width="1000" height="750" loading="lazy">
               </picture>
             </div>
             <div class="service-body">
-              <h3>אירועים פרטיים</h3>
-              <p>חגיגות אינטימיות עם אוכל מקומי טרי.</p>
+              <h3 data-i18n="service_priv_title">אירועים פרטיים</h3>
+              <p data-i18n="service_priv_desc">חגיגות אינטימיות עם אוכל מקומי טרי.</p>
               <a class="btn btn-primary"
                  href="https://wa.me/972506669138?text=שלום%2C%20אשמח%20להגיע%20עם%20המשפחה%20לחגיגה"
+                 data-i18n-wa="wa_msg_priv"
+                 data-i18n="service_priv_cta"
                  target="_blank" rel="noopener">
                 תכננו אירוע פרטי
               </a>
@@ -253,14 +273,16 @@
           <article class="service-card reveal">
             <div class="service-media">
               <picture>
-                <img src="img/services/Rent.jpg" alt="שקיעה כתומה מהפרגולה עם ספסל מול הים בלב ים" width="1000" height="750" loading="lazy">
+                <img src="img/services/Rent.jpg" alt="שקיעה כתומה מהפרגולה עם ספסל מול הים בלב ים" data-i18n-alt="service_rent_alt" width="1000" height="750" loading="lazy">
               </picture>
             </div>
             <div class="service-body">
-              <h3>השכרת המתחם</h3>
-              <p>המקום כולו לרשותכם - לאירוע, סדנה או רטריט.</p>
+              <h3 data-i18n="service_rent_title">השכרת המתחם</h3>
+              <p data-i18n="service_rent_desc">המקום כולו לרשותכם - לאירוע, סדנה או רטריט.</p>
               <a class="btn btn-primary"
                  href="https://wa.me/972506669138?text=שלום%2C%20אשמח%20למצוא%20בית%20לחלום%20שלי"
+                 data-i18n-wa="wa_msg_rent"
+                 data-i18n="service_rent_cta"
                  target="_blank" rel="noopener">
                 דברו איתנו על השכרה
               </a>
@@ -274,14 +296,16 @@
           <article class="service-card reveal">
             <div class="service-media">
               <picture>
-                <img src="img/services/community.jpg" alt="קהילת לב ים — אנשים מתכנסים תחת הפרגולה מול הים" width="1000" height="750" loading="lazy">
+                <img src="img/services/community.jpg" alt="קהילת לב ים — אנשים מתכנסים תחת הפרגולה מול הים" data-i18n-alt="service_comm_alt" width="1000" height="750" loading="lazy">
               </picture>
             </div>
             <div class="service-body">
-              <h3>יום ראשון לקהילה</h3>
-              <p>מדי יום ראשון - יזמים ויוצרים מתכנסים לפתוח יחד את השבוע - לעבוד, לשוחח ולהתחבר.</p>
+              <h3 data-i18n="service_comm_title">יום ראשון לקהילה</h3>
+              <p data-i18n="service_comm_desc">מדי יום ראשון - יזמים ויוצרים מתכנסים לפתוח יחד את השבוע - לעבוד, לשוחח ולהתחבר.</p>
               <a class="btn btn-primary"
                  href="https://wa.me/972506669138?text=שלום%2C%20אשמח%20להצטרף%20ליום%20הקהילה"
+                 data-i18n-wa="wa_msg_comm"
+                 data-i18n="service_comm_cta"
                  target="_blank" rel="noopener">
                 הצטרפו ליום הקהילה
               </a>
@@ -292,14 +316,16 @@
           <article class="service-card reveal">
             <div class="service-media">
               <picture>
-                <img src="img/services/weekend.jpg" alt="ארוחה משפחתית עם נוף הים בלב ים" width="1000" height="750" loading="lazy">
+                <img src="img/services/weekend.jpg" alt="ארוחה משפחתית עם נוף הים בלב ים" data-i18n-alt="service_week_alt" width="1000" height="750" loading="lazy">
               </picture>
             </div>
             <div class="service-body">
-              <h3>סופי שבוע בלב ים</h3>
-              <p>כל שישי ושבת - בית פתוח, אוכל מקומי ואירועי תוכן מתחלפים.</p>
+              <h3 data-i18n="service_week_title">סופי שבוע בלב ים</h3>
+              <p data-i18n="service_week_desc">כל שישי ושבת - בית פתוח, אוכל מקומי ואירועי תוכן מתחלפים.</p>
               <a class="btn btn-primary"
                  href="https://wa.me/972506669138?text=שלום%2C%20אשמח%20לפרטים%20על%20סופי%20שבוע%20בלב%20ים"
+                 data-i18n-wa="wa_msg_week"
+                 data-i18n="service_week_cta"
                  target="_blank" rel="noopener">
                 לפרטים על סופי שבוע
               </a>
@@ -317,24 +343,24 @@
     <!-- ═══ WHY ═══ -->
     <section class="why" id="why" aria-labelledby="why-title">
       <div class="container container-narrow">
-        <h2 id="why-title" class="section-title reveal">למה לב ים</h2>
-        <p class="lead reveal">
+        <h2 id="why-title" class="section-title reveal" data-i18n="why_title">למה לב ים</h2>
+        <p class="lead reveal" data-i18n="why_p1">
           מעטים המקומות שמעניקים את התחושה שהם כמו נבראו מסיבה מסוימת.
         </p>
-        <p class="reveal">
-          רצועת חוף בתולית, מבנה דייגים עתיק, שקט, שלווה, אנשים לבביים — זה רק חלק מהקסם של <strong>לב ים</strong> בכפר הדייגים ג׳יסר א-זרקא.
+        <p class="reveal" data-i18n-html="why_p2_html">
+          רצועת חוף בתולית, מבנה דייגים עתיק, שקט, שלווה, אנשים לבביים — זה רק חלק מהקסם של <strong>לב ים</strong> בכפר הדייגים ג׳יסר א-זרקא.
         </p>
-        <p class="reveal">
-          <strong>לב ים</strong> לא ״ממוקם״ בג׳יסר, אלא פועל מתוכה ובשבילה. לא כרקע — אלא כשותפה. הרגע הזה של שקט עבורכם, לטובת התארגנות מחדש — מקדם חזון של חיבור אנושי חיובי ושגשוג משותף, ומבטיח שהלב ימשיך לפעום ולהדהד גם הרחק מעבר לקו המים.
+        <p class="reveal" data-i18n-html="why_p3_html">
+          <strong>לב ים</strong> לא ״ממוקם״ בג׳יסר, אלא פועל מתוכה ובשבילה. לא כרקע — אלא כשותפה. הרגע הזה של שקט עבורכם, לטובת התארגנות מחדש — מקדם חזון של חיבור אנושי חיובי ושגשוג משותף, ומבטיח שהלב ימשיך לפעום ולהדהד גם הרחק מעבר לקו המים.
         </p>
       </div>
 
       <div class="container container-narrow village-block reveal">
-        <h3 class="subsection-title">על ג׳יסר א-זרקא וכפר הדייגים</h3>
-        <p>
-          ג׳יסר א-זרקא הוא הכפר הערבי-מוסלמי היחיד שנותר על קו החוף הישראלי, בלב רצועת חוף הכרמל. הפארק הלאומי, כפר הדייגים, בו ממוקם לב ים שומר על אופי ייחודי - סירות עץ, רשתות, ריח של ים והיסטוריה משפחתית.
+        <h3 class="subsection-title" data-i18n="village_title">על ג׳יסר א-זרקא וכפר הדייגים</h3>
+        <p data-i18n="village_p1">
+          ג׳יסר א-זרקא הוא הכפר הערבי-מוסלמי היחיד שנותר על קו החוף הישראלי, בלב רצועת חוף הכרמל. הפארק הלאומי, כפר הדייגים, בו ממוקם לב ים שומר על אופי ייחודי - סירות עץ, רשתות, ריח של ים והיסטוריה משפחתית.
         </p>
-        <p>
+        <p data-i18n="village_p2">
           כל ביקור כאן הוא גם מפגש עם מקום, עם אנשים, ועם סיפור.
         </p>
       </div>
@@ -348,81 +374,81 @@
     <section class="gallery" id="gallery" aria-labelledby="gallery-title">
       <div class="container">
         <header class="section-header reveal">
-          <h2 id="gallery-title" class="section-title">גלריה</h2>
-          <p class="section-sub">רגעים מלב ים</p>
+          <h2 id="gallery-title" class="section-title" data-i18n="gallery_title">גלריה</h2>
+          <p class="section-sub" data-i18n="gallery_sub">רגעים מלב ים</p>
         </header>
 
         <div class="gallery-grid">
-          <button class="gallery-item" data-full="img/gallery/01.jpg" data-index="0" aria-label="פתח תמונה 1 — שקיעה עם סירת דייגים">
-            <img src="img/gallery/01.jpg" alt="שקיעה עם סירת דייגים בלב ים" width="900" height="675" loading="lazy">
+          <button class="gallery-item" data-full="img/gallery/01.jpg" data-index="0" data-i18n-gallery="0" aria-label="פתח תמונה 1 — שקיעה עם סירת דייגים">
+            <img src="img/gallery/01.jpg" alt="שקיעה עם סירת דייגים בלב ים" width="900" height="675" loading="lazy">
           </button>
-          <button class="gallery-item" data-full="img/gallery/02.jpg" data-index="1" aria-label="פתח תמונה 2 — שקיעה כתומה">
+          <button class="gallery-item" data-full="img/gallery/02.jpg" data-index="1" data-i18n-gallery="1" aria-label="פתח תמונה 2 — שקיעה כתומה">
             <img src="img/gallery/02.jpg" alt="שקיעה כתומה עם סירה וגומא מול הים" width="900" height="675" loading="lazy">
           </button>
-          <button class="gallery-item" data-full="img/gallery/03.jpg" data-index="2" aria-label="פתח תמונה 3 — חלון בשקיעה">
-            <img src="img/gallery/03.jpg" alt="חלון ישן עם נוף שקיעה מבפנים בלב ים" width="900" height="675" loading="lazy">
+          <button class="gallery-item" data-full="img/gallery/03.jpg" data-index="2" data-i18n-gallery="2" aria-label="פתח תמונה 3 — חלון בשקיעה">
+            <img src="img/gallery/03.jpg" alt="חלון ישן עם נוף שקיעה מבפנים בלב ים" width="900" height="675" loading="lazy">
           </button>
-          <button class="gallery-item" data-full="img/gallery/04.jpg" data-index="3" aria-label="פתח תמונה 4 — עבודה משותפת בחוץ">
-            <img src="img/gallery/04.jpg" alt="אנשים עובדים יחד בחוץ מול הים בלב ים" width="900" height="675" loading="lazy">
+          <button class="gallery-item" data-full="img/gallery/04.jpg" data-index="3" data-i18n-gallery="3" aria-label="פתח תמונה 4 — עבודה משותפת בחוץ">
+            <img src="img/gallery/04.jpg" alt="אנשים עובדים יחד בחוץ מול הים בלב ים" width="900" height="675" loading="lazy">
           </button>
-          <button class="gallery-item" data-full="img/gallery/05.jpg" data-index="4" aria-label="פתח תמונה 5 — שיחה בכפר הדייגים">
+          <button class="gallery-item" data-full="img/gallery/05.jpg" data-index="4" data-i18n-gallery="4" aria-label="פתח תמונה 5 — שיחה בכפר הדייגים">
             <img src="img/gallery/05.jpg" alt="שיחה בין אנשים בכפר הדייגים" width="900" height="675" loading="lazy">
           </button>
-          <button class="gallery-item" data-full="img/gallery/06.jpg" data-index="5" aria-label="פתח תמונה 6 — עבודה לבד מול הים">
-            <img src="img/gallery/06.jpg" alt="אדם עובד לבד מול הים בלב ים" width="900" height="675" loading="lazy">
+          <button class="gallery-item" data-full="img/gallery/06.jpg" data-index="5" data-i18n-gallery="5" aria-label="פתח תמונה 6 — עבודה לבד מול הים">
+            <img src="img/gallery/06.jpg" alt="אדם עובד לבד מול הים בלב ים" width="900" height="675" loading="lazy">
           </button>
-          <button class="gallery-item" data-full="img/gallery/07.jpg" data-index="6" aria-label="פתח תמונה 7 — קהילה בחצר לב ים">
-            <img src="img/gallery/07.jpg" alt="קהילה מגוונת של ילדים ומבוגרים בחצר לב ים" width="900" height="675" loading="lazy">
+          <button class="gallery-item" data-full="img/gallery/07.jpeg" data-index="6" data-i18n-gallery="6" aria-label="פתח תמונה 7 — קהילה בחצר לב ים">
+            <img src="img/gallery/07.jpeg" alt="קהילה מגוונת של ילדים ומבוגרים בחצר לב ים" width="900" height="675" loading="lazy">
           </button>
-          <button class="gallery-item" data-full="img/gallery/08.jpg" data-index="7" aria-label="פתח תמונה 8 — הסלון הפנימי עם נוף הים">
-            <img src="img/gallery/08.jpg" alt="כורסאות ישנות מול חלונות עם נוף הים בלב ים" width="900" height="675" loading="lazy">
+          <button class="gallery-item" data-full="img/gallery/08.jpg" data-index="7" data-i18n-gallery="7" aria-label="פתח תמונה 8 — הסלון הפנימי עם נוף הים">
+            <img src="img/gallery/08.jpg" alt="כורסאות ישנות מול חלונות עם נוף הים בלב ים" width="900" height="675" loading="lazy">
           </button>
-          <button class="gallery-item" data-full="img/gallery/09.jpg" data-index="8" aria-label="פתח תמונה 9 — מבט מלמעלה על חלל העבודה">
-            <img src="img/gallery/09.jpg" alt="מבט מלמעלה על חלל העבודה המשותף בלב ים" width="900" height="675" loading="lazy">
+          <button class="gallery-item" data-full="img/gallery/09.jpg" data-index="8" data-i18n-gallery="8" aria-label="פתח תמונה 9 — מבט מלמעלה על חלל העבודה">
+            <img src="img/gallery/09.jpg" alt="מבט מלמעלה על חלל העבודה המשותף בלב ים" width="900" height="675" loading="lazy">
           </button>
-          <button class="gallery-item" data-full="img/gallery/10.jpg" data-index="9" aria-label="פתח תמונה 10 — קנים וסירה בחוף">
-            <img src="img/gallery/10.jpg" alt="קנים ירוקים עם סירה וחוף הים בלב ים" width="900" height="675" loading="lazy">
+          <button class="gallery-item" data-full="img/gallery/10.jpg" data-index="9" data-i18n-gallery="9" aria-label="פתח תמונה 10 — קנים וסירה בחוף">
+            <img src="img/gallery/10.jpg" alt="קנים ירוקים עם סירה וחוף הים בלב ים" width="900" height="675" loading="lazy">
           </button>
-          <button class="gallery-item" data-full="img/gallery/11.jpg" data-index="10" aria-label="פתח תמונה 11 — מבט אווירי על כפר הדייגים">
-            <img src="img/gallery/11.jpg" alt="מבט אווירי על כפר הדייגים בלב ים" width="900" height="675" loading="lazy">
+          <button class="gallery-item" data-full="img/gallery/11.jpg" data-index="10" data-i18n-gallery="10" aria-label="פתח תמונה 11 — מבט אווירי על כפר הדייגים">
+            <img src="img/gallery/11.jpg" alt="מבט אווירי על כפר הדייגים בלב ים" width="900" height="675" loading="lazy">
           </button>
-          <button class="gallery-item" data-full="img/gallery/12.jpg" data-index="11" aria-label="פתח תמונה 12 — עבודה מול חלונות הים">
-            <img src="img/gallery/12.jpg" alt="מחשב נייד ושולחן עבודה מול חלונות הים בלב ים" width="900" height="675" loading="lazy">
+          <button class="gallery-item" data-full="img/gallery/12.jpg" data-index="11" data-i18n-gallery="11" aria-label="פתח תמונה 12 — עבודה מול חלונות הים">
+            <img src="img/gallery/12.jpg" alt="מחשב נייד ושולחן עבודה מול חלונות הים בלב ים" width="900" height="675" loading="lazy">
           </button>
-          <button class="gallery-item" data-full="img/gallery/13.jpg" data-index="12" aria-label="פתח תמונה 13 — ארוחה מול הים">
-            <img src="img/gallery/13.jpg" alt="ארוחה מקומית עם נוף הים בלב ים" width="900" height="675" loading="lazy">
+          <button class="gallery-item" data-full="img/gallery/13.jpg" data-index="12" data-i18n-gallery="12" aria-label="פתח תמונה 13 — ארוחה מול הים">
+            <img src="img/gallery/13.jpg" alt="ארוחה מקומית עם נוף הים בלב ים" width="900" height="675" loading="lazy">
           </button>
-          <button class="gallery-item" data-full="img/gallery/14.jpg" data-index="13" aria-label="פתח תמונה 14 — רגע משפחתי ליד הים">
-            <img src="img/gallery/14.jpg" alt="רגע משפחתי על כריות כתומות מול הים בלב ים" width="900" height="675" loading="lazy">
+          <button class="gallery-item" data-full="img/gallery/14.jpg" data-index="13" data-i18n-gallery="13" aria-label="פתח תמונה 14 — רגע משפחתי ליד הים">
+            <img src="img/gallery/14.jpg" alt="רגע משפחתי על כריות כתומות מול הים בלב ים" width="900" height="675" loading="lazy">
           </button>
-          <button class="gallery-item" data-full="img/gallery/15.jpg" data-index="14" aria-label="פתח תמונה 15 — חברים בלב ים">
-            <img src="img/gallery/15.jpg" alt="חברים נהנים יחד מול הים בלב ים" width="900" height="675" loading="lazy">
+          <button class="gallery-item" data-full="img/gallery/15.jpg" data-index="14" data-i18n-gallery="14" aria-label="פתח תמונה 15 — חברים בלב ים">
+            <img src="img/gallery/15.jpg" alt="חברים נהנים יחד מול הים בלב ים" width="900" height="675" loading="lazy">
           </button>
-          <button class="gallery-item" data-full="img/gallery/16.jpg" data-index="15" aria-label="פתח תמונה 16 — שקיעה עם אנשים">
-            <img src="img/gallery/16.jpg" alt="אנשים ליד הים בשקיעה בכפר הדייגים בלב ים" width="900" height="675" loading="lazy">
+          <button class="gallery-item" data-full="img/gallery/16.jpg" data-index="15" data-i18n-gallery="15" aria-label="פתח תמונה 16 — שקיעה עם אנשים">
+            <img src="img/gallery/16.jpg" alt="אנשים ליד הים בשקיעה בכפר הדייגים בלב ים" width="900" height="675" loading="lazy">
           </button>
-          <button class="gallery-item" data-full="img/gallery/17.jpg" data-index="16" aria-label="פתח תמונה 17 — שיחה מול הים">
-            <img src="img/gallery/17.jpg" alt="שיחה ועבודה מול חלונות הים בלב ים" width="900" height="675" loading="lazy">
+          <button class="gallery-item" data-full="img/gallery/17.jpg" data-index="16" data-i18n-gallery="16" aria-label="פתח תמונה 17 — שיחה מול הים">
+            <img src="img/gallery/17.jpg" alt="שיחה ועבודה מול חלונות הים בלב ים" width="900" height="675" loading="lazy">
           </button>
-          <button class="gallery-item" data-full="img/gallery/18.jpg" data-index="17" aria-label="פתח תמונה 18 — שקיעה מתחת לפרגולה">
-            <img src="img/gallery/18.jpg" alt="שקיעה כתומה עם סירת דייגים מתחת לפרגולה בלב ים" width="900" height="675" loading="lazy">
+          <button class="gallery-item" data-full="img/gallery/18.jpg" data-index="17" data-i18n-gallery="17" aria-label="פתח תמונה 18 — שקיעה מתחת לפרגולה">
+            <img src="img/gallery/18.jpg" alt="שקיעה כתומה עם סירת דייגים מתחת לפרגולה בלב ים" width="900" height="675" loading="lazy">
           </button>
         </div>
       </div>
 
-      <dialog class="lightbox" id="lightbox" aria-label="תמונה מוגדלת">
-        <button class="lightbox-close" aria-label="סגור תמונה">
+      <dialog class="lightbox" id="lightbox" aria-label="תמונה מוגדלת" data-i18n-aria-label="lightbox_aria">
+        <button class="lightbox-close" aria-label="סגור תמונה" data-i18n-aria-label="lightbox_close">
           <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
             <path d="M18 6L6 18M6 6l12 12"/>
           </svg>
         </button>
-        <button class="lightbox-prev" aria-label="תמונה הקודמת">
+        <button class="lightbox-prev" aria-label="תמונה הקודמת" data-i18n-aria-label="lightbox_prev">
           <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 18l6-6-6-6"/>
           </svg>
         </button>
         <img class="lightbox-img" src="" alt="" loading="lazy">
-        <button class="lightbox-next" aria-label="תמונה הבאה">
+        <button class="lightbox-next" aria-label="תמונה הבאה" data-i18n-aria-label="lightbox_next">
           <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M15 18l-6-6 6-6"/>
           </svg>
@@ -437,54 +463,54 @@
     <!-- ═══ FAQ ═══ -->
     <section class="faq" id="faq" aria-labelledby="faq-title">
       <div class="container container-narrow">
-        <h2 id="faq-title" class="section-title reveal">שאלות ותשובות</h2>
+        <h2 id="faq-title" class="section-title reveal" data-i18n="faq_title">שאלות ותשובות</h2>
 
         <details class="faq-item reveal">
-          <summary>איך מגיעים ללב ים?</summary>
+          <summary data-i18n="faq_q_arrive">איך מגיעים ללב ים?</summary>
           <div class="faq-answer">
-            <p>ג׳יסר א-זרקא נגישה ברכב מכביש <bdi>4</bdi>, כשעה מתל אביב וכ-<bdi>25</bdi> דקות מחיפה. בירידה בכפר לכיוון הים מגיעים לכפר הדייגים. יש חניה מסודרת בכניסה. הכי פשוט, שימו בוויז לב ים ותמצאו אותנו.</p>
+            <p data-i18n-html="faq_a_arrive_html">ג׳יסר א-זרקא נגישה ברכב מכביש <bdi>4</bdi>, כשעה מתל אביב וכ-<bdi>25</bdi> דקות מחיפה. בירידה בכפר לכיוון הים מגיעים לכפר הדייגים. יש חניה מסודרת בכניסה. הכי פשוט, שימו בוויז לב ים ותמצאו אותנו.</p>
           </div>
         </details>
 
         <details class="faq-item reveal">
-          <summary>כמה אנשים יכולים להגיע?</summary>
+          <summary data-i18n="faq_q_capacity">כמה אנשים יכולים להגיע?</summary>
           <div class="faq-answer">
-            <p>המתחם מתאים לקבוצות של עד כ-<bdi>50</bdi> איש לאירועי ישיבה, ואף יכול להתאים לקבוצות גדולות יותר בהתאם לאופי האירוע שלכם.</p>
+            <p data-i18n-html="faq_a_capacity_html">המתחם מתאים לקבוצות של עד כ-<bdi>50</bdi> איש לאירועי ישיבה, ואף יכול להתאים לקבוצות גדולות יותר בהתאם לאופי האירוע שלכם.</p>
           </div>
         </details>
 
         <details class="faq-item reveal">
-          <summary>מה כלול במתחם ומה לגבי אוכל?</summary>
+          <summary data-i18n="faq_q_amenities">מה כלול במתחם ומה לגבי אוכל?</summary>
           <div class="faq-answer">
-            <p>פינות ישיבה מגוונות, מטבח מאובזר, כלי מטבח והגשה, אינטרנט מהיר, טלוויזיה גדולה להקרנה, מדשאה מפנקת, מקלחות, שירותים וכלי עבודה. אפשר גם להזמין ארוחה מלאה, פינוקים בין הישיבות, או ארוחת ערב חגיגית — נשמח להתאים לכם את החוויה המושלמת.</p>
+            <p data-i18n="faq_a_amenities">פינות ישיבה מגוונות, מטבח מאובזר, כלי מטבח והגשה, אינטרנט מהיר, טלוויזיה גדולה להקרנה, מדשאה מפנקת, מקלחות, שירותים וכלי עבודה. אפשר גם להזמין ארוחה מלאה, פינוקים בין הישיבות, או ארוחת ערב חגיגית — נשמח להתאים לכם את החוויה המושלמת.</p>
           </div>
         </details>
 
         <details class="faq-item reveal">
-          <summary>האם המקום מתאים למשפחות ובטוח להגיע?</summary>
+          <summary data-i18n="faq_q_safety">האם המקום מתאים למשפחות ובטוח להגיע?</summary>
           <div class="faq-answer">
-            <p>בהחלט. ג׳יסר א-זרקא היא כפר ערבי-מוסלמי שקט ומסביר פנים, שביל ישראל עובר לאורכו וכפר הדייגים הוא פארק לאומי רשמי. החוף נגיש ובטוח, יש מרחב פתוח לילדים לרוץ בו, ובאירועים פרטיים אפשר לתאם פעילות מותאמת.</p>
+            <p data-i18n="faq_a_safety">בהחלט. ג׳יסר א-זרקא היא כפר ערבי-מוסלמי שקט ומסביר פנים, שביל ישראל עובר לאורכו וכפר הדייגים הוא פארק לאומי רשמי. החוף נגיש ובטוח, יש מרחב פתוח לילדים לרוץ בו, ובאירועים פרטיים אפשר לתאם פעילות מותאמת.</p>
           </div>
         </details>
 
         <details class="faq-item reveal">
-          <summary>האם אפשר לשכור את המתחם לכל היום?</summary>
+          <summary data-i18n="faq_q_rental">האם אפשר לשכור את המתחם לכל היום?</summary>
           <div class="faq-answer">
-            <p>בהחלט. אפשר לשכור את המתחם כולו ליום, לסוף שבוע, או לתקופה ארוכה יותר — לסדנה, לריטריט או לאירוע פרטי. לא קיימת אפשרות לינה.</p>
+            <p data-i18n="faq_a_rental">בהחלט. אפשר לשכור את המתחם כולו ליום, לסוף שבוע, או לתקופה ארוכה יותר — לסדנה, לריטריט או לאירוע פרטי. לא קיימת אפשרות לינה.</p>
           </div>
         </details>
 
         <details class="faq-item reveal">
-          <summary>מה לוח הזמנים של ימי הקהילה?</summary>
+          <summary data-i18n="faq_q_community">מה לוח הזמנים של ימי הקהילה?</summary>
           <div class="faq-answer">
-            <p>ימי הקהילה מתקיימים בימי ראשון. כל הפרטים עוברים בקבוצת הוואטסאפ של חבורת לב ים. במידה ואתם מעוניינים לקחת חלק תפנו אלינו.</p>
+            <p data-i18n="faq_a_community">ימי הקהילה מתקיימים בימי ראשון. כל הפרטים עוברים בקבוצת הוואטסאפ של חבורת לב ים. במידה ואתם מעוניינים לקחת חלק תפנו אלינו.</p>
           </div>
         </details>
 
         <details class="faq-item reveal">
-          <summary>איך אני מזמין?</summary>
+          <summary data-i18n="faq_q_book">איך אני מזמין?</summary>
           <div class="faq-answer">
-            <p>הדרך הכי פשוטה — שלחו לנו הודעת וואטסאפ עם כמה פרטים על מה שאתם מחפשים, ונחזור אליכם בהקדם.</p>
+            <p data-i18n="faq_a_book">הדרך הכי פשוטה — שלחו לנו הודעת וואטסאפ עם כמה פרטים על מה שאתם מחפשים, ונחזור אליכם בהקדם.</p>
           </div>
         </details>
       </div>
@@ -498,8 +524,8 @@
     <section class="contact" id="contact" aria-labelledby="contact-title">
       <div class="container">
         <header class="section-header reveal">
-          <h2 id="contact-title" class="section-title">דברו איתנו</h2>
-          <p class="section-sub">יש דברים שצריך לחוות כדי להבין - בואו לבקר בלב ים.</p>
+          <h2 id="contact-title" class="section-title" data-i18n="contact_title">דברו איתנו</h2>
+          <p class="section-sub" data-i18n="contact_sub">יש דברים שצריך לחוות כדי להבין - בואו לבקר בלב ים.</p>
         </header>
 
         <div class="contact-grid">
@@ -507,49 +533,53 @@
             <div class="map-frame"
                  data-lat="32.5365499"
                  data-lng="34.9020949">
-              <div id="lev-yam-map" class="map-canvas" role="img" aria-label="המיקום של לב ים — כפר הדייגים, ג׳יסר א-זרקא"></div>
+              <div id="lev-yam-map" class="map-canvas" role="img" aria-label="המיקום של לב ים — כפר הדייגים, ג׳יסר א-זרקא" data-i18n-aria-label="map_aria"></div>
               <div class="map-fallback" aria-hidden="true">
                 <img src="img/logo/logo-mark.png" alt="" width="72" height="72">
-                <span>לב ים · ג׳יסר א-זרקא</span>
+                <span data-i18n="map_fallback">לב ים · ג׳יסר א-זרקא</span>
               </div>
               <a class="map-cta"
                  href="https://www.google.com/maps/place/Lev+Yam+-+%D7%9C%D7%91+%D7%99%D7%9D,+%D7%9B%D7%91%D7%99%D7%A9,+Jisr+az-Zarqa%E2%80%AD/@32.0867773,34.76303,3020m/data=!3m1!1e3!4m2!3m1!1s0x151d0d00273dd215:0x2c5f32d242e69755?entry=ttu"
                  target="_blank" rel="noopener">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                <span>נווטו ב-Google Maps</span>
+                <span data-i18n="map_cta">נווטו ב-Google Maps</span>
               </a>
             </div>
           </div>
 
           <div class="contact-actions reveal">
-            <p class="contact-intro">מה תרצו לעשות?</p>
+            <p class="contact-intro" data-i18n="contact_intro">מה תרצו לעשות?</p>
             <div class="contact-buttons">
               <a class="btn btn-contact btn-block"
                  href="https://wa.me/972506669138?text=שלום%2C%20אנחנו%20צוות%20שמחפשים%20חוויה"
+                 data-i18n-wa="wa_msg_team"
                  target="_blank" rel="noopener">
                 <span class="btn-contact-icon"><img src="img/icons/icons-19.png" alt="" width="36" height="36"></span>
-                <span class="btn-contact-text"><strong>אנחנו צוות</strong><small>חוויה צוותית ויום גיבוש</small></span>
+                <span class="btn-contact-text"><strong data-i18n="contact_btn_team_title">אנחנו צוות</strong><small data-i18n="contact_btn_team_sub">חוויה צוותית ויום גיבוש</small></span>
                 <svg class="btn-contact-arrow" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
               </a>
               <a class="btn btn-contact btn-block"
                  href="https://wa.me/972506669138?text=שלום%2C%20אשמח%20להצטרף%20לקהילה"
+                 data-i18n-wa="wa_msg_join"
                  target="_blank" rel="noopener">
                 <span class="btn-contact-icon"><img src="img/icons/icons-19.png" alt="" width="36" height="36"></span>
-                <span class="btn-contact-text"><strong>אני רוצה להצטרף</strong><small>קהילה ויזמות חברתית</small></span>
+                <span class="btn-contact-text"><strong data-i18n="contact_btn_join_title">אני רוצה להצטרף</strong><small data-i18n="contact_btn_join_sub">קהילה ויזמות חברתית</small></span>
                 <svg class="btn-contact-arrow" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
               </a>
               <a class="btn btn-contact btn-block"
                  href="https://wa.me/972506669138?text=שלום%2C%20אנחנו%20משפחה%20שמתכננת%20אירוע"
+                 data-i18n-wa="wa_msg_family"
                  target="_blank" rel="noopener">
                 <span class="btn-contact-icon"><img src="img/icons/icons-19.png" alt="" width="36" height="36"></span>
-                <span class="btn-contact-text"><strong>אירוע פרטי</strong><small>חגיגה משפחתית או אישית</small></span>
+                <span class="btn-contact-text"><strong data-i18n="contact_btn_priv_title">אירוע פרטי</strong><small data-i18n="contact_btn_priv_sub">חגיגה משפחתית או אישית</small></span>
                 <svg class="btn-contact-arrow" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
               </a>
               <a class="btn btn-contact btn-block"
                  href="https://wa.me/972506669138?text=שלום%2C%20יש%20לי%20חלום%20שמחפש%20בית"
+                 data-i18n-wa="wa_msg_dream"
                  target="_blank" rel="noopener">
                 <span class="btn-contact-icon"><img src="img/icons/icons-19.png" alt="" width="36" height="36"></span>
-                <span class="btn-contact-text"><strong>יש לי חלום</strong><small>השכרת המרחב לפרוייקט שלי</small></span>
+                <span class="btn-contact-text"><strong data-i18n="contact_btn_dream_title">יש לי חלום</strong><small data-i18n="contact_btn_dream_sub">השכרת המרחב לפרוייקט שלי</small></span>
                 <svg class="btn-contact-arrow" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
               </a>
             </div>
@@ -560,37 +590,37 @@
       <footer class="site-footer">
         <div class="container footer-inner">
           <div class="footer-brand">
-            <img src="img/logo/logo-mono-nobg.png" alt="לב ים" class="footer-logo" width="40" height="40">
-            <p class="footer-tagline">מרחב יזמות עסקית חברתית על קו המים</p>
+            <img src="img/logo/logo-mono-nobg.png" alt="לב ים" data-i18n-alt="brand" class="footer-logo" width="40" height="40">
+            <p class="footer-tagline" data-i18n="footer_tagline">מרחב יזמות עסקית חברתית על קו המים</p>
           </div>
 
           <div class="footer-contact">
-            <a href="tel:+972506669138" aria-label="התקשרו ללב ים">
+            <a href="tel:+972506669138" aria-label="התקשרו ללב ים" data-i18n-aria-label="footer_phone_aria">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8 19.79 19.79 0 01.01 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14v2.92z"/></svg>
             </a>
             <span class="footer-dot" aria-hidden="true">·</span>
-            <a href="mailto:info@levyam.com" aria-label="שלחו מייל ללב ים">
+            <a href="mailto:info@levyam.com" aria-label="שלחו מייל ללב ים" data-i18n-aria-label="footer_email_aria">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg>
             </a>
             <span class="footer-dot" aria-hidden="true">·</span>
-            <a href="https://wa.me/972506669138" target="_blank" rel="noopener" aria-label="וואטסאפ לב ים">
+            <a href="https://wa.me/972506669138" target="_blank" rel="noopener" aria-label="וואטסאפ לב ים" data-i18n-aria-label="footer_wa_aria">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 1.5C6.201 1.5 1.5 6.201 1.5 12c0 1.867.487 3.618 1.34 5.14L1.5 22.5l5.513-1.316A10.454 10.454 0 0012 22.5c5.799 0 10.5-4.701 10.5-10.5S17.799 1.5 12 1.5z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
             </a>
             <span class="footer-dot" aria-hidden="true">·</span>
-            <a href="https://www.instagram.com/levyam_" target="_blank" rel="noopener" aria-label="אינסטגרם לב ים">
+            <a href="https://www.instagram.com/levyam_" target="_blank" rel="noopener" aria-label="אינסטגרם לב ים" data-i18n-aria-label="footer_ig_aria">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none"/></svg>
             </a>
             <span class="footer-dot" aria-hidden="true">·</span>
-            <a href="https://m.facebook.com/profile.php?id=61585790351617" target="_blank" rel="noopener" aria-label="פייסבוק לב ים">
+            <a href="https://m.facebook.com/profile.php?id=61585790351617" target="_blank" rel="noopener" aria-label="פייסבוק לב ים" data-i18n-aria-label="footer_fb_aria">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
             </a>
             <span class="footer-dot" aria-hidden="true">·</span>
-            <a href="https://maps.app.goo.gl/fFtCZYwK1KEcmFud6" target="_blank" rel="noopener" aria-label="מיקום לב ים">
+            <a href="https://maps.app.goo.gl/fFtCZYwK1KEcmFud6" target="_blank" rel="noopener" aria-label="מיקום לב ים" data-i18n-aria-label="footer_map_aria">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
             </a>
           </div>
 
-          <p class="footer-credit">© לב ים <bdi>2026</bdi></p>
+          <p class="footer-credit" data-i18n-html="footer_credit_html">© לב ים <bdi>2026</bdi></p>
         </div>
       </footer>
     </section>
@@ -600,6 +630,8 @@
   <!-- ═══ FLOATING WHATSAPP ═══ -->
   <a class="wa-float"
      href="https://wa.me/972506669138?text=שלום%2C%20אשמח%20לפרטים%20על%20לב%20ים"
+     data-i18n-wa="wa_msg_general"
+     data-i18n-aria-label="wa_float_aria"
      target="_blank" rel="noopener"
      aria-label="צור קשר בוואטסאפ">
     <svg viewBox="0 0 32 32" width="32" height="32" aria-hidden="true">
