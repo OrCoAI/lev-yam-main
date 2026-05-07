@@ -1881,6 +1881,7 @@ p:last-child {
 /* ── Site Footer ─────────────────────────────────────────────────────── */
 .site-footer {
   background-color: var(--color-ink);
+  padding-block-end: 80px;
 }
 
 .footer-inner {
