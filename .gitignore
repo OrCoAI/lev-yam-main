@@ -1,3 +1,6 @@
 .DS_Store
 **/.DS_Store
 .claude/
+img/hero/*.MOV
+img/hero/*.mov
+img/hero/hero.webm
