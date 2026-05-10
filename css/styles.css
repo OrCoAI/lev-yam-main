@@ -238,7 +238,7 @@ h1, h2, h3, h4 {
 
 .section-header {
   text-align: center;
-  margin-block-end: clamp(2rem, 4vw, 3rem);
+  margin-block-end: clamp(1.25rem, 2.5vw, 2rem);
 }
 
 .section-header .section-title {
@@ -247,13 +247,15 @@ h1, h2, h3, h4 {
 
 .lead {
   font-size: var(--text-lead);
-  line-height: 1.7;
+  line-height: 1.65;
   color: var(--color-ink-soft);
-  margin-block-end: var(--space-3);
+  margin-block-end: var(--space-2);
+  text-wrap: pretty;
 }
 
 p {
-  margin-block-end: var(--space-3);
+  margin-block-end: var(--space-2);
+  text-wrap: pretty;
 }
 p:last-child {
   margin-block-end: 0;
@@ -320,13 +322,28 @@ p:last-child {
   margin-block-end: 0;
 }
 
-/* ── Wave Divider ────────────────────────────────────────────────────── */
+/* ── Wave Divider ────────────────────────────────────────────────────── *
+   Tiled zigzag — repeats horizontally so triangles stay the same size at  *
+   any viewport width (instead of stretching). Sits on its own neutral     *
+   cream strip so both edges have visible "breathing room" against either  *
+   adjacent section colour.                                                */
 .wave-divider {
   display: block;
   inline-size: 100%;
-  block-size: 24px;
-  overflow: visible;
+  block-size: 28px;
   margin-block: 0;
+  background-color: var(--color-cream);
+  background-repeat: repeat-x;
+  background-position: center;
+  background-size: 80px 16px;
+}
+
+.wave-divider--orange {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='16' viewBox='0 0 80 16'%3E%3Cpath d='M0 8 L20 2 L60 14 L80 8' fill='none' stroke='%23f49834' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+.wave-divider--blue {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='16' viewBox='0 0 80 16'%3E%3Cpath d='M0 8 L20 2 L60 14 L80 8' fill='none' stroke='%232c92bf' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 
 /* ── Site Header ─────────────────────────────────────────────────────── */
@@ -340,6 +357,10 @@ p:last-child {
   gap: var(--space-4);
   block-size: 96px;
   padding-inline: var(--space-5);
+  background: linear-gradient(to bottom,
+    rgba(12, 26, 36, 0.55) 0%,
+    rgba(12, 26, 36, 0.25) 70%,
+    transparent 100%);
 }
 
 .logo {
@@ -350,7 +371,6 @@ p:last-child {
 .logo img {
   block-size: 80px;
   inline-size: auto;
-  filter: drop-shadow(0 1px 6px rgba(0, 0, 0, 0.35));
 }
 
 @media (min-width: 961px) {
@@ -394,7 +414,6 @@ p:last-child {
   padding-block: var(--space-2);
   border-block-end: 2px solid transparent;
   transition: color 0.2s, border-color 0.2s;
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
   white-space: nowrap;
 }
 .primary-nav a:hover {
@@ -426,7 +445,6 @@ p:last-child {
   height: 36px;
   border-radius: 50%;
   transition: color 0.2s, background-color 0.2s;
-  filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.5));
 }
 .header-social a:hover {
   color: var(--color-orange);
@@ -478,17 +496,24 @@ p:last-child {
   display: none;
   flex-direction: column;
   justify-content: center;
+  align-items: center;
   gap: 5px;
   padding: var(--space-2);
   block-size: 44px;
   inline-size: 44px;
   flex-shrink: 0;
+  border-radius: 50%;
+  background: rgba(12, 26, 36, 0.55);
+  border: 1px solid rgba(255, 247, 234, 0.22);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.3);
 }
 .nav-toggle span {
   display: block;
   block-size: 2px;
-  inline-size: 22px;
-  background-color: rgba(255, 247, 234, 0.9);
+  inline-size: 20px;
+  background-color: var(--color-cream);
   border-radius: 2px;
   transition: transform 0.25s ease, opacity 0.25s ease, background-color 0.2s ease;
 }
@@ -628,6 +653,7 @@ p:last-child {
   object-position: center;
 }
 
+
 .hero-poster-fallback {
   position: absolute;
   inset: 0;
@@ -665,16 +691,20 @@ p:last-child {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-3);
+  gap: 0;
 }
+
+.hero-content > .hero-title  { margin-block-start: var(--space-3); }
+.hero-content > .hero-lead   { margin-block-start: var(--space-2); }
+.hero-content > .hero-ctas   { margin-block-start: var(--space-5); }
 
 .hero-content::before {
   content: '';
   position: absolute;
-  inset: -80px -120px;
-  background: radial-gradient(ellipse 60% 55% at 50% 42%,
-    rgba(10, 25, 35, 0.55) 0%,
-    transparent 72%
+  inset: -60px -80px;
+  background: radial-gradient(ellipse 55% 50% at 50% 50%,
+    rgba(10, 25, 35, 0.35) 0%,
+    transparent 70%
   );
   z-index: -1;
   pointer-events: none;
@@ -689,7 +719,7 @@ p:last-child {
   margin-block-end: 0;
   margin-inline: auto;
   will-change: transform;
-  /* filter is owned entirely by the logo-glow-build animation */
+  filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.45));
 }
 
 .logo-build {
@@ -743,8 +773,8 @@ p:last-child {
 }
 
 .hero-lead {
-  font-size: clamp(0.75rem, 3.2vw, 1.1rem);
-  line-height: 1.6;
+  font-size: clamp(0.95rem, 3.6vw, 1.3rem);
+  line-height: 1.55;
   color: rgba(255, 247, 234, 0.95);
   margin-block-end: 0;
   margin-inline: auto;
@@ -775,177 +805,36 @@ p:last-child {
     50%       { transform: translateX(-50%) translateY(7px); }
   }
 
-  /* ── Logo build: one slow inhale that culminates in the climax ────────── *
-   *  The whole build is the FIRST INHALE — chest rising, glow swelling,    *
-   *  scale expanding — peaking exactly at the climax burst. Then breath    *
-   *  takes over by EXHALING out of the climax position. No discontinuity.  *
-   *                                                                          *
-   *  Frames emerge from a soft haze (long blur curve) instead of hard-      *
-   *  fading; each layer is fully shaped by the time the next begins, so    *
-   *  the cross-fade reads as a single image coming into focus.             *
-   *                                                                          *
-   *  Timeline (5.5s total):                                                   *
-   *   h1   0.4 →  2.6s   island · palm · waves                                *
-   *   h2   1.5 →  3.7s   + sun rises                                         *
-   *   h3   2.7 →  4.9s   + לב ים text                                        *
-   *   4.84s              glow CLIMAX — bright burst (88%)                     *
-   *   4.84 → 5.5s        eases down to inhale-peak baseline (= breath peak)  *
-   *   5.5s → ∞           breath cycles forever (4.5s/cycle, exhale first)   *
-   * ─────────────────────────────────────────────────────────────────────── */
-
-  /* Frame fade-in: emerges from haze. Blur stays thick while opacity rises,
-     then sharpens late — the layer "materializes" instead of cross-fading.
-     No transform here; .logo-build owns all scaling so layers stay aligned. */
+  /* Frame fade-in: each layer fades up (opacity only — no glow/blur).      */
   @keyframes logo-frame-in {
-    0%   { opacity: 0;    filter: blur(10px); }
-    35%  { opacity: 0.40; filter: blur(6px);  }
-    70%  { opacity: 0.85; filter: blur(2px);  }
-    100% { opacity: 1;    filter: blur(0);    }
+    from { opacity: 0; }
+    to   { opacity: 1; }
   }
 
-  /* Build-phase rise: gradual lift through the second half of the build,
-     reaching the breath inhale-peak position exactly at t=5.5s. */
   @keyframes logo-build-rise {
     0%, 50% { transform: translateY(0); }
     100%    { transform: translateY(-8px); }
   }
 
-  /* Build-phase expand: gradual scale-up through the second half of the
-     build, landing at the breath inhale-peak scale exactly at t=5.5s. */
   @keyframes logo-build-expand {
     0%, 50% { transform: scale(1); }
     100%    { transform: scale(1.022); }
   }
 
-  /* Post-build float: peak at 0%/100%, trough at 50%. So at t=5.5s we ARE
-     at the peak (matching where the build left us); first half-cycle is
-     the EXHALE down, second half is the INHALE back up. */
   @keyframes logo-float {
     0%, 100% { transform: translateY(-8px); }
-    50%       { transform: translateY(0); }
+    50%      { transform: translateY(0); }
   }
 
-  /* Glow build: ramps continuously through the materialization, bursts at
-     88%, then eases the last 12% down to the breath inhale-peak values
-     (= breath glow 0%/100%). At 5.5s the filter handoff is invisible. */
-  @keyframes logo-glow-build {
-    0%   { filter:
-             drop-shadow(0 2px  6px rgba(  0,  0,  0, 0.20))
-             drop-shadow(0 0    0px rgba(244,152, 52, 0.00))
-             drop-shadow(0 0    0px rgba(255,255,255, 0.00))
-             drop-shadow(0 0    0px rgba(244,152, 52, 0.00)); }
-    44%  { filter:
-             drop-shadow(0 3px  9px rgba(  0,  0,  0, 0.28))
-             drop-shadow(0 0    8px rgba(244,152, 52, 0.22))
-             drop-shadow(0 0    1px rgba(255,255,255, 0.05))
-             drop-shadow(0 0   14px rgba(244,152, 52, 0.12)); }
-    62%  { filter:
-             drop-shadow(0 4px 12px rgba(  0,  0,  0, 0.36))
-             drop-shadow(0 0   16px rgba(244,152, 52, 0.55))
-             drop-shadow(0 0    4px rgba(255,255,255, 0.22))
-             drop-shadow(0 0   32px rgba(244,152, 52, 0.26)); }
-    78%  { filter:
-             drop-shadow(0 5px 15px rgba(  0,  0,  0, 0.44))
-             drop-shadow(0 0   26px rgba(244,152, 52, 0.85))
-             drop-shadow(0 0   10px rgba(255,255,255, 0.60))
-             drop-shadow(0 0   54px rgba(244,152, 52, 0.46)); }
-    88%  { filter:
-             drop-shadow(0 6px 22px rgba(  0,  0,  0, 0.58))
-             drop-shadow(0 0   46px rgba(244,152, 52, 1.00))
-             drop-shadow(0 0   26px rgba(255,255,255, 1.00))
-             drop-shadow(0 0   96px rgba(244,152, 52, 0.82)); }
-    100% { filter:
-             drop-shadow(0 6px 22px rgba(  0,  0,  0, 0.58))
-             drop-shadow(0 0   38px rgba(244,152, 52, 1.00))
-             drop-shadow(0 0   16px rgba(255,255,255, 0.85))
-             drop-shadow(0 0   78px rgba(244,152, 52, 0.62)); }
-  }
-
-  /* ── Breathing (post-climax) ─────────────────────────────────────────────
-     Slow sinusoidal breath: 4.5s per cycle (~13 bpm). Phase-shifted so 0%
-     is the INHALE PEAK — at t=5.5s we land here directly from the climax,
-     no jump. First half-cycle exhales (dim, contract, fall), second half
-     inhales back to peak. Float / scale / glow all share the same phase. */
-
-  /* Scale breath on .logo-build (parent of frames). Peak at 0%/100%. */
   @keyframes logo-breathe-scale {
-    0%, 100% { transform: scale(1.022); }   /* inhale peak — matches build end */
-    50%      { transform: scale(1); }       /* exhale rest */
+    0%, 100% { transform: scale(1.022); }
+    50%      { transform: scale(1); }
   }
 
-  /* Glow breath on .hero-logo. 0%/100% values are IDENTICAL to the build
-     glow's 100% values, so the handoff at 5.5s is seamless. */
-  @keyframes logo-breathe-glow {
-    0%, 100% { filter:
-                 drop-shadow(0 6px 22px rgba(  0,  0,  0, 0.58))
-                 drop-shadow(0 0   38px rgba(244,152, 52, 1.00))
-                 drop-shadow(0 0   16px rgba(255,255,255, 0.85))
-                 drop-shadow(0 0   78px rgba(244,152, 52, 0.62)); }
-    50%      { filter:
-                 drop-shadow(0 6px 20px rgba(  0,  0,  0, 0.55))
-                 drop-shadow(0 0   22px rgba(244,152, 52, 0.78))
-                 drop-shadow(0 0    8px rgba(255,255,255, 0.48))
-                 drop-shadow(0 0   48px rgba(244,152, 52, 0.40)); }
-  }
-
-  /* Mobile: same 4-shadow structure as desktop for smooth interpolation,
-     ~65% of desktop intensity — clearly glowing but not overpowering. */
-  @keyframes logo-glow-build-sm {
-    0%   { filter:
-             drop-shadow(0 2px  4px rgba(  0,  0,  0, 0.15))
-             drop-shadow(0 0    0px rgba(244,152, 52, 0.00))
-             drop-shadow(0 0    0px rgba(255,255,255, 0.00))
-             drop-shadow(0 0    0px rgba(244,152, 52, 0.00)); }
-    24%  { filter:
-             drop-shadow(0 2px  6px rgba(  0,  0,  0, 0.20))
-             drop-shadow(0 0    2px rgba(244,152, 52, 0.05))
-             drop-shadow(0 0    0px rgba(255,255,255, 0.00))
-             drop-shadow(0 0    4px rgba(244,152, 52, 0.02)); }
-    58%  { filter:
-             drop-shadow(0 3px  8px rgba(  0,  0,  0, 0.30))
-             drop-shadow(0 0   10px rgba(244,152, 52, 0.45))
-             drop-shadow(0 0    2px rgba(255,255,255, 0.15))
-             drop-shadow(0 0   22px rgba(244,152, 52, 0.18)); }
-    94%  { filter:
-             drop-shadow(0 4px 14px rgba(  0,  0,  0, 0.45))
-             drop-shadow(0 0   18px rgba(244,152, 52, 0.78))
-             drop-shadow(0 0    7px rgba(255,255,255, 0.48))
-             drop-shadow(0 0   40px rgba(244,152, 52, 0.36)); }
-    97%  { filter:
-             drop-shadow(0 5px 16px rgba(  0,  0,  0, 0.50))
-             drop-shadow(0 0   26px rgba(244,152, 52, 0.95))
-             drop-shadow(0 0   12px rgba(255,255,255, 0.72))
-             drop-shadow(0 0   56px rgba(244,152, 52, 0.50)); }
-    100% { filter:
-             drop-shadow(0 5px 18px rgba(  0,  0,  0, 0.52))
-             drop-shadow(0 0   22px rgba(244,152, 52, 0.85))
-             drop-shadow(0 0    9px rgba(255,255,255, 0.55))
-             drop-shadow(0 0   48px rgba(244,152, 52, 0.42)); }
-  }
-
-  @keyframes logo-breathe-glow-sm {
-    /* Peak matches build's 100% exactly — seamless handoff at 5.5s */
-    0%, 100% { filter:
-                 drop-shadow(0 5px 18px rgba(  0,  0,  0, 0.52))
-                 drop-shadow(0 0   22px rgba(244,152, 52, 0.85))
-                 drop-shadow(0 0    9px rgba(255,255,255, 0.55))
-                 drop-shadow(0 0   48px rgba(244,152, 52, 0.42)); }
-    50%      { filter:
-                 drop-shadow(0 5px 15px rgba(  0,  0,  0, 0.48))
-                 drop-shadow(0 0   15px rgba(244,152, 52, 0.60))
-                 drop-shadow(0 0    5px rgba(255,255,255, 0.32))
-                 drop-shadow(0 0   34px rgba(244,152, 52, 0.26)); }
-  }
-
-  /* Frames materialize one after another. Each new layer emerges from
-     a haze while the previous stays sharp underneath, so the cross-fade
-     reads as a single image gaining detail (not three layers stacking). */
   .lbf-1 { animation: logo-frame-in 2.2s ease-in-out 0.3s both; }
   .lbf-2 { animation: logo-frame-in 2.2s ease-in-out 1.4s both; }
   .lbf-3 { animation: logo-frame-in 2.2s ease-in-out 2.5s both; }
 
-  /* Build-phase transforms reach the inhale-peak by t=5.5s. After build
-     ends, the breath animations pick up FROM that peak — no jump. */
   .logo-build {
     animation:
       logo-build-expand   5.5s ease-in-out 0s   both,
@@ -954,64 +843,22 @@ p:last-child {
 
   .hero-logo {
     animation:
-      logo-glow-build   5.5s ease-in-out 0s   both,
       logo-build-rise   5.5s ease-in-out 0s   both,
-      logo-float        4.5s ease-in-out 5.5s infinite,
-      logo-breathe-glow 4.5s ease-in-out 5.5s infinite;
+      logo-float        4.5s ease-in-out 5.5s infinite;
   }
 
-  /* Content enters immediately */
   .hero-title { animation: hero-enter 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both; }
   .hero-lead  { animation: hero-enter 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.32s both; }
   .hero-ctas  { animation: hero-enter 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.50s both; }
 }
 
-/* ── Mobile hero logo: iOS WebKit fixes ──────────────────────────────────
-   All iOS browsers (Safari, Chrome, Firefox) run on WebKit/WKWebView, which
-   has two issues with the desktop approach:
-   1. filter:blur() on child elements prevents the parent's filter:drop-shadow()
-      from rendering — the GPU compositor discards the parent filter when any
-      child simultaneously holds a filter value (nested animated-filter bug).
-   2. will-change:transform promotes the element to its own compositing layer,
-      which on iOS WebKit blocks filter animation from compositing correctly.
-   Fix: opacity-only frame animation (no blur) + will-change:auto on mobile.  */
-
-@keyframes logo-frame-in-mobile {
-  from { opacity: 0; transform: scale(0.92); }
-  to   { opacity: 1; transform: scale(1); }
-}
-
-@media (prefers-reduced-motion: no-preference) and (max-width: 640px) {
-  /* No blur on frames — removes the nested-filter compositor conflict */
-  .lbf-1 { animation: logo-frame-in-mobile 2.2s ease-in-out 0.3s  both; }
-  .lbf-2 { animation: logo-frame-in-mobile 2.2s ease-in-out 1.4s  both; }
-  .lbf-3 { animation: logo-frame-in-mobile 2.2s ease-in-out 2.5s  both; }
-
-  .hero-logo {
-    will-change: auto; /* no pre-promoted layer — lets filter animate freely */
-    animation:
-      logo-glow-build-sm   5.5s ease-in-out 0s   both,
-      logo-build-rise      5.5s ease-in-out 0s   both,
-      logo-float           4.5s ease-in-out 5.5s infinite,
-      logo-breathe-glow-sm 4.5s ease-in-out 5.5s infinite;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .hero-video { display: none; }
-  /* Static glow so the logo always glows even without animation */
-  .hero-logo {
-    filter:
-      drop-shadow(0 4px 14px rgba(  0,  0,  0, 0.45))
-      drop-shadow(0 0   18px rgba(244,152, 52, 0.80))
-      drop-shadow(0 0    6px rgba(255,255,255, 0.45))
-      drop-shadow(0 0   40px rgba(244,152, 52, 0.35));
-  }
 }
 
 /* ── Intro ───────────────────────────────────────────────────────────── */
 .intro {
-  padding-block: clamp(3rem, 4vw + 2rem, 5rem);
+  padding-block: clamp(2rem, 2.5vw + 1.25rem, 3.5rem);
   text-align: center;
 }
 
@@ -1025,7 +872,7 @@ p:last-child {
   inline-size: 64px;
   block-size: 2px;
   margin-inline: auto;
-  margin-block-end: var(--space-5);
+  margin-block-end: var(--space-4);
   border-radius: var(--radius-pill);
   background: linear-gradient(90deg,
     transparent 0%,
@@ -1049,10 +896,17 @@ p:last-child {
   white-space: nowrap;
 }
 
+/* Brand name — keep "לב ים" / "ليف يام" on one line, bold, wherever it
+   appears inside body copy. */
+.brand-name {
+  white-space: nowrap;
+  font-weight: 700;
+}
+
 
 /* ── Services ────────────────────────────────────────────────────────── */
 .services {
-  padding-block: clamp(3rem, 4vw + 2rem, 5rem);
+  padding-block: clamp(2rem, 2.5vw + 1.25rem, 3.5rem);
   background-color: var(--color-blue);
 }
 
@@ -1170,13 +1024,6 @@ p:last-child {
   font-size: 0.9375rem;
 }
 
-.services-divider {
-  flex: 0 0 100%;
-  height: 1px;
-  background: linear-gradient(to left, transparent, rgba(255,247,234,0.3) 20%, rgba(255,247,234,0.3) 80%, transparent);
-  margin-block: var(--space-4);
-}
-
 /* ── Space ───────────────────────────────────────────────────────────── */
 .space {
   padding-block: var(--space-8);
@@ -1252,7 +1099,7 @@ p:last-child {
 
 /* ── Why ─────────────────────────────────────────────────────────────── */
 .why {
-  padding-block: clamp(3rem, 4vw + 2rem, 5rem);
+  padding-block: clamp(2rem, 2.5vw + 1.25rem, 3.5rem);
   background-color: var(--color-cream);
 }
 
@@ -1311,7 +1158,7 @@ p:last-child {
 
 /* ── Gallery ─────────────────────────────────────────────────────────── */
 .gallery {
-  padding-block: clamp(3rem, 4vw + 2rem, 5rem);
+  padding-block: clamp(2rem, 2.5vw + 1.25rem, 3.5rem);
   background-color: var(--color-blue);
 }
 
@@ -1444,7 +1291,7 @@ p:last-child {
 
 /* ── FAQ ─────────────────────────────────────────────────────────────── */
 .faq {
-  padding-block: clamp(3rem, 4vw + 2rem, 5rem);
+  padding-block: clamp(2rem, 2.5vw + 1.25rem, 3.5rem);
   background-color: var(--color-cream);
 }
 
@@ -1547,7 +1394,7 @@ p:last-child {
 }
 
 .contact > .container {
-  padding-block: clamp(3rem, 4vw + 2rem, 5rem);
+  padding-block: clamp(2rem, 2.5vw + 1.25rem, 3.5rem);
   position: relative;
   z-index: 1;
 }
@@ -1924,7 +1771,7 @@ p:last-child {
 /* ── Site Footer ─────────────────────────────────────────────────────── */
 .site-footer {
   background-color: var(--color-ink);
-  padding-block-end: 80px;
+  padding-block-end: 12px;
 }
 
 .footer-inner {
@@ -1932,7 +1779,15 @@ p:last-child {
   align-items: center;
   justify-content: flex-start;
   gap: var(--space-4);
-  padding-block: var(--space-4);
+  padding-block: var(--space-2);
+}
+
+/* Desktop: leave room on the inline-start (RTL: left) for the floating
+   WhatsApp button so the footer credit line isn't visually overlapped. */
+@media (min-width: 641px) {
+  .footer-inner {
+    padding-inline-end: 88px;
+  }
 }
 
 .footer-contact {
@@ -2276,7 +2131,7 @@ p:last-child {
     align-items: center;
     text-align: center;
     gap: var(--space-2);
-    padding-block: var(--space-3);
+    padding-block: var(--space-2);
   }
 
   .footer-brand {
