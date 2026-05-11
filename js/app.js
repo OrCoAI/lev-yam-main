@@ -778,3 +778,88 @@ const LevYamI18n = (function () {
   document.addEventListener('click', stopPulse);
   document.addEventListener('scroll', stopPulse, { passive: true });
 })();
+
+/* ── Dynatrace Business Events ──────────────────────────────────────────── */
+(function () {
+  function sendBizEvent(type, attrs) {
+    if (window.dynatrace && typeof window.dynatrace.sendBizEvent === 'function') {
+      window.dynatrace.sendBizEvent(type, attrs);
+    }
+  }
+
+  // Maps data-i18n-wa key → whatsapp_cta source name
+  var WA_KEY_SOURCE = {
+    wa_msg_corp:   'service_corp',
+    wa_msg_priv:   'service_priv',
+    wa_msg_rent:   'service_rent',
+    wa_msg_comm:   'service_comm',
+    wa_msg_week:   'service_week',
+    wa_msg_team:   'contact_team',
+    wa_msg_join:   'contact_join',
+    wa_msg_family: 'contact_priv',
+    wa_msg_dream:  'contact_dream'
+  };
+
+  // wa keys that represent a specific service offering
+  var SERVICE_KEYS = {
+    wa_msg_corp: 'corp',
+    wa_msg_priv: 'priv',
+    wa_msg_rent: 'rent',
+    wa_msg_comm: 'comm',
+    wa_msg_week: 'week'
+  };
+
+  // wa keys that represent a contact-section intent
+  var CONTACT_INTENT_KEYS = {
+    wa_msg_team:   'team',
+    wa_msg_join:   'join',
+    wa_msg_family: 'priv',
+    wa_msg_dream:  'dream'
+  };
+
+  document.addEventListener('click', function (e) {
+    var link = e.target && e.target.closest && e.target.closest('a[href*="wa.me"]');
+    if (!link) return;
+
+    var waKey  = link.getAttribute('data-i18n-wa') || '';
+    var source = link.getAttribute('data-bizevent-source') || WA_KEY_SOURCE[waKey] || 'general';
+    var lang   = LevYamI18n.lang;
+
+    sendBizEvent('levyam.whatsapp_cta', {
+      'event.source': source,
+      'event.lang':   lang
+    });
+
+    var service = SERVICE_KEYS[waKey];
+    if (service) {
+      sendBizEvent('levyam.service_interest', {
+        'service.type': service,
+        'event.lang':   lang
+      });
+    }
+
+    var intent = CONTACT_INTENT_KEYS[waKey];
+    if (intent) {
+      sendBizEvent('levyam.contact_intent', {
+        'intent.type': intent,
+        'event.lang':  lang
+      });
+    }
+  });
+
+  // Language switch — LevYamI18n's click handler updates currentLang before any
+  // other click listener runs, so reading LevYamI18n.lang in a click handler would
+  // already return the new language. Using the langchange event and tracking prevLang
+  // ourselves gives accurate lang.from values.
+  var prevLang = LevYamI18n.lang;
+  document.addEventListener('langchange', function (e) {
+    var to = e.detail && e.detail.lang;
+    if (to && to !== prevLang) {
+      sendBizEvent('levyam.language_switch', {
+        'lang.from': prevLang,
+        'lang.to':   to
+      });
+    }
+    prevLang = to || prevLang;
+  });
+})();

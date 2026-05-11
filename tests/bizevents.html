@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <title>Lev Yam — Bizevent Tests</title>
+  <style>
+    body { font-family: monospace; padding: 24px; background: #f0f0f0; color: #111; }
+    #summary { font-size: 18px; font-weight: bold; padding: 10px 16px; margin-bottom: 20px;
+               background: #fff; border-radius: 4px; display: inline-block; }
+    #summary.all-pass { border-left: 4px solid #1a7f2e; }
+    #summary.has-fail  { border-left: 4px solid #c00; }
+    .pass { color: #1a7f2e; }
+    .fail { color: #c00; font-weight: bold; }
+    .row  { padding: 2px 0; }
+    h2    { font-size: 13px; margin: 16px 0 4px; color: #555; }
+    #call-log { font-size: 11px; background: #fff; padding: 12px; border-radius: 4px;
+                white-space: pre; max-height: 260px; overflow: auto; margin-top: 20px; }
+    #stubs { display: none; }
+  </style>
+
+  <!-- Mock window.dynatrace BEFORE app.js so every sendBizEvent call is captured -->
+  <script>
+    localStorage.removeItem('lev-yam-lang'); // ensure we start from Hebrew
+    window._calls = [];
+    window.dynatrace = {
+      sendBizEvent: function (type, attrs) {
+        window._calls.push({ type: type, attrs: Object.assign({}, attrs) });
+      }
+    };
+  </script>
+</head>
+<body>
+
+  <!-- Minimal DOM stubs required by app.js IIFEs -->
+  <div id="stubs">
+    <div class="lang-toggle" role="group">
+      <button type="button" class="lang-opt is-active" data-lang-set="he" aria-pressed="true" lang="he">עב</button>
+      <button type="button" class="lang-opt"            data-lang-set="ar" aria-pressed="false" lang="ar">عر</button>
+    </div>
+
+    <!-- WhatsApp links under test — one per tracked source/wa-key -->
+    <a id="t-hero"   href="https://wa.me/1" data-i18n-wa="wa_msg_general" data-bizevent-source="hero">hero</a>
+    <a id="t-header" href="https://wa.me/1" data-i18n-wa="wa_msg_general" data-bizevent-source="header">header</a>
+    <a id="t-float"  href="https://wa.me/1" data-i18n-wa="wa_msg_general" data-bizevent-source="float">float</a>
+    <a id="t-footer" href="https://wa.me/1"                                data-bizevent-source="footer">footer</a>
+    <a id="t-corp"   href="https://wa.me/1" data-i18n-wa="wa_msg_corp">corp</a>
+    <a id="t-priv"   href="https://wa.me/1" data-i18n-wa="wa_msg_priv">priv</a>
+    <a id="t-rent"   href="https://wa.me/1" data-i18n-wa="wa_msg_rent">rent</a>
+    <a id="t-comm"   href="https://wa.me/1" data-i18n-wa="wa_msg_comm">comm</a>
+    <a id="t-week"   href="https://wa.me/1" data-i18n-wa="wa_msg_week">week</a>
+    <a id="t-team"   href="https://wa.me/1" data-i18n-wa="wa_msg_team">team</a>
+    <a id="t-join"   href="https://wa.me/1" data-i18n-wa="wa_msg_join">join</a>
+    <a id="t-family" href="https://wa.me/1" data-i18n-wa="wa_msg_family">family</a>
+    <a id="t-dream"  href="https://wa.me/1" data-i18n-wa="wa_msg_dream">dream</a>
+
+    <!-- Required by the WA-pulse IIFE -->
+    <a class="wa-float" href="https://wa.me/1"></a>
+  </div>
+
+  <div id="summary"></div>
+  <div id="results"></div>
+  <div id="call-log"></div>
+
+  <script src="../js/app.js"></script>
+  <script>
+    /* ── tiny test runner ──────────────────────────────────────────────── */
+    var _results = [];
+    var _allCalls = [];
+
+    function flush() { window._calls = []; }
+
+    function click(id) {
+      flush();
+      document.getElementById(id).dispatchEvent(
+        new MouseEvent('click', { bubbles: true, cancelable: true })
+      );
+      _allCalls.push({ trigger: id, calls: window._calls.map(function(c) {
+        return c.type + ' ' + JSON.stringify(c.attrs);
+      })});
+    }
+
+    function find(type) {
+      return window._calls.find(function (c) { return c.type === type; }) || null;
+    }
+
+    function ok(desc, val) { _results.push({ desc: desc, pass: !!val }); }
+    function eq(a, b)      { return a === b; }
+
+    /* ── tests ─────────────────────────────────────────────────────────── */
+
+    // General WA sources
+    click('t-hero');
+    var c = find('levyam.whatsapp_cta');
+    ok('hero WA → whatsapp_cta fired',       !!c);
+    ok('hero WA → event.source = hero',       c && eq(c.attrs['event.source'], 'hero'));
+    ok('hero WA → event.lang = he',           c && eq(c.attrs['event.lang'],   'he'));
+    ok('hero WA → no service_interest',       !find('levyam.service_interest'));
+    ok('hero WA → no contact_intent',         !find('levyam.contact_intent'));
+
+    click('t-header');
+    ok('header WA → event.source = header',   eq(find('levyam.whatsapp_cta').attrs['event.source'], 'header'));
+
+    click('t-float');
+    ok('float WA → event.source = float',     eq(find('levyam.whatsapp_cta').attrs['event.source'], 'float'));
+
+    click('t-footer'); // no data-i18n-wa, only data-bizevent-source
+    ok('footer WA → event.source = footer',   eq(find('levyam.whatsapp_cta').attrs['event.source'], 'footer'));
+
+    // Service interest events
+    click('t-corp');
+    var si = find('levyam.service_interest');
+    ok('corp CTA → whatsapp_cta source = service_corp', eq(find('levyam.whatsapp_cta').attrs['event.source'], 'service_corp'));
+    ok('corp CTA → service_interest fired',             !!si);
+    ok('corp CTA → service.type = corp',                si && eq(si.attrs['service.type'], 'corp'));
+    ok('corp CTA → no contact_intent',                  !find('levyam.contact_intent'));
+
+    click('t-priv');
+    ok('priv CTA → service.type = priv',      eq(find('levyam.service_interest').attrs['service.type'], 'priv'));
+    click('t-rent');
+    ok('rent CTA → service.type = rent',      eq(find('levyam.service_interest').attrs['service.type'], 'rent'));
+    click('t-comm');
+    ok('comm CTA → service.type = comm',      eq(find('levyam.service_interest').attrs['service.type'], 'comm'));
+    click('t-week');
+    ok('week CTA → service.type = week',      eq(find('levyam.service_interest').attrs['service.type'], 'week'));
+
+    // Contact intent events
+    click('t-team');
+    var ci = find('levyam.contact_intent');
+    ok('team btn → whatsapp_cta source = contact_team', eq(find('levyam.whatsapp_cta').attrs['event.source'], 'contact_team'));
+    ok('team btn → contact_intent fired',               !!ci);
+    ok('team btn → intent.type = team',                 ci && eq(ci.attrs['intent.type'], 'team'));
+    ok('team btn → no service_interest',                !find('levyam.service_interest'));
+
+    click('t-join');
+    ok('join btn → intent.type = join',       eq(find('levyam.contact_intent').attrs['intent.type'], 'join'));
+    click('t-family');
+    ok('family btn → intent.type = priv',     eq(find('levyam.contact_intent').attrs['intent.type'], 'priv'));
+    click('t-dream');
+    ok('dream btn → intent.type = dream',     eq(find('levyam.contact_intent').attrs['intent.type'], 'dream'));
+
+    // Language switch
+    flush();
+    document.querySelector('[data-lang-set="ar"]').click();
+    _allCalls.push({ trigger: 'lang→ar', calls: window._calls.map(function(c) {
+      return c.type + ' ' + JSON.stringify(c.attrs);
+    })});
+    c = find('levyam.language_switch');
+    ok('lang he→ar → language_switch fired',  !!c);
+    ok('lang he→ar → lang.from = he',         c && eq(c.attrs['lang.from'], 'he'));
+    ok('lang he→ar → lang.to = ar',           c && eq(c.attrs['lang.to'],   'ar'));
+
+    flush();
+    document.querySelector('[data-lang-set="ar"]').click(); // same lang, no event
+    _allCalls.push({ trigger: 'lang→ar (dup)', calls: window._calls.map(function(c) {
+      return c.type + ' ' + JSON.stringify(c.attrs);
+    })});
+    ok('lang ar→ar → no duplicate event',     !find('levyam.language_switch'));
+
+    flush();
+    document.querySelector('[data-lang-set="he"]').click();
+    _allCalls.push({ trigger: 'lang→he', calls: window._calls.map(function(c) {
+      return c.type + ' ' + JSON.stringify(c.attrs);
+    })});
+    c = find('levyam.language_switch');
+    ok('lang ar→he → lang.from = ar',         c && eq(c.attrs['lang.from'], 'ar'));
+    ok('lang ar→he → lang.to = he',           c && eq(c.attrs['lang.to'],   'he'));
+
+    // WA event.lang reflects current language after switch
+    click('t-hero');
+    ok('WA after lang switch → event.lang = he', eq(find('levyam.whatsapp_cta').attrs['event.lang'], 'he'));
+
+    /* ── render ─────────────────────────────────────────────────────────── */
+    var pass  = _results.filter(function (r) { return r.pass; }).length;
+    var total = _results.length;
+    var allOk = pass === total;
+
+    var sum = document.getElementById('summary');
+    sum.textContent = (allOk ? '✓ All ' : '') + pass + ' / ' + total + ' passed';
+    sum.className = allOk ? 'all-pass' : 'has-fail';
+
+    var groups = {
+      'General WA sources':    _results.slice(0, 9),
+      'Service interest':      _results.slice(9, 19),
+      'Contact intent':        _results.slice(19, 27),
+      'Language switch':       _results.slice(27)
+    };
+
+    var html = '';
+    Object.keys(groups).forEach(function (label) {
+      html += '<h2>' + label + '</h2>';
+      groups[label].forEach(function (r) {
+        html += '<div class="row ' + (r.pass ? 'pass' : 'fail') + '">'
+              + (r.pass ? '✓' : '✗') + ' ' + r.desc + '</div>';
+      });
+    });
+    document.getElementById('results').innerHTML = html;
+
+    var log = _allCalls.map(function (entry) {
+      return '▶ ' + entry.trigger + '\n' +
+        (entry.calls.length ? entry.calls.map(function(s) { return '  ' + s; }).join('\n') : '  (no calls)');
+    }).join('\n');
+    document.getElementById('call-log').textContent = '── call log ──\n' + log;
+  </script>
+</body>
+</html>

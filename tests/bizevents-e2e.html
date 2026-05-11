@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <title>Lev Yam — Bizevent E2E</title>
+  <style>
+    body { font-family: monospace; padding: 24px; background: #f0f0f0; color: #111; }
+    h2 { font-size: 15px; margin: 0 0 4px; }
+    #run-id { font-size: 12px; color: #555; margin-bottom: 20px; }
+    #status { font-size: 16px; font-weight: bold; padding: 10px 14px; background: #fff;
+              border-radius: 4px; border-left: 4px solid #aaa; margin-bottom: 20px; display: inline-block; }
+    #status.ok   { border-color: #1a7f2e; }
+    #status.fail { border-color: #c00; }
+    .ev { padding: 3px 0; font-size: 13px; }
+    .ev span { color: #2c92bf; }
+    #stubs { display: none; }
+  </style>
+
+  <!-- Real Dynatrace RUM tag — must be first script -->
+  <script type="text/javascript" src="https://js-cdn.dynatracelabs.com/jstag/14868fa4215/bf37083dis/716e4cb7cadaf3f3_complete.js" crossorigin="anonymous"></script>
+</head>
+<body>
+  <h2>Lev Yam — Bizevent E2E Test</h2>
+  <div id="run-id"></div>
+  <div id="status">Initializing…</div>
+  <div id="log"></div>
+
+  <!-- Minimal DOM stubs required by app.js -->
+  <div id="stubs">
+    <div class="lang-toggle" role="group">
+      <button type="button" class="lang-opt is-active" data-lang-set="he" aria-pressed="true" lang="he">עב</button>
+      <button type="button" class="lang-opt"            data-lang-set="ar" aria-pressed="false" lang="ar">عر</button>
+    </div>
+    <a id="t-hero"   href="https://wa.me/1" data-i18n-wa="wa_msg_general" data-bizevent-source="hero">hero</a>
+    <a id="t-corp"   href="https://wa.me/1" data-i18n-wa="wa_msg_corp">corp</a>
+    <a id="t-team"   href="https://wa.me/1" data-i18n-wa="wa_msg_team">team</a>
+    <a class="wa-float" href="https://wa.me/1"></a>
+  </div>
+
+  <script src="../js/app.js"></script>
+  <script>
+    var RUN_ID = 'e2e-' + Date.now();
+    document.getElementById('run-id').textContent = 'run_id: ' + RUN_ID;
+
+    var fired = [];
+    var logEl   = document.getElementById('log');
+    var statusEl = document.getElementById('status');
+
+    function patchDtrum() {
+      if (!window.dynatrace || typeof window.dynatrace.sendBizEvent !== 'function') return false;
+      var orig = window.dynatrace.sendBizEvent.bind(window.dynatrace);
+      window.dynatrace.sendBizEvent = function (type, attrs) {
+        var enriched = Object.assign({}, attrs, { 'test.run_id': RUN_ID });
+        orig(type, enriched);
+        fired.push({ type: type, attrs: enriched });
+        var d = document.createElement('div');
+        d.className = 'ev';
+        d.innerHTML = '&#8594; <span>' + type + '</span>  ' + JSON.stringify(attrs);
+        logEl.appendChild(d);
+      };
+      return true;
+    }
+
+    function click(id) {
+      document.getElementById(id).dispatchEvent(
+        new MouseEvent('click', { bubbles: true, cancelable: true })
+      );
+    }
+
+    function runTests() {
+      click('t-hero');                                            // whatsapp_cta (hero)
+      click('t-corp');                                            // whatsapp_cta + service_interest (corp)
+      click('t-team');                                            // whatsapp_cta + contact_intent (team)
+      document.querySelector('[data-lang-set="ar"]').click();    // language_switch (he→ar)
+
+      var ok = fired.length === 5; // 3x whatsapp_cta + service_interest + contact_intent + language_switch = 6... let me count
+      // hero: 1 (whatsapp_cta)
+      // corp: 2 (whatsapp_cta + service_interest)
+      // team: 2 (whatsapp_cta + contact_intent)
+      // lang: 1 (language_switch)
+      // total: 6
+      ok = fired.length === 6;
+
+      statusEl.textContent = (ok ? '✓ ' : '✗ ') + fired.length + ' / 6 events fired — waiting for DT ingestion (~30s)';
+      statusEl.className = ok ? 'ok' : 'fail';
+    }
+
+    if (patchDtrum()) {
+      runTests();
+    } else {
+      statusEl.textContent = 'Waiting for DT agent…';
+      var attempts = 0;
+      var poll = setInterval(function () {
+        attempts++;
+        if (patchDtrum()) {
+          clearInterval(poll);
+          runTests();
+        } else if (attempts > 20) {
+          clearInterval(poll);
+          statusEl.textContent = '✗ dtrum not available — DT tag may not have loaded';
+          statusEl.className = 'fail';
+        }
+      }, 200);
+    }
+  </script>
+</body>
+</html>
