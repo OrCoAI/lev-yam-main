@@ -1,6 +1,18 @@
+# macOS
 .DS_Store
 **/.DS_Store
+
+# Editors
+.vscode/
+.idea/
+
+# Claude Code agent state
 .claude/
+
+# Raw source media (committed-optimized versions live in img/hero/)
 img/hero/*.MOV
 img/hero/*.mov
 img/hero/hero.webm
+
+# Logs
+*.log

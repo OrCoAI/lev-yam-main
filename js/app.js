@@ -41,7 +41,7 @@ const LevYamI18n = (function () {
       hero_video_alt: 'לב ים — שקיעה מול הים',
       hero_title_html: 'המקום שבו <span class="hero-accent">הלב</span> פוגש את <span class="hero-accent-blue">הים</span>',
       hero_lead: 'מרחב פתוח על קו המים - לעבודה, מפגש, יצירה ומנוחה.',
-      hero_cta_wa: 'דברו איתנו בוואטסאפ',
+      hero_cta_wa: 'דברו איתנו',
       hero_cta_services: 'מה קורה בלב ים',
 
       intro_p_html: 'על קו המים של כפר הדייגים הקסום, האחרון מסוגו בישראל, הקמנו את <strong class="intro-brand">לב ים</strong> - מרחב ליזמות עסקית חברתית המבוסס על שותפות, פשטות וקבלה.',
@@ -200,7 +200,7 @@ const LevYamI18n = (function () {
       hero_video_alt: 'ليف يام — غروب الشمس على البحر',
       hero_title_html: 'حيث يلتقي <span class="hero-accent">القلب</span> بـ<span class="hero-accent-blue">البحر</span>',
       hero_lead: 'فضاء مفتوح على خط الماء — للعمل واللقاء والإبداع والراحة.',
-      hero_cta_wa: 'تحدّثوا معنا على واتساب',
+      hero_cta_wa: 'تحدّثوا معنا',
       hero_cta_services: 'ماذا يجري في ليف يام',
 
       intro_p_html: 'على خط الماء في قرية الصيادين الساحرة، الأخيرة من نوعها في البلاد، أقمنا <strong class="intro-brand">ليف يام</strong> — فضاءً لريادة الأعمال الاجتماعية، قائمًا على الشراكة والبساطة والقبول.',
@@ -736,6 +736,69 @@ const LevYamI18n = (function () {
   } else {
     init();
   }
+})();
+
+/* ── Gallery carousel ────────────────────────────────────────────────── */
+(function () {
+  var track        = document.getElementById('gallery-track');
+  var prevBtn      = document.getElementById('carousel-prev');
+  var nextBtn      = document.getElementById('carousel-next');
+  var elCurrent    = document.getElementById('carousel-current');
+  var elTotal      = document.getElementById('carousel-total');
+  var progressFill = document.getElementById('carousel-progress-fill');
+
+  if (!track || !prevBtn || !nextBtn) return;
+
+  var items   = Array.from(track.querySelectorAll('.gallery-item'));
+  var total   = items.length;
+  var GAP     = 5; // matches CSS gap: 5px
+  if (!total) return;
+
+  var current = 0;
+  if (elTotal) elTotal.textContent = total;
+
+  function itemStride() {
+    return items[0] ? items[0].offsetWidth + GAP : track.clientWidth + GAP;
+  }
+
+  function updateUI() {
+    if (elCurrent) elCurrent.textContent = current + 1;
+    if (progressFill) progressFill.style.width = ((current + 1) / total * 100) + '%';
+    prevBtn.disabled = current === 0;
+    nextBtn.disabled = current === total - 1;
+  }
+
+  function goTo(index) {
+    current = Math.max(0, Math.min(index, total - 1));
+    track.scrollTo({ left: current * itemStride(), behavior: 'smooth' });
+    updateUI();
+  }
+
+  prevBtn.addEventListener('click', function () { goTo(current - 1); });
+  nextBtn.addEventListener('click', function () { goTo(current + 1); });
+
+  // Sync counter while the user scrolls freely
+  var scrollTimer;
+  track.addEventListener('scroll', function () {
+    clearTimeout(scrollTimer);
+    scrollTimer = setTimeout(function () {
+      var idx = Math.round(track.scrollLeft / itemStride());
+      idx = Math.max(0, Math.min(idx, total - 1));
+      if (idx !== current) { current = idx; updateUI(); }
+    }, 60);
+  }, { passive: true });
+
+  // Touch swipe (advance one image at a time)
+  var touchStartX = 0;
+  track.addEventListener('touchstart', function (e) {
+    touchStartX = e.changedTouches[0].clientX;
+  }, { passive: true });
+  track.addEventListener('touchend', function (e) {
+    var diff = touchStartX - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 30) goTo(current + (diff > 0 ? 1 : -1));
+  }, { passive: true });
+
+  updateUI();
 })();
 
 /* ── Hero video: resume on tab return / bfcache restore ──────────────── */
