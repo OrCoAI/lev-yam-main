@@ -925,4 +925,21 @@ const LevYamI18n = (function () {
     }
     prevLang = to || prevLang;
   });
+
+  // FAQ question opens — <details> 'toggle' does not bubble, so capture phase is required
+  document.addEventListener('toggle', function (e) {
+    var item = e.target;
+    if (!item || item.tagName !== 'DETAILS' || !item.classList.contains('faq-item')) return;
+    if (!item.open) return; // fire only on open, not collapse
+
+    var summary  = item.querySelector('summary[data-i18n]');
+    var key      = (summary && summary.getAttribute('data-i18n')) || '';
+    var question = key.replace(/^faq_q_/, '');
+    if (!question) return;
+
+    sendBizEvent('levyam.faq_open', {
+      'question':   question,
+      'event.lang': LevYamI18n.lang
+    });
+  }, true);
 })();

@@ -53,6 +53,12 @@
     <a id="t-family" href="https://wa.me/1" data-i18n-wa="wa_msg_family">family</a>
     <a id="t-dream"  href="https://wa.me/1" data-i18n-wa="wa_msg_dream">dream</a>
 
+    <!-- FAQ items under test -->
+    <details id="t-faq-arrive"   class="faq-item"><summary data-i18n="faq_q_arrive">arrive</summary></details>
+    <details id="t-faq-capacity" class="faq-item"><summary data-i18n="faq_q_capacity">capacity</summary></details>
+    <details id="t-faq-no-i18n"  class="faq-item"><summary>no i18n key</summary></details>
+    <details id="t-not-faq"      class="other-item"><summary data-i18n="faq_q_book">not a faq item</summary></details>
+
     <!-- Required by the WA-pulse IIFE -->
     <a class="wa-float" href="https://wa.me/1"></a>
   </div>
@@ -169,6 +175,38 @@
     click('t-hero');
     ok('WA after lang switch → event.lang = he', eq(find('levyam.whatsapp_cta').attrs['event.lang'], 'he'));
 
+    // FAQ open tracking
+    function toggleFaq(id, openState) {
+      flush();
+      var el = document.getElementById(id);
+      el.open = openState;
+      el.dispatchEvent(new Event('toggle', { bubbles: false }));
+      _allCalls.push({ trigger: id + ' (' + (openState ? 'open' : 'close') + ')', calls: window._calls.map(function(c) {
+        return c.type + ' ' + JSON.stringify(c.attrs);
+      })});
+    }
+
+    toggleFaq('t-faq-arrive', true);
+    c = find('levyam.faq_open');
+    ok('faq arrive opened → faq_open fired',    !!c);
+    ok('faq arrive opened → question = arrive', c && eq(c.attrs['question'], 'arrive'));
+    ok('faq arrive opened → event.lang = he',   c && eq(c.attrs['event.lang'], 'he'));
+
+    toggleFaq('t-faq-capacity', true);
+    ok('faq capacity opened → question = capacity', eq(find('levyam.faq_open').attrs['question'], 'capacity'));
+
+    // Closing must not fire
+    toggleFaq('t-faq-arrive', false);
+    ok('faq close → no event',                  !find('levyam.faq_open'));
+
+    // Element without faq-item class must not fire
+    toggleFaq('t-not-faq', true);
+    ok('non-faq <details> open → no event',     !find('levyam.faq_open'));
+
+    // Element with faq-item but no data-i18n key must not fire
+    toggleFaq('t-faq-no-i18n', true);
+    ok('faq <details> without i18n → no event', !find('levyam.faq_open'));
+
     /* ── render ─────────────────────────────────────────────────────────── */
     var pass  = _results.filter(function (r) { return r.pass; }).length;
     var total = _results.length;
@@ -182,7 +220,8 @@
       'General WA sources':    _results.slice(0, 9),
       'Service interest':      _results.slice(9, 19),
       'Contact intent':        _results.slice(19, 27),
-      'Language switch':       _results.slice(27)
+      'Language switch':       _results.slice(27, 35),
+      'FAQ opens':             _results.slice(35)
     };
 
     var html = '';
