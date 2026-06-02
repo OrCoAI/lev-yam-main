@@ -850,6 +850,13 @@ const LevYamI18n = (function () {
     }
   }
 
+  // Meta Pixel — fires a standard event only when the pixel has loaded
+  function sendMetaEvent(name, attrs) {
+    if (typeof window.fbq === 'function') {
+      window.fbq('track', name, attrs);
+    }
+  }
+
   // Maps data-i18n-wa key → whatsapp_cta source name
   var WA_KEY_SOURCE = {
     wa_msg_corp:   'service_corp',
@@ -891,6 +898,13 @@ const LevYamI18n = (function () {
     sendBizEvent('levyam.whatsapp_cta', {
       'event.source': source,
       'event.lang':   lang
+    });
+
+    // Meta Pixel: a WhatsApp click is a Contact/lead conversion
+    sendMetaEvent('Contact', {
+      content_name: source,
+      content_category: 'whatsapp_cta',
+      locale: lang
     });
 
     var service = SERVICE_KEYS[waKey];
