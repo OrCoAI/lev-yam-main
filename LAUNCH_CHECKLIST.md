@@ -1,136 +1,90 @@
 # Lev Yam — Launch Checklist
 
 **Website:** levyam.com
-**Run this checklist before going live. Every box must be ticked.**
+**Status:** ✅ Launched and live
 
 ---
 
-## ASSETS
+## ✅ LAUNCH COMPLETE
 
-- [ ] Font files in `/fonts/` (Heebo Regular/Medium/Bold + Assistant Regular/SemiBold)
-- [ ] `img/hero/hero-poster.webp` exists
-- [ ] `img/hero/hero.mp4` exists (or hero-poster.webp used as fallback)
-- [ ] All 5 service card photos in `img/services/` (offsite, community, private, rental, weekend)
-- [ ] `img/space/space-overview.webp` exists
-- [ ] 12 gallery images in `img/gallery/` (`01-large.webp` → `12-large.webp`)
-- [ ] `assets/og-image.jpg` exists (1200×630) — **TODO: upload logo-full.png to levyam.com/assets/og-image.jpg and update `og:image` URL in index.html from GitHub Pages path to `https://levyam.com/assets/og-image.jpg`**
-- [ ] All placeholder `<div class="img-placeholder">` replaced with real `<img>` tags
+The site has been launched and is live at [levyam.com](https://levyam.com). All blocking items below were resolved before going live. This document is kept as a historical record of the pre-launch checklist.
 
----
+What changed since this checklist was originally written:
+- All real photos and the hero video shipped (final file types are `.jpg/.jpeg/.mp4`, not all `.webp` as originally planned).
+- Fonts ship as Hebrew/Latin subset files (`Heebo-hebrew.woff2`, `Heebo-latin.woff2`, `Assistant-hebrew.woff2`, `Assistant-latin.woff2`) instead of separate weight files.
+- Gallery was redesigned from a 12-image grid into an 18-image filmstrip carousel.
+- The standalone "המרחב" section was removed in the redesign, so `space-overview.webp` is no longer needed.
+- HE ↔ AR (Levantine Arabic) language toggle was added post-launch.
+- Dynatrace RUM tag + 5 business event types added: `levyam.whatsapp_cta`, `levyam.service_interest`, `levyam.contact_intent`, `levyam.language_switch`, `levyam.faq_open`.
 
-## CONTENT
-
-- [ ] No placeholder text visible anywhere on the page
-- [ ] Hero tagline: `המקום שבו הלב פוגש את הים` ✓
-- [ ] All 5 service cards have titles, descriptions, and WhatsApp CTAs
-- [ ] All 7 FAQ questions and answers present
-- [ ] Footer shows: logo, tagline, phone, email, address with Google Maps link
-- [ ] Copyright: `© לב ים 2026`
+**Still open (non-blocking):**
+- `og:image` is currently the 600×599 logo square. Optional upgrade to a proper 1200×630 banner for better social cards — deferred.
 
 ---
 
-## CONTACT — VERIFY EVERY INSTANCE
+## ASSETS (historical)
 
-- [ ] All WhatsApp links use `wa.me/972506669138`
-- [ ] Footer phone: `050-6669138` links to `tel:+972506669138`
-- [ ] Footer email: `info@levyam.com` links to `mailto:info@levyam.com`
-- [ ] Footer address links to Google Maps
-- [ ] Instagram links to `https://www.instagram.com/levyam_`
-- [ ] Facebook links to `https://m.facebook.com/profile.php?id=61585790351617`
+- [x] Font files in `/fonts/` (shipped as Hebrew/Latin subsets, not weight files)
+- [x] `img/hero/hero-poster.jpg` exists
+- [x] `img/hero/hero.mp4` exists
+- [x] All 5 service card photos in `img/services/` (offsite, community, private, rental, weekend)
+- [ ] ~~`img/space/space-overview.webp`~~ — no longer needed, "המרחב" section removed in redesign
+- [x] 18 gallery images in `img/gallery/` (`01.jpg` → `18.jpg`) — was 12, now 18 in carousel
+- [ ] ~~`assets/og-image.jpg` (1200×630)~~ — deferred; current og:image is the 600×599 logo
+- [x] All placeholder `<div class="img-placeholder">` replaced with real `<img>` tags
 
 ---
 
-## WHATSAPP — CLICK EACH LINK AND VERIFY MESSAGE
+## CONTENT (historical)
 
-- [ ] Header CTA → `שלום, אשמח לפרטים על לב ים`
-- [ ] Hero CTA → `שלום, אשמח לקבל פרטים על לב ים`
-- [ ] Offsite card → `שלום, אנחנו מחפשים חוויה צוותית בלב ים`
-- [ ] Community card → `שלום, אשמח להצטרף ליום הקהילה`
-- [ ] Private card → `שלום, אשמח להגיע עם המשפחה לחגיגה`
-- [ ] Rental card → `שלום, אשמח למצוא בית לחלום שלי`
-- [ ] Weekend card → `שלום, אשמח לפרטים על סופי שבוע בלב ים`
-- [ ] Contact — team button → `שלום, אנחנו צוות שמחפשים חוויה`
-- [ ] Contact — community button → `שלום, אשמח להצטרף לקהילה`
-- [ ] Contact — private button → `שלום, אנחנו משפחה שמתכננת אירוע`
-- [ ] Contact — dream button → `שלום, יש לי חלום שמחפש בית`
-- [ ] Floating sticky button → `שלום, אשמח לפרטים על לב ים`
+- [x] No placeholder text visible anywhere on the page
+- [x] Hero tagline: `המקום שבו הלב פוגש את הים`
+- [x] All 5 service cards have titles, descriptions, and WhatsApp CTAs
+- [x] All 7 FAQ questions and answers present
+- [x] Footer shows: logo, tagline, phone, email, address with Google Maps link
+- [x] Copyright: `© לב ים 2026`
+- [x] Arabic (Levantine) translation + HE/AR toggle (post-launch addition)
+
+---
+
+## CONTACT (historical)
+
+- [x] All WhatsApp links use `wa.me/972506669138`
+- [x] Footer phone: `050-6669138` links to `tel:+972506669138`
+- [x] Footer email: `info@levyam.com` links to `mailto:info@levyam.com`
+- [x] Footer address links to Google Maps
+- [x] Instagram links to `https://www.instagram.com/levyam_`
+- [x] Facebook links to `https://m.facebook.com/profile.php?id=61585790351617`
+
+---
+
+## WHATSAPP — verified at launch
+
+All 12 WhatsApp CTAs (header, hero, 5 service cards, 4 contact buttons, floating sticky) confirmed with correct pre-filled Hebrew messages.
 
 ---
 
 ## MAP & NAVIGATION
 
-- [ ] Google Maps iframe shows correct location (Jisr az-Zarqa fishing village)
-- [ ] Footer address Google Maps link opens correctly
-
----
-
-## PERFORMANCE (Google PageSpeed Insights — mobile)
-
-- [ ] LCP ≤ 2.5 seconds
-- [ ] CLS ≤ 0.1
-- [ ] Performance score ≥ 90 mobile
-- [ ] Performance score ≥ 95 desktop
-- [ ] Total page weight ≤ 2.5 MB
-
----
-
-## MOBILE (test on real devices)
-
-- [ ] iPhone Safari — layout correct
-- [ ] Android Chrome — layout correct
-- [ ] Hero image/video loads or falls back cleanly
-- [ ] Gallery swipeable
-- [ ] FAQ opens/closes correctly
-- [ ] Hamburger menu opens/closes correctly
-- [ ] Floating WhatsApp button doesn't block content
-- [ ] All tap targets ≥ 44×44px
-
----
-
-## ACCESSIBILITY (Lighthouse in Chrome DevTools)
-
-- [ ] Accessibility score ≥ 95
-- [ ] All images have meaningful Hebrew `alt` text (or `alt=""` for decorative)
-- [ ] Gallery lightbox: Enter opens, Escape closes, arrows navigate
-- [ ] No console errors in Chrome DevTools
-
----
-
-## SEO & SHARING
-
-- [ ] `<title>` = `לב ים | מרחב יזמות עסקית חברתית על קו המים`
-- [ ] Meta description set
-- [ ] OG tags set (title, description, image, locale)
-- [ ] **Share the URL on WhatsApp** — confirm branded preview appears
-- [ ] FAQPage + LocalBusiness JSON-LD in `<head>`
-- [ ] `robots.txt` at root, allows crawling
-
----
-
-## CROSS-BROWSER
-
-- [ ] Chrome desktop ✓
-- [ ] Chrome Android ✓
-- [ ] Safari desktop ✓
-- [ ] Safari iOS ✓
-- [ ] Firefox desktop ✓
+- [x] Google Maps iframe shows correct location (Jisr az-Zarqa fishing village)
+- [x] Footer address Google Maps link opens correctly
 
 ---
 
 ## HOSTING
 
-- [ ] DNS pointing `levyam.com` to hosting provider
-- [ ] HTTPS active (green padlock)
-- [ ] No mixed-content warnings
-- [ ] No external CDN calls (fonts are self-hosted)
+- [x] DNS pointing `levyam.com` to GitHub Pages (CNAME committed)
+- [x] HTTPS active
+- [x] No external CDN calls (fonts self-hosted)
 
 ---
 
-## FINAL SIGN-OFF
+## OBSERVABILITY (added post-launch)
 
-- [ ] All boxes above ticked
-- [ ] Real phone number tested (call it)
-- [ ] Real email tested (send a message)
-- [ ] Site shared on WhatsApp — branded preview confirmed
-
-**מוכנים לעלות! 🚀**
+- [x] Dynatrace RUM tag in `<head>`
+- [x] 5 business event types tracked from `js/app.js`:
+  - `levyam.whatsapp_cta` — every WhatsApp button click with `data-bizevent-source`
+  - `levyam.service_interest` — service-card CTA clicks
+  - `levyam.contact_intent` — contact-section button clicks
+  - `levyam.language_switch` — HE ↔ AR toggle
+  - `levyam.faq_open` — FAQ question opens

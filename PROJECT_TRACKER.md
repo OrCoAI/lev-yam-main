@@ -1,12 +1,18 @@
 # Lev Yam — Project Tracker
 
 **Last updated:** May 2026
-**Website:** levyam.com
-**Status:** Code complete — assets & hosting needed before launch
+**Website:** [levyam.com](https://levyam.com)
+**Status:** ✅ Launched and live
 
 ---
 
-## ✅ Done
+## ✅ Launch complete
+
+The site is live at levyam.com (GitHub Pages, custom domain via committed `CNAME`). All originally blocking items — code, copy, photos, video, fonts, hosting — were resolved before going live. This document is kept as a historical record of the pre-launch plan. For the current state, see the "Live site — current state" section at the bottom.
+
+---
+
+## ✅ Done (pre-launch)
 
 | Item | Notes |
 |---|---|
@@ -14,14 +20,13 @@
 | Hebrew copy | All sections written |
 | RTL + accessibility | `lang="he" dir="rtl"`, skip link, ARIA, keyboard nav |
 | Hero section | Wordmark, styled headline, scroll cue, WhatsApp CTA |
-| 5 service cards | Centered layout, placeholders ready for photos |
-| המרחב section | Two-column top-aligned layout with photo placeholder |
+| 5 service cards | Centered layout, photos shipped |
 | למה לב ים section | Village story + features |
-| Gallery + lightbox | 12 placeholders, keyboard navigable |
+| Gallery + lightbox | Originally 12-image grid, now 18-image carousel (post-launch redesign) |
 | FAQ (7 questions) | Accordion, keyboard accessible |
 | Contact section | Map embed + 4 WhatsApp action cards with brand icons |
 | Footer | Minimal single-line bar — logo, tagline, contact, copyright |
-| Header | Logo, nav, social icons (Instagram + Facebook), WhatsApp CTA |
+| Header | Logo, nav, social icons (Instagram + Facebook), WhatsApp CTA, language toggle |
 | Logo | logo-full (header), logo-mono-nobg (footer), logo-mark (favicon) |
 | Favicon | logo-mark.png + apple-touch-icon |
 | Page title | לב ים | מרחב יזמות עסקית חברתית על קו המים |
@@ -29,56 +34,47 @@
 | Map embed | Google Maps iframe + deep link |
 | Social links | Instagram + Facebook in header and footer |
 | JSON-LD schema | FAQPage + LocalBusiness structured data |
-| Meta / OG tags | Title, description (aligned across `<meta name="description">` and `og:description`), og:image, og:locale |
+| Meta / OG tags | Title, description aligned across `<meta name="description">` and `og:description`, og:image, og:locale |
 | robots.txt | Allows crawling |
-| Mobile responsive | All breakpoints: 900px, 800px, 700px, 640px, 400px |
+| Mobile responsive | All breakpoints |
 | Animations | Reveal on scroll, reduced-motion respected |
 | Floating WhatsApp | Sticky button always visible |
+| Photos | All service cards, gallery, and hero shipped |
+| Hero video | `img/hero/hero.mp4` shipped as background |
+| Fonts | Self-hosted Heebo + Assistant in `/fonts/` (Hebrew/Latin subsets) |
+| Hosting | levyam.com served from GitHub Pages via CNAME |
+| HTTPS | Active |
 | .gitignore | .DS_Store and .claude/ excluded |
 | Repo clean | Only active assets committed |
 
 ---
 
-## ❌ Missing — Required Before Launch
+## ✅ Added post-launch
 
-### Photos & Video
-| File | Folder | What to shoot |
-|---|---|---|
-| `hero-poster.webp` | `img/hero/` | Waves + fishing boats (1920×1080, ≤180 KB) |
-| `hero.mp4` | `img/hero/` | 10–15s muted loop, same subject (≤6 MB) |
-| `offsite.webp` | `img/services/` | Team around a table, daytime (800×600, ≤80 KB) |
-| `community.webp` | `img/services/` | Casual group, sunset (800×600, ≤80 KB) |
-| `private.webp` | `img/services/` | Celebration — table, food, people (800×600, ≤80 KB) |
-| `rental.webp` | `img/services/` | Wide venue shot, golden hour (800×600, ≤80 KB) |
-| `weekend.webp` | `img/services/` | Friday/Saturday atmosphere (800×600, ≤80 KB) |
-| `space-overview.webp` | `img/space/` | Pergola + sea, wide angle (900×700, ≤90 KB) |
-| `01–12-large.webp` | `img/gallery/` | 12 images across 4 themes (1600×1200, ≤180 KB each) |
-| `og-image.jpg` | `assets/` | Social preview — logo + tagline + hero (**must be 1200×630, ≤200 KB**; current `logo-full.png` placeholder is 600×599 square) |
-
-**Photography rules:** Every service card photo must show at least one person. Natural light always preferred.
-
-### Fonts
-| File | Folder |
+| Item | Notes |
 |---|---|
-| `Heebo-Regular.woff2` | `fonts/` |
-| `Heebo-Medium.woff2` | `fonts/` |
-| `Heebo-Bold.woff2` | `fonts/` |
-| `Assistant-Regular.woff2` | `fonts/` |
-| `Assistant-SemiBold.woff2` | `fonts/` |
-
-Download from [fonts.google.com](https://fonts.google.com) → convert TTF to WOFF2 at [cloudconvert.com/ttf-to-woff2](https://cloudconvert.com/ttf-to-woff2)
-
-### Hosting
-- [ ] Point `levyam.com` DNS to hosting provider
-- [ ] SSL certificate active (HTTPS)
-- [ ] Test live on real iPhone (Safari) + Android (Chrome)
+| Arabic (Levantine) translation | Full HE ↔ AR toggle with i18n dictionary in `js/app.js` |
+| Dynatrace RUM | Real-user monitoring tag in `<head>` |
+| Business event tracking | 5 event types from `js/app.js` — see LAUNCH_CHECKLIST.md "OBSERVABILITY" section |
+| Gallery redesign | 12-image grid → 18-image filmstrip carousel |
+| Hero/CTA/footer polish | Multiple iterations |
+| "המרחב" section removed | Content merged into other sections during redesign |
 
 ---
 
-## Next Session — When Assets Are Ready
+## Open / optional (non-blocking)
 
-1. Drop font files into `/fonts/`
-2. Drop photos into their folders (paths above)
-3. Swap placeholder `<div>`s with real `<img>` tags — search for `<!-- SWAP:` comments in `index.html`
-4. Run `LAUNCH_CHECKLIST.md` top to bottom
-5. Deploy to hosting + connect domain
+- `og:image` is currently the 600×599 logo square. A proper 1200×630 banner with logo + wordmark + brand background would give better social-share cards (WhatsApp/Facebook/X). Deferred — only worth doing if social sharing becomes a priority.
+
+---
+
+## Live site — current state
+
+**Page structure:** hero → intro → services (5 cards) → why → gallery (18-image carousel) → faq (7 Q) → contact.
+
+**Notable deltas from the original pre-launch plan above:**
+- Gallery is no longer a CSS grid with column spans; it's a horizontal filmstrip carousel with snap scrolling.
+- The standalone "המרחב / space" section was removed during the redesign, so `img/space/space-overview.webp` is no longer needed.
+- Service-card photos shipped as `.jpg/.jpeg` rather than `.webp`.
+- Fonts ship as Hebrew/Latin subset files (`Heebo-hebrew.woff2`, `Heebo-latin.woff2`, `Assistant-hebrew.woff2`, `Assistant-latin.woff2`) rather than per-weight files.
+- Site is bilingual (HE default, AR toggle), not just Hebrew.
