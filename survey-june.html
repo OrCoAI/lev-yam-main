@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2c92bf">
+
+  <title>סקר חבורת לב ים | לב ים</title>
+  <meta name="description" content="סקר קצר לחברי חבורת לב ים — עזרו לנו לדייק את המקום הזה יחד.">
+  <meta name="robots" content="noindex">
+
+  <link rel="preload" href="fonts/Heebo-hebrew.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/Assistant-hebrew.woff2" as="font" type="font/woff2" crossorigin>
+
+  <link rel="icon" href="img/logo/logo-mark.png" type="image/png">
+  <link rel="apple-touch-icon" href="img/logo/logo-mark.png">
+
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/survey.css">
+
+  <script>
+    (function () {
+      try {
+        if (localStorage.getItem('lev-yam-lang') === 'ar') document.documentElement.lang = 'ar';
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body class="survey-page">
+
+  <a class="skip-link" href="#survey-main" data-i18n="skip_link">דלג לתוכן הראשי</a>
+
+  <div class="survey-progress" role="progressbar" aria-label="התקדמות במילוי הסקר" data-i18n-aria-label="progress_aria" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+    <div class="survey-progress-fill" id="survey-progress-fill"></div>
+  </div>
+
+  <header class="survey-topbar">
+    <a href="index.html" class="logo" aria-label="לב ים — דף הבית" data-i18n-aria-label="logo_aria">
+      <img src="img/logo/logo-mono-nobg.png" alt="לב ים" width="44" height="44">
+    </a>
+
+    <div class="lang-toggle" role="group" aria-label="שפה / اللغة" data-i18n-aria-label="lang_toggle_aria">
+      <button type="button" class="lang-opt is-active" data-lang-set="he" aria-pressed="true" lang="he">עב</button>
+      <button type="button" class="lang-opt" data-lang-set="ar" aria-pressed="false" lang="ar">عر</button>
+    </div>
+  </header>
+
+  <main id="survey-main" class="survey-shell">
+
+    <section class="survey-intro">
+      <div class="container container-narrow">
+        <p class="survey-eyebrow" data-i18n="intro_eyebrow">יוני 2026</p>
+        <h1 class="section-title survey-title" data-i18n="intro_title">סקר חבורת לב ים</h1>
+        <p class="lead" data-i18n="intro_lead">
+          חבורת לב ים גדלה, ואנחנו רוצים לדייק את המקום הזה יחד. הסקר הזה קצר, וייקח כמה דקות.
+          הוא הצעד הראשון של הרבעון הקרוב - דרך לספר לנו מה לב ים הוא בשבילך, ומה היית רוצה לעשות בו.
+          אין תשובות נכונות או לא נכונות. רק תשובות אמיתיות.
+        </p>
+        <p class="survey-meta">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          <span data-i18n="intro_meta">משך מילוי משוער: 4-6 דקות</span>
+        </p>
+      </div>
+    </section>
+
+    <div class="wave-divider wave-divider--orange" aria-hidden="true"></div>
+
+    <form id="survey-form" class="survey-form" novalidate>
+      <div class="container container-narrow">
+
+        <!-- Name -->
+        <div class="survey-q survey-name">
+          <label class="q-label-plain" for="respondent-name" data-i18n="name_label">שם מלא</label>
+          <input type="text" id="respondent-name" name="name" class="q-text-input" placeholder="איך קוראים לך?" data-i18n-placeholder="name_placeholder" required>
+        </div>
+
+        <!-- Q1 -->
+        <div class="survey-q">
+          <label class="q-label" for="q1">
+            <span class="q-num">1</span>
+            <span class="q-text" data-i18n="q1_text">מה לב ים מסמל בשבילך?</span>
+          </label>
+          <p class="q-hint" data-i18n="hint_open_23">תשובה פתוחה · 2-3 משפטים</p>
+          <textarea id="q1" name="q1" class="q-textarea" rows="3"></textarea>
+          <div class="q-voice" data-voice-for="q1">
+            <p class="q-voice-divider"><span data-i18n="voice_divider">או הקלטת תשובה בקול</span></p>
+            <div class="q-voice-box">
+              <div class="q-voice-state q-voice-idle">
+                <button type="button" class="q-voice-record-btn">
+                  <svg class="q-voice-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                  <span data-i18n="voice_record">הקלטת תשובה</span>
+                </button>
+              </div>
+              <div class="q-voice-state q-voice-recording" hidden>
+                <div class="q-voice-recording-info">
+                  <span class="q-voice-dot" aria-hidden="true"></span>
+                  <span class="q-voice-timer">00:00</span>
+                  <span class="q-voice-recording-label" data-i18n="voice_recording_label">מקליט...</span>
+                </div>
+                <button type="button" class="q-voice-stop-btn">
+                  <svg class="q-voice-icon" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>
+                  <span data-i18n="voice_stop">עצירה</span>
+                </button>
+              </div>
+              <div class="q-voice-state q-voice-done" hidden>
+                <div class="q-voice-done-status">
+                  <svg class="q-voice-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+                  <span data-i18n="voice_done_status">הוקלט</span>
+                </div>
+                <audio class="q-voice-audio" controls></audio>
+                <div class="q-voice-done-actions">
+                  <button type="button" class="q-voice-rerecord-btn">
+                    <svg class="q-voice-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12a10 10 0 1 0 3-7"/><path d="M2 3v6h6"/></svg>
+                    <span data-i18n="voice_rerecord">הקלטה מחדש</span>
+                  </button>
+                  <button type="button" class="q-voice-delete-btn">
+                    <svg class="q-voice-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+                    <span data-i18n="voice_delete">מחיקה</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <p class="q-voice-error" role="alert" hidden></p>
+          </div>
+        </div>
+
+        <!-- Q2 -->
+        <div class="survey-q">
+          <label class="q-label" for="q2">
+            <span class="q-num">2</span>
+            <span class="q-text" data-i18n="q2_text">איך הגעת לחבורת לב ים, ומה שומר אותך כאן עד היום?</span>
+          </label>
+          <p class="q-hint" data-i18n="hint_open_23">תשובה פתוחה · 2-3 משפטים</p>
+          <textarea id="q2" name="q2" class="q-textarea" rows="3"></textarea>
+          <div class="q-voice" data-voice-for="q2">
+            <p class="q-voice-divider"><span data-i18n="voice_divider">או הקלטת תשובה בקול</span></p>
+            <div class="q-voice-box">
+              <div class="q-voice-state q-voice-idle">
+                <button type="button" class="q-voice-record-btn">
+                  <svg class="q-voice-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                  <span data-i18n="voice_record">הקלטת תשובה</span>
+                </button>
+              </div>
+              <div class="q-voice-state q-voice-recording" hidden>
+                <div class="q-voice-recording-info">
+                  <span class="q-voice-dot" aria-hidden="true"></span>
+                  <span class="q-voice-timer">00:00</span>
+                  <span class="q-voice-recording-label" data-i18n="voice_recording_label">מקליט...</span>
+                </div>
+                <button type="button" class="q-voice-stop-btn">
+                  <svg class="q-voice-icon" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>
+                  <span data-i18n="voice_stop">עצירה</span>
+                </button>
+              </div>
+              <div class="q-voice-state q-voice-done" hidden>
+                <div class="q-voice-done-status">
+                  <svg class="q-voice-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+                  <span data-i18n="voice_done_status">הוקלט</span>
+                </div>
+                <audio class="q-voice-audio" controls></audio>
+                <div class="q-voice-done-actions">
+                  <button type="button" class="q-voice-rerecord-btn">
+                    <svg class="q-voice-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12a10 10 0 1 0 3-7"/><path d="M2 3v6h6"/></svg>
+                    <span data-i18n="voice_rerecord">הקלטה מחדש</span>
+                  </button>
+                  <button type="button" class="q-voice-delete-btn">
+                    <svg class="q-voice-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+                    <span data-i18n="voice_delete">מחיקה</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <p class="q-voice-error" role="alert" hidden></p>
+          </div>
+        </div>
+
+        <!-- Q3 -->
+        <div class="survey-q">
+          <label class="q-label" for="q3">
+            <span class="q-num">3</span>
+            <span class="q-text" data-i18n="q3_text">מה היית רוצה לעשות בלב ים בחודשים הקרובים?</span>
+          </label>
+          <p class="q-hint" data-i18n="hint_open_1plus">תשובה פתוחה · משפט אחד או יותר</p>
+          <textarea id="q3" name="q3" class="q-textarea" rows="2"></textarea>
+          <div class="q-voice" data-voice-for="q3">
+            <p class="q-voice-divider"><span data-i18n="voice_divider">או הקלטת תשובה בקול</span></p>
+            <div class="q-voice-box">
+              <div class="q-voice-state q-voice-idle">
+                <button type="button" class="q-voice-record-btn">
+                  <svg class="q-voice-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                  <span data-i18n="voice_record">הקלטת תשובה</span>
+                </button>
+              </div>
+              <div class="q-voice-state q-voice-recording" hidden>
+                <div class="q-voice-recording-info">
+                  <span class="q-voice-dot" aria-hidden="true"></span>
+                  <span class="q-voice-timer">00:00</span>
+                  <span class="q-voice-recording-label" data-i18n="voice_recording_label">מקליט...</span>
+                </div>
+                <button type="button" class="q-voice-stop-btn">
+                  <svg class="q-voice-icon" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>
+                  <span data-i18n="voice_stop">עצירה</span>
+                </button>
+              </div>
+              <div class="q-voice-state q-voice-done" hidden>
+                <div class="q-voice-done-status">
+                  <svg class="q-voice-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+                  <span data-i18n="voice_done_status">הוקלט</span>
+                </div>
+                <audio class="q-voice-audio" controls></audio>
+                <div class="q-voice-done-actions">
+                  <button type="button" class="q-voice-rerecord-btn">
+                    <svg class="q-voice-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12a10 10 0 1 0 3-7"/><path d="M2 3v6h6"/></svg>
+                    <span data-i18n="voice_rerecord">הקלטה מחדש</span>
+                  </button>
+                  <button type="button" class="q-voice-delete-btn">
+                    <svg class="q-voice-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+                    <span data-i18n="voice_delete">מחיקה</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <p class="q-voice-error" role="alert" hidden></p>
+          </div>
+        </div>
+
+        <!-- Q4 -->
+        <div class="survey-q" data-conditional-group="q4" role="group" aria-labelledby="q4-label">
+          <p class="q-label" id="q4-label">
+            <span class="q-num">4</span>
+            <span class="q-text" data-i18n="q4_text">האם חשוב לך שיהיה יום קבוע של החבורה בלב ים?</span>
+          </p>
+
+          <div class="q-choices">
+            <label class="q-choice">
+              <input type="radio" name="q4" value="כן, חשוב לי מאוד" data-reveals="q4-followup" required>
+              <span data-i18n="q4_opt1">כן, חשוב לי מאוד</span>
+            </label>
+            <label class="q-choice">
+              <input type="radio" name="q4" value="כן, יהיה נחמד" data-reveals="q4-followup">
+              <span data-i18n="q4_opt2">כן, יהיה נחמד</span>
+            </label>
+            <label class="q-choice">
+              <input type="radio" name="q4" value="לא משנה לי">
+              <span data-i18n="q4_opt3">לא משנה לי</span>
+            </label>
+            <label class="q-choice">
+              <input type="radio" name="q4" value="לא, אני מעדיף.ה גמישות">
+              <span data-i18n="q4_opt4">לא, אני מעדיף.ה גמישות</span>
+            </label>
+          </div>
+
+          <div class="q-followup" id="q4-followup" hidden>
+            <label class="q-followup-label" for="q4-day" data-i18n="q4_followup_label">אם ענית כן - איזה יום בשבוע הכי מתאים לך?</label>
+            <input type="text" id="q4-day" name="q4_day" class="q-text-input" placeholder="לדוגמה: יום ראשון" data-i18n-placeholder="q4_followup_placeholder">
+          </div>
+        </div>
+
+        <!-- Q5 -->
+        <div class="survey-q" data-conditional-group="q5" role="group" aria-labelledby="q5-label">
+          <p class="q-label" id="q5-label">
+            <span class="q-num">5</span>
+            <span class="q-text" data-i18n="q5_text">האם יש לך רעיון או יוזמה שהיית רוצה להוציא לדרך בלב ים?</span>
+          </p>
+
+          <div class="q-choices">
+            <label class="q-choice">
+              <input type="radio" name="q5" value="כן, יש לי רעיון קונקרטי" data-reveals="q5-followup" required>
+              <span data-i18n="q5_opt1">כן, יש לי רעיון קונקרטי</span>
+            </label>
+            <label class="q-choice">
+              <input type="radio" name="q5" value="יש לי משהו ראשוני, צריך לחשוב" data-reveals="q5-followup">
+              <span data-i18n="q5_opt2">יש לי משהו ראשוני, צריך לחשוב</span>
+            </label>
+            <label class="q-choice">
+              <input type="radio" name="q5" value="לא כרגע, אבל בעתיד אולי">
+              <span data-i18n="q5_opt3">לא כרגע, אבל בעתיד אולי</span>
+            </label>
+            <label class="q-choice">
+              <input type="radio" name="q5" value="לא, אני כאן בשביל להיות חלק">
+              <span data-i18n="q5_opt4">לא, אני כאן בשביל להיות חלק</span>
+            </label>
+          </div>
+
+          <div class="q-followup" id="q5-followup" hidden>
+            <label class="q-followup-label" for="q5-idea" data-i18n="q5_followup_label">אם יש לך רעיון - ספר.י עליו בקצרה</label>
+            <textarea id="q5-idea" name="q5_idea" class="q-text-input q-textarea" rows="2"></textarea>
+          </div>
+        </div>
+
+        <!-- Q6 -->
+        <div class="survey-q" data-conditional-group="q6" role="group" aria-labelledby="q6-label">
+          <p class="q-label" id="q6-label">
+            <span class="q-num">6</span>
+            <span class="q-text" data-i18n="q6_text">האם תרצה.י לקבוע שיחה אישית עם אור?</span>
+          </p>
+
+          <div class="q-choices">
+            <label class="q-choice">
+              <input type="radio" name="q6" value="כן, יש לי משהו ספציפי לדבר עליו" required>
+              <span data-i18n="q6_opt1">כן, יש לי משהו ספציפי לדבר עליו</span>
+            </label>
+            <label class="q-choice">
+              <input type="radio" name="q6" value="כן, סתם להכיר טוב יותר">
+              <span data-i18n="q6_opt2">כן, סתם להכיר טוב יותר</span>
+            </label>
+            <label class="q-choice">
+              <input type="radio" name="q6" value="לא כרגע, תודה">
+              <span data-i18n="q6_opt3">לא כרגע, תודה</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="survey-closing">
+          <p data-i18n-html="closing_html">
+            חבורת לב ים מבוססת על בחירה הדדית. אם זה לא הזמן או לא המקום בשבילך - זה לגיטימי לחלוטין.
+            אפשר לכתוב ל<a href="https://wa.me/972506669138?text=שלום%20אור%2C%20רציתי%20להתייחס%20לסקר%20של%20חבורת%20לב%20ים" target="_blank" rel="noopener">אור</a>.
+          </p>
+        </div>
+
+        <p class="survey-submit-error" id="survey-submit-error" role="alert" hidden></p>
+        <button type="submit" id="survey-submit-btn" class="btn btn-primary survey-submit">
+          <span class="survey-spinner" aria-hidden="true"></span>
+          <span class="survey-submit-label" data-i18n="submit_label">שליחת הסקר</span>
+        </button>
+      </div>
+    </form>
+
+    <div class="container container-narrow">
+      <div class="survey-thankyou" id="survey-thankyou" hidden tabindex="-1">
+        <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+        <h2 data-i18n="thankyou_title">הסקר נשלח</h2>
+        <p data-i18n="thankyou_text">תודה שלקחת את הזמן. נחזור אליך תוך שבוע.</p>
+      </div>
+    </div>
+
+    <div class="wave-divider wave-divider--blue" aria-hidden="true"></div>
+
+    <footer class="site-footer">
+      <div class="container footer-inner">
+        <div class="footer-brand">
+          <img src="img/logo/logo-mono-nobg.png" alt="לב ים" data-i18n-alt="brand" class="footer-logo" width="40" height="40">
+          <p class="footer-tagline" data-i18n="footer_tagline">מרחב יזמות עסקית חברתית על קו המים</p>
+        </div>
+
+        <div class="footer-contact">
+          <a href="tel:+972506669138" aria-label="התקשרו ללב ים" data-i18n-aria-label="footer_phone_aria">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8 19.79 19.79 0 01.01 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14v2.92z"/></svg>
+          </a>
+          <span class="footer-dot" aria-hidden="true">·</span>
+          <a href="mailto:info@levyam.com" aria-label="שלחו מייל ללב ים" data-i18n-aria-label="footer_email_aria">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg>
+          </a>
+          <span class="footer-dot" aria-hidden="true">·</span>
+          <a href="https://wa.me/972506669138" target="_blank" rel="noopener" aria-label="וואטסאפ לב ים" data-i18n-aria-label="footer_wa_aria">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 1.5C6.201 1.5 1.5 6.201 1.5 12c0 1.867.487 3.618 1.34 5.14L1.5 22.5l5.513-1.316A10.454 10.454 0 0012 22.5c5.799 0 10.5-4.701 10.5-10.5S17.799 1.5 12 1.5z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+          </a>
+          <span class="footer-dot" aria-hidden="true">·</span>
+          <a href="https://www.instagram.com/levyam_" target="_blank" rel="noopener" aria-label="אינסטגרם לב ים" data-i18n-aria-label="footer_ig_aria">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none"/></svg>
+          </a>
+          <span class="footer-dot" aria-hidden="true">·</span>
+          <a href="https://m.facebook.com/profile.php?id=61585790351617" target="_blank" rel="noopener" aria-label="פייסבוק לב ים" data-i18n-aria-label="footer_fb_aria">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+          </a>
+          <span class="footer-dot" aria-hidden="true">·</span>
+          <a href="https://maps.app.goo.gl/fFtCZYwK1KEcmFud6" target="_blank" rel="noopener" aria-label="מיקום לב ים" data-i18n-aria-label="footer_map_aria">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+          </a>
+        </div>
+
+        <p class="footer-credit" data-i18n-html="footer_credit_html">© לב ים <bdi>2026</bdi></p>
+      </div>
+    </footer>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="js/survey.js" defer></script>
+</body>
+</html>

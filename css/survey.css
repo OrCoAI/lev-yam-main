@@ -1,0 +1,588 @@
+/* =====================================================================
+   Lev Yam — survey.css
+   Page-specific styles for /survey-june.html. Builds on tokens + base rules
+   already defined in styles.css (loaded first).
+   ===================================================================== */
+
+/* ── Progress bar (fixed, fills as the survey is completed) ──────────── */
+.survey-progress {
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline: 0;
+  block-size: 4px;
+  background-color: rgba(44, 146, 191, 0.12);
+  z-index: 100;
+}
+.survey-progress-fill {
+  block-size: 100%;
+  width: 0;
+  border-start-end-radius: var(--radius-pill);
+  border-end-end-radius: var(--radius-pill);
+  background: linear-gradient(90deg, var(--color-blue), var(--color-orange));
+  transition: width 0.35s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .survey-progress-fill { transition: none; }
+}
+
+/* ── Top bar ─────────────────────────────────────────────────────────── */
+.survey-topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  inline-size: min(100%, var(--container-narrow));
+  margin-inline: auto;
+  padding-block: var(--space-4);
+  padding-inline: clamp(1rem, 4vw, 2rem);
+}
+/* Override main-site .logo rules (styles.css hides it under 960px and
+   fixes it to the viewport above 960px) so the survey logo stays put in
+   the top bar at every screen size. */
+.survey-topbar .logo {
+  display: flex;
+  position: static;
+}
+.survey-topbar .logo img {
+  display: block;
+  block-size: 44px;
+  inline-size: auto;
+}
+/* Anchor the toggle to the inline-end (visual left in RTL), independent of
+   whether the logo is present. */
+.survey-topbar .lang-toggle {
+  margin-inline-start: auto;
+}
+
+/* Light-theme override for the language toggle (base styles in styles.css
+   are tuned for the dark hero on the home page). */
+.survey-topbar .lang-toggle {
+  background: var(--color-white);
+  border: 1px solid var(--color-line);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.survey-topbar .lang-opt {
+  color: var(--color-ink-soft);
+}
+.survey-topbar .lang-opt:hover:not(.is-active) {
+  color: var(--color-blue-deep);
+}
+.survey-topbar .lang-opt.is-active {
+  background: var(--color-blue);
+  color: var(--color-white);
+}
+
+/* ── Intro ───────────────────────────────────────────────────────────── */
+.survey-shell {
+  padding-block-end: var(--space-7);
+}
+
+.survey-intro {
+  text-align: center;
+  padding-block-end: var(--space-5);
+}
+
+.survey-eyebrow {
+  color: var(--color-blue);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  margin-block-end: var(--space-2);
+}
+
+.survey-title {
+  margin-block-end: var(--space-4);
+}
+
+.survey-intro .lead {
+  text-align: center;
+  text-wrap: pretty;
+  max-inline-size: 56ch;
+  margin-inline: auto;
+  color: var(--color-ink);
+}
+
+.survey-meta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  color: var(--color-blue-deep);
+  background-color: rgba(44, 146, 191, 0.10);
+  border-radius: var(--radius-pill);
+  padding: 0.4rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-block-start: var(--space-3);
+}
+
+/* ── Form layout ─────────────────────────────────────────────────────── */
+.survey-form {
+  padding-block-start: var(--space-6);
+}
+
+.survey-q {
+  background-color: var(--color-white);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-4) var(--space-4);
+  margin-block-end: var(--space-4);
+}
+
+.q-label {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--text-lead);
+  line-height: var(--leading-tight);
+  margin-block-end: var(--space-2);
+}
+
+.survey-name {
+  background-color: rgba(44, 146, 191, 0.06);
+}
+
+.q-label-plain {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--text-lead);
+  margin-block-end: var(--space-2);
+}
+
+.q-num {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2rem;
+  block-size: 2rem;
+  border-radius: 50%;
+  background: var(--color-blue);
+  color: var(--color-white);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.q-hint {
+  color: var(--color-ink-soft);
+  font-size: 0.875rem;
+  margin-inline-start: calc(2rem + var(--space-3));
+  margin-block-end: var(--space-3);
+}
+
+.q-textarea,
+.q-text-input {
+  display: block;
+  inline-size: 100%;
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  color: var(--color-ink);
+  background-color: var(--color-cream);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+  line-height: var(--leading-body);
+  resize: vertical;
+}
+
+.q-textarea:focus,
+.q-text-input:focus {
+  outline: 2px solid var(--color-blue);
+  outline-offset: 1px;
+}
+
+/* ── Choice questions ────────────────────────────────────────────────── */
+.q-choices {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-inline-start: calc(2rem + var(--space-3));
+}
+
+.q-choice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-cream);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.q-choice:hover {
+  border-color: var(--color-blue);
+}
+
+.q-choice input[type="radio"] {
+  flex-shrink: 0;
+  inline-size: 1.2rem;
+  block-size: 1.2rem;
+  accent-color: var(--color-blue);
+}
+
+.q-choice:has(input:checked) {
+  border-color: var(--color-blue);
+  background-color: rgba(44, 146, 191, 0.10);
+  font-weight: 600;
+}
+
+.q-choice input:focus-visible {
+  outline: 2px solid var(--color-orange);
+  outline-offset: 2px;
+}
+
+/* ── Voice note recording (Q1-Q3 alternative answer) ──────────────────── */
+.q-voice {
+  margin-block-start: var(--space-3);
+}
+
+.q-voice-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-ink-soft);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  margin-block-end: var(--space-2);
+}
+.q-voice-divider::before,
+.q-voice-divider::after {
+  content: '';
+  flex: 1 1 auto;
+  block-size: 1px;
+  background-color: var(--color-line);
+}
+
+.q-voice-box {
+  background-color: var(--color-cream);
+  border: 1px dashed var(--color-line);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+}
+
+.q-voice-state {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  animation: q-voice-fade-in 0.2s ease;
+}
+.q-voice-state[hidden] {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .q-voice-state {
+    animation: none;
+  }
+}
+@keyframes q-voice-fade-in {
+  from { opacity: 0; transform: translateY(3px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.q-voice-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.q-voice-idle {
+  justify-content: center;
+}
+
+.q-voice-record-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0.65rem 1.4rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-blue);
+  background-color: var(--color-white);
+  color: var(--color-blue-deep);
+  font-weight: 700;
+  font-size: 0.92rem;
+  box-shadow: var(--shadow-sm);
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+.q-voice-record-btn:hover {
+  background-color: rgba(44, 146, 191, 0.08);
+  box-shadow: var(--shadow-md);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .q-voice-record-btn:hover {
+    transform: scale(1.02);
+  }
+}
+.q-voice-record-btn:focus-visible {
+  outline: 2px solid var(--color-orange);
+  outline-offset: 2px;
+}
+
+.q-voice-recording {
+  justify-content: space-between;
+}
+
+.q-voice-recording-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.q-voice-recording-label {
+  color: #b23b3b;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.q-voice-dot {
+  inline-size: 0.65rem;
+  block-size: 0.65rem;
+  border-radius: 50%;
+  background-color: #d64545;
+  flex-shrink: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .q-voice-dot {
+    animation: q-voice-pulse 1.2s ease-in-out infinite;
+  }
+}
+@keyframes q-voice-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.3; }
+}
+
+.q-voice-timer {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--color-ink);
+  min-inline-size: 2.6rem;
+}
+
+.q-voice-stop-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid #d64545;
+  background-color: var(--color-white);
+  color: #d64545;
+  font-weight: 700;
+  font-size: 0.85rem;
+  transition: background-color 0.15s ease;
+}
+.q-voice-stop-btn:hover {
+  background-color: rgba(214, 69, 69, 0.08);
+}
+
+.q-voice-done {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-3);
+}
+.q-voice-done-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-blue-deep);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.q-voice-audio {
+  inline-size: 100%;
+}
+.q-voice-done-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+.q-voice-rerecord-btn,
+.q-voice-delete-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 0.5rem 0.9rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-line);
+  background-color: var(--color-white);
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+}
+.q-voice-rerecord-btn:hover {
+  border-color: var(--color-blue);
+  color: var(--color-blue-deep);
+}
+.q-voice-delete-btn:hover {
+  border-color: #d64545;
+  color: #d64545;
+}
+
+.q-voice-error {
+  color: #d64545;
+  font-size: 0.85rem;
+  margin-block-start: var(--space-2);
+}
+
+/* ── Conditional follow-up ──────────────────────────────────────────── */
+.q-followup {
+  margin-inline-start: calc(2rem + var(--space-3));
+  margin-block-start: var(--space-3);
+  padding-inline-start: var(--space-3);
+  border-inline-start: 3px solid var(--color-orange);
+}
+
+.q-followup-label {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--color-ink-soft);
+  margin-block-end: var(--space-2);
+}
+
+/* ── Closing note + submit ───────────────────────────────────────────── */
+.survey-closing {
+  text-align: center;
+  color: var(--color-ink-soft);
+  font-size: 0.95rem;
+  line-height: 1.7;
+  padding-block: var(--space-4);
+  margin-block-end: var(--space-3);
+}
+
+.survey-closing a {
+  color: var(--color-blue);
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.survey-submit {
+  display: flex;
+  inline-size: 100%;
+  margin-block-end: var(--space-7);
+}
+.survey-submit:disabled {
+  opacity: 0.85;
+  cursor: not-allowed;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .survey-submit:disabled:hover {
+    transform: none;
+  }
+}
+
+/* Submit spinner */
+.survey-spinner {
+  display: none;
+  inline-size: 1.05rem;
+  block-size: 1.05rem;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-top-color: #fff;
+  border-radius: 50%;
+}
+.survey-submit.is-loading .survey-spinner {
+  display: inline-block;
+  animation: survey-spin 0.7s linear infinite;
+}
+@keyframes survey-spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .survey-submit.is-loading .survey-spinner { animation: none; }
+}
+
+.survey-submit-error {
+  color: #d64545;
+  font-size: 0.9rem;
+  text-align: center;
+  margin-block-end: var(--space-3);
+}
+
+/* ── Thank-you state ─────────────────────────────────────────────────── */
+.survey-thankyou {
+  text-align: center;
+  color: var(--color-blue-deep);
+  padding-block: var(--space-7);
+}
+
+.survey-thankyou svg {
+  margin-inline: auto;
+  margin-block-end: var(--space-3);
+}
+
+.survey-thankyou h2 {
+  font-size: var(--text-h2);
+  margin-block-end: var(--space-3);
+}
+
+.survey-thankyou p {
+  color: var(--color-ink-soft);
+  font-size: var(--text-lead);
+}
+
+/* ── Invalid state ───────────────────────────────────────────────────── */
+.survey-q.is-invalid {
+  border-color: #d64545;
+}
+
+.q-error {
+  color: #d64545;
+  font-size: 0.875rem;
+  margin-inline-start: calc(2rem + var(--space-3));
+  margin-block-start: var(--space-2);
+  display: none;
+}
+
+.survey-name .q-error {
+  margin-inline-start: 0;
+}
+
+.survey-q.is-invalid .q-error {
+  display: block;
+}
+
+/* ── Comfortable tap targets (≥44px) for all voice controls ──────────── */
+.q-voice-record-btn,
+.q-voice-stop-btn,
+.q-voice-rerecord-btn,
+.q-voice-delete-btn {
+  min-block-size: 44px;
+}
+
+/* ── Thank-you pop ───────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  .survey-thankyou:not([hidden]) svg {
+    animation: survey-pop 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+@keyframes survey-pop {
+  from { transform: scale(0.5); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+/* ── Mobile refinements ──────────────────────────────────────────────── */
+@media (max-width: 560px) {
+  .survey-q {
+    padding: var(--space-3);
+  }
+  /* Reclaim horizontal space: drop the number-badge indent on narrow screens */
+  .q-hint,
+  .q-choices,
+  .q-error,
+  .q-followup {
+    margin-inline-start: 0;
+  }
+  .q-choice {
+    padding-block: var(--space-3);
+  }
+  /* Stack the recording row so the timer + stop button never crowd */
+  .q-voice-recording {
+    gap: var(--space-2);
+  }
+}
