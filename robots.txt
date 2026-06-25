@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
+Disallow: /pos.html
 
 Sitemap: https://levyam.com/sitemap.xml
