@@ -1,5 +1,6 @@
 import { Link, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
+import EnablePasskey from './EnablePasskey'
 
 export default function Layout() {
   const { user, signOut } = useAuth()
@@ -18,6 +19,7 @@ export default function Layout() {
         </Link>
         <div className="topbar-right">
           {user?.email && <span className="muted user-email">{user.email}</span>}
+          <EnablePasskey />
           <button className="btn-ghost" onClick={handleSignOut}>
             יציאה
           </button>

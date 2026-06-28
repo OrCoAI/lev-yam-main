@@ -1,6 +1,7 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
+import { loginWithPasskey, platformAuthenticatorAvailable } from '../lib/passkeys'
 
 interface FromState {
   from?: { pathname?: string }
@@ -16,6 +17,12 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [pkAvailable, setPkAvailable] = useState(false)
+  const [pkBusy, setPkBusy] = useState(false)
+
+  useEffect(() => {
+    platformAuthenticatorAvailable().then(setPkAvailable)
+  }, [])
 
   if (!loading && session) return <Navigate to={from} replace />
 
@@ -27,6 +34,19 @@ export default function Login() {
     setBusy(false)
     if (error) setError(error)
     else navigate(from, { replace: true })
+  }
+
+  async function onPasskey() {
+    setPkBusy(true)
+    setError(null)
+    try {
+      await loginWithPasskey()
+      navigate(from, { replace: true })
+    } catch (e) {
+      setError((e as Error).message)
+    } finally {
+      setPkBusy(false)
+    }
   }
 
   return (
@@ -70,10 +90,17 @@ export default function Login() {
           {busy ? 'מתחבר…' : 'כניסה'}
         </button>
 
-        {/* Face ID / passkey sign-in is added in Phase 1b (WebAuthn + Edge Function). */}
-        <button type="button" className="btn-ghost" disabled title="בקרוב">
-          כניסה עם Face ID
-        </button>
+        {pkAvailable && (
+          <button
+            type="button"
+            className="btn-ghost"
+            onClick={onPasskey}
+            disabled={pkBusy || !configured}
+            title="כניסה מהירה עם Face ID / Touch ID"
+          >
+            {pkBusy ? 'מאמת…' : 'כניסה עם Face ID'}
+          </button>
+        )}
       </form>
     </div>
   )
