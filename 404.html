@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="robots" content="noindex" />
+    <title>לב ים</title>
+    <script>
+      // GitHub Pages serves this site-root 404 for ANY unknown path (it does not
+      // consult per-directory 404s). Deep links / refreshes into the staff platform
+      // (/app/*) are handed to the SPA with the route preserved in ?p=, which app-src's
+      // index.html decodes on boot. Everything else falls back to the marketing home.
+      (function () {
+        var path = window.location.pathname
+        if (path === '/app' || path.indexOf('/app/') === 0) {
+          var route = path.replace(/^\/app/, '') || '/'
+          window.location.replace('/app/?p=' + encodeURIComponent(route) + window.location.hash)
+        } else {
+          window.location.replace('/')
+        }
+      })()
+    </script>
+  </head>
+  <body></body>
+</html>

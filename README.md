@@ -14,15 +14,15 @@ offsites, private celebrations, community days, weekend events, and full venue r
 
 ## What's in the repo
 
-This is a static site (no build step, no frameworks) deployed via **GitHub Pages** with a
-committed `CNAME`. It contains three independent front-ends that share the same fonts and
-hosting:
+Deployed via **GitHub Pages** with a committed `CNAME`. It contains a **static marketing site**
++ standalone tools (no build step), and a **built internal platform** under `/app`:
 
-| Page | Purpose |
-|---|---|
-| [`index.html`](index.html) | The public marketing & booking site (HE/AR) |
-| [`survey-june.html`](survey-june.html) | Community survey for the "חבורת לב ים" group |
-| [`pos.html`](pos.html) | Internal point-of-sale / billing app for venue staff |
+| Surface | Purpose | Build |
+|---|---|---|
+| [`index.html`](index.html) | Public marketing & booking site (HE/AR) | static |
+| [`survey-june.html`](survey-june.html) | Community survey for the "חבורת לב ים" group | static |
+| [`pos.html`](pos.html) | Internal point-of-sale / billing app for staff (live) | static |
+| [`app-src/`](app-src/) → `/app` | Internal staff **platform** (login + permission-gated modules) | Vite + React + TS |
 
 ---
 
@@ -59,11 +59,27 @@ Internal billing/POS tool for staff, with live multi-device sync. Excluded from 
 engines via `robots.txt`.
 
 - **Backend:** Supabase (`@supabase/supabase-js` via CDN) with realtime sync
-- **Schema:** [`supabase_schema.sql`](supabase_schema.sql) — run once in the Supabase SQL editor
+- **Schema:** [`supabase/schema/10_pos.sql`](supabase/schema/10_pos.sql) — run once in the Supabase SQL editor
   - Tables: `pos_tables` (live open tables), `pos_bills` (paid bills), `pos_bill_items` (line items)
   - RPCs: `pos_close_table`, `pos_reopen_bill` (atomic close / re-open)
   - Analytics views: `v_sales_daily`, `v_item_sales`, `v_category_sales`, `v_sales_hourly`
 - Open-house and à-la-carte pricing modes, cash/card split, headcount & table-duration tracking
+
+## 4. Internal platform — `/app`
+
+A Vite + React + TypeScript app (source in [`app-src/`](app-src/)) behind a Supabase Auth login,
+served at **levyam.com/app**. It's the home for new internal modules.
+
+- **Auth:** email + password (Face ID / passkeys planned). Excluded from crawlers in `robots.txt`.
+- **Permissions:** role → module → action (RBAC), enforced by Postgres RLS via
+  `core.has_permission()` and mirrored in the UI for gating. Schema:
+  [`supabase/schema/00_core.sql`](supabase/schema/00_core.sql).
+- **Data layout:** one Supabase project, one schema per module (`core` for identity/permissions,
+  `pos` for POS once migrated, etc.).
+- **First module:** Users & Permissions admin (`src/modules/users/`). POS and the survey stay
+  standalone until migrated in.
+
+See [`supabase/README.md`](supabase/README.md) for first-time setup.
 
 ---
 
@@ -71,46 +87,53 @@ engines via `robots.txt`.
 
 ```
 lev-yam/
-├── index.html              ← Public marketing site
+├── index.html              ← Public marketing site (+ footer "Staff login" → /app)
 ├── survey-june.html        ← Community survey
-├── pos.html                ← Staff POS / billing app
-├── supabase_schema.sql     ← POS database schema (run in Supabase)
-├── css/
-│   ├── styles.css          ← Marketing site styles
-│   └── survey.css          ← Survey styles
-├── js/
-│   ├── app.js              ← Marketing site logic + i18n
-│   └── survey.js           ← Survey logic + Supabase submission
-├── fonts/                  ← Self-hosted woff2 (Heebo + Assistant, HE/Latin subsets)
-├── img/
-│   ├── hero/               ← hero.mp4, hero-poster.jpg, h1–h3 stills
-│   ├── logo/               ← logo-full · logo-mark · logo-mono-nobg
-│   ├── icons/              ← heart · house-blue · palm-orange · sun-orange
-│   ├── services/           ← 5 service-card photos
-│   └── gallery/            ← 18 gallery images
-├── docs/                   ← Brand book, source docs, website report
+├── pos.html                ← Staff POS / billing app (live, standalone)
+├── css/ js/ fonts/ img/    ← Marketing assets (styles, logic+i18n, woff2, media)
+├── app-src/                ← Internal platform: Vite + React + TS (builds to /app)
+│   ├── src/
+│   │   ├── lib/            ← supabase client, auth, permissions
+│   │   ├── shell/          ← login, layout, launcher, route guards
+│   │   └── modules/users/  ← first module: Users & Permissions admin
+│   └── vite.config.ts      ← base '/app/'
+├── supabase/
+│   ├── schema/
+│   │   ├── 00_core.sql     ← identity & permissions (roles, RLS, helpers)
+│   │   └── 10_pos.sql      ← POS database schema
+│   ├── functions/          ← Edge Functions (service-role only; e.g. passkeys)
+│   └── README.md           ← setup & security model
+├── .github/workflows/      ← deploy.yml (build /app + bundle marketing → Pages)
+├── docs/                   ← Brand book, source docs (archive/ = historical records)
 ├── tests/                  ← Dynatrace bizevents test harnesses
 ├── CNAME                   ← levyam.com (GitHub Pages)
-├── robots.txt              ← Allows all; disallows /pos.html
-└── .gitignore
+├── robots.txt              ← Allows all; disallows /pos.html and /app
+└── sitemap.xml
 ```
 
 ## Tech stack
 
-Plain HTML5 + CSS3 + vanilla JS. No build tools, no npm, no frameworks. Supabase (via CDN)
-backs the survey and POS. Fonts are self-hosted woff2 subsets.
+- **Marketing + survey + POS:** plain HTML5 + CSS3 + vanilla JS, no build tools. Fonts are
+  self-hosted woff2 subsets. Supabase (via CDN) backs the survey and POS.
+- **Platform (`/app`):** Vite + React 18 + TypeScript + react-router; Supabase Auth + RLS.
 
 ## Local development
 
-No build step. Serve the folder over HTTP:
-
 ```bash
-python3 -m http.server 8080
-# then open http://localhost:8080
+# Marketing site / survey / POS — no build:
+python3 -m http.server 8080        # → http://localhost:8080
+
+# Platform:
+cd app-src && npm install && npm run dev   # → http://localhost:5173/app
 ```
+
+Copy `app-src/.env.example` → `app-src/.env.local` and fill in your Supabase URL + anon key.
 
 ## Deployment
 
-Pushing to `main` deploys to GitHub Pages, served at **levyam.com** (`CNAME`).
-For the POS, apply [`supabase_schema.sql`](supabase_schema.sql) in the Supabase SQL editor
-before first use.
+Push to `main`. The GitHub Action (`.github/workflows/deploy.yml`) builds the platform and
+bundles it with the static site, publishing to GitHub Pages at **levyam.com** (`CNAME`).
+
+**One-time setup:** Settings → Pages → Source = *GitHub Actions*; add repo Secrets
+`VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`; apply `supabase/schema/*.sql` and expose the
+`core` schema — see [`supabase/README.md`](supabase/README.md).

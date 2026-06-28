@@ -1,0 +1,69 @@
+name: Deploy site + platform to GitHub Pages
+
+# Builds the Vite platform (/app) and bundles it with the static marketing site,
+# then publishes everything to GitHub Pages (levyam.com).
+#
+# ONE-TIME SETUP in the repo: Settings → Pages → Source = "GitHub Actions",
+# and add repo Secrets VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY (the publishable
+# anon values — safe to expose; RLS is the guard).
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app-src/package-lock.json
+
+      - name: Build platform (/app)
+        working-directory: app-src
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          npm ci
+          npm run build
+
+      - name: Assemble site (static marketing + built /app)
+        run: |
+          mkdir -p _site
+          # static marketing site + the site-root 404 handler (served from root, as today).
+          # 404.html is what GitHub Pages serves for any unknown path; it routes /app/*
+          # deep links into the SPA and sends other unknown paths to the marketing home.
+          cp index.html survey-june.html pos.html robots.txt sitemap.xml CNAME 404.html _site/
+          cp -r css js img fonts _site/
+          # the built platform under /app
+          mkdir -p _site/app
+          cp -r app-src/dist/* _site/app/
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

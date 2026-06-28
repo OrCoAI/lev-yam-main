@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>לב ים · מערכת</title>
+    <script>
+      // Restore a deep-link route handed over by the site-root 404.html
+      // (e.g. /app/?p=%2Fusers → /app/users) before the router boots.
+      ;(function () {
+        var p = new URLSearchParams(window.location.search).get('p')
+        if (p) window.history.replaceState(null, '', '/app' + p + window.location.hash)
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

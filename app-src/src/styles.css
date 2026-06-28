@@ -1,0 +1,258 @@
+:root {
+  --sea: #1f6f8b;
+  --sea-dark: #15505f;
+  --sand: #f4ede2;
+  --ink: #20303a;
+  --muted: #6b7b84;
+  --line: #e2dccf;
+  --danger: #b3261e;
+  --ok: #2e7d32;
+  --radius: 12px;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: 'Heebo', 'Assistant', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+  color: var(--ink);
+  background: var(--sand);
+  -webkit-font-smoothing: antialiased;
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85em;
+}
+
+.muted {
+  color: var(--muted);
+}
+.error {
+  color: var(--danger);
+}
+
+.screen-center {
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+/* ---------- cards & notices ---------- */
+.card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+}
+.notice {
+  background: #fff8ec;
+  border: 1px solid #f0e2c0;
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  margin: 12px 0;
+}
+
+/* ---------- buttons ---------- */
+.btn-primary,
+.btn-ghost {
+  font: inherit;
+  border-radius: 10px;
+  padding: 10px 16px;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.btn-primary {
+  background: var(--sea);
+  color: #fff;
+  border-color: var(--sea-dark);
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--sea-dark);
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--sea-dark);
+  border-color: var(--line);
+}
+.btn-ghost:hover:not(:disabled) {
+  background: #fff;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---------- login ---------- */
+.login {
+  width: min(380px, 92vw);
+  display: grid;
+  gap: 12px;
+}
+.login-title {
+  margin: 0;
+  font-size: 1.6rem;
+}
+.login label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.login input {
+  font: inherit;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.login input:focus {
+  outline: 2px solid var(--sea);
+  border-color: var(--sea);
+}
+
+/* ---------- app shell ---------- */
+.app {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: #fff;
+  border-bottom: 1px solid var(--line);
+}
+.brand {
+  font-weight: 800;
+  font-size: 1.2rem;
+  color: var(--sea-dark);
+  text-decoration: none;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.brand-sub {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.user-email {
+  font-size: 0.85rem;
+}
+.content {
+  flex: 1;
+  padding: 24px;
+  max-width: 1000px;
+  width: 100%;
+  margin: 0 auto;
+}
+.page-title {
+  margin: 0 0 16px;
+  font-size: 1.4rem;
+}
+
+/* ---------- launcher ---------- */
+.launcher-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 16px;
+}
+.tile {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px 16px;
+  display: grid;
+  gap: 10px;
+  place-items: center;
+  text-decoration: none;
+  color: var(--ink);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+.tile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+}
+.tile-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+.tile-icon {
+  font-size: 2rem;
+}
+.tile-label {
+  font-weight: 600;
+}
+
+/* ---------- tabs ---------- */
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.tab {
+  font: inherit;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  cursor: pointer;
+}
+.tab.on {
+  background: var(--sea);
+  color: #fff;
+  border-color: var(--sea-dark);
+}
+
+/* ---------- data grid ---------- */
+.grid {
+  width: 100%;
+  border-collapse: collapse;
+}
+.grid th,
+.grid td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  text-align: start;
+}
+.grid th {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+.grid .center {
+  text-align: center;
+}
+.grid input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--sea);
+}
+.perm-key {
+  display: block;
+  color: var(--sea-dark);
+}
+.perm-label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--muted);
+}

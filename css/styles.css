@@ -1781,6 +1781,18 @@ p:last-child {
   margin: 0;
 }
 
+.footer-staff-login {
+  display: inline-block;
+  margin-top: 0.5rem;
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 0.75rem;
+  text-decoration: none;
+}
+.footer-staff-login:hover {
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: underline;
+}
+
 /* ── WhatsApp Float ──────────────────────────────────────────────────── */
 .wa-float {
   position: fixed;

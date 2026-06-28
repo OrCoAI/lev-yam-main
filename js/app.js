@@ -153,6 +153,7 @@ const LevYamI18n = (function () {
       footer_fb_aria: 'פייסבוק לב ים',
       footer_map_aria: 'מיקום לב ים',
       footer_credit_html: '© לב ים <bdi>2026</bdi>',
+      footer_staff_login: 'כניסת צוות',
 
       wa_float_aria: 'צור קשר בוואטסאפ',
 
@@ -312,6 +313,7 @@ const LevYamI18n = (function () {
       footer_fb_aria: 'فيسبوك ليف يام',
       footer_map_aria: 'موقع ليف يام',
       footer_credit_html: '© ليف يام <bdi>2026</bdi>',
+      footer_staff_login: 'دخول الطاقم',
 
       wa_float_aria: 'تواصلوا عبر واتساب',
 
