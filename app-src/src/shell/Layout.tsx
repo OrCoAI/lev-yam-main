@@ -15,7 +15,10 @@ export default function Layout() {
     <div className="app">
       <header className="topbar">
         <Link to="/" className="brand">
-          לב ים<span className="brand-sub">מערכת</span>
+          <img className="brand-logo" src="/app/brand/logo-mark.png" alt="לב ים" />
+          <span className="brand-name">
+            לב ים<span className="brand-sub">מערכת</span>
+          </span>
         </Link>
         <div className="topbar-right">
           {user?.email && <span className="muted user-email">{user.email}</span>}

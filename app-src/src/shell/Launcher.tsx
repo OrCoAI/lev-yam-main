@@ -36,37 +36,57 @@ export default function Launcher() {
     return <div className="card notice">אין מודולים זמינים להרשאות שלך עדיין.</div>
 
   return (
-    <section>
-      <h1 className="page-title">מה נעשה היום?</h1>
+    <section className="launcher">
+      <header className="launcher-hero">
+        <img className="launcher-logo" src="/app/brand/logo-full.png" alt="לב ים" />
+        <h1 className="launcher-greeting">מה נעשה היום?</h1>
+        <p className="launcher-sub">בחרו מודול כדי להתחיל</p>
+      </header>
+
       <div className="launcher-grid">
-        {modules.map((m) => {
+        {modules.map((m, i) => {
           const dest = DESTINATIONS[m.key]
+          const accent = i % 2 === 0 ? 'tile--blue' : 'tile--orange'
           const inner = (
             <>
-              <span className="tile-icon">{m.icon ?? '▫️'}</span>
+              <span className="tile-medallion">{m.icon ?? '▫️'}</span>
               <span className="tile-label">{m.label}</span>
+              <span className="tile-go">{dest ? 'פתח ←' : 'בקרוב'}</span>
             </>
           )
           if (dest?.to) {
             return (
-              <Link key={m.key} to={dest.to} className="tile">
+              <Link key={m.key} to={dest.to} className={`tile ${accent}`}>
                 {inner}
               </Link>
             )
           }
           if (dest?.href) {
             return (
-              <a key={m.key} href={dest.href} className="tile">
+              <a key={m.key} href={dest.href} className={`tile ${accent}`}>
                 {inner}
               </a>
             )
           }
           return (
-            <div key={m.key} className="tile tile-disabled" title="בקרוב">
+            <div key={m.key} className={`tile ${accent} tile-disabled`} title="בקרוב">
               {inner}
             </div>
           )
         })}
+      </div>
+
+      <div className="launcher-waves" aria-hidden="true">
+        <svg viewBox="0 0 360 18" preserveAspectRatio="none">
+          <polyline
+            points="0,14 36,4 72,14 108,4 144,14 180,4 216,14 252,4 288,14 324,4 360,14"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
       </div>
     </section>
   )
