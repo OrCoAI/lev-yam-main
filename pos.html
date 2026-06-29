@@ -305,6 +305,7 @@ async function deleteExpense(id) {
 
 // Multi-day analysis: fetch each day's report (parallel) and merge into one shape.
 function addDay(s) { const d = new Date(s + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + 1); return d.toISOString().slice(0, 10); }
+function shiftDate(ymd, n) { const [y, m, d] = ymd.split("-").map(Number); const dt = new Date(Date.UTC(y, m - 1, d)); dt.setUTCDate(dt.getUTCDate() + n); return dt.toISOString().slice(0, 10); }
 function dateRange(from, to) { const out = []; let c = from; for (let i = 0; i < 92 && c <= to; i++) { out.push(c); c = addDay(c); } return out; }
 async function fetchRangeReport(from, to) {
   const reps = await Promise.all(dateRange(from, to).map(d => fetchDayReport(d)));
@@ -429,23 +430,23 @@ const S = {
   addBtns:{display:"flex",gap:8},
   addCancel:{flex:1,padding:12,borderRadius:12,border:"1.5px solid "+LINE,background:SAND,color:INK,fontSize:14,fontWeight:700,cursor:"pointer"},
   addConfirm:{flex:1,padding:12,borderRadius:12,border:"none",background:SUN,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"},
-  dock:{background:CARD,borderTop:"1px solid "+LINE,boxShadow:"0 -6px 24px rgba(44,38,32,.10)",padding:"10px 12px calc(10px + env(safe-area-inset-bottom))",flexShrink:0},
-  modeRow:{display:"flex",gap:6,background:SAND,borderRadius:12,padding:4,marginBottom:10},
-  modeBtn:{flex:1,padding:"9px 0",borderRadius:8,border:"none",background:"transparent",color:MUTE,fontSize:13,fontWeight:700,cursor:"pointer",transition:"all .15s"},
+  dock:{background:CARD,borderTop:"1px solid "+LINE,boxShadow:"0 -6px 24px rgba(44,38,32,.10)",padding:"9px 12px calc(9px + env(safe-area-inset-bottom))",flexShrink:0},
+  modeRow:{display:"flex",gap:6,background:SAND,borderRadius:12,padding:4,marginBottom:8},
+  modeBtn:{flex:1,padding:"8px 0",borderRadius:8,border:"none",background:"transparent",color:MUTE,fontSize:13,fontWeight:700,cursor:"pointer",transition:"all .15s"},
   modeOn:{background:SEA,color:"#fff",boxShadow:"0 2px 8px rgba(44,146,191,.2)"},
   modeOnSun:{background:SUN,color:"#fff",boxShadow:"0 2px 8px rgba(232,131,58,.2)"},
-  billRow:{display:"flex",alignItems:"flex-end",justifyContent:"space-between",gap:12,marginBottom:10},
+  billRow:{display:"flex",alignItems:"flex-end",justifyContent:"space-between",gap:12,marginBottom:8},
   breakdown:{flex:1,display:"flex",flexDirection:"column",gap:4,minWidth:0},
   line:{display:"flex",justifyContent:"space-between",gap:8},
   lineLbl:{fontSize:12,color:MUTE,fontWeight:600,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"},
   lineVal:{fontSize:13,fontWeight:700,color:INK,flexShrink:0},
   grand:{textAlign:"end",flexShrink:0},
   grandLbl:{fontSize:12,color:MUTE,fontWeight:600,display:"block",marginBottom:-2},
-  grandNum:{fontSize:44,fontWeight:900,color:SEA_DEEP,lineHeight:1,letterSpacing:"-1px"},
-  grandCur:{fontSize:20,fontWeight:800,marginInlineStart:3},
+  grandNum:{fontSize:36,fontWeight:900,color:SEA_DEEP,lineHeight:1,letterSpacing:"-1px"},
+  grandCur:{fontSize:17,fontWeight:800,marginInlineStart:3},
   dockBtns:{display:"flex",gap:8},
-  resetBtn:{flex:1,padding:13,borderRadius:12,border:"1.5px solid "+LINE,background:SAND,color:INK,fontSize:14,fontWeight:700,cursor:"pointer"},
-  showBtn:{flex:1.4,padding:13,borderRadius:12,border:"none",background:SEA,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",boxShadow:"0 2px 10px rgba(44,146,191,.22)"},
+  resetBtn:{flex:1,padding:12,borderRadius:12,border:"1.5px solid "+LINE,background:SAND,color:INK,fontSize:14,fontWeight:700,cursor:"pointer"},
+  showBtn:{flex:1.4,padding:12,borderRadius:12,border:"none",background:SEA,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",boxShadow:"0 2px 10px rgba(44,146,191,.22)"},
   overlay:{position:"fixed",inset:0,background:"rgba(44,38,32,.55)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:50},
   receipt:{background:SAND,width:"100%",maxWidth:420,maxHeight:"88vh",borderRadius:"20px 20px 0 0",display:"flex",flexDirection:"column",overflow:"hidden",boxShadow:"0 -10px 40px rgba(0,0,0,.2)"},
   receiptHead:{background:SEA,color:"#fff",padding:"18px 20px 14px",textAlign:"center",flexShrink:0},
@@ -490,14 +491,14 @@ const S = {
   totalCellLbl:{fontSize:11,fontWeight:700,color:MUTE,marginTop:3,display:"block"},
   sectionLabel:{fontSize:13,fontWeight:800,color:MUTE,margin:"2px 2px 10px"},
   tablesGrid:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10},
-  tableCard:{textAlign:"start",background:CARD,border:"1.5px solid "+LINE,borderTop:"3px solid "+SEA,borderRadius:16,padding:14,cursor:"pointer",display:"flex",flexDirection:"column",gap:6,minHeight:116},
-  tableCardHead:{display:"flex",alignItems:"baseline",gap:7,minWidth:0},
-  tableNum:{fontSize:26,fontWeight:900,color:SEA_DEEP,lineHeight:1,flexShrink:0},
-  tableName:{fontSize:13,fontWeight:700,color:INK,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"},
-  tableMeta:{fontSize:11,fontWeight:600,color:MUTE},
-  tableCardTotal:{marginTop:"auto",display:"flex",alignItems:"baseline",gap:3},
-  tableCardNum:{fontSize:28,fontWeight:900,color:INK,lineHeight:1},
-  tableCardCur:{fontSize:15,fontWeight:800,color:MUTE},
+  tableCard:{textAlign:"start",background:CARD,border:"1.5px solid "+LINE,borderRadius:16,padding:13,cursor:"pointer",display:"flex",flexDirection:"column",gap:9,minHeight:120,boxShadow:"0 1px 3px rgba(44,38,32,.05)"},
+  tableCardHead:{display:"flex",alignItems:"center",gap:9,minWidth:0},
+  tableNumBadge:{width:36,height:36,borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,fontWeight:900,color:"#fff",lineHeight:1,flexShrink:0},
+  tableName:{fontSize:14,fontWeight:800,color:INK,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1,minWidth:0},
+  tableMeta:{fontSize:12,fontWeight:600,color:MUTE},
+  tableCardTotal:{marginTop:"auto",paddingTop:9,borderTop:"1px solid "+LINE,display:"flex",alignItems:"baseline",justifyContent:"flex-end",gap:3},
+  tableCardNum:{fontSize:25,fontWeight:900,color:INK,lineHeight:1},
+  tableCardCur:{fontSize:14,fontWeight:800,color:MUTE},
   emptyTables:{textAlign:"center",color:MUTE,fontSize:14,fontWeight:600,padding:"38px 20px",lineHeight:1.5,background:CARD,borderRadius:16,border:"1.5px dashed #d9ccb2"},
   homeDock:{background:CARD,borderTop:"1px solid "+LINE,boxShadow:"0 -6px 24px rgba(44,38,32,.10)",padding:"12px 12px calc(12px + env(safe-area-inset-bottom))",flexShrink:0,display:"flex",gap:8},
   newTableBtn:{flex:1,padding:16,borderRadius:16,border:"none",background:SEA,color:"#fff",fontSize:16,fontWeight:800,cursor:"pointer",boxShadow:"0 4px 14px rgba(44,146,191,.25)"},
@@ -509,7 +510,7 @@ const S = {
   tvTitle:{fontSize:18,fontWeight:900},
   cancelTableBtn:{border:"none",background:"rgba(255,255,255,.18)",color:"#fff",fontSize:15,fontWeight:700,width:34,height:34,borderRadius:12,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",padding:0,flexShrink:0},
   nameInput:{width:"100%",padding:"9px 12px",borderRadius:12,border:"none",background:"rgba(255,255,255,.92)",fontSize:14,fontWeight:600,color:INK,outline:"none",textAlign:"right"},
-  payBtn:{flex:1.4,padding:13,borderRadius:12,border:"none",background:"#3a9e6e",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,158,110,.25)"},
+  payBtn:{flex:1.4,padding:12,borderRadius:12,border:"none",background:"#3a9e6e",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,158,110,.25)"},
 
   // ── Payment modal ──
   payWide:{width:"auto",margin:"6px 18px 0",padding:14,borderRadius:12,border:"none",background:"#3a9e6e",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,158,110,.25)"},
@@ -551,7 +552,7 @@ const S = {
   kitchenBadge:{fontSize:11,fontWeight:800,padding:"3px 8px",borderRadius:8,background:"#fef0e0",color:SUN,alignSelf:"flex-start"},
   kitchenBadgeDone:{background:"#e7f5ee",color:"#2f7d57"},
   kitchenReady:{fontSize:12,fontWeight:900,padding:"4px 10px",borderRadius:8,background:"#3a9e6e",color:"#fff",alignSelf:"flex-start",boxShadow:"0 2px 8px rgba(58,158,110,.22)"},
-  fireBtn:{width:"100%",padding:14,marginBottom:8,borderRadius:12,border:"none",background:SUN,color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(232,131,58,.25)"},
+  fireBtn:{width:"100%",padding:11,marginBottom:8,borderRadius:12,border:"none",background:SUN,color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(232,131,58,.25)"},
   fireBtnDone:{background:"#eef3ee",color:"#2f7d57",boxShadow:"none",cursor:"default"},
   roleChip:{fontSize:12,fontWeight:800,color:"#fff",background:"rgba(255,255,255,.18)",border:"none",padding:"6px 12px",borderRadius:20,cursor:"pointer",whiteSpace:"nowrap"},
   chefEnterBtn:{flex:1,padding:16,borderRadius:16,border:"none",background:SUN,color:"#fff",fontSize:16,fontWeight:800,cursor:"pointer",boxShadow:"0 4px 14px rgba(232,131,58,.25)"},
@@ -584,10 +585,18 @@ const S = {
   chefDone:{background:"#3a9e6e",color:"#fff",border:"none",fontSize:16,fontWeight:900,padding:"14px 20px",borderRadius:12,cursor:"pointer",flexShrink:0,boxShadow:"0 2px 10px rgba(58,158,110,.25)"},
   chefUndo:{background:SAND,color:MUTE,border:"1.5px solid "+LINE,fontSize:13,fontWeight:800,padding:"10px 14px",borderRadius:12,cursor:"pointer",flexShrink:0},
   // ── Day report ──
-  reportDates:{display:"flex",alignItems:"center",gap:6},
+  reportPresets:{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap",marginTop:12},
+  reportPreset:{background:"rgba(255,255,255,.16)",border:"none",color:"#fff",fontSize:12,fontWeight:800,padding:"6px 13px",borderRadius:20,cursor:"pointer"},
+  reportPresetOn:{background:"#fff",color:SEA_DEEP},
+  reportDates:{display:"flex",alignItems:"center",justifyContent:"center",gap:6,marginTop:8},
   reportDash:{color:"#fff",fontWeight:800},
   reportRangeNote:{background:"#fff5e9",color:SUN,fontSize:13,fontWeight:800,textAlign:"center",padding:"10px 18px"},
-  reportDate:{background:"rgba(255,255,255,.18)",border:"none",color:"#fff",fontSize:13,fontWeight:800,padding:"6px 10px",borderRadius:12,colorScheme:"dark"},
+  reportDate:{background:"rgba(255,255,255,.18)",border:"none",color:"#fff",fontSize:13,fontWeight:800,padding:"7px 11px",borderRadius:12,colorScheme:"dark"},
+  reportExpand:{display:"block",margin:"12px auto 0",background:"transparent",border:"1.5px solid "+LINE,color:SEA_DEEP,fontSize:13,fontWeight:800,padding:"8px 18px",borderRadius:20,cursor:"pointer"},
+  detailBox:{margin:"10px 18px 0",background:CARD,borderRadius:16,border:"1.5px solid "+LINE,overflow:"hidden"},
+  detailRow:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"11px 14px",borderBottom:"1px solid "+LINE},
+  detailLbl:{fontSize:13,fontWeight:600,color:MUTE},
+  detailVal:{fontSize:14,fontWeight:800,color:INK},
   reportTiles:{display:"flex",flexWrap:"wrap",gap:8,padding:"14px 18px 4px"},
   reportNet:{display:"flex",alignItems:"center",justifyContent:"space-between",margin:"10px 18px 0",padding:"12px 16px",background:SAND,borderRadius:16,border:"1.5px solid "+LINE},
   reportNetLbl:{fontSize:15,fontWeight:800,color:INK},
@@ -634,18 +643,11 @@ const S = {
   langToggle:{border:"none",background:"rgba(255,255,255,.2)",color:"#fff",fontSize:13,fontWeight:800,padding:"7px 13px",borderRadius:20,cursor:"pointer",whiteSpace:"nowrap"},
   homeHeadSide:{display:"flex",alignItems:"center",gap:8},
 
-  // ── Day-summary lock ──
+  // ── Day-summary card ──
   totalsTopRow:{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginBottom:12},
   totalsHint:{fontSize:11,fontWeight:700,color:SEA,marginTop:11,textAlign:"center"},
-  lockBtn:{border:"1.5px solid "+LINE,background:SAND,color:MUTE,fontSize:12,fontWeight:700,padding:"5px 11px",borderRadius:20,cursor:"pointer",whiteSpace:"nowrap"},
-  lockedCard:{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,background:CARD,border:"1.5px dashed #d9ccb2",borderRadius:16,padding:16,marginBottom:16},
-  lockedLeft:{display:"flex",alignItems:"center",gap:11,minWidth:0},
-  lockIcon:{fontSize:22,flexShrink:0},
-  lockedTitle:{fontSize:15,fontWeight:800,color:INK},
-  lockedSub:{fontSize:11,fontWeight:600,color:MUTE,marginTop:2},
-  lockedBtn:{border:"none",background:SEA,color:"#fff",fontSize:13,fontWeight:800,padding:"10px 16px",borderRadius:12,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0},
 
-  // ── Password modal ──
+  // ── PIN / role modal ──
   overlayC:{position:"fixed",inset:0,background:"rgba(44,38,32,.55)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:60},
   pwdBox:{background:CARD,width:"100%",maxWidth:340,borderRadius:16,padding:20,margin:"0 16px",boxShadow:"0 20px 50px rgba(0,0,0,.3)"},
   pwdTitle:{fontSize:17,fontWeight:900,color:INK,textAlign:"center"},
@@ -666,31 +668,6 @@ function Bi({he, ar}) {
 function LangToggle({ lang, onToggle }) {
   return h("button", {className:"tap", style:S.langToggle, onClick:onToggle},
     lang === "he" ? "العربية" : "עברית");
-}
-
-// ── PasswordModal ─────────────────────────────────────────────
-function PasswordModal({ onCancel, onSuccess }) {
-  const [val, setVal] = useState("");
-  const [err, setErr] = useState(false);
-  const submit = () => {
-    if (val === DAY_PASSWORD) onSuccess();
-    else { setErr(true); setVal(""); }
-  };
-  return h("div", {style:S.overlayC, onClick:onCancel},
-    h("div", {style:S.pwdBox, onClick:e => e.stopPropagation()},
-      h("div", {style:S.pwdTitle}, tr("סיכום יום מוגן", "ملخص اليوم محمي")),
-      h("div", {style:S.pwdSub}, tr("הזינו סיסמה כדי לצפות", "أدخل كلمة السر للعرض")),
-      h("input", {style:S.pwdInput, type:"password", inputMode:"numeric", autoFocus:true,
-        placeholder:"•••••", value:val,
-        onChange:e => { setVal(e.target.value); setErr(false); },
-        onKeyDown:e => { if (e.key === "Enter") submit(); }}),
-      h("div", {style:S.pwdErr}, err ? tr("סיסמה שגויה", "كلمة السر خاطئة") : ""),
-      h("div", {style:S.pwdBtns},
-        h("button", {className:"tap", style:S.pwdCancel, onClick:onCancel}, tr("ביטול", "إلغاء")),
-        h("button", {className:"tap", style:S.pwdConfirm, onClick:submit}, tr("אישור", "تأكيد"))
-      )
-    )
-  );
 }
 
 // ── AppGate (staff PIN to open the whole app) ─────────────────
@@ -1291,8 +1268,25 @@ function ReportView({ full, canAddFood, canAddLabor, canManage, closed, onReopen
   const [tick, setTick]   = useState(0);
   const [food,  setFood]  = useState({ amount:"", note:"" });
   const [labor, setLabor] = useState({ amount:"", note:"" });
+  const [showDetails, setShowDetails] = useState(false);
   const isRange   = from !== to;
   const rangeDays = isRange ? dateRange(from, to).length : 1;
+
+  // Quick date presets (intuitive one-tap ranges) — chef gets day-only, manager gets multi-day too.
+  const yest = shiftDate(today, -1);
+  const presets = full
+    ? [["today", tr("היום","اليوم")], ["yesterday", tr("אתמול","أمس")], ["7", tr("7 ימים","7 أيام")], ["30", tr("30 יום","30 يوماً")]]
+    : [["today", tr("היום","اليوم")], ["yesterday", tr("אתמול","أمس")]];
+  const applyPreset = k =>
+    k === "today"     ? (setFrom(today), setTo(today))
+    : k === "yesterday" ? (setFrom(yest), setTo(yest))
+    : k === "7"       ? (setFrom(shiftDate(today, -6)),  setTo(today))
+    : k === "30"      ? (setFrom(shiftDate(today, -29)), setTo(today)) : null;
+  const activePreset =
+    (from === today && to === today) ? "today"
+    : (from === yest && to === yest) ? "yesterday"
+    : (to === today && from === shiftDate(today, -6))  ? "7"
+    : (to === today && from === shiftDate(today, -29)) ? "30" : "";
 
   useEffect(() => {
     let alive = true; setLoad(true);
@@ -1306,7 +1300,15 @@ function ReportView({ full, canAddFood, canAddLabor, canManage, closed, onReopen
   const isToday = !isRange && from === today;
   const foodTotal  = rep ? Number(rep.food)  || 0 : 0;
   const laborTotal = rep ? Number(rep.labor) || 0 : 0;
-  const net = (Number(s.revenue) || 0) - foodTotal - laborTotal;
+  const rev = Number(s.revenue) || 0;
+  const net = rev - foodTotal - laborTotal;
+  // Derived detail metrics for the manager's expandable breakdown.
+  const avgBill   = s.bills  ? Math.round(rev / s.bills)  : (Number(s.avg_bill) || 0);
+  const avgCover  = s.covers ? Math.round(rev / s.covers) : 0;
+  const tipRate   = rev ? Math.round((Number(s.tips) || 0) / rev * 100) : 0;
+  const foodPct   = rev ? Math.round(foodTotal  / rev * 100) : 0;
+  const laborPct  = rev ? Math.round(laborTotal / rev * 100) : 0;
+  const netMargin = rev ? Math.round(net / rev * 100) : 0;
   const exp = (rep && rep.expenses) || [];
   const foodList  = exp.filter(e => e.kind === "food");
   const laborList = exp.filter(e => e.kind === "labor");
@@ -1320,6 +1322,8 @@ function ReportView({ full, canAddFood, canAddLabor, canManage, closed, onReopen
   const removeExp = id => deleteExpense(id).then(() => setTick(t => t + 1));
 
   const tCell = (label, val, color, cur) => h(TotalCell, { label, val, color, cur });
+  const detail = (label, val) => h("div", {style:S.detailRow},
+    h("span", {style:S.detailLbl}, label), h("span", {style:S.detailVal}, val));
   const costForm = (kind, d, set, notePh) => h("div", {style:S.costAddRow},
     h("input", {style:S.costNoteInput, placeholder:notePh, value:d.note,
       onChange:e => set({ ...d, note:e.target.value })}),
@@ -1340,6 +1344,12 @@ function ReportView({ full, canAddFood, canAddLabor, canManage, closed, onReopen
 
       h("div", {style:{...S.receiptHead, background:SEA_DEEP}},
         h("span", {style:S.receiptBrand}, full ? tr("דוח","تقرير") : tr("דוח מטבח","تقرير المطبخ")),
+        h("div", {style:S.reportPresets},
+          presets.map(([k, lbl]) =>
+            h("button", {key:k, className:"tap",
+              style:{...S.reportPreset, ...(activePreset === k ? S.reportPresetOn : {})},
+              onClick:() => applyPreset(k)}, lbl))
+        ),
         h("div", {style:S.reportDates},
           h("input", {type:"date", max:to, value:from, style:S.reportDate,
             onChange:e => { const v = e.target.value; setFrom(v); if (!full || v > to) setTo(v); }}),
@@ -1374,6 +1384,21 @@ function ReportView({ full, canAddFood, canAddLabor, canManage, closed, onReopen
               h("span", {style:{...S.reportNetNum, color: net >= 0 ? "#2f7d57" : "#c2553f"}}, net + " ₪")
             ),
             full && h("div", {style:S.reportHint}, tr("הכנסה − מזון − עובדים · טיפים לא נכללים","الدخل − الطعام − العمال · البقشيش غير محتسب")),
+
+            full && h(React.Fragment, null,
+              h("button", {className:"tap", style:S.reportExpand, onClick:() => setShowDetails(v => !v)},
+                (showDetails ? tr("הסתר פירוט","إخفاء التفاصيل") : tr("פירוט מלא","تفاصيل كاملة")) + (showDetails ? "  ▴" : "  ▾")),
+              showDetails && h("div", {style:S.detailBox},
+                detail(tr("ממוצע לשולחן","متوسط الطاولة"), avgBill + " ₪"),
+                detail(tr("ממוצע לסועד","متوسط الضيف"),   avgCover + " ₪"),
+                !isRange && detail(tr("זמן ישיבה ממוצע","متوسط مدة الجلوس"), (s.avg_minutes || 0) + " " + tr("דק׳","د")),
+                detail(tr("שיעור טיפ","نسبة البقشيش"), tipRate + "%"),
+                (s.discounts > 0) && detail(tr("סה״כ הנחות","مجموع الخصومات"), (s.discounts || 0) + " ₪"),
+                detail(tr("עלות מזון","تكلفة الطعام"),  foodTotal + " ₪" + (rev ? " · " + foodPct + "%" : "")),
+                detail(tr("עלות עובדים","تكلفة العمال"), laborTotal + " ₪" + (rev ? " · " + laborPct + "%" : "")),
+                detail(tr("שיעור רווח","هامش الربح"), netMargin + "%")
+              )
+            ),
 
             h("div", {style:S.reportSecTitle}, tr("פריטים שנמכרו","الأصناف المباعة")),
             (rep.items && rep.items.length)
@@ -1420,7 +1445,7 @@ function ReportView({ full, canAddFood, canAddLabor, canManage, closed, onReopen
 }
 
 // ── HomeView ──────────────────────────────────────────────────
-function HomeView({ tables, closed, onOpen, onNew, onReport, lang, onToggleLang, unlocked, onUnlock, role, onSwitchRole, onChef }) {
+function HomeView({ tables, closed, onOpen, onNew, onReport, lang, onToggleLang, unlocked, role, onSwitchRole, onChef }) {
   const today = todayStr();
   const list  = closed.filter(c => new Date(c.paidAt).toDateString() === today);
   const cash  = list.reduce((s,c) => s + (c.cash||0), 0);
@@ -1456,16 +1481,7 @@ function HomeView({ tables, closed, onOpen, onNew, onReport, lang, onToggleLang,
               h("div", {style:S.totalsTopRow}, h("span", {style:S.totalsTitle}, tr("דוח מטבח","تقرير المطبخ"))),
               h("div", {style:S.totalsHint}, tr("שולחנות · סועדים · פריטים · עלות מזון","طاولات · ضيوف · أصناف · تكلفة الطعام") + " ›")
             )
-          : h("div", {style:S.lockedCard},
-              h("div", {style:S.lockedLeft},
-                h("span", {style:S.lockIcon}, "🔒"),
-                h("div", null,
-                  h("div", {style:S.lockedTitle}, tr("סיכום היום","ملخص اليوم")),
-                  h("div", {style:S.lockedSub}, tr("מוגן בסיסמה","محمي بكلمة سر"))
-                )
-              ),
-              h("button", {className:"tap", style:S.lockedBtn, onClick:onUnlock}, tr("הצג","عرض"))
-            ),
+          : null,   // waiters have no summary/report on the home screen
 
       h("div", {style:S.sectionLabel}, tr("שולחנות פתוחים","طاولات مفتوحة") + " · " + tables.length),
 
@@ -1479,12 +1495,10 @@ function HomeView({ tables, closed, onOpen, onNew, onReport, lang, onToggleLang,
               const tt = tableTotals(t);
               const ready   = t.items.reduce((s,it) => s + Math.max(0, (it.done||0) - (it.served||0)), 0);
               const cooking = t.items.reduce((s,it) => s + Math.max(0, (it.sent||0) - (it.done||0)), 0);
-              return h("button", {key:t.id, className:"tap",
-                style:{...S.tableCard, borderTopColor: t.useOH ? SEA : SUN},
-                onClick:() => onOpen(t.id)},
+              return h("button", {key:t.id, className:"tap", style:S.tableCard, onClick:() => onOpen(t.id)},
                 h("div", {style:S.tableCardHead},
-                  h("span", {style:S.tableNum}, t.num),
-                  t.name ? h("span", {style:S.tableName}, t.name) : null
+                  h("span", {style:{...S.tableNumBadge, background: t.useOH ? SEA : SUN}}, t.num),
+                  h("span", {style:S.tableName}, t.name || (tr("שולחן","طاولة") + " " + t.num))
                 ),
                 h("span", {style:S.tableMeta}, tt.headcount + " " + tr("סועדים","ضيوف") + " · " + tt.itemsCount + " " + tr("פריטים","أصناف")),
                 ready > 0
@@ -1779,8 +1793,6 @@ function App() {
   const [lang, setLang]               = useState(loadLang);
   const [activeId, setActiveId]       = useState(null);
   const [showReport, setShowReport]   = useState(false);
-  const [unlocked, setUnlocked]       = useState(false);
-  const [showPwd, setShowPwd]         = useState(false);
   const [appUnlocked, setAppUnlocked] = useState(() => {
     try { return localStorage.getItem(APP_OK_KEY) === "1"; } catch (e) { return false; }
   });
@@ -1804,7 +1816,7 @@ function App() {
   const cancelTable = (id) => { pos.cancelTable(id); setActiveId(null); };
   const reopen      = (id) => { pos.reopen(id); setShowReport(false); };
   const clearToday  = pos.clearToday;
-  const reportsUnlocked = unlocked || can("pos.reports");   // managers see the day summary without a password
+  const reportsUnlocked = can("pos.reports");   // managers see the full day summary; others get the ops report or none
 
   if (!appUnlocked) return h(AppGate, { onUnlock: () => {
     try { localStorage.setItem(APP_OK_KEY, "1"); } catch (e) {}
@@ -1838,10 +1850,9 @@ function App() {
       closed: data.closed,
       onOpen: (id) => { pos.serveReady(id); setActiveId(id); },
       onNew: openNew,
-      onReport: () => { (can("pos.analytics") || reportsUnlocked) ? setShowReport(true) : setShowPwd(true); },
+      onReport: () => setShowReport(true),   // only rendered for chef/manager cards
       lang, onToggleLang: toggleLang,
       unlocked: reportsUnlocked,
-      onUnlock: () => setShowPwd(true),
       role, onSwitchRole: () => setShowRole(true), onChef: () => setChefMode(true),
     }),
     showReport && h(ReportView, {
@@ -1853,10 +1864,6 @@ function App() {
       onReopen: reopen,
       onClear: clearToday,
       onClose: () => setShowReport(false),
-    }),
-    showPwd && h(PasswordModal, {
-      onCancel: () => setShowPwd(false),
-      onSuccess: () => { setUnlocked(true); setShowPwd(false); setShowReport(true); },
     }),
     showRole && h(RoleModal, {
       current: role,
