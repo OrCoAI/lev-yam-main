@@ -139,8 +139,9 @@ const ROLE_KEY   = "levyam_pos_role_v1";
 const ROLE_CODES = { chef: "2580", manager: DAY_PASSWORD };   // ← change chef code; waiter needs none
 const ROLE_PERMS = {
   waiter:  ["pos.view", "pos.order"],
-  chef:    ["pos.view", "pos.order", "pos.kitchen"],
-  manager: ["pos.view", "pos.order", "pos.kitchen", "pos.reports", "pos.manage"],
+  chef:    ["pos.view", "pos.order", "pos.kitchen", "pos.analytics", "pos.costs_food"],
+  manager: ["pos.view", "pos.order", "pos.kitchen", "pos.analytics", "pos.costs_food",
+            "pos.reports", "pos.manage", "pos.costs_labor"],
 };
 const ROLE_LABELS = {
   waiter:  { he:"מלצר", ar:"نادل" },
@@ -283,6 +284,46 @@ async function fetchAll() {
   };
 }
 
+// ── Day report + costs (date-scoped, read straight from the DB so past/archived days work) ──
+function jerusalemDate(d) {                 // "YYYY-MM-DD" for the venue's calendar day
+  const x = d ? new Date(d) : new Date();
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jerusalem" }).format(x);
+}
+async function fetchDayReport(date) {
+  const { data, error } = await sb.rpc("pos_day_report", { p_date: date });
+  if (error) throw error;
+  return data;                              // { date, summary{}, food, labor, items[], expenses[] }
+}
+async function addExpense(date, kind, amount, note) {
+  return sb.from("pos_expenses").insert({
+    business_date: date, kind, amount, note: note || null, created_by: ROLE,
+  });
+}
+async function deleteExpense(id) {
+  return sb.from("pos_expenses").delete().eq("id", id);
+}
+
+// Multi-day analysis: fetch each day's report (parallel) and merge into one shape.
+function addDay(s) { const d = new Date(s + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + 1); return d.toISOString().slice(0, 10); }
+function dateRange(from, to) { const out = []; let c = from; for (let i = 0; i < 92 && c <= to; i++) { out.push(c); c = addDay(c); } return out; }
+async function fetchRangeReport(from, to) {
+  const reps = await Promise.all(dateRange(from, to).map(d => fetchDayReport(d)));
+  const sum = { bills:0, covers:0, revenue:0, cash:0, card:0, tips:0, discounts:0 };
+  let food = 0, labor = 0; const itemMap = {};
+  reps.forEach(r => {
+    const s = r.summary || {};
+    for (const k in sum) sum[k] += Number(s[k]) || 0;
+    food  += Number(r.food)  || 0;
+    labor += Number(r.labor) || 0;
+    (r.items || []).forEach(it => {
+      const m = itemMap[it.name] || (itemMap[it.name] = { name:it.name, category:it.category, units:0, value:0 });
+      m.units += Number(it.units) || 0; m.value += Number(it.value) || 0;
+    });
+  });
+  return { summary: sum, food, labor, items: Object.values(itemMap).sort((a,b) => b.units - a.units),
+           expenses: [], days: reps.length };
+}
+
 // Build the analytics-rich payload that pos_close_table(p_bill, p_items) expects.
 function buildBillPayload(t, payment) {
   const tt = tableTotals(t);
@@ -359,14 +400,14 @@ const S = {
   stepper:{flex:1,minWidth:0,background:CARD,border:"1px solid "+LINE,borderRadius:16,padding:"10px 8px 12px",textAlign:"center"},
   stepLbl:{fontSize:12,fontWeight:600,color:MUTE,display:"block",marginBottom:8},
   stepCtl:{display:"flex",alignItems:"center",justifyContent:"space-between",gap:4},
-  stepBtn:{width:38,height:38,flexShrink:0,borderRadius:11,border:"1.5px solid "+LINE,background:SAND,color:SEA_DEEP,fontSize:24,fontWeight:700,lineHeight:1,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",padding:0},
+  stepBtn:{width:38,height:38,flexShrink:0,borderRadius:12,border:"1.5px solid "+LINE,background:SAND,color:SEA_DEEP,fontSize:24,fontWeight:700,lineHeight:1,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",padding:0},
   stepNum:{fontSize:24,fontWeight:800,flex:1,lineHeight:1},
   headTotal:{flex:1,background:SEA,borderRadius:16,padding:"10px 8px",color:"#fff",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",position:"relative"},
   headTotalNum:{fontSize:34,fontWeight:900,lineHeight:1},
   headTotalLbl:{fontSize:12,opacity:0.9,marginTop:2},
-  familyTag:{fontSize:9,fontWeight:700,background:SUN,color:"#fff",padding:"2px 6px",borderRadius:6,position:"absolute",top:6,insetInlineStart:6},
-  section:{marginBottom:18},
-  catHead:{display:"flex",alignItems:"center",gap:8,marginBottom:9,paddingInlineStart:2},
+  familyTag:{fontSize:10,fontWeight:700,background:SUN,color:"#fff",padding:"2px 7px",borderRadius:8,position:"absolute",top:6,insetInlineStart:6},
+  section:{marginBottom:16},
+  catHead:{display:"flex",alignItems:"center",gap:8,marginBottom:8,paddingInlineStart:2},
   catDot:{width:9,height:9,borderRadius:"50%",flexShrink:0},
   catTitle:{fontSize:15,fontWeight:800,margin:0,letterSpacing:"-0.2px"},
   catTag:{fontSize:10,fontWeight:700,color:MUTE,marginInlineStart:"auto",letterSpacing:"0.2px"},
@@ -376,37 +417,37 @@ const S = {
   cardName:{fontSize:14,fontWeight:700,lineHeight:1.25},
   cardPrice:{fontSize:15,fontWeight:800,flexShrink:0},
   cardCtl:{display:"flex",alignItems:"center",justifyContent:"space-between",gap:6},
-  qBtn:{width:46,height:46,borderRadius:13,border:"1.5px solid "+LINE,background:SAND,color:INK,fontSize:28,fontWeight:700,lineHeight:1,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",padding:0},
+  qBtn:{width:46,height:46,borderRadius:12,border:"1.5px solid "+LINE,background:SAND,color:INK,fontSize:28,fontWeight:700,lineHeight:1,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",padding:0},
   qNum:{fontSize:24,fontWeight:900,minWidth:24,textAlign:"center",lineHeight:1},
   delBtn:{width:26,height:26,borderRadius:8,border:"none",background:"#f6eee2",color:MUTE,fontSize:13,fontWeight:700,cursor:"pointer",flexShrink:0,lineHeight:1,padding:0},
   addOpen:{width:"100%",padding:14,borderRadius:16,border:"1.5px dashed #d9ccb2",background:"transparent",color:MUTE,fontSize:14,fontWeight:700,cursor:"pointer",marginTop:4},
   addForm:{background:CARD,border:"1.5px solid "+SUN,borderRadius:16,padding:12,marginTop:4,display:"flex",flexDirection:"column",gap:8},
-  addInput:{width:"100%",padding:"12px 14px",borderRadius:11,border:"1.5px solid "+LINE,background:SAND,fontSize:15,fontWeight:600,color:INK,outline:"none",textAlign:"right"},
+  addInput:{width:"100%",padding:"12px 14px",borderRadius:12,border:"1.5px solid "+LINE,background:SAND,fontSize:15,fontWeight:600,color:INK,outline:"none",textAlign:"right"},
   addRow:{display:"flex",gap:8},
-  ohPick:{padding:"0 16px",borderRadius:11,border:"1.5px solid "+LINE,background:SAND,color:MUTE,fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"},
+  ohPick:{padding:"0 16px",borderRadius:12,border:"1.5px solid "+LINE,background:SAND,color:MUTE,fontSize:13,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"},
   ohPickOn:{background:SEA,color:"#fff",borderColor:"transparent"},
   addBtns:{display:"flex",gap:8},
-  addCancel:{flex:1,padding:12,borderRadius:11,border:"1.5px solid "+LINE,background:SAND,color:INK,fontSize:14,fontWeight:700,cursor:"pointer"},
-  addConfirm:{flex:1,padding:12,borderRadius:11,border:"none",background:SUN,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"},
+  addCancel:{flex:1,padding:12,borderRadius:12,border:"1.5px solid "+LINE,background:SAND,color:INK,fontSize:14,fontWeight:700,cursor:"pointer"},
+  addConfirm:{flex:1,padding:12,borderRadius:12,border:"none",background:SUN,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"},
   dock:{background:CARD,borderTop:"1px solid "+LINE,boxShadow:"0 -6px 24px rgba(44,38,32,.10)",padding:"10px 12px calc(10px + env(safe-area-inset-bottom))",flexShrink:0},
   modeRow:{display:"flex",gap:6,background:SAND,borderRadius:12,padding:4,marginBottom:10},
-  modeBtn:{flex:1,padding:"9px 0",borderRadius:9,border:"none",background:"transparent",color:MUTE,fontSize:13,fontWeight:700,cursor:"pointer",transition:"all .15s"},
-  modeOn:{background:SEA,color:"#fff",boxShadow:"0 2px 8px rgba(44,146,191,.3)"},
-  modeOnSun:{background:SUN,color:"#fff",boxShadow:"0 2px 8px rgba(232,131,58,.3)"},
+  modeBtn:{flex:1,padding:"9px 0",borderRadius:8,border:"none",background:"transparent",color:MUTE,fontSize:13,fontWeight:700,cursor:"pointer",transition:"all .15s"},
+  modeOn:{background:SEA,color:"#fff",boxShadow:"0 2px 8px rgba(44,146,191,.2)"},
+  modeOnSun:{background:SUN,color:"#fff",boxShadow:"0 2px 8px rgba(232,131,58,.2)"},
   billRow:{display:"flex",alignItems:"flex-end",justifyContent:"space-between",gap:12,marginBottom:10},
   breakdown:{flex:1,display:"flex",flexDirection:"column",gap:4,minWidth:0},
   line:{display:"flex",justifyContent:"space-between",gap:8},
-  lineLbl:{fontSize:12.5,color:MUTE,fontWeight:600,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"},
+  lineLbl:{fontSize:12,color:MUTE,fontWeight:600,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"},
   lineVal:{fontSize:13,fontWeight:700,color:INK,flexShrink:0},
   grand:{textAlign:"end",flexShrink:0},
   grandLbl:{fontSize:12,color:MUTE,fontWeight:600,display:"block",marginBottom:-2},
-  grandNum:{fontSize:46,fontWeight:900,color:SEA_DEEP,lineHeight:1,letterSpacing:"-1px"},
+  grandNum:{fontSize:44,fontWeight:900,color:SEA_DEEP,lineHeight:1,letterSpacing:"-1px"},
   grandCur:{fontSize:20,fontWeight:800,marginInlineStart:3},
   dockBtns:{display:"flex",gap:8},
   resetBtn:{flex:1,padding:13,borderRadius:12,border:"1.5px solid "+LINE,background:SAND,color:INK,fontSize:14,fontWeight:700,cursor:"pointer"},
-  showBtn:{flex:1.4,padding:13,borderRadius:12,border:"none",background:SEA,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",boxShadow:"0 2px 10px rgba(44,146,191,.35)"},
+  showBtn:{flex:1.4,padding:13,borderRadius:12,border:"none",background:SEA,color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",boxShadow:"0 2px 10px rgba(44,146,191,.22)"},
   overlay:{position:"fixed",inset:0,background:"rgba(44,38,32,.55)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:50},
-  receipt:{background:SAND,width:"100%",maxWidth:420,maxHeight:"88vh",borderRadius:"22px 22px 0 0",display:"flex",flexDirection:"column",overflow:"hidden",boxShadow:"0 -10px 40px rgba(0,0,0,.25)"},
+  receipt:{background:SAND,width:"100%",maxWidth:420,maxHeight:"88vh",borderRadius:"20px 20px 0 0",display:"flex",flexDirection:"column",overflow:"hidden",boxShadow:"0 -10px 40px rgba(0,0,0,.2)"},
   receiptHead:{background:SEA,color:"#fff",padding:"18px 20px 14px",textAlign:"center",flexShrink:0},
   receiptBrand:{fontSize:22,fontWeight:900,display:"block"},
   receiptSub:{fontSize:12,opacity:0.85},
@@ -415,7 +456,7 @@ const S = {
   receiptNote:{fontSize:11,fontWeight:700,color:MUTE,margin:"10px 0 4px"},
   receiptRow:{display:"flex",justifyContent:"space-between",alignItems:"baseline",padding:"9px 0",borderBottom:"1px solid "+LINE,gap:10},
   receiptItemName:{fontSize:15,fontWeight:700,color:INK,display:"flex",flexDirection:"column"},
-  receiptItemSub:{fontSize:11.5,fontWeight:500,color:MUTE,marginTop:2},
+  receiptItemSub:{fontSize:11,fontWeight:600,color:MUTE,marginTop:2},
   receiptItemPrice:{fontSize:15,fontWeight:800,color:SEA_DEEP,flexShrink:0},
   receiptRowSub:{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px dotted "+LINE},
   receiptItemNameSub:{fontSize:13,fontWeight:600,color:"#6b6356"},
@@ -427,7 +468,7 @@ const S = {
   receiptTotalNum:{fontSize:34,fontWeight:900,color:SEA_DEEP},
   receiptTotalCur:{fontSize:17,fontWeight:800,marginInlineStart:3},
   qrPanel:{display:"flex",flexDirection:"column",alignItems:"center",gap:8,padding:"14px 18px 4px",background:"#fff",flexShrink:0},
-  qrImg:{width:170,height:170,borderRadius:14,border:"1.5px solid "+LINE,padding:6,background:"#fff"},
+  qrImg:{width:170,height:170,borderRadius:16,border:"1.5px solid "+LINE,padding:6,background:"#fff"},
   qrHint:{fontSize:12,fontWeight:600,color:MUTE},
   receiptBtns:{display:"flex",gap:8,margin:"12px 18px calc(14px + env(safe-area-inset-bottom))",flexShrink:0},
   receiptClose:{flex:1,padding:14,borderRadius:12,border:"1.5px solid "+LINE,background:SAND,color:INK,fontSize:15,fontWeight:700,cursor:"pointer"},
@@ -438,92 +479,92 @@ const S = {
   homeBrand:{fontSize:22,fontWeight:900},
   homeBrandSub:{fontSize:13,fontWeight:600,opacity:0.85},
   homeDate:{fontSize:12,fontWeight:700,opacity:0.95,background:"rgba(255,255,255,.16)",padding:"5px 11px",borderRadius:20,whiteSpace:"nowrap"},
-  totalsCard:{display:"block",width:"100%",textAlign:"start",background:CARD,border:"1.5px solid "+LINE,borderRadius:18,padding:14,marginBottom:18,cursor:"pointer"},
+  totalsCard:{display:"block",width:"100%",textAlign:"start",background:CARD,border:"1.5px solid "+LINE,borderRadius:16,padding:14,marginBottom:16,cursor:"pointer"},
   totalsTop:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12},
   totalsTitle:{fontSize:15,fontWeight:800,color:INK},
-  totalsCount:{fontSize:11.5,fontWeight:700,color:MUTE,background:SAND,padding:"4px 10px",borderRadius:20},
+  totalsCount:{fontSize:11,fontWeight:700,color:MUTE,background:SAND,padding:"4px 10px",borderRadius:20},
   totalsGrid:{display:"flex",gap:8},
-  totalCell:{flex:1,background:SAND,borderRadius:13,padding:"10px 6px",textAlign:"center"},
-  totalCellNum:{fontSize:21,fontWeight:900,lineHeight:1.1,display:"block",whiteSpace:"nowrap"},
+  totalCell:{flex:1,minWidth:84,background:SAND,borderRadius:12,padding:"10px 6px",textAlign:"center"},
+  totalCellNum:{fontSize:20,fontWeight:900,lineHeight:1.1,display:"block",whiteSpace:"nowrap"},
   totalCellCur:{fontSize:12,fontWeight:800},
   totalCellLbl:{fontSize:11,fontWeight:700,color:MUTE,marginTop:3,display:"block"},
   sectionLabel:{fontSize:13,fontWeight:800,color:MUTE,margin:"2px 2px 10px"},
   tablesGrid:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10},
-  tableCard:{textAlign:"start",background:CARD,border:"1.5px solid "+LINE,borderTop:"3px solid "+SEA,borderRadius:18,padding:14,cursor:"pointer",display:"flex",flexDirection:"column",gap:6,minHeight:116},
+  tableCard:{textAlign:"start",background:CARD,border:"1.5px solid "+LINE,borderTop:"3px solid "+SEA,borderRadius:16,padding:14,cursor:"pointer",display:"flex",flexDirection:"column",gap:6,minHeight:116},
   tableCardHead:{display:"flex",alignItems:"baseline",gap:7,minWidth:0},
   tableNum:{fontSize:26,fontWeight:900,color:SEA_DEEP,lineHeight:1,flexShrink:0},
   tableName:{fontSize:13,fontWeight:700,color:INK,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"},
-  tableMeta:{fontSize:11.5,fontWeight:600,color:MUTE},
+  tableMeta:{fontSize:11,fontWeight:600,color:MUTE},
   tableCardTotal:{marginTop:"auto",display:"flex",alignItems:"baseline",gap:3},
   tableCardNum:{fontSize:28,fontWeight:900,color:INK,lineHeight:1},
   tableCardCur:{fontSize:15,fontWeight:800,color:MUTE},
-  emptyTables:{textAlign:"center",color:MUTE,fontSize:14,fontWeight:600,padding:"38px 20px",lineHeight:1.5,background:CARD,borderRadius:18,border:"1.5px dashed #d9ccb2"},
+  emptyTables:{textAlign:"center",color:MUTE,fontSize:14,fontWeight:600,padding:"38px 20px",lineHeight:1.5,background:CARD,borderRadius:16,border:"1.5px dashed #d9ccb2"},
   homeDock:{background:CARD,borderTop:"1px solid "+LINE,boxShadow:"0 -6px 24px rgba(44,38,32,.10)",padding:"12px 12px calc(12px + env(safe-area-inset-bottom))",flexShrink:0,display:"flex",gap:8},
-  newTableBtn:{flex:1,padding:16,borderRadius:14,border:"none",background:SEA,color:"#fff",fontSize:16,fontWeight:800,cursor:"pointer",boxShadow:"0 4px 14px rgba(44,146,191,.4)"},
+  newTableBtn:{flex:1,padding:16,borderRadius:16,border:"none",background:SEA,color:"#fff",fontSize:16,fontWeight:800,cursor:"pointer",boxShadow:"0 4px 14px rgba(44,146,191,.25)"},
 
   // ── Table view header ──
   tvHead:{background:SEA,color:"#fff",padding:"calc(10px + env(safe-area-inset-top)) 12px 10px",flexShrink:0,display:"flex",flexDirection:"column",gap:8},
   tvTopRow:{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8},
-  backBtn:{border:"none",background:"rgba(255,255,255,.18)",color:"#fff",fontSize:13.5,fontWeight:700,padding:"8px 12px",borderRadius:10,cursor:"pointer",whiteSpace:"nowrap"},
+  backBtn:{border:"none",background:"rgba(255,255,255,.18)",color:"#fff",fontSize:13,fontWeight:700,padding:"8px 12px",borderRadius:12,cursor:"pointer",whiteSpace:"nowrap"},
   tvTitle:{fontSize:18,fontWeight:900},
-  cancelTableBtn:{border:"none",background:"rgba(255,255,255,.18)",color:"#fff",fontSize:15,fontWeight:700,width:34,height:34,borderRadius:10,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",padding:0,flexShrink:0},
-  nameInput:{width:"100%",padding:"9px 12px",borderRadius:10,border:"none",background:"rgba(255,255,255,.92)",fontSize:14,fontWeight:600,color:INK,outline:"none",textAlign:"right"},
-  payBtn:{flex:1.4,padding:13,borderRadius:12,border:"none",background:"#3a9e6e",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,158,110,.4)"},
+  cancelTableBtn:{border:"none",background:"rgba(255,255,255,.18)",color:"#fff",fontSize:15,fontWeight:700,width:34,height:34,borderRadius:12,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",padding:0,flexShrink:0},
+  nameInput:{width:"100%",padding:"9px 12px",borderRadius:12,border:"none",background:"rgba(255,255,255,.92)",fontSize:14,fontWeight:600,color:INK,outline:"none",textAlign:"right"},
+  payBtn:{flex:1.4,padding:13,borderRadius:12,border:"none",background:"#3a9e6e",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,158,110,.25)"},
 
   // ── Payment modal ──
-  payWide:{width:"auto",margin:"6px 18px 0",padding:14,borderRadius:12,border:"none",background:"#3a9e6e",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,158,110,.4)"},
+  payWide:{width:"auto",margin:"6px 18px 0",padding:14,borderRadius:12,border:"none",background:"#3a9e6e",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",boxShadow:"0 2px 10px rgba(58,158,110,.25)"},
   payHead:{background:"#3a9e6e",color:"#fff",padding:"18px 20px 14px",textAlign:"center",flexShrink:0},
   payTotalLbl:{fontSize:13,opacity:0.9},
   payTotalBig:{fontSize:38,fontWeight:900,lineHeight:1.1},
   payHeadNote:{fontSize:12,opacity:0.9,marginTop:4},
   payBody:{padding:"16px 18px",display:"flex",flexDirection:"column",gap:12,overflowY:"auto"},
   payQuick:{display:"flex",gap:8},
-  payChip:{flex:1,padding:"10px 0",borderRadius:11,border:"1.5px solid "+LINE,background:SAND,color:INK,fontSize:13,fontWeight:700,cursor:"pointer"},
+  payChip:{flex:1,padding:"10px 0",borderRadius:12,border:"1.5px solid "+LINE,background:SAND,color:INK,fontSize:13,fontWeight:700,cursor:"pointer"},
   payChipOn:{background:SEA,color:"#fff",borderColor:"transparent"},
   tipCalcHead:{fontSize:13,fontWeight:800,color:MUTE,textAlign:"center",marginBottom:-4},
   // Combos — configured lines + add cards (in the table) and the picker modal
-  comboLine:{background:CARD,border:"1.5px solid "+SUN,borderRadius:14,padding:"10px 12px",marginBottom:8,boxShadow:"0 2px 10px rgba(232,131,58,.14)"},
+  comboLine:{background:CARD,border:"1.5px solid "+SUN,borderRadius:16,padding:"12px",marginBottom:8,boxShadow:"0 2px 10px rgba(232,131,58,.1)"},
   comboLineTop:{display:"flex",alignItems:"center",gap:8},
   comboLineName:{flex:1,fontSize:15,fontWeight:800,color:INK},
   comboLinePrice:{fontSize:14,fontWeight:800,color:SUN},
   comboLineParts:{display:"flex",flexWrap:"wrap",gap:6,margin:"7px 0 2px"},
-  comboPart:{fontSize:12,fontWeight:700,color:SEA_DEEP,background:"#eef6fb",borderRadius:7,padding:"3px 8px"},
+  comboPart:{fontSize:12,fontWeight:700,color:SEA_DEEP,background:"#eef6fb",borderRadius:8,padding:"3px 8px"},
   comboLineCtl:{display:"flex",alignItems:"center",gap:14,justifyContent:"flex-end",marginTop:8},
   comboAddRow:{display:"flex",flexWrap:"wrap",gap:8},
-  comboAddBtn:{flex:"1 1 44%",display:"flex",flexDirection:"column",alignItems:"flex-start",gap:2,background:SAND,border:"1.5px dashed "+SUN,borderRadius:13,padding:"12px 14px",cursor:"pointer",textAlign:"start"},
+  comboAddBtn:{flex:"1 1 44%",display:"flex",flexDirection:"column",alignItems:"flex-start",gap:2,background:SAND,border:"1.5px dashed "+SUN,borderRadius:12,padding:"12px 14px",cursor:"pointer",textAlign:"start"},
   comboAddName:{fontSize:15,fontWeight:800,color:INK},
   comboAddPrice:{fontSize:13,fontWeight:800,color:SUN},
   comboBody:{padding:"14px 18px",display:"flex",flexDirection:"column",gap:16,overflowY:"auto"},
-  comboIncludes:{fontSize:13,fontWeight:700,color:MUTE,background:SAND,borderRadius:10,padding:"8px 12px"},
+  comboIncludes:{fontSize:13,fontWeight:700,color:MUTE,background:SAND,borderRadius:12,padding:"8px 12px"},
   comboSlot:{display:"flex",flexDirection:"column",gap:8},
   comboSlotLbl:{fontSize:14,fontWeight:800,color:INK},
   comboSlotHint:{fontSize:12,fontWeight:700,color:MUTE},
   comboOpts:{display:"flex",flexWrap:"wrap",gap:8},
-  comboChip:{padding:"9px 14px",borderRadius:11,border:"1.5px solid "+LINE,background:SAND,color:INK,fontSize:14,fontWeight:700,cursor:"pointer"},
+  comboChip:{padding:"9px 14px",borderRadius:12,border:"1.5px solid "+LINE,background:SAND,color:INK,fontSize:14,fontWeight:700,cursor:"pointer"},
   comboStepper:{display:"flex",alignItems:"center",gap:16},
-  comboOther:{border:"1.5px solid "+LINE,borderRadius:11,padding:"10px 12px",fontSize:15,fontWeight:600,outline:"none",background:"#fff",width:"100%",boxSizing:"border-box"},
+  comboOther:{border:"1.5px solid "+LINE,borderRadius:12,padding:"10px 12px",fontSize:15,fontWeight:600,outline:"none",background:"#fff",width:"100%",boxSizing:"border-box"},
   receiptComboParts:{fontSize:12,fontWeight:600,color:MUTE,padding:"0 4px 6px",marginTop:-2},
   // ── Kitchen / roles ──
-  stFired:{fontSize:11,fontWeight:800,padding:"2px 8px",borderRadius:7,background:"#fef0e0",color:SUN},
-  stReady:{fontSize:11,fontWeight:800,padding:"2px 8px",borderRadius:7,background:"#e7f5ee",color:"#2f7d57"},
+  stFired:{fontSize:11,fontWeight:800,padding:"2px 8px",borderRadius:8,background:"#fef0e0",color:SUN},
+  stReady:{fontSize:11,fontWeight:800,padding:"2px 8px",borderRadius:8,background:"#e7f5ee",color:"#2f7d57"},
   cardStatus:{marginBottom:8,display:"flex"},
   kitchenBadge:{fontSize:11,fontWeight:800,padding:"3px 8px",borderRadius:8,background:"#fef0e0",color:SUN,alignSelf:"flex-start"},
   kitchenBadgeDone:{background:"#e7f5ee",color:"#2f7d57"},
-  kitchenReady:{fontSize:12,fontWeight:900,padding:"4px 10px",borderRadius:9,background:"#3a9e6e",color:"#fff",alignSelf:"flex-start",boxShadow:"0 2px 8px rgba(58,158,110,.35)"},
-  fireBtn:{width:"100%",padding:14,marginBottom:8,borderRadius:13,border:"none",background:SUN,color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(232,131,58,.4)"},
+  kitchenReady:{fontSize:12,fontWeight:900,padding:"4px 10px",borderRadius:8,background:"#3a9e6e",color:"#fff",alignSelf:"flex-start",boxShadow:"0 2px 8px rgba(58,158,110,.22)"},
+  fireBtn:{width:"100%",padding:14,marginBottom:8,borderRadius:12,border:"none",background:SUN,color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(232,131,58,.25)"},
   fireBtnDone:{background:"#eef3ee",color:"#2f7d57",boxShadow:"none",cursor:"default"},
-  roleChip:{fontSize:12.5,fontWeight:800,color:"#fff",background:"rgba(255,255,255,.18)",border:"none",padding:"6px 12px",borderRadius:20,cursor:"pointer",whiteSpace:"nowrap"},
-  chefEnterBtn:{flex:1,padding:16,borderRadius:14,border:"none",background:SUN,color:"#fff",fontSize:16,fontWeight:800,cursor:"pointer",boxShadow:"0 4px 14px rgba(232,131,58,.4)"},
+  roleChip:{fontSize:12,fontWeight:800,color:"#fff",background:"rgba(255,255,255,.18)",border:"none",padding:"6px 12px",borderRadius:20,cursor:"pointer",whiteSpace:"nowrap"},
+  chefEnterBtn:{flex:1,padding:16,borderRadius:16,border:"none",background:SUN,color:"#fff",fontSize:16,fontWeight:800,cursor:"pointer",boxShadow:"0 4px 14px rgba(232,131,58,.25)"},
   roleList:{display:"flex",flexDirection:"column",gap:8,margin:"4px 0 12px"},
-  roleBtn:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px",borderRadius:13,border:"1.5px solid "+LINE,background:SAND,color:INK,fontSize:16,fontWeight:800,cursor:"pointer"},
+  roleBtn:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px",borderRadius:12,border:"1.5px solid "+LINE,background:SAND,color:INK,fontSize:16,fontWeight:800,cursor:"pointer"},
   roleBtnOn:{borderColor:SEA,background:"#eaf4f9",color:SEA_DEEP},
   roleBtnLbl:{},
   roleBtnTag:{fontSize:15},
   chefHead:{background:"#1d1a16",color:"#fff",padding:"calc(12px + env(safe-area-inset-top)) 14px 12px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,flexShrink:0},
-  chefBack:{background:"rgba(255,255,255,.14)",border:"none",color:"#fff",fontSize:14,fontWeight:800,padding:"7px 12px",borderRadius:10,cursor:"pointer"},
+  chefBack:{background:"rgba(255,255,255,.14)",border:"none",color:"#fff",fontSize:14,fontWeight:800,padding:"7px 12px",borderRadius:12,cursor:"pointer"},
   chefTitle:{fontSize:20,fontWeight:900},
   chefToolbar:{display:"flex",justifyContent:"flex-end",padding:"8px 12px 0"},
-  chefToggle:{fontSize:12.5,fontWeight:800,color:MUTE,background:CARD,border:"1.5px solid "+LINE,padding:"7px 12px",borderRadius:20,cursor:"pointer"},
+  chefToggle:{fontSize:12,fontWeight:800,color:MUTE,background:CARD,border:"1.5px solid "+LINE,padding:"7px 12px",borderRadius:20,cursor:"pointer"},
   chefToggleOn:{borderColor:SEA,color:SEA_DEEP,background:"#eaf4f9"},
   chefEmpty:{textAlign:"center",color:MUTE,fontSize:15,fontWeight:700,padding:"60px 20px"},
   chefCard:{background:CARD,border:"1.5px solid "+LINE,borderRadius:16,padding:12,marginBottom:12,boxShadow:"0 2px 10px rgba(44,38,32,.06)"},
@@ -532,7 +573,7 @@ const S = {
   chefCardInfo:{flex:1,minWidth:0},
   chefTableName:{fontSize:16,fontWeight:900,color:INK},
   chefTableSub:{fontSize:12,fontWeight:700,color:MUTE,marginTop:2},
-  chefCount:{fontSize:13,fontWeight:800,color:SUN,background:"#fef0e0",padding:"4px 10px",borderRadius:10,flexShrink:0},
+  chefCount:{fontSize:13,fontWeight:800,color:SUN,background:"#fef0e0",padding:"4px 10px",borderRadius:12,flexShrink:0},
   chefDish:{display:"flex",alignItems:"center",gap:10,padding:"12px 4px",borderTop:"1px solid "+LINE},
   chefDishDone:{opacity:0.5},
   chefDishMain:{flex:1,display:"flex",alignItems:"center",gap:10,minWidth:0},
@@ -540,13 +581,37 @@ const S = {
   chefDishText:{minWidth:0},
   chefDishName:{fontSize:17,fontWeight:800,color:INK},
   chefDishParts:{fontSize:13,fontWeight:600,color:MUTE,marginTop:3},
-  chefDone:{background:"#3a9e6e",color:"#fff",border:"none",fontSize:16,fontWeight:900,padding:"14px 20px",borderRadius:13,cursor:"pointer",flexShrink:0,boxShadow:"0 2px 10px rgba(58,158,110,.4)"},
-  chefUndo:{background:SAND,color:MUTE,border:"1.5px solid "+LINE,fontSize:13,fontWeight:800,padding:"10px 14px",borderRadius:11,cursor:"pointer",flexShrink:0},
-  payField:{display:"flex",alignItems:"center",gap:10,background:SAND,border:"1.5px solid "+LINE,borderRadius:13,padding:"10px 14px"},
+  chefDone:{background:"#3a9e6e",color:"#fff",border:"none",fontSize:16,fontWeight:900,padding:"14px 20px",borderRadius:12,cursor:"pointer",flexShrink:0,boxShadow:"0 2px 10px rgba(58,158,110,.25)"},
+  chefUndo:{background:SAND,color:MUTE,border:"1.5px solid "+LINE,fontSize:13,fontWeight:800,padding:"10px 14px",borderRadius:12,cursor:"pointer",flexShrink:0},
+  // ── Day report ──
+  reportDates:{display:"flex",alignItems:"center",gap:6},
+  reportDash:{color:"#fff",fontWeight:800},
+  reportRangeNote:{background:"#fff5e9",color:SUN,fontSize:13,fontWeight:800,textAlign:"center",padding:"10px 18px"},
+  reportDate:{background:"rgba(255,255,255,.18)",border:"none",color:"#fff",fontSize:13,fontWeight:800,padding:"6px 10px",borderRadius:12,colorScheme:"dark"},
+  reportTiles:{display:"flex",flexWrap:"wrap",gap:8,padding:"14px 18px 4px"},
+  reportNet:{display:"flex",alignItems:"center",justifyContent:"space-between",margin:"10px 18px 0",padding:"12px 16px",background:SAND,borderRadius:16,border:"1.5px solid "+LINE},
+  reportNetLbl:{fontSize:15,fontWeight:800,color:INK},
+  reportNetNum:{fontSize:24,fontWeight:900},
+  reportHint:{fontSize:11,fontWeight:600,color:MUTE,textAlign:"center",margin:"6px 18px 0"},
+  reportSecTitle:{fontSize:13,fontWeight:800,color:SEA_DEEP,margin:"18px 18px 8px",borderBottom:"1.5px solid "+LINE,paddingBottom:6},
+  reportItemRow:{display:"flex",alignItems:"center",gap:10,padding:"7px 18px"},
+  reportItemName:{flex:1,fontSize:14,fontWeight:700,color:INK},
+  reportItemQty:{fontSize:14,fontWeight:900,color:SEA_DEEP,minWidth:40,textAlign:"end"},
+  reportItemVal:{fontSize:13,fontWeight:700,color:MUTE,minWidth:64,textAlign:"end"},
+  reportEmptySec:{fontSize:13,color:MUTE,padding:"4px 18px 8px"},
+  costRow:{display:"flex",alignItems:"center",gap:10,padding:"8px 18px"},
+  costNote:{flex:1,fontSize:14,fontWeight:600,color:INK},
+  costAmt:{fontSize:14,fontWeight:800,color:SUN,minWidth:64,textAlign:"end"},
+  costDel:{background:"transparent",border:"none",color:MUTE,fontSize:16,fontWeight:800,cursor:"pointer",padding:"0 4px"},
+  costAddRow:{display:"flex",gap:8,padding:"6px 18px 2px"},
+  costNoteInput:{flex:1,minWidth:0,border:"1.5px solid "+LINE,borderRadius:12,padding:"10px 12px",fontSize:14,fontWeight:600,outline:"none",background:"#fff"},
+  costAmtInput:{width:80,border:"1.5px solid "+LINE,borderRadius:12,padding:"10px 12px",fontSize:14,fontWeight:800,outline:"none",background:"#fff",textAlign:"center"},
+  costAdd:{background:SEA,color:"#fff",border:"none",borderRadius:12,padding:"0 16px",fontSize:14,fontWeight:800,cursor:"pointer"},
+  payField:{display:"flex",alignItems:"center",gap:10,background:SAND,border:"1.5px solid "+LINE,borderRadius:12,padding:"10px 14px"},
   payFieldLbl:{fontSize:15,fontWeight:800,color:INK,minWidth:62},
   payInput:{flex:1,border:"none",background:"transparent",fontSize:22,fontWeight:800,color:INK,outline:"none",textAlign:"left",width:"100%",minWidth:0},
   payCur:{fontSize:16,fontWeight:800,color:MUTE},
-  payRemain:{textAlign:"center",fontSize:14,fontWeight:800,padding:"9px 0",borderRadius:11},
+  payRemain:{textAlign:"center",fontSize:14,fontWeight:800,padding:"9px 0",borderRadius:12},
   payRemainOk:{background:"#e7f5ee",color:"#2f7d57"},
   payRemainBad:{background:"#fdeee4",color:SUN},
   payBtns:{display:"flex",gap:8,margin:"4px 18px calc(16px + env(safe-area-inset-bottom))"},
@@ -556,13 +621,13 @@ const S = {
   closedTotals:{display:"flex",gap:8,padding:"12px 18px 8px",background:"#fff",flexShrink:0},
   closedStats:{display:"flex",gap:8,padding:"0 18px 12px",background:"#fff",flexShrink:0,borderBottom:"1.5px solid "+LINE},
   closedRow:{display:"flex",alignItems:"center",gap:10,padding:"12px 0",borderBottom:"1px solid "+LINE},
-  closedNum:{width:38,height:38,borderRadius:10,background:SEA,color:"#fff",fontSize:16,fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0},
+  closedNum:{width:38,height:38,borderRadius:12,background:SEA,color:"#fff",fontSize:16,fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0},
   closedInfo:{flex:1,minWidth:0},
   closedName:{fontSize:14,fontWeight:700,color:INK,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"},
-  closedSub:{fontSize:11.5,fontWeight:600,color:MUTE,marginTop:3,display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"},
-  methodChip:{fontSize:11,fontWeight:700,padding:"2px 7px",borderRadius:7},
+  closedSub:{fontSize:11,fontWeight:600,color:MUTE,marginTop:3,display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"},
+  methodChip:{fontSize:11,fontWeight:700,padding:"2px 7px",borderRadius:8},
   closedTotal:{fontSize:17,fontWeight:900,color:INK,flexShrink:0},
-  reopenBtn:{border:"1.5px solid "+LINE,background:SAND,color:INK,fontSize:12,fontWeight:700,padding:"7px 10px",borderRadius:9,cursor:"pointer",flexShrink:0},
+  reopenBtn:{border:"1.5px solid "+LINE,background:SAND,color:INK,fontSize:12,fontWeight:700,padding:"7px 10px",borderRadius:8,cursor:"pointer",flexShrink:0},
   clearBtn:{flex:1,padding:14,borderRadius:12,border:"1.5px solid #e7c9b0",background:"#fdeee4",color:SUN,fontSize:14,fontWeight:700,cursor:"pointer"},
 
   // ── Language toggle ──
@@ -571,22 +636,22 @@ const S = {
 
   // ── Day-summary lock ──
   totalsTopRow:{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginBottom:12},
-  totalsHint:{fontSize:11.5,fontWeight:700,color:SEA,marginTop:11,textAlign:"center"},
+  totalsHint:{fontSize:11,fontWeight:700,color:SEA,marginTop:11,textAlign:"center"},
   lockBtn:{border:"1.5px solid "+LINE,background:SAND,color:MUTE,fontSize:12,fontWeight:700,padding:"5px 11px",borderRadius:20,cursor:"pointer",whiteSpace:"nowrap"},
-  lockedCard:{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,background:CARD,border:"1.5px dashed #d9ccb2",borderRadius:18,padding:16,marginBottom:18},
+  lockedCard:{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,background:CARD,border:"1.5px dashed #d9ccb2",borderRadius:16,padding:16,marginBottom:16},
   lockedLeft:{display:"flex",alignItems:"center",gap:11,minWidth:0},
   lockIcon:{fontSize:22,flexShrink:0},
   lockedTitle:{fontSize:15,fontWeight:800,color:INK},
-  lockedSub:{fontSize:11.5,fontWeight:600,color:MUTE,marginTop:2},
-  lockedBtn:{border:"none",background:SEA,color:"#fff",fontSize:13.5,fontWeight:800,padding:"10px 16px",borderRadius:11,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0},
+  lockedSub:{fontSize:11,fontWeight:600,color:MUTE,marginTop:2},
+  lockedBtn:{border:"none",background:SEA,color:"#fff",fontSize:13,fontWeight:800,padding:"10px 16px",borderRadius:12,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0},
 
   // ── Password modal ──
   overlayC:{position:"fixed",inset:0,background:"rgba(44,38,32,.55)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:60},
-  pwdBox:{background:CARD,width:"100%",maxWidth:340,borderRadius:18,padding:20,margin:"0 16px",boxShadow:"0 20px 50px rgba(0,0,0,.3)"},
+  pwdBox:{background:CARD,width:"100%",maxWidth:340,borderRadius:16,padding:20,margin:"0 16px",boxShadow:"0 20px 50px rgba(0,0,0,.3)"},
   pwdTitle:{fontSize:17,fontWeight:900,color:INK,textAlign:"center"},
-  pwdSub:{fontSize:12.5,fontWeight:600,color:MUTE,textAlign:"center",marginTop:4,marginBottom:14},
+  pwdSub:{fontSize:12,fontWeight:600,color:MUTE,textAlign:"center",marginTop:4,marginBottom:14},
   pwdInput:{width:"100%",padding:"13px 14px",borderRadius:12,border:"1.5px solid "+LINE,background:SAND,fontSize:22,fontWeight:800,color:INK,outline:"none",textAlign:"center",letterSpacing:"4px"},
-  pwdErr:{color:SUN,fontSize:12.5,fontWeight:700,textAlign:"center",marginTop:8,minHeight:16},
+  pwdErr:{color:SUN,fontSize:12,fontWeight:700,textAlign:"center",marginTop:8,minHeight:16},
   pwdBtns:{display:"flex",gap:8,marginTop:14},
   pwdCancel:{flex:1,padding:13,borderRadius:12,border:"1.5px solid "+LINE,background:SAND,color:INK,fontSize:14,fontWeight:700,cursor:"pointer"},
   pwdConfirm:{flex:1.3,padding:13,borderRadius:12,border:"none",background:SEA,color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer"},
@@ -1214,69 +1279,148 @@ function PaymentModal({ total, tableLabel, onCancel, onConfirm }) {
   );
 }
 
-// ── ClosedView ────────────────────────────────────────────────
-function ClosedView({ closed, onReopen, onClear, onClose }) {
-  const today = todayStr();
-  const list  = closed.filter(c => new Date(c.paidAt).toDateString() === today);
-  const cash  = list.reduce((s,c) => s + (c.cash||0), 0);
-  const card  = list.reduce((s,c) => s + (c.card||0), 0);
-  const tips  = list.reduce((s,c) => s + (c.tip||0), 0);
-  const covers = list.reduce((s,c) => s + (c.guests ? (c.guests.a||0)+(c.guests.c||0) : 0), 0);
+// ── ReportView (date-scoped day report; role-filtered) ────────
+// Chef sees operational stats (tables/covers/items) + food-cost entry, no revenue.
+// Manager (full) also sees revenue/cash/card/tips/discounts, labor entry, and net profit.
+function ReportView({ full, canAddFood, canAddLabor, canManage, closed, onReopen, onClear, onClose }) {
+  const today = jerusalemDate();
+  const [from, setFrom]   = useState(today);
+  const [to, setTo]       = useState(today);
+  const [rep, setRep]     = useState(null);
+  const [loading, setLoad]= useState(true);
+  const [tick, setTick]   = useState(0);
+  const [food,  setFood]  = useState({ amount:"", note:"" });
+  const [labor, setLabor] = useState({ amount:"", note:"" });
+  const isRange   = from !== to;
+  const rangeDays = isRange ? dateRange(from, to).length : 1;
+
+  useEffect(() => {
+    let alive = true; setLoad(true);
+    (isRange ? fetchRangeReport(from, to) : fetchDayReport(from))
+      .then(r => { if (alive) { setRep(r); setLoad(false); } })
+      .catch(() => { if (alive) { setRep(null); setLoad(false); } });
+    return () => { alive = false; };
+  }, [from, to, tick]);
+
+  const s = (rep && rep.summary) || {};
+  const isToday = !isRange && from === today;
+  const foodTotal  = rep ? Number(rep.food)  || 0 : 0;
+  const laborTotal = rep ? Number(rep.labor) || 0 : 0;
+  const net = (Number(s.revenue) || 0) - foodTotal - laborTotal;
+  const exp = (rep && rep.expenses) || [];
+  const foodList  = exp.filter(e => e.kind === "food");
+  const laborList = exp.filter(e => e.kind === "labor");
+  const itemAr = n => (LANG === "ar" ? (NAME_AR[n] || n) : n);
+
+  const submit = (kind, d, set) => {
+    const amt = parseInt(d.amount, 10);
+    if (!amt) return;
+    addExpense(from, kind, amt, d.note.trim()).then(() => { set({ amount:"", note:"" }); setTick(t => t + 1); });
+  };
+  const removeExp = id => deleteExpense(id).then(() => setTick(t => t + 1));
+
+  const tCell = (label, val, color, cur) => h(TotalCell, { label, val, color, cur });
+  const costForm = (kind, d, set, notePh) => h("div", {style:S.costAddRow},
+    h("input", {style:S.costNoteInput, placeholder:notePh, value:d.note,
+      onChange:e => set({ ...d, note:e.target.value })}),
+    h("input", {style:S.costAmtInput, type:"number", inputMode:"numeric", placeholder:"₪", value:d.amount,
+      onChange:e => set({ ...d, amount:e.target.value })}),
+    h("button", {className:"tap", style:S.costAdd, onClick:() => submit(kind, d, set)}, tr("הוסף","إضافة"))
+  );
+  const costRow = (e, canDel) => h("div", {key:e.id, style:S.costRow},
+    h("span", {style:S.costNote}, e.note || tr("ללא הערה","بدون ملاحظة")),
+    h("span", {style:S.costAmt}, e.amount + " ₪"),
+    canDel && h("button", {className:"tap", style:S.costDel, onClick:() => removeExp(e.id)}, "✕")
+  );
+
+  const todayClosed = isToday ? closed.filter(c => new Date(c.paidAt).toDateString() === todayStr()) : [];
 
   return h("div", {style:S.overlay, onClick:onClose},
     h("div", {style:S.receipt, onClick:e => e.stopPropagation()},
 
       h("div", {style:{...S.receiptHead, background:SEA_DEEP}},
-        h("span", {style:S.receiptBrand}, tr("סיכום היום","ملخص اليوم")),
-        h("span", {style:S.receiptSub}, fmtDate())
-      ),
-
-      h("div", {style:S.closedTotals},
-        h(TotalCell, {label:tr("מזומן","نقداً"), val:cash,      color:"#3a9e6e"}),
-        h(TotalCell, {label:tr("אשראי","بطاقة"), val:card,      color:SEA}),
-        h(TotalCell, {label:tr("סה״כ","المجموع"),  val:cash+card, color:INK})
-      ),
-      h("div", {style:S.closedStats},
-        h(TotalCell, {label:tr("סועדים","ضيوف"), val:covers, color:SEA_DEEP, cur:""}),
-        h(TotalCell, {label:tr("טיפים","بقشيش"), val:tips,   color:"#a9791b"})
+        h("span", {style:S.receiptBrand}, full ? tr("דוח","تقرير") : tr("דוח מטבח","تقرير المطبخ")),
+        h("div", {style:S.reportDates},
+          h("input", {type:"date", max:to, value:from, style:S.reportDate,
+            onChange:e => { const v = e.target.value; setFrom(v); if (!full || v > to) setTo(v); }}),
+          full && h("span", {style:S.reportDash}, "–"),
+          full && h("input", {type:"date", max:today, value:to, style:S.reportDate,
+            onChange:e => { const v = e.target.value; setTo(v); if (v < from) setFrom(v); }})
+        )
       ),
 
       h("div", {style:S.receiptScroll},
-        list.length === 0
-          ? h("div", {style:S.receiptEmpty}, h(Bi, {he:"עדיין לא נסגרו שולחנות היום", ar:"لم تُغلق أي طاولة اليوم"}))
-          : list.map(c => {
-              const hc = c.guests ? (c.guests.a||0)+(c.guests.c||0) : 0;
-              return h("div", {key:c.id, style:S.closedRow},
+        loading ? h("div", {style:S.receiptEmpty}, h(Bi, {he:"טוען…", ar:"جار التحميل…"}))
+        : !rep ? h("div", {style:S.receiptEmpty}, h(Bi, {he:"שגיאה בטעינת הדוח", ar:"خطأ في تحميل التقرير"}))
+        : h(React.Fragment, null,
+
+            isRange && h("div", {style:S.reportRangeNote},
+              tr("טווח","نطاق") + " · " + rangeDays + " " + tr("ימים","أيام") + " · " + from + " → " + to),
+
+            h("div", {style:S.reportTiles},
+              tCell(tr("שולחנות","طاولات"), s.bills || 0, SEA_DEEP, ""),
+              tCell(tr("סועדים","ضيوف"),   s.covers || 0, SEA, ""),
+              full && tCell(tr("הכנסה","الدخل"),   s.revenue || 0, INK),
+              full && tCell(tr("מזומן","نقداً"),   s.cash || 0, "#3a9e6e"),
+              full && tCell(tr("אשראי","بطاقة"),   s.card || 0, SEA),
+              full && tCell(tr("טיפים","بقشيش"),   s.tips || 0, "#a9791b"),
+              full && (s.discounts > 0) && tCell(tr("הנחות","خصومات"), s.discounts || 0, SUN),
+              tCell(tr("עלות מזון","تكلفة الطعام"), foodTotal, SUN),
+              full && tCell(tr("עלות עובדים","تكلفة العمال"), laborTotal, SUN)
+            ),
+
+            full && h("div", {style:S.reportNet},
+              h("span", {style:S.reportNetLbl}, tr("רווח נקי","الربح الصافي")),
+              h("span", {style:{...S.reportNetNum, color: net >= 0 ? "#2f7d57" : "#c2553f"}}, net + " ₪")
+            ),
+            full && h("div", {style:S.reportHint}, tr("הכנסה − מזון − עובדים · טיפים לא נכללים","الدخل − الطعام − العمال · البقشيش غير محتسب")),
+
+            h("div", {style:S.reportSecTitle}, tr("פריטים שנמכרו","الأصناف المباعة")),
+            (rep.items && rep.items.length)
+              ? rep.items.map((it,i) => h("div", {key:i, style:S.reportItemRow},
+                  h("span", {style:S.reportItemName}, itemAr(it.name)),
+                  h("span", {style:S.reportItemQty}, "×" + it.units),
+                  full && h("span", {style:S.reportItemVal}, (it.value || 0) + " ₪")))
+              : h("div", {style:S.reportEmptySec}, tr("—","—")),
+
+            !isRange && h(React.Fragment, null,
+              h("div", {style:S.reportSecTitle}, tr("עלות מזון / קבלות","تكلفة الطعام / فواتير")),
+              foodList.map(e => costRow(e, canAddFood)),
+              canAddFood && costForm("food", food, setFood, tr("ספק / הערה","مورد / ملاحظة")),
+
+              full && h(React.Fragment, null,
+                h("div", {style:S.reportSecTitle}, tr("עלות עובדים","تكلفة العمال")),
+                laborList.map(e => costRow(e, canAddLabor)),
+                canAddLabor && costForm("labor", labor, setLabor, tr("שם / תפקיד","اسم / دور"))
+              )
+            ),
+
+            full && isToday && todayClosed.length > 0 && h(React.Fragment, null,
+              h("div", {style:S.reportSecTitle}, tr("שולחנות שנסגרו היום","طاولات أُغلقت اليوم")),
+              todayClosed.map(c => h("div", {key:c.id, style:S.closedRow},
                 h("span", {style:S.closedNum}, c.num),
                 h("div", {style:S.closedInfo},
                   h("div", {style:S.closedName}, (c.name ? c.name + " · " : "") + tr("שולחן","طاولة") + " " + c.num),
-                  h("div", {style:S.closedSub},
-                    h("span", null, fmtTime(c.paidAt)),
-                    hc > 0 && h("span", {style:{...S.methodChip, background:"#eef2f4", color:SEA_DEEP}}, hc + " " + tr("סועדים","ضيوف")),
-                    c.cash > 0 && h("span", {style:{...S.methodChip, background:"#e7f5ee", color:"#2f7d57"}}, tr("מזומן","نقداً") + " " + c.cash + "₪"),
-                    c.card > 0 && h("span", {style:{...S.methodChip, background:"#e6f1f7", color:SEA_DEEP}}, tr("אשראי","بطاقة") + " " + c.card + "₪"),
-                    c.discount > 0 && h("span", {style:{...S.methodChip, background:"#fdeee4", color:SUN}}, tr("הנחה","خصم") + " −" + c.discount + "₪"),
-                    c.tip > 0 && h("span", {style:{...S.methodChip, background:"#fef6e0", color:"#a9791b"}}, tr("טיפ","بقشيش") + " " + c.tip + "₪")
-                  )
+                  h("div", {style:S.closedSub}, h("span", null, fmtTime(c.paidAt)), h("span", null, c.total + " ₪"))
                 ),
-                h("span", {style:S.closedTotal}, c.total + " ₪"),
                 h("button", {className:"tap", style:S.reopenBtn, onClick:() => onReopen(c.id)}, tr("פתח מחדש","إعادة فتح"))
-              );
-            })
+              ))
+            )
+          )
       ),
 
       h("div", {style:S.receiptBtns},
         h("button", {className:"tap", style:S.receiptClose, onClick:onClose}, tr("סגור","إغلاق")),
-        list.length > 0 && h("button", {className:"tap", style:S.clearBtn,
-          onClick:() => { if (window.confirm(tr("לאפס את סיכום היום? השולחנות שנסגרו היום יימחקו מהרשימה.","تصفير ملخص اليوم؟ ستُحذف طاولات اليوم المغلقة من القائمة."))) onClear(); }},
-          tr("סיום יום ואיפוס","إنهاء اليوم وتصفير"))
+        canManage && isToday && todayClosed.length > 0 && h("button", {className:"tap", style:S.clearBtn,
+          onClick:() => { if (window.confirm(tr("לסיים ולאפס את היום? השולחנות שנסגרו יוסרו מהרשימה (הנתונים נשמרים לדוחות).","إنهاء وتصفير اليوم؟ ستُزال الطاولات المغلقة من القائمة (تبقى للتقارير)."))) onClear(); }},
+          tr("סיום יום","إنهاء اليوم"))
       )
     )
   );
 }
 
 // ── HomeView ──────────────────────────────────────────────────
-function HomeView({ tables, closed, onOpen, onNew, onShowClosed, lang, onToggleLang, unlocked, onUnlock, onLock, role, onSwitchRole, onChef }) {
+function HomeView({ tables, closed, onOpen, onNew, onReport, lang, onToggleLang, unlocked, onUnlock, role, onSwitchRole, onChef }) {
   const today = todayStr();
   const list  = closed.filter(c => new Date(c.paidAt).toDateString() === today);
   const cash  = list.reduce((s,c) => s + (c.cash||0), 0);
@@ -1296,28 +1440,32 @@ function HomeView({ tables, closed, onOpen, onNew, onShowClosed, lang, onToggleL
     h("div", {style:S.scroll},
 
       unlocked
-        ? h("div", {style:{...S.totalsCard, cursor:"pointer"}, onClick:onShowClosed},
+        ? h("div", {style:{...S.totalsCard, cursor:"pointer"}, onClick:onReport},
             h("div", {style:S.totalsTopRow},
-              h("span", {style:S.totalsTitle}, tr("סיכום היום","ملخص اليوم")),
-              h("button", {className:"tap", style:S.lockBtn, onClick:e => { e.stopPropagation(); onLock(); }}, "🔒 " + tr("נעל","قفل"))
+              h("span", {style:S.totalsTitle}, tr("סיכום ודוח היום","ملخص وتقرير اليوم"))
             ),
             h("div", {style:S.totalsGrid},
               h(TotalCell, {label:tr("מזומן","نقداً"), val:cash,      color:"#3a9e6e"}),
               h(TotalCell, {label:tr("אשראי","بطاقة"), val:card,      color:SEA}),
               h(TotalCell, {label:tr("סה״כ","المجموع"),  val:cash+card, color:INK})
             ),
-            h("div", {style:S.totalsHint}, list.length + " " + tr("שולחנות נסגרו","طاولة مغلقة") + " · " + tr("הצג פירוט","عرض التفاصيل") + " ›")
+            h("div", {style:S.totalsHint}, tr("רווח · עלויות · היסטוריה לפי תאריך","ربح · تكاليف · سجل حسب التاريخ") + " ›")
           )
-        : h("div", {style:S.lockedCard},
-            h("div", {style:S.lockedLeft},
-              h("span", {style:S.lockIcon}, "🔒"),
-              h("div", null,
-                h("div", {style:S.lockedTitle}, tr("סיכום היום","ملخص اليوم")),
-                h("div", {style:S.lockedSub}, tr("מוגן בסיסמה","محمي بكلمة سر"))
-              )
+        : can("pos.analytics")
+          ? h("div", {style:{...S.totalsCard, cursor:"pointer"}, onClick:onReport},
+              h("div", {style:S.totalsTopRow}, h("span", {style:S.totalsTitle}, tr("דוח מטבח","تقرير المطبخ"))),
+              h("div", {style:S.totalsHint}, tr("שולחנות · סועדים · פריטים · עלות מזון","طاولات · ضيوف · أصناف · تكلفة الطعام") + " ›")
+            )
+          : h("div", {style:S.lockedCard},
+              h("div", {style:S.lockedLeft},
+                h("span", {style:S.lockIcon}, "🔒"),
+                h("div", null,
+                  h("div", {style:S.lockedTitle}, tr("סיכום היום","ملخص اليوم")),
+                  h("div", {style:S.lockedSub}, tr("מוגן בסיסמה","محمي بكلمة سر"))
+                )
+              ),
+              h("button", {className:"tap", style:S.lockedBtn, onClick:onUnlock}, tr("הצג","عرض"))
             ),
-            h("button", {className:"tap", style:S.lockedBtn, onClick:onUnlock}, tr("הצג","عرض"))
-          ),
 
       h("div", {style:S.sectionLabel}, tr("שולחנות פתוחים","طاولات مفتوحة") + " · " + tables.length),
 
@@ -1356,7 +1504,7 @@ function HomeView({ tables, closed, onOpen, onNew, onShowClosed, lang, onToggleL
     ),
 
     h("div", {style:S.homeDock},
-      can("pos.kitchen") && h("button", {className:"tap", style:S.chefEnterBtn, onClick:onChef}, "🍳 " + tr("מטבח","المطبخ")),
+      can("pos.kitchen") && h("button", {className:"tap", style:S.chefEnterBtn, onClick:onChef}, tr("מטבח","المطبخ")),
       h("button", {className:"tap", style:S.newTableBtn, onClick:onNew}, "+ " + tr("שולחן חדש","طاولة جديدة"))
     )
   );
@@ -1630,7 +1778,7 @@ function usePosData(activeId) {
 function App() {
   const [lang, setLang]               = useState(loadLang);
   const [activeId, setActiveId]       = useState(null);
-  const [showClosed, setShowClosed]   = useState(false);
+  const [showReport, setShowReport]   = useState(false);
   const [unlocked, setUnlocked]       = useState(false);
   const [showPwd, setShowPwd]         = useState(false);
   const [appUnlocked, setAppUnlocked] = useState(() => {
@@ -1654,7 +1802,7 @@ function App() {
   const updateTable = pos.updateTable;
   const payAndClose = (id, payment) => { pos.payAndClose(id, payment); setActiveId(null); };
   const cancelTable = (id) => { pos.cancelTable(id); setActiveId(null); };
-  const reopen      = (id) => { pos.reopen(id); setShowClosed(false); };
+  const reopen      = (id) => { pos.reopen(id); setShowReport(false); };
   const clearToday  = pos.clearToday;
   const reportsUnlocked = unlocked || can("pos.reports");   // managers see the day summary without a password
 
@@ -1690,22 +1838,25 @@ function App() {
       closed: data.closed,
       onOpen: (id) => { pos.serveReady(id); setActiveId(id); },
       onNew: openNew,
-      onShowClosed: () => { if (reportsUnlocked) setShowClosed(true); },
+      onReport: () => { (can("pos.analytics") || reportsUnlocked) ? setShowReport(true) : setShowPwd(true); },
       lang, onToggleLang: toggleLang,
       unlocked: reportsUnlocked,
       onUnlock: () => setShowPwd(true),
-      onLock: () => setUnlocked(false),
       role, onSwitchRole: () => setShowRole(true), onChef: () => setChefMode(true),
     }),
-    showClosed && reportsUnlocked && h(ClosedView, {
+    showReport && h(ReportView, {
+      full: reportsUnlocked,
+      canAddFood: can("pos.costs_food"),
+      canAddLabor: can("pos.costs_labor"),
+      canManage: can("pos.manage"),
       closed: data.closed,
       onReopen: reopen,
       onClear: clearToday,
-      onClose: () => setShowClosed(false),
+      onClose: () => setShowReport(false),
     }),
     showPwd && h(PasswordModal, {
       onCancel: () => setShowPwd(false),
-      onSuccess: () => { setUnlocked(true); setShowPwd(false); },
+      onSuccess: () => { setUnlocked(true); setShowPwd(false); setShowReport(true); },
     }),
     showRole && h(RoleModal, {
       current: role,

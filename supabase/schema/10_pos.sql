@@ -72,6 +72,18 @@ create index if not exists pos_bill_items_paid_at_idx   on public.pos_bill_items
 create index if not exists pos_bill_items_item_name_idx on public.pos_bill_items (item_name);
 create index if not exists pos_bill_items_bill_id_idx   on public.pos_bill_items (bill_id);
 
+-- 3b) DAILY COSTS — chef logs food/receipts, manager logs labor; tagged to a business date
+create table if not exists public.pos_expenses (
+  id            bigint generated always as identity primary key,
+  business_date date not null,
+  kind          text not null,                 -- 'food' | 'labor'
+  amount        numeric not null default 0,
+  note          text,
+  created_by    text,                           -- role/name that entered it
+  created_at    timestamptz not null default now()
+);
+create index if not exists pos_expenses_date_idx on public.pos_expenses (business_date);
+
 -- 4) Atomic close: bill + items written, open table removed — one transaction
 create or replace function public.pos_close_table(p_bill jsonb, p_items jsonb)
 returns void language plpgsql security definer set search_path = public as $$
@@ -154,6 +166,46 @@ returns void language sql security definer set search_path = public as $$
   where t.id = p_id;
 $$;
 
+-- 5c) Day report for a given business date (Asia/Jerusalem): sales summary + items sold +
+--     expenses, in one jsonb blob. The app role-filters what it shows (chef = ops + food only,
+--     manager = everything incl. revenue/labor/net). net = revenue − food − labor (client-side).
+create or replace function public.pos_day_report(p_date date)
+returns jsonb language sql security definer set search_path = public as $$
+  with b as (
+    select * from public.pos_bills
+    where status = 'paid' and (paid_at at time zone 'Asia/Jerusalem')::date = p_date
+  ),
+  itm as (
+    select item_name, category, sum(qty) as units, sum(line_total) as menu_value
+    from public.pos_bill_items
+    where (paid_at at time zone 'Asia/Jerusalem')::date = p_date
+    group by item_name, category order by sum(qty) desc
+  ),
+  ex as (
+    select * from public.pos_expenses where business_date = p_date order by created_at
+  )
+  select jsonb_build_object(
+    'date', p_date,
+    'summary', (select jsonb_build_object(
+        'bills',     count(*),
+        'covers',    coalesce(sum(headcount), 0),
+        'revenue',   coalesce(sum(grand_total), 0),
+        'cash',      coalesce(sum(cash_paid), 0),
+        'card',      coalesce(sum(card_paid), 0),
+        'tips',      coalesce(sum(tip), 0),
+        'discounts', coalesce(sum(discount), 0),
+        'avg_bill',  coalesce(round(avg(grand_total), 0), 0),
+        'avg_minutes', coalesce(round(avg(duration_minutes), 0), 0)
+      ) from b),
+    'food',  (select coalesce(sum(amount), 0) from ex where kind = 'food'),
+    'labor', (select coalesce(sum(amount), 0) from ex where kind = 'labor'),
+    'items', coalesce((select jsonb_agg(jsonb_build_object(
+               'name', item_name, 'category', category, 'units', units, 'value', menu_value)) from itm), '[]'::jsonb),
+    'expenses', coalesce((select jsonb_agg(jsonb_build_object(
+               'id', id, 'kind', kind, 'amount', amount, 'note', note, 'by', created_by, 'at', created_at)) from ex), '[]'::jsonb)
+  );
+$$;
+
 -- 6) Ready-made analytics reports (drop first so column changes don't trip "cannot
 --    change name of view column" — create-or-replace can only append columns)
 drop view if exists public.v_sales_daily;
@@ -190,19 +242,24 @@ do $$ begin alter publication supabase_realtime add table public.pos_bills;  exc
 alter table public.pos_tables     enable row level security;
 alter table public.pos_bills      enable row level security;
 alter table public.pos_bill_items enable row level security;
+alter table public.pos_expenses   enable row level security;
 drop policy if exists "pos_tables anon"     on public.pos_tables;
 drop policy if exists "pos_bills anon"      on public.pos_bills;
 drop policy if exists "pos_bill_items anon" on public.pos_bill_items;
+drop policy if exists "pos_expenses anon"   on public.pos_expenses;
 create policy "pos_tables anon"     on public.pos_tables     for all to anon using (true) with check (true);
 create policy "pos_bills anon"      on public.pos_bills      for all to anon using (true) with check (true);
 create policy "pos_bill_items anon" on public.pos_bill_items for all to anon using (true) with check (true);
+create policy "pos_expenses anon"   on public.pos_expenses   for all to anon using (true) with check (true);
 -- Table privileges the RLS policies sit on top of (not auto-granted on newer projects)
 grant select, insert, update, delete on public.pos_tables     to anon;
 grant select, insert, update, delete on public.pos_bills      to anon;
 grant select, insert, update, delete on public.pos_bill_items to anon;
+grant select, insert, update, delete on public.pos_expenses   to anon;
 grant execute on function public.pos_close_table(jsonb, jsonb)          to anon;
 grant execute on function public.pos_reopen_bill(text, int)            to anon;
 grant execute on function public.pos_mark_item(text, text, bool)       to anon;
+grant execute on function public.pos_day_report(date)                  to anon;
 grant select on public.v_sales_daily, public.v_item_sales, public.v_category_sales, public.v_sales_hourly to anon;
 
 -- ── Platform integration (roles → permissions) ───────────────────────────────
