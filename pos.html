@@ -66,11 +66,44 @@ const MENU = [
     {name:"אבטיח טרי", nameAr:"بطيخ طازج", price:25},
     {name:"מתוקים", nameAr:"حلويات", price:15},
   ]},
-  { cat:"עיקריות ותוספות", catAr:"أطباق رئيسية وإضافات", oh:false, items:[
-    {name:"ארוחת בוקר", nameAr:"فطور", price:65},
+  { cat:"תוספות", catAr:"إضافات", oh:false, items:[
     {name:"מנת דג", nameAr:"صحن سمك", price:80},
     {name:"צ'יפס", nameAr:"بطاطا مقلية", price:30},
-    {name:"עסקית דג", nameAr:"وجبة سمك", price:110},
+  ]},
+  { cat:"ארוחות", catAr:"وجبات", oh:false, items:[
+    {name:"ארוחת בוקר", nameAr:"فطور", price:65, combo:{
+      includes:[],
+      slots:[
+        { name:"עיקרית", nameAr:"الطبق الرئيسي", options:[
+          {name:"שקשוקה", nameAr:"شكشوكة"},
+          {name:"חביתה", nameAr:"عجة"},
+          {name:"חביתת ירק", nameAr:"عجة خضار"},
+        ]},
+        { name:"סלט", nameAr:"سلطة", options:[
+          {name:"סלט טבולה", nameAr:"تبولة"},
+          {name:"סלט כרוב", nameAr:"سلطة ملفوف"},
+          {name:"סלט אחר", nameAr:"سلطة أخرى", other:true},
+        ]},
+        { name:"ממרח", nameAr:"إضافة", options:[
+          {name:"טחינה", nameAr:"طحينة"},
+          {name:"לבנה", nameAr:"لبنة"},
+        ]},
+        { name:"פיתות", nameAr:"خبز", count:true, min:0, max:2, unit:"פיתה", unitAr:"خبز" },
+      ],
+    }},
+    {name:"עסקית דג", nameAr:"وجبة سمك", price:110, combo:{
+      includes:[
+        {name:"מנת דג", nameAr:"صحن سمك"},
+        {name:"צ'יפס", nameAr:"بطاطا مقلية"},
+      ],
+      slots:[
+        { name:"סלט", nameAr:"سلطة", options:[
+          {name:"סלט טבולה", nameAr:"تبولة"},
+          {name:"סלט כרוב", nameAr:"سلطة ملفوف"},
+          {name:"סלט אחר", nameAr:"سلطة أخرى", other:true},
+        ]},
+      ],
+    }},
   ]},
 ];
 
@@ -100,6 +133,28 @@ const DAY_PASSWORD = "12345";        // manager: view revenue / day summary
 const APP_PIN = "2026";              // ← change to your staff code
 const APP_OK_KEY = "levyam_app_ok_v1";
 
+// ── Roles & permissions (per-device for now; keys mirror the platform's
+//    pos.<action> RBAC, so this maps 1:1 once pos.html sits behind platform login) ──
+const ROLE_KEY   = "levyam_pos_role_v1";
+const ROLE_CODES = { chef: "2580", manager: DAY_PASSWORD };   // ← change chef code; waiter needs none
+const ROLE_PERMS = {
+  waiter:  ["pos.view", "pos.order"],
+  chef:    ["pos.view", "pos.order", "pos.kitchen"],
+  manager: ["pos.view", "pos.order", "pos.kitchen", "pos.reports", "pos.manage"],
+};
+const ROLE_LABELS = {
+  waiter:  { he:"מלצר", ar:"نادل" },
+  chef:    { he:"מטבח", ar:"مطبخ" },
+  manager: { he:"מנהל", ar:"مدير" },
+};
+let ROLE = "waiter";                                   // set every render in App (like LANG)
+function can(perm) { return (ROLE_PERMS[ROLE] || []).includes(perm); }
+function loadRole() {
+  try { const r = localStorage.getItem(ROLE_KEY); if (ROLE_PERMS[r]) return r; } catch (e) {}
+  return "waiter";
+}
+function saveRole(r) { try { localStorage.setItem(ROLE_KEY, r); } catch (e) {} }
+
 function fmtDate(ts) {
   const d = ts ? new Date(ts) : new Date();
   return d.getDate() + "/" + (d.getMonth() + 1) + "/" + d.getFullYear();
@@ -110,11 +165,50 @@ const QR_SRC  = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BS
 function buildItems() {
   const out = [];
   MENU.forEach((g,gi) =>
-    g.items.forEach((it,ii) =>
-      out.push({id:gi+"-"+ii, name:it.name, nameAr:it.nameAr, price:it.price, oh:g.oh, cat:g.cat, catAr:g.catAr, qty:0})
-    )
+    g.items.forEach((it,ii) => {
+      if (it.combo) return;   // combos are configured via the picker, not a qty stepper
+      out.push({id:gi+"-"+ii, name:it.name, nameAr:it.nameAr, price:it.price, oh:g.oh, cat:g.cat, catAr:g.catAr, qty:0, sent:0, done:0, served:0});
+    })
   );
   return out;
+}
+
+// Combo menu items, flattened with their category/pricing for the picker.
+const COMBO_DEFS = [];
+MENU.forEach(g => g.items.forEach(it => {
+  if (it.combo) COMBO_DEFS.push({ name:it.name, nameAr:it.nameAr, price:it.price, oh:g.oh, cat:g.cat, catAr:g.catAr, combo:it.combo });
+}));
+
+// Merge a saved cart with the current MENU: refresh menu items (category/price/name —
+// so renames don't orphan them) while preserving quantities, custom items and combo lines.
+// Kitchen pipeline counts per line: qty (ordered) → sent → done → served.
+// Migrate the old firedAt/doneAt booleans to counts so existing tables don't break.
+function normalizeLine(it) {
+  if (typeof it.sent === "number") return { ...it, done: it.done || 0, served: it.served || 0 };
+  return { ...it, sent: it.firedAt ? (it.qty || 0) : 0, done: it.doneAt ? (it.qty || 0) : 0, served: 0 };
+}
+
+function reconcileItems(saved) {
+  const arr = (Array.isArray(saved) ? saved : []).map(normalizeLine);
+  const byName = {};
+  arr.forEach(it => { if (!it.custom && !it.combo) byName[it.name] = it; });
+  const merged = buildItems().map(f => {
+    const o = byName[f.name];
+    return o ? { ...f, qty:o.qty||0, sent:o.sent||0, done:o.done||0, served:o.served||0, firedAt:o.firedAt } : f;
+  });
+  const extras = arr.filter(it => it.custom || it.combo);   // user-added & configured combos kept as-is
+  return [...merged, ...extras];
+}
+
+// Overlay the chef-owned `done` count onto the table a waiter is editing (matched by id),
+// so a dish turning ready shows live without yanking the waiter's qty / sent / served.
+function mergeKitchen(local, server) {
+  const byId = {};
+  (server.items || []).forEach(it => { byId[it.id] = it; });
+  return { ...local, items: (local.items || []).map(it => {
+    const s = byId[it.id];
+    return s ? { ...it, done: (s.done != null ? s.done : it.done), firedAt: it.firedAt || s.firedAt } : it;
+  }) };
 }
 
 // ── Persistence ───────────────────────────────────────────────
@@ -123,7 +217,8 @@ const STORE_KEY = "levyam_pos_v1";
 function loadData() {
   try {
     const d = JSON.parse(localStorage.getItem(STORE_KEY));
-    if (d && Array.isArray(d.tables) && Array.isArray(d.closed)) return d;
+    if (d && Array.isArray(d.tables) && Array.isArray(d.closed))
+      return { tables: d.tables.map(t => ({ ...t, items: reconcileItems(t.items) })), closed: d.closed };
   } catch (e) {}
   return { tables: [], closed: [] };
 }
@@ -151,7 +246,7 @@ function tableToRow(t) {
 function rowToTable(r) {
   return {
     id: r.id, num: r.num, name: r.name || "",
-    items: Array.isArray(r.items) ? r.items : [],
+    items: reconcileItems(r.items),
     guests: { a: r.guests_adults || 0, c: r.guests_children || 0 },
     useOH: r.pricing_mode !== "a_la_carte",
     openedAt: r.opened_at ? Date.parse(r.opened_at) : Date.now(),
@@ -168,6 +263,8 @@ function billToClosed(r) {
     paidAt: r.paid_at ? Date.parse(r.paid_at) : Date.now(),
     cash: Number(r.cash_paid) || 0,
     card: Number(r.card_paid) || 0,
+    discount: Number(r.discount) || 0,
+    tip: Number(r.tip) || 0,
     total: Number(r.grand_total) || 0,
   };
 }
@@ -201,7 +298,9 @@ function buildBillPayload(t, payment) {
       oh_charge: t.useOH ? tt.ohCharge : 0,
       extras_total: t.useOH ? tt.extras : tt.menuAll,
       menu_value: tt.menuAll,
-      grand_total: payment.total,
+      discount: payment.discount || 0,            // taken off the gross bill
+      tip: payment.tip || 0,                       // overpayment kept as tip
+      grand_total: payment.total,                  // net charged (gross − discount)
       cash_paid: payment.cash, card_paid: payment.card,
       items: ordered,
     },
@@ -240,7 +339,7 @@ function makeTable(tables) {
     name: "",
     items: buildItems(),
     guests: { a: 2, c: 0 },
-    useOH: true,
+    useOH: false,   // new tables default to "לפי תפריט" (a-la-carte)
     openedAt: Date.now(),
   };
 }
@@ -359,8 +458,8 @@ const S = {
   tableCardNum:{fontSize:28,fontWeight:900,color:INK,lineHeight:1},
   tableCardCur:{fontSize:15,fontWeight:800,color:MUTE},
   emptyTables:{textAlign:"center",color:MUTE,fontSize:14,fontWeight:600,padding:"38px 20px",lineHeight:1.5,background:CARD,borderRadius:18,border:"1.5px dashed #d9ccb2"},
-  homeDock:{background:CARD,borderTop:"1px solid "+LINE,boxShadow:"0 -6px 24px rgba(44,38,32,.10)",padding:"12px 12px calc(12px + env(safe-area-inset-bottom))",flexShrink:0},
-  newTableBtn:{width:"100%",padding:16,borderRadius:14,border:"none",background:SEA,color:"#fff",fontSize:16,fontWeight:800,cursor:"pointer",boxShadow:"0 4px 14px rgba(44,146,191,.4)"},
+  homeDock:{background:CARD,borderTop:"1px solid "+LINE,boxShadow:"0 -6px 24px rgba(44,38,32,.10)",padding:"12px 12px calc(12px + env(safe-area-inset-bottom))",flexShrink:0,display:"flex",gap:8},
+  newTableBtn:{flex:1,padding:16,borderRadius:14,border:"none",background:SEA,color:"#fff",fontSize:16,fontWeight:800,cursor:"pointer",boxShadow:"0 4px 14px rgba(44,146,191,.4)"},
 
   // ── Table view header ──
   tvHead:{background:SEA,color:"#fff",padding:"calc(10px + env(safe-area-inset-top)) 12px 10px",flexShrink:0,display:"flex",flexDirection:"column",gap:8},
@@ -376,9 +475,73 @@ const S = {
   payHead:{background:"#3a9e6e",color:"#fff",padding:"18px 20px 14px",textAlign:"center",flexShrink:0},
   payTotalLbl:{fontSize:13,opacity:0.9},
   payTotalBig:{fontSize:38,fontWeight:900,lineHeight:1.1},
+  payHeadNote:{fontSize:12,opacity:0.9,marginTop:4},
   payBody:{padding:"16px 18px",display:"flex",flexDirection:"column",gap:12,overflowY:"auto"},
   payQuick:{display:"flex",gap:8},
   payChip:{flex:1,padding:"10px 0",borderRadius:11,border:"1.5px solid "+LINE,background:SAND,color:INK,fontSize:13,fontWeight:700,cursor:"pointer"},
+  payChipOn:{background:SEA,color:"#fff",borderColor:"transparent"},
+  tipCalcHead:{fontSize:13,fontWeight:800,color:MUTE,textAlign:"center",marginBottom:-4},
+  // Combos — configured lines + add cards (in the table) and the picker modal
+  comboLine:{background:CARD,border:"1.5px solid "+SUN,borderRadius:14,padding:"10px 12px",marginBottom:8,boxShadow:"0 2px 10px rgba(232,131,58,.14)"},
+  comboLineTop:{display:"flex",alignItems:"center",gap:8},
+  comboLineName:{flex:1,fontSize:15,fontWeight:800,color:INK},
+  comboLinePrice:{fontSize:14,fontWeight:800,color:SUN},
+  comboLineParts:{display:"flex",flexWrap:"wrap",gap:6,margin:"7px 0 2px"},
+  comboPart:{fontSize:12,fontWeight:700,color:SEA_DEEP,background:"#eef6fb",borderRadius:7,padding:"3px 8px"},
+  comboLineCtl:{display:"flex",alignItems:"center",gap:14,justifyContent:"flex-end",marginTop:8},
+  comboAddRow:{display:"flex",flexWrap:"wrap",gap:8},
+  comboAddBtn:{flex:"1 1 44%",display:"flex",flexDirection:"column",alignItems:"flex-start",gap:2,background:SAND,border:"1.5px dashed "+SUN,borderRadius:13,padding:"12px 14px",cursor:"pointer",textAlign:"start"},
+  comboAddName:{fontSize:15,fontWeight:800,color:INK},
+  comboAddPrice:{fontSize:13,fontWeight:800,color:SUN},
+  comboBody:{padding:"14px 18px",display:"flex",flexDirection:"column",gap:16,overflowY:"auto"},
+  comboIncludes:{fontSize:13,fontWeight:700,color:MUTE,background:SAND,borderRadius:10,padding:"8px 12px"},
+  comboSlot:{display:"flex",flexDirection:"column",gap:8},
+  comboSlotLbl:{fontSize:14,fontWeight:800,color:INK},
+  comboSlotHint:{fontSize:12,fontWeight:700,color:MUTE},
+  comboOpts:{display:"flex",flexWrap:"wrap",gap:8},
+  comboChip:{padding:"9px 14px",borderRadius:11,border:"1.5px solid "+LINE,background:SAND,color:INK,fontSize:14,fontWeight:700,cursor:"pointer"},
+  comboStepper:{display:"flex",alignItems:"center",gap:16},
+  comboOther:{border:"1.5px solid "+LINE,borderRadius:11,padding:"10px 12px",fontSize:15,fontWeight:600,outline:"none",background:"#fff",width:"100%",boxSizing:"border-box"},
+  receiptComboParts:{fontSize:12,fontWeight:600,color:MUTE,padding:"0 4px 6px",marginTop:-2},
+  // ── Kitchen / roles ──
+  stFired:{fontSize:11,fontWeight:800,padding:"2px 8px",borderRadius:7,background:"#fef0e0",color:SUN},
+  stReady:{fontSize:11,fontWeight:800,padding:"2px 8px",borderRadius:7,background:"#e7f5ee",color:"#2f7d57"},
+  cardStatus:{marginBottom:8,display:"flex"},
+  kitchenBadge:{fontSize:11,fontWeight:800,padding:"3px 8px",borderRadius:8,background:"#fef0e0",color:SUN,alignSelf:"flex-start"},
+  kitchenBadgeDone:{background:"#e7f5ee",color:"#2f7d57"},
+  kitchenReady:{fontSize:12,fontWeight:900,padding:"4px 10px",borderRadius:9,background:"#3a9e6e",color:"#fff",alignSelf:"flex-start",boxShadow:"0 2px 8px rgba(58,158,110,.35)"},
+  fireBtn:{width:"100%",padding:14,marginBottom:8,borderRadius:13,border:"none",background:SUN,color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(232,131,58,.4)"},
+  fireBtnDone:{background:"#eef3ee",color:"#2f7d57",boxShadow:"none",cursor:"default"},
+  roleChip:{fontSize:12.5,fontWeight:800,color:"#fff",background:"rgba(255,255,255,.18)",border:"none",padding:"6px 12px",borderRadius:20,cursor:"pointer",whiteSpace:"nowrap"},
+  chefEnterBtn:{flex:1,padding:16,borderRadius:14,border:"none",background:SUN,color:"#fff",fontSize:16,fontWeight:800,cursor:"pointer",boxShadow:"0 4px 14px rgba(232,131,58,.4)"},
+  roleList:{display:"flex",flexDirection:"column",gap:8,margin:"4px 0 12px"},
+  roleBtn:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px",borderRadius:13,border:"1.5px solid "+LINE,background:SAND,color:INK,fontSize:16,fontWeight:800,cursor:"pointer"},
+  roleBtnOn:{borderColor:SEA,background:"#eaf4f9",color:SEA_DEEP},
+  roleBtnLbl:{},
+  roleBtnTag:{fontSize:15},
+  chefHead:{background:"#1d1a16",color:"#fff",padding:"calc(12px + env(safe-area-inset-top)) 14px 12px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,flexShrink:0},
+  chefBack:{background:"rgba(255,255,255,.14)",border:"none",color:"#fff",fontSize:14,fontWeight:800,padding:"7px 12px",borderRadius:10,cursor:"pointer"},
+  chefTitle:{fontSize:20,fontWeight:900},
+  chefToolbar:{display:"flex",justifyContent:"flex-end",padding:"8px 12px 0"},
+  chefToggle:{fontSize:12.5,fontWeight:800,color:MUTE,background:CARD,border:"1.5px solid "+LINE,padding:"7px 12px",borderRadius:20,cursor:"pointer"},
+  chefToggleOn:{borderColor:SEA,color:SEA_DEEP,background:"#eaf4f9"},
+  chefEmpty:{textAlign:"center",color:MUTE,fontSize:15,fontWeight:700,padding:"60px 20px"},
+  chefCard:{background:CARD,border:"1.5px solid "+LINE,borderRadius:16,padding:12,marginBottom:12,boxShadow:"0 2px 10px rgba(44,38,32,.06)"},
+  chefCardHead:{display:"flex",alignItems:"center",gap:10,marginBottom:6},
+  chefTableNum:{width:42,height:42,borderRadius:12,background:"#1d1a16",color:"#fff",fontSize:18,fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0},
+  chefCardInfo:{flex:1,minWidth:0},
+  chefTableName:{fontSize:16,fontWeight:900,color:INK},
+  chefTableSub:{fontSize:12,fontWeight:700,color:MUTE,marginTop:2},
+  chefCount:{fontSize:13,fontWeight:800,color:SUN,background:"#fef0e0",padding:"4px 10px",borderRadius:10,flexShrink:0},
+  chefDish:{display:"flex",alignItems:"center",gap:10,padding:"12px 4px",borderTop:"1px solid "+LINE},
+  chefDishDone:{opacity:0.5},
+  chefDishMain:{flex:1,display:"flex",alignItems:"center",gap:10,minWidth:0},
+  chefDishQty:{fontSize:20,fontWeight:900,color:SEA_DEEP,minWidth:38,textAlign:"center"},
+  chefDishText:{minWidth:0},
+  chefDishName:{fontSize:17,fontWeight:800,color:INK},
+  chefDishParts:{fontSize:13,fontWeight:600,color:MUTE,marginTop:3},
+  chefDone:{background:"#3a9e6e",color:"#fff",border:"none",fontSize:16,fontWeight:900,padding:"14px 20px",borderRadius:13,cursor:"pointer",flexShrink:0,boxShadow:"0 2px 10px rgba(58,158,110,.4)"},
+  chefUndo:{background:SAND,color:MUTE,border:"1.5px solid "+LINE,fontSize:13,fontWeight:800,padding:"10px 14px",borderRadius:11,cursor:"pointer",flexShrink:0},
   payField:{display:"flex",alignItems:"center",gap:10,background:SAND,border:"1.5px solid "+LINE,borderRadius:13,padding:"10px 14px"},
   payFieldLbl:{fontSize:15,fontWeight:800,color:INK,minWidth:62},
   payInput:{flex:1,border:"none",background:"transparent",fontSize:22,fontWeight:800,color:INK,outline:"none",textAlign:"left",width:"100%",minWidth:0},
@@ -390,7 +553,8 @@ const S = {
   payConfirm:{flex:1.4,padding:15,borderRadius:12,border:"none",fontSize:16,fontWeight:800},
 
   // ── Closed view ──
-  closedTotals:{display:"flex",gap:8,padding:"12px 18px",background:"#fff",flexShrink:0,borderBottom:"1.5px solid "+LINE},
+  closedTotals:{display:"flex",gap:8,padding:"12px 18px 8px",background:"#fff",flexShrink:0},
+  closedStats:{display:"flex",gap:8,padding:"0 18px 12px",background:"#fff",flexShrink:0,borderBottom:"1.5px solid "+LINE},
   closedRow:{display:"flex",alignItems:"center",gap:10,padding:"12px 0",borderBottom:"1px solid "+LINE},
   closedNum:{width:38,height:38,borderRadius:10,background:SEA,color:"#fff",fontSize:16,fontWeight:900,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0},
   closedInfo:{flex:1,minWidth:0},
@@ -554,9 +718,14 @@ function BillSummary({orderedItems, useOH, headcount, guests, ohCharge, extras, 
             h(Bi, {he:"תוספות בתשלום", ar:"إضافات بتكلفة"}), ":"
           ),
           extraItems.map(it =>
-            h("div", {key:it.id, style:S.receiptRow},
-              h("span", {style:S.receiptItemName}, nm(it)+" ", h("span", {style:S.receiptQtyTag}, "×"+it.qty)),
-              h("span", {style:S.receiptItemPrice}, (it.qty*it.price)+" ₪")
+            h("div", {key:it.id},
+              h("div", {style:S.receiptRow},
+                h("span", {style:S.receiptItemName}, nm(it)+" ", h("span", {style:S.receiptQtyTag}, "×"+it.qty)),
+                h("span", {style:S.receiptItemPrice}, (it.qty*it.price)+" ₪")
+              ),
+              it.combo && it.components && it.components.length > 0 && h("div", {style:S.receiptComboParts},
+                it.components.map(c => nm(c) + (c.qty ? " ×"+c.qty : "")).join(" · ")
+              )
             )
           )
         ),
@@ -599,13 +768,124 @@ function BillSummary({orderedItems, useOH, headcount, guests, ohCharge, extras, 
   );
 }
 
+// ── ComboPicker ───────────────────────────────────────────────
+// Lets staff build a combo (e.g. עסקית דג) from its component slots, so the
+// chosen parts travel with the line item — clear for the bill and the chef view.
+function ComboPicker({ def, onCancel, onConfirm }) {
+  const slots    = def.combo.slots || [];
+  const includes = def.combo.includes || [];
+  const [sel, setSel] = useState(() => {        // choice slot → option index; count slot → number
+    const init = {};
+    slots.forEach((s,i) => { if (s.count) init[i] = s.min || 0; });
+    return init;
+  });
+  const [otherText, setOtherText] = useState({});  // "אחר" free-text per slot
+
+  const pickOption = (i, oi)   => setSel(prev => ({ ...prev, [i]: oi }));
+  const setCount   = (i, v, s) => setSel(prev => ({ ...prev, [i]: Math.max(s.min || 0, Math.min(s.max, v)) }));
+
+  const choiceSlots = slots.map((s,i) => ({ s, i })).filter(x => !x.s.count);
+  const valid = choiceSlots.every(({ s, i }) => {
+    const oi = sel[i];
+    if (oi == null) return false;
+    const opt = s.options[oi];
+    return !(opt && opt.other && !(otherText[i] || "").trim());
+  });
+
+  const build = () => {
+    if (!valid) return;
+    const components = [];
+    includes.forEach(c => components.push({ name:c.name, nameAr:c.nameAr }));
+    slots.forEach((s,i) => {
+      if (s.count) {
+        const n = sel[i] || 0;
+        if (n > 0) components.push({ slot:s.name, slotAr:s.nameAr, name:s.unit, nameAr:s.unitAr, qty:n });
+        return;
+      }
+      const opt = s.options[sel[i]];
+      if (!opt) return;
+      const txt = (otherText[i] || "").trim();
+      components.push({
+        slot:s.name, slotAr:s.nameAr,
+        name:   opt.other ? opt.name + " · " + txt : opt.name,
+        nameAr: opt.other ? opt.nameAr + " · " + txt : opt.nameAr,
+      });
+    });
+    onConfirm(components);
+  };
+
+  return h("div", {style:S.overlay, onClick:onCancel},
+    h("div", {style:S.receipt, onClick:e => e.stopPropagation()},
+
+      h("div", {style:S.payHead},
+        h("div", {style:S.payTotalLbl}, tr("בחירת מרכיבים","اختيار المكوّنات")),
+        h("div", {style:S.payTotalBig}, tr(def.name, def.nameAr)),
+        h("div", {style:S.payHeadNote}, def.price + " ₪")
+      ),
+
+      h("div", {style:S.comboBody},
+        includes.length > 0 && h("div", {style:S.comboIncludes},
+          tr("כולל","يشمل") + ": " + includes.map(c => nm(c)).join(" · ")
+        ),
+        slots.map((s,i) =>
+          h("div", {key:i, style:S.comboSlot},
+            h("div", {style:S.comboSlotLbl},
+              tr(s.name, s.nameAr),
+              s.count && h("span", {style:S.comboSlotHint}, " (" + (s.min || 0) + "–" + s.max + ")")
+            ),
+            s.count
+              ? h("div", {style:S.comboStepper},
+                  h("button", {className:"tap", style:{...S.qBtn, opacity:(sel[i]||0) <= (s.min||0) ? 0.35 : 1},
+                    onClick:() => setCount(i, (sel[i]||0) - 1, s)}, "–"),
+                  h("span", {style:S.qNum}, sel[i] || 0),
+                  h("button", {className:"tap", style:{...S.qBtn, background:SEA, color:"#fff", borderColor:"transparent"},
+                    onClick:() => setCount(i, (sel[i]||0) + 1, s)}, "+")
+                )
+              : h(React.Fragment, null,
+                  h("div", {style:S.comboOpts},
+                    s.options.map((opt,oi) =>
+                      h("button", {key:oi, className:"tap",
+                        style:{...S.comboChip, ...(sel[i] === oi ? S.payChipOn : {})},
+                        onClick:() => pickOption(i, oi)}, nm(opt))
+                    )
+                  ),
+                  sel[i] != null && s.options[sel[i]] && s.options[sel[i]].other &&
+                    h("input", {style:S.comboOther, placeholder:tr("פרטו את הסלט","حدد السلطة"),
+                      value:otherText[i] || "", autoFocus:true,
+                      onChange:e => setOtherText(p => ({ ...p, [i]: e.target.value }))})
+                )
+          )
+        )
+      ),
+
+      h("div", {style:S.payBtns},
+        h("button", {className:"tap", style:S.receiptClose, onClick:onCancel}, tr("ביטול","إلغاء")),
+        h("button", {className:"tap",
+          style:{...S.payConfirm, background: valid ? "#3a9e6e" : "#cfc6b6", color:"#fff", cursor: valid ? "pointer" : "not-allowed"},
+          disabled:!valid, onClick:build},
+          tr("הוספה לשולחן","إضافة للطاولة"))
+      )
+    )
+  );
+}
+
+// Kitchen-status badge for an order line (waiter-facing): in-kitchen / ready.
+function statusChip(it) {
+  const cooking = (it.sent || 0) - (it.done || 0);
+  const ready   = (it.done || 0) - (it.served || 0);
+  if (ready > 0)   return h("span", {style:S.stReady}, tr("מוכן","جاهز") + " ×" + ready);
+  if (cooking > 0) return h("span", {style:S.stFired}, tr("במטבח","في المطبخ") + " ×" + cooking);
+  return null;
+}
+
 // ── TableView ─────────────────────────────────────────────────
-function TableView({ table, onUpdate, onBack, onPaid, onCancelTable, lang, onToggleLang }) {
+function TableView({ table, onUpdate, onBack, onPaid, onCancelTable, onFire, lang, onToggleLang }) {
   const defName = () => tr("שתייה קרה", "مشروب بارد");
   const [adding,      setAdding]      = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [showPay,     setShowPay]     = useState(false);
   const [draft,       setDraft]       = useState(() => ({name:defName(), price:"", oh:false}));
+  const [comboPick,   setComboPick]   = useState(null);   // combo definition being configured
 
   const items  = table.items;
   const guests = table.guests;
@@ -628,12 +908,22 @@ function TableView({ table, onUpdate, onBack, onPaid, onCancelTable, lang, onTog
 
   const removeItem = id => setItems(prev => prev.filter(it => it.id !== id));
 
+  const addCombo = (def, components) => {
+    setItems(prev => [...prev, {
+      id:"combo-"+Date.now(), name:def.name, nameAr:def.nameAr, price:def.price,
+      oh:def.oh, cat:def.cat, catAr:def.catAr, qty:1, combo:true, components,
+    }]);
+    setComboPick(null);
+  };
+
   const { extras, menuAll, headcount, ohCharge, grand, itemsCount } = tableTotals(table);
   const tableLabel = (table.name ? table.name + " · " : "") + tr("שולחן","طاولة") + " " + table.num;
 
-  const baseGroups  = MENU.map(g => ({cat:g.cat, catAr:g.catAr, oh:g.oh, items:items.filter(it => it.cat===g.cat)}));
+  const baseGroups  = MENU.map(g => ({cat:g.cat, catAr:g.catAr, oh:g.oh, items:items.filter(it => it.cat===g.cat && !it.combo)})).filter(g => g.items.length);
   const customItems = items.filter(it => it.custom);
+  const comboItems  = items.filter(it => it.combo);
   const groups      = customItems.length ? [...baseGroups, {cat:"פריטים שהוספתי", catAr:"أصناف أضفتها", oh:false, custom:true, items:customItems}] : baseGroups;
+  const unsent      = items.reduce((s, it) => s + Math.max(0, (it.qty || 0) - (it.sent || 0)), 0);   // portions not yet sent
 
   return h("div", {style:S.app},
 
@@ -668,6 +958,45 @@ function TableView({ table, onUpdate, onBack, onPaid, onCancelTable, lang, onTog
         )
       ),
 
+      // Combos / meals — configured lines + add cards
+      h("section", {style:S.section},
+        h("header", {style:S.catHead},
+          h("span", {style:{...S.catDot, background:SUN}}),
+          h("h2", {style:S.catTitle}, tr("ארוחות","وجبات")),
+          h("span", {style:S.catTag}, tr("בחירת מרכיבים","اختيار المكوّنات"))
+        ),
+        comboItems.map(it =>
+          h("div", {key:it.id, style:S.comboLine},
+            h("div", {style:S.comboLineTop},
+              h("span", {style:S.comboLineName}, nm(it)),
+              statusChip(it),
+              h("span", {style:S.comboLinePrice}, (it.qty*it.price)+" ₪"),
+              h("button", {className:"tap", style:S.delBtn, onClick:()=>removeItem(it.id)}, "✕")
+            ),
+            it.components && it.components.length > 0 && h("div", {style:S.comboLineParts},
+              it.components.map((c,ci) =>
+                h("span", {key:ci, style:S.comboPart}, nm(c) + (c.qty ? " ×"+c.qty : ""))
+              )
+            ),
+            h("div", {style:S.comboLineCtl},
+              h("button", {className:"tap", style:{...S.qBtn, opacity:it.qty<=1?0.35:1},
+                onClick:()=> it.qty>1 && setQty(it.id,-1)}, "–"),
+              h("span", {style:{...S.qNum, color:SUN}}, it.qty),
+              h("button", {className:"tap", style:{...S.qBtn, background:SUN, color:"#fff", borderColor:"transparent"},
+                onClick:()=>setQty(it.id,1)}, "+")
+            )
+          )
+        ),
+        h("div", {style:S.comboAddRow},
+          COMBO_DEFS.map(def =>
+            h("button", {key:def.name, className:"tap", style:S.comboAddBtn, onClick:()=>setComboPick(def)},
+              h("span", {style:S.comboAddName}, tr(def.name, def.nameAr)),
+              h("span", {style:S.comboAddPrice}, "+ " + def.price + " ₪")
+            )
+          )
+        )
+      ),
+
       // Menu sections
       groups.map(g =>
         h("section", {key:g.cat, style:S.section},
@@ -689,6 +1018,7 @@ function TableView({ table, onUpdate, onBack, onPaid, onCancelTable, lang, onTog
                     : h("span", {style:{...S.cardPrice, color:it.oh?SEA_DEEP:SUN}}, it.price)
                 ),
                 it.custom && h("div", {style:{...S.cardPrice, color:SUN, fontSize:13, marginTop:-6, marginBottom:8}}, it.price+" ₪"),
+                it.qty > 0 && ((it.sent || 0) - (it.served || 0)) > 0 && h("div", {style:S.cardStatus}, statusChip(it)),
                 h("div", {style:S.cardCtl},
                   h("button", {className:"tap",
                     style:{...S.qBtn, opacity:it.qty===0?0.35:1},
@@ -752,6 +1082,10 @@ function TableView({ table, onUpdate, onBack, onPaid, onCancelTable, lang, onTog
           )
         )
       ),
+      h("button", {className:"tap",
+        style:{...S.fireBtn, ...(unsent ? {} : S.fireBtnDone)},
+        disabled:!unsent, onClick:() => unsent && onFire()},
+        unsent ? (tr("שלח למטבח","أرسل للمطبخ") + " · " + unsent) : (tr("נשלח למטבח","أُرسل للمطبخ") + " ✓")),
       h("div", {style:S.dockBtns},
         h("button", {className:"tap", style:S.resetBtn, onClick:()=>setShowSummary(true)}, tr("חשבון","الحساب")),
         h("button", {className:"tap", style:S.payBtn, onClick:()=>setShowPay(true)}, tr("תשלום וסגירה","الدفع والإغلاق"))
@@ -771,45 +1105,87 @@ function TableView({ table, onUpdate, onBack, onPaid, onCancelTable, lang, onTog
       total: grand, tableLabel,
       onCancel:()=>setShowPay(false),
       onConfirm:(payment)=>{ setShowPay(false); onPaid(payment); }
+    }),
+
+    // ── COMBO PICKER OVERLAY
+    comboPick && h(ComboPicker, {
+      def: comboPick,
+      onCancel:()=>setComboPick(null),
+      onConfirm:(components)=>addCombo(comboPick, components)
     })
   );
 }
 
 // ── Mount ─────────────────────────────────────────────────────
 // ── TotalCell ─────────────────────────────────────────────────
-function TotalCell({ label, val, color }) {
+function TotalCell({ label, val, color, cur }) {
+  const unit = cur === undefined ? "₪" : cur;   // pass cur:"" for a plain count (e.g. people)
   return h("div", {style:S.totalCell},
-    h("span", {style:{...S.totalCellNum, color}}, val, h("span", {style:S.totalCellCur}, " ₪")),
+    h("span", {style:{...S.totalCellNum, color}}, val, unit && h("span", {style:S.totalCellCur}, " " + unit)),
     h("span", {style:S.totalCellLbl}, label)
   );
 }
 
 // ── PaymentModal ──────────────────────────────────────────────
 function PaymentModal({ total, tableLabel, onCancel, onConfirm }) {
-  const [cash, setCash] = useState("");
-  const [card, setCard] = useState("");
+  const [cash, setCash]     = useState("");
+  const [card, setCard]     = useState("");
+  const [tipPct, setTipPct] = useState(0);           // tip-calculator selection
   const cashN = parseInt(cash, 10) || 0;
   const cardN = parseInt(card, 10) || 0;
-  const remaining = total - cashN - cardN;
-  const ok = total > 0 && remaining === 0;
+  const paid  = cashN + cardN;
+  const sugg    = Math.round(total * tipPct / 100);  // suggested tip from the calculator
+  const collect = total + sugg;                       // bill + suggested tip (quick-fill target)
+  const tipN      = Math.max(0, paid - total);        // overpayment becomes the tip
+  const shortfall = Math.max(0, total - paid);        // underpayment → hidden discount (asked on close)
+  const fullyPaid = total > 0 && paid >= total;
+  const ok = total > 0 && paid > 0;
 
-  const msg = total === 0   ? tr("אין פריטים בחשבון","لا أصناف في الحساب")
-    : remaining === 0       ? tr("מאוזן","متوازن") + " ✓"
-    : remaining > 0         ? tr("נותר לשלם","المتبقي") + ": " + remaining + " ₪"
-    :                         tr("חריגה","زيادة") + ": " + (-remaining) + " ₪";
+  const msg = total === 0 ? tr("אין פריטים בחשבון","لا أصناف في الحساب")
+    : paid === 0          ? tr("הזינו סכום שהתקבל","أدخل المبلغ المستلم")
+    : shortfall > 0       ? tr("חסר","ناقص") + " " + shortfall + " ₪ · " + tr("הנחה?","خصم؟")
+    : tipN > 0            ? tr("טיפ","بقشيش") + ": " + tipN + " ₪ ✓"
+    :                       tr("מאוזן","متوازن") + " ✓";
+
+  // Underpayment is treated as a (customer-invisible) discount, confirmed before closing.
+  const confirm = () => {
+    if (!ok) return;
+    if (shortfall > 0) {
+      const q = tr(
+        "התקבל " + paid + " ₪ מתוך " + total + " ₪.\nלהחיל הנחה של " + shortfall + " ₪ ולסגור את השולחן?",
+        "تم استلام " + paid + " ₪ من أصل " + total + " ₪.\nتطبيق خصم بقيمة " + shortfall + " ₪ وإغلاق الطاولة؟");
+      if (!window.confirm(q)) return;
+      onConfirm({ cash:cashN, card:cardN, discount:shortfall, tip:0, total:paid });
+    } else {
+      onConfirm({ cash:cashN, card:cardN, discount:0, tip:tipN, total });
+    }
+  };
 
   return h("div", {style:S.overlay, onClick:onCancel},
     h("div", {style:S.receipt, onClick:e => e.stopPropagation()},
 
       h("div", {style:S.payHead},
         h("div", {style:S.payTotalLbl}, tr("תשלום","الدفع") + " · " + tableLabel),
-        h("div", {style:S.payTotalBig}, total + " ₪")
+        h("div", {style:S.payTotalBig}, total + " ₪"),
+        sugg > 0 && h("div", {style:S.payHeadNote},
+          "+ " + tr("טיפ","بقشيش") + " " + sugg + " ₪ = " + collect + " ₪")
       ),
 
       h("div", {style:S.payBody},
+        // Tip calculator — staff helper to add a tip on top of the bill
+        h("div", {style:S.tipCalcHead}, tr("מחשבון טיפ","حاسبة البقشيش")),
         h("div", {style:S.payQuick},
-          h("button", {className:"tap", style:S.payChip, onClick:() => { setCash(String(total)); setCard(""); }}, tr("הכל מזומן","الكل نقداً")),
-          h("button", {className:"tap", style:S.payChip, onClick:() => { setCard(String(total)); setCash(""); }}, tr("הכל אשראי","الكل بطاقة")),
+          [0,10,12,15].map(p =>
+            h("button", {key:p, className:"tap",
+              style:{...S.payChip, ...(tipPct === p ? S.payChipOn : {})},
+              onClick:() => setTipPct(p)},
+              p === 0 ? tr("ללא","بدون") : p + "%"))
+        ),
+
+        // Split the amount between cash & card (quick-fill = bill + selected tip)
+        h("div", {style:S.payQuick},
+          h("button", {className:"tap", style:S.payChip, onClick:() => { setCash(String(collect)); setCard(""); }}, tr("הכל מזומן","الكل نقداً")),
+          h("button", {className:"tap", style:S.payChip, onClick:() => { setCard(String(collect)); setCash(""); }}, tr("הכל אשראי","الكل بطاقة")),
           h("button", {className:"tap", style:S.payChip, onClick:() => { setCash(""); setCard(""); }}, tr("נקה","مسح"))
         ),
         h("div", {style:S.payField},
@@ -824,14 +1200,14 @@ function PaymentModal({ total, tableLabel, onCancel, onConfirm }) {
             value:card, onChange:e => setCard(e.target.value)}),
           h("span", {style:S.payCur}, "₪")
         ),
-        h("div", {style:{...S.payRemain, ...(ok ? S.payRemainOk : S.payRemainBad)}}, msg)
+        h("div", {style:{...S.payRemain, ...(fullyPaid ? S.payRemainOk : S.payRemainBad)}}, msg)
       ),
 
       h("div", {style:S.payBtns},
         h("button", {className:"tap", style:S.receiptClose, onClick:onCancel}, tr("ביטול","إلغاء")),
         h("button", {className:"tap",
           style:{...S.payConfirm, background: ok ? "#3a9e6e" : "#cfc6b6", color:"#fff", cursor: ok ? "pointer" : "not-allowed"},
-          disabled:!ok, onClick:() => ok && onConfirm({ cash:cashN, card:cardN, total })},
+          disabled:!ok, onClick:confirm},
           tr("אישור וסגירה","تأكيد وإغلاق"))
       )
     )
@@ -844,6 +1220,8 @@ function ClosedView({ closed, onReopen, onClear, onClose }) {
   const list  = closed.filter(c => new Date(c.paidAt).toDateString() === today);
   const cash  = list.reduce((s,c) => s + (c.cash||0), 0);
   const card  = list.reduce((s,c) => s + (c.card||0), 0);
+  const tips  = list.reduce((s,c) => s + (c.tip||0), 0);
+  const covers = list.reduce((s,c) => s + (c.guests ? (c.guests.a||0)+(c.guests.c||0) : 0), 0);
 
   return h("div", {style:S.overlay, onClick:onClose},
     h("div", {style:S.receipt, onClick:e => e.stopPropagation()},
@@ -858,25 +1236,33 @@ function ClosedView({ closed, onReopen, onClear, onClose }) {
         h(TotalCell, {label:tr("אשראי","بطاقة"), val:card,      color:SEA}),
         h(TotalCell, {label:tr("סה״כ","المجموع"),  val:cash+card, color:INK})
       ),
+      h("div", {style:S.closedStats},
+        h(TotalCell, {label:tr("סועדים","ضيوف"), val:covers, color:SEA_DEEP, cur:""}),
+        h(TotalCell, {label:tr("טיפים","بقشيش"), val:tips,   color:"#a9791b"})
+      ),
 
       h("div", {style:S.receiptScroll},
         list.length === 0
           ? h("div", {style:S.receiptEmpty}, h(Bi, {he:"עדיין לא נסגרו שולחנות היום", ar:"لم تُغلق أي طاولة اليوم"}))
-          : list.map(c =>
-              h("div", {key:c.id, style:S.closedRow},
+          : list.map(c => {
+              const hc = c.guests ? (c.guests.a||0)+(c.guests.c||0) : 0;
+              return h("div", {key:c.id, style:S.closedRow},
                 h("span", {style:S.closedNum}, c.num),
                 h("div", {style:S.closedInfo},
                   h("div", {style:S.closedName}, (c.name ? c.name + " · " : "") + tr("שולחן","طاولة") + " " + c.num),
                   h("div", {style:S.closedSub},
                     h("span", null, fmtTime(c.paidAt)),
+                    hc > 0 && h("span", {style:{...S.methodChip, background:"#eef2f4", color:SEA_DEEP}}, hc + " " + tr("סועדים","ضيوف")),
                     c.cash > 0 && h("span", {style:{...S.methodChip, background:"#e7f5ee", color:"#2f7d57"}}, tr("מזומן","نقداً") + " " + c.cash + "₪"),
-                    c.card > 0 && h("span", {style:{...S.methodChip, background:"#e6f1f7", color:SEA_DEEP}}, tr("אשראי","بطاقة") + " " + c.card + "₪")
+                    c.card > 0 && h("span", {style:{...S.methodChip, background:"#e6f1f7", color:SEA_DEEP}}, tr("אשראי","بطاقة") + " " + c.card + "₪"),
+                    c.discount > 0 && h("span", {style:{...S.methodChip, background:"#fdeee4", color:SUN}}, tr("הנחה","خصم") + " −" + c.discount + "₪"),
+                    c.tip > 0 && h("span", {style:{...S.methodChip, background:"#fef6e0", color:"#a9791b"}}, tr("טיפ","بقشيش") + " " + c.tip + "₪")
                   )
                 ),
                 h("span", {style:S.closedTotal}, c.total + " ₪"),
                 h("button", {className:"tap", style:S.reopenBtn, onClick:() => onReopen(c.id)}, tr("פתח מחדש","إعادة فتح"))
-              )
-            )
+              );
+            })
       ),
 
       h("div", {style:S.receiptBtns},
@@ -890,7 +1276,7 @@ function ClosedView({ closed, onReopen, onClear, onClose }) {
 }
 
 // ── HomeView ──────────────────────────────────────────────────
-function HomeView({ tables, closed, onOpen, onNew, onShowClosed, lang, onToggleLang, unlocked, onUnlock, onLock }) {
+function HomeView({ tables, closed, onOpen, onNew, onShowClosed, lang, onToggleLang, unlocked, onUnlock, onLock, role, onSwitchRole, onChef }) {
   const today = todayStr();
   const list  = closed.filter(c => new Date(c.paidAt).toDateString() === today);
   const cash  = list.reduce((s,c) => s + (c.cash||0), 0);
@@ -901,6 +1287,7 @@ function HomeView({ tables, closed, onOpen, onNew, onShowClosed, lang, onToggleL
     h("div", {style:S.homeHead},
       h("span", {style:S.homeBrand}, tr("לב ים","قلب البحر")),
       h("div", {style:S.homeHeadSide},
+        h("button", {className:"tap", style:S.roleChip, onClick:onSwitchRole}, "👤 " + tr(ROLE_LABELS[role].he, ROLE_LABELS[role].ar)),
         h(LangToggle, {lang, onToggle:onToggleLang}),
         h("span", {style:S.homeDate}, fmtDate())
       )
@@ -942,6 +1329,8 @@ function HomeView({ tables, closed, onOpen, onNew, onShowClosed, lang, onToggleL
         : h("div", {style:S.tablesGrid},
             tables.map(t => {
               const tt = tableTotals(t);
+              const ready   = t.items.reduce((s,it) => s + Math.max(0, (it.done||0) - (it.served||0)), 0);
+              const cooking = t.items.reduce((s,it) => s + Math.max(0, (it.sent||0) - (it.done||0)), 0);
               return h("button", {key:t.id, className:"tap",
                 style:{...S.tableCard, borderTopColor: t.useOH ? SEA : SUN},
                 onClick:() => onOpen(t.id)},
@@ -950,6 +1339,11 @@ function HomeView({ tables, closed, onOpen, onNew, onShowClosed, lang, onToggleL
                   t.name ? h("span", {style:S.tableName}, t.name) : null
                 ),
                 h("span", {style:S.tableMeta}, tt.headcount + " " + tr("סועדים","ضيوف") + " · " + tt.itemsCount + " " + tr("פריטים","أصناف")),
+                ready > 0
+                  ? h("span", {style:S.kitchenReady}, "🔔 " + ready + " " + tr("מוכן להגשה","جاهز للتقديم"))
+                  : cooking > 0
+                    ? h("span", {style:S.kitchenBadge}, "🍳 " + cooking + " " + tr("במטבח","في المطبخ"))
+                    : null,
                 h("div", {style:S.tableCardTotal},
                   h("span", {style:S.tableCardNum}, tt.grand),
                   h("span", {style:S.tableCardCur}, "₪")
@@ -962,7 +1356,119 @@ function HomeView({ tables, closed, onOpen, onNew, onShowClosed, lang, onToggleL
     ),
 
     h("div", {style:S.homeDock},
+      can("pos.kitchen") && h("button", {className:"tap", style:S.chefEnterBtn, onClick:onChef}, "🍳 " + tr("מטבח","المطبخ")),
       h("button", {className:"tap", style:S.newTableBtn, onClick:onNew}, "+ " + tr("שולחן חדש","طاولة جديدة"))
+    )
+  );
+}
+
+// ── ChefView (Kitchen Display) ────────────────────────────────
+// Fired-but-undone dishes, grouped by table, oldest order first. One big tap = done.
+function ChefView({ tables, onMarkDone, onBack, lang, onToggleLang }) {
+  const [showDone, setShowDone] = useState(false);
+
+  const tickets = tables.map(t => {
+    const cooking = t.items.filter(it => (it.sent || 0) - (it.done || 0) > 0);   // chef's queue
+    const ready   = t.items.filter(it => (it.done || 0) > 0);                     // for "show done"
+    const firstFire = t.items.reduce((m, it) =>
+      ((it.sent || 0) - (it.done || 0) > 0 && it.firedAt) ? Math.min(m, Date.parse(it.firedAt) || Infinity) : m, Infinity);
+    return { t, cooking, ready, firstFire };
+  }).filter(x => (showDone ? x.ready.length : x.cooking.length) > 0)
+    .sort((a, b) => a.firstFire - b.firstFire);
+
+  const pendingCount = tables.reduce((s, t) =>
+    s + t.items.reduce((n, it) => n + Math.max(0, (it.sent || 0) - (it.done || 0)), 0), 0);
+
+  return h("div", {style:S.app},
+    h("div", {style:S.chefHead},
+      h("button", {className:"tap", style:S.chefBack, onClick:onBack}, "→ " + tr("יציאה","خروج")),
+      h("span", {style:S.chefTitle}, tr("מטבח","المطبخ") + (pendingCount ? " · " + pendingCount : "")),
+      h(LangToggle, {lang, onToggle:onToggleLang})
+    ),
+    h("div", {style:S.chefToolbar},
+      h("button", {className:"tap", style:{...S.chefToggle, ...(showDone ? S.chefToggleOn : {})}, onClick:() => setShowDone(v => !v)},
+        showDone ? tr("הסתר שהושלמו","إخفاء المنجزة") : tr("הצג שהושלמו","عرض المنجزة"))
+    ),
+    h("div", {style:S.scroll},
+      tickets.length === 0
+        ? h("div", {style:S.chefEmpty}, h(Bi, {he:"אין הזמנות פתוחות במטבח", ar:"لا طلبات مفتوحة في المطبخ"}))
+        : tickets.map(({ t, cooking, ready, firstFire }) => {
+            const list = showDone ? ready : cooking;
+            return h("div", {key:t.id, style:S.chefCard},
+              h("div", {style:S.chefCardHead},
+                h("span", {style:S.chefTableNum}, t.num),
+                h("div", {style:S.chefCardInfo},
+                  h("div", {style:S.chefTableName}, (t.name ? t.name + " · " : "") + tr("שולחן","طاولة") + " " + t.num),
+                  isFinite(firstFire) && h("div", {style:S.chefTableSub}, tr("נשלח","أُرسل") + " " + fmtTime(firstFire))
+                ),
+                cooking.length > 0 && h("span", {style:S.chefCount}, cooking.length)
+              ),
+              list.map(it => {
+                const showN = showDone ? (it.done || 0) : ((it.sent || 0) - (it.done || 0));
+                return h("div", {key:it.id, style:{...S.chefDish, ...(showDone ? S.chefDishDone : {})}},
+                  h("div", {style:S.chefDishMain},
+                    h("span", {style:S.chefDishQty}, "×" + showN),
+                    h("div", {style:S.chefDishText},
+                      h("span", {style:S.chefDishName}, nm(it)),
+                      it.combo && it.components && it.components.length > 0 &&
+                        h("div", {style:S.chefDishParts}, it.components.map(c => nm(c) + (c.qty ? " ×" + c.qty : "")).join(" · "))
+                    )
+                  ),
+                  showDone
+                    ? h("button", {className:"tap", style:S.chefUndo, onClick:() => onMarkDone(t.id, it.id, false)}, tr("בטל","تراجع"))
+                    : h("button", {className:"tap", style:S.chefDone, onClick:() => onMarkDone(t.id, it.id, true)}, tr("מוכן","تم") + " ✓")
+                );
+              })
+            );
+          })
+    )
+  );
+}
+
+// ── RoleModal (switch this device's role; chef/manager are code-gated) ──
+function RoleModal({ current, onPick, onClose }) {
+  const [pending, setPending] = useState(null);   // role awaiting its code
+  const [val, setVal] = useState("");
+  const [err, setErr] = useState(false);
+  const roles = ["waiter", "chef", "manager"];
+
+  const choose = (r) => {
+    if (r === current) { onClose(); return; }
+    if (!ROLE_CODES[r]) { onPick(r); return; }      // waiter needs no code
+    setPending(r); setVal(""); setErr(false);
+  };
+  const submit = () => {
+    if (val === ROLE_CODES[pending]) onPick(pending);
+    else { setErr(true); setVal(""); }
+  };
+
+  return h("div", {style:S.overlayC, onClick:onClose},
+    h("div", {style:S.pwdBox, onClick:e => e.stopPropagation()},
+      h("div", {style:S.pwdTitle}, tr("תפקיד במכשיר","دور الجهاز")),
+      pending
+        ? h(React.Fragment, null,
+            h("div", {style:S.pwdSub}, tr("קוד עבור","رمز لـ") + " " + tr(ROLE_LABELS[pending].he, ROLE_LABELS[pending].ar)),
+            h("input", {style:S.pwdInput, type:"password", inputMode:"numeric", autoFocus:true, placeholder:"••••",
+              value:val, onChange:e => { setVal(e.target.value); setErr(false); }, onKeyDown:e => { if (e.key === "Enter") submit(); }}),
+            h("div", {style:S.pwdErr}, err ? tr("קוד שגוי","رمز خاطئ") : ""),
+            h("div", {style:S.pwdBtns},
+              h("button", {className:"tap", style:S.pwdCancel, onClick:() => setPending(null)}, tr("חזור","رجوع")),
+              h("button", {className:"tap", style:S.pwdConfirm, onClick:submit}, tr("אישור","تأكيد"))
+            )
+          )
+        : h(React.Fragment, null,
+            h("div", {style:S.pwdSub}, tr("נשמר במכשיר זה","يُحفظ على هذا الجهاز")),
+            h("div", {style:S.roleList},
+              roles.map(r =>
+                h("button", {key:r, className:"tap", style:{...S.roleBtn, ...(r === current ? S.roleBtnOn : {})}, onClick:() => choose(r)},
+                  h("span", {style:S.roleBtnLbl}, tr(ROLE_LABELS[r].he, ROLE_LABELS[r].ar)),
+                  r === current ? h("span", {style:S.roleBtnTag}, "✓")
+                    : ROLE_CODES[r] ? h("span", {style:S.roleBtnTag}, "🔒") : null
+                )
+              )
+            ),
+            h("button", {className:"tap", style:{...S.pwdCancel, width:"100%"}, onClick:onClose}, tr("סגור","إغلاق"))
+          )
     )
   );
 }
@@ -991,9 +1497,11 @@ function usePosData(activeId) {
           const id = activeRef.current;
           const localActive = id ? prev.tables.find(t => t.id === id) : null;
           if (!localActive) return fresh;             // not editing — take server truth
-          const has = fresh.tables.some(t => t.id === id);
-          const tables = has ? fresh.tables.map(t => t.id === id ? localActive : t)
-                             : [...fresh.tables, localActive];
+          const serverActive = fresh.tables.find(t => t.id === id);
+          // keep the waiter's in-progress items, but overlay the chef's kitchen flags
+          const mergedActive = serverActive ? mergeKitchen(localActive, serverActive) : localActive;
+          const tables = serverActive ? fresh.tables.map(t => t.id === id ? mergedActive : t)
+                                      : [...fresh.tables, mergedActive];
           return { tables, closed: fresh.closed };    // never yank the table being edited
         });
       } catch (e) { if (alive) setOnline(false); }
@@ -1048,7 +1556,8 @@ function usePosData(activeId) {
     const { bill, items } = buildBillPayload(t, payment);
     const rec = { id: t.id, num: t.num, name: t.name || "", items: t.items, guests: t.guests,
                   useOH: t.useOH, openedAt: t.openedAt, paidAt: Date.now(),
-                  cash: payment.cash, card: payment.card, total: payment.total };
+                  cash: payment.cash, card: payment.card,
+                  discount: payment.discount || 0, tip: payment.tip || 0, total: payment.total };
     setData(d => ({ ...d, tables: d.tables.filter(x => x.id !== id), closed: [rec, ...d.closed] }));
     sb.rpc("pos_close_table", { p_bill: bill, p_items: items }).then(({ error }) => {
       setOnline(!error);
@@ -1066,10 +1575,43 @@ function usePosData(activeId) {
     const rec = dataRef.current.closed.find(x => x.id === id);
     if (!rec) return;
     const num = nextTableNum(dataRef.current.tables);
-    const t = { id: rec.id, num, name: rec.name, items: rec.items, guests: rec.guests,
+    const t = { id: rec.id, num, name: rec.name, items: reconcileItems(rec.items), guests: rec.guests,
                 useOH: rec.useOH, openedAt: rec.openedAt || Date.now() };
     setData(d => ({ ...d, closed: d.closed.filter(x => x.id !== id), tables: [...d.tables, t] }));
     sb.rpc("pos_reopen_bill", { p_id: id, p_num: num }).then(({ error }) => setOnline(!error));
+  };
+
+  // Waiter "send to kitchen": send the delta (sent = qty) on any line with more ordered
+  // than already sent — this is what makes re-ordering more of an item reach the kitchen.
+  const fireTable = (id) => {
+    const cur = dataRef.current.tables.find(t => t.id === id);
+    if (!cur) return;
+    const now = new Date().toISOString();
+    const next = { ...cur, items: cur.items.map(it =>
+      ((it.qty || 0) > (it.sent || 0)) ? { ...it, sent: it.qty, firedAt: it.firedAt || now } : it) };
+    setData(d => ({ ...d, tables: d.tables.map(t => t.id === id ? next : t) }));
+    pushTable(next, true);
+  };
+
+  // Chef "mark ready / undo": done = sent (ready) or done = served (undo). Atomic per-item
+  // RPC reads sent/served on the server, so it never clobbers a waiter editing the table.
+  const markDone = (tableId, itemId, ready) => {
+    setData(d => ({ ...d, tables: d.tables.map(t => t.id !== tableId ? t
+      : { ...t, items: t.items.map(it => it.id === itemId
+          ? { ...it, done: ready ? (it.sent || 0) : (it.served || 0) } : it) }) }));
+    sb.rpc("pos_mark_item", { p_id: tableId, p_item_id: itemId, p_ready: !!ready })
+      .then(({ error }) => setOnline(!error));
+  };
+
+  // Waiter opens a table → its ready dishes are acknowledged as served (served = done),
+  // clearing them from the "ready to serve" signal.
+  const serveReady = (id) => {
+    const cur = dataRef.current.tables.find(t => t.id === id);
+    if (!cur || !cur.items.some(it => (it.done || 0) > (it.served || 0))) return;
+    const next = { ...cur, items: cur.items.map(it =>
+      (it.done || 0) > (it.served || 0) ? { ...it, served: it.done } : it) };
+    setData(d => ({ ...d, tables: d.tables.map(t => t.id === id ? next : t) }));
+    pushTable(next, true);
   };
 
   // "End day" archives (hides) today's bills — data is kept for analytics, never deleted.
@@ -1081,7 +1623,7 @@ function usePosData(activeId) {
       .then(({ error }) => setOnline(!error));
   };
 
-  return { data, online, openNew, updateTable, payAndClose, cancelTable, reopen, clearToday };
+  return { data, online, openNew, updateTable, payAndClose, cancelTable, reopen, clearToday, fireTable, markDone, serveReady };
 }
 
 // ── App (root component) ──────────────────────────────────────
@@ -1094,13 +1636,18 @@ function App() {
   const [appUnlocked, setAppUnlocked] = useState(() => {
     try { return localStorage.getItem(APP_OK_KEY) === "1"; } catch (e) { return false; }
   });
+  const [role, setRole]               = useState(loadRole);
+  const [showRole, setShowRole]       = useState(false);
+  const [chefMode, setChefMode]       = useState(false);
 
   const pos  = usePosData(activeId);
   const data = pos.data;
 
   LANG = lang;
+  ROLE = role;
 
   useEffect(() => { saveLang(lang); }, [lang]);
+  useEffect(() => { saveRole(role); }, [role]);
 
   const toggleLang  = () => setLang(l => l === "he" ? "ar" : "he");
   const openNew     = () => { setActiveId(pos.openNew()); };
@@ -1109,11 +1656,19 @@ function App() {
   const cancelTable = (id) => { pos.cancelTable(id); setActiveId(null); };
   const reopen      = (id) => { pos.reopen(id); setShowClosed(false); };
   const clearToday  = pos.clearToday;
+  const reportsUnlocked = unlocked || can("pos.reports");   // managers see the day summary without a password
 
   if (!appUnlocked) return h(AppGate, { onUnlock: () => {
     try { localStorage.setItem(APP_OK_KEY, "1"); } catch (e) {}
     setAppUnlocked(true);
   } });
+
+  if (chefMode && can("pos.kitchen")) return h(ChefView, {
+    tables: data.tables,
+    onMarkDone: pos.markDone,
+    onBack: () => setChefMode(false),
+    lang, onToggleLang: toggleLang,
+  });
 
   const active = data.tables.find(t => t.id === activeId);
 
@@ -1123,6 +1678,7 @@ function App() {
     onBack: () => setActiveId(null),
     onPaid: (payment) => payAndClose(active.id, payment),
     onCancelTable: () => cancelTable(active.id),
+    onFire: () => pos.fireTable(active.id),
     lang, onToggleLang: toggleLang,
   });
 
@@ -1132,15 +1688,16 @@ function App() {
     h(HomeView, {
       tables: data.tables,
       closed: data.closed,
-      onOpen: setActiveId,
+      onOpen: (id) => { pos.serveReady(id); setActiveId(id); },
       onNew: openNew,
-      onShowClosed: () => { if (unlocked) setShowClosed(true); },
+      onShowClosed: () => { if (reportsUnlocked) setShowClosed(true); },
       lang, onToggleLang: toggleLang,
-      unlocked,
+      unlocked: reportsUnlocked,
       onUnlock: () => setShowPwd(true),
       onLock: () => setUnlocked(false),
+      role, onSwitchRole: () => setShowRole(true), onChef: () => setChefMode(true),
     }),
-    showClosed && unlocked && h(ClosedView, {
+    showClosed && reportsUnlocked && h(ClosedView, {
       closed: data.closed,
       onReopen: reopen,
       onClear: clearToday,
@@ -1149,6 +1706,11 @@ function App() {
     showPwd && h(PasswordModal, {
       onCancel: () => setShowPwd(false),
       onSuccess: () => { setUnlocked(true); setShowPwd(false); },
+    }),
+    showRole && h(RoleModal, {
+      current: role,
+      onPick: (r) => { setRole(r); setShowRole(false); if (r === "waiter") setChefMode(false); },
+      onClose: () => setShowRole(false),
     })
   );
 }
