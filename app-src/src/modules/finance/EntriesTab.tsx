@@ -199,6 +199,7 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
               <span className="field-label">סכום (₪)</span>
               <input
                 type="number"
+                dir="ltr"
                 inputMode="decimal"
                 step="0.01"
                 placeholder="0"
@@ -210,6 +211,7 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
               <span className="field-label">תאריך</span>
               <input
                 type="date"
+                dir="ltr"
                 value={form.entry_date}
                 onChange={(e) => setForm((f) => ({ ...f, entry_date: e.target.value }))}
               />

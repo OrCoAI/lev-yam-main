@@ -68,11 +68,11 @@ export default function ReportTab() {
         <div className="field-row">
           <label className="field">
             <span className="field-label">מתאריך</span>
-            <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+            <input type="date" dir="ltr" value={from} onChange={(e) => setFrom(e.target.value)} />
           </label>
           <label className="field">
             <span className="field-label">עד תאריך</span>
-            <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+            <input type="date" dir="ltr" value={to} onChange={(e) => setTo(e.target.value)} />
           </label>
         </div>
       </div>
