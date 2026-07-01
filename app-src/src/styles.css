@@ -227,6 +227,25 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 .finance-form input:focus, .finance-form select:focus { outline: 2px solid var(--sea); border-color: var(--sea); }
 
+/* DateField: the native input stays for the tap target + OS picker but is invisible —
+   its own closed-state text is rendered by the OS using system locale (uncontrollable
+   width/format). The visible box below is ours, always short and predictable. */
+.date-field-wrap { position: relative; width: 100%; min-width: 0; }
+.date-field-wrap input[type='date'] {
+  /* top+left anchor with explicit width/height (not inset:0) — input[type=date] is a
+     replaced element, and with width left auto it uses its own intrinsic width instead
+     of stretching, anchored to the RTL container's right edge, leaving the rest empty */
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  opacity: 0; margin: 0; padding: 0; border: 0; cursor: pointer;
+}
+.date-field-wrap .date-display {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; min-height: 46px; padding: 12px 14px;
+  border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--ink);
+  font: inherit; pointer-events: none;
+}
+.date-field-wrap:focus-within .date-display { outline: 2px solid var(--sea); border-color: var(--sea); }
+
 /* segmented control (income / expense) */
 .seg { display: grid; gap: 6px; padding: 4px; background: var(--sand-2); border-radius: 12px; }
 .seg-2 { grid-template-columns: 1fr 1fr; }

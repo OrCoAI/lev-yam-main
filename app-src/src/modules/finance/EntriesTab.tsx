@@ -8,6 +8,7 @@ import {
   PAYMENT_LABELS,
   PAYMENT_METHODS,
 } from './categories'
+import DateField from './DateField'
 
 const PAGE_SIZE = 100
 
@@ -209,11 +210,9 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
             </label>
             <label className="field">
               <span className="field-label">תאריך</span>
-              <input
-                type="date"
-                dir="ltr"
+              <DateField
                 value={form.entry_date}
-                onChange={(e) => setForm((f) => ({ ...f, entry_date: e.target.value }))}
+                onChange={(v) => setForm((f) => ({ ...f, entry_date: v }))}
               />
             </label>
           </div>

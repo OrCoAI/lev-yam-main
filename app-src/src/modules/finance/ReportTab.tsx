@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { finance } from '../../lib/supabase'
 import type { FinanceReport } from '../../types'
 import { CATEGORY_LABELS, PAYMENT_LABELS } from './categories'
+import DateField from './DateField'
 
 function toDateStr(d: Date) {
   return d.toLocaleDateString('en-CA') // 'YYYY-MM-DD' in local time
@@ -68,11 +69,11 @@ export default function ReportTab() {
         <div className="field-row">
           <label className="field">
             <span className="field-label">מתאריך</span>
-            <input type="date" dir="ltr" value={from} onChange={(e) => setFrom(e.target.value)} />
+            <DateField value={from} onChange={setFrom} />
           </label>
           <label className="field">
             <span className="field-label">עד תאריך</span>
-            <input type="date" dir="ltr" value={to} onChange={(e) => setTo(e.target.value)} />
+            <DateField value={to} onChange={setTo} />
           </label>
         </div>
       </div>
