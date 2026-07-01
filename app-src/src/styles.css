@@ -215,14 +215,14 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 /* ---------- form fields (used by finance; reusable) ---------- */
 .field { display: grid; gap: 6px; min-width: 0; }
 .field-label { font-size: 0.82rem; font-weight: 600; color: var(--muted); }
-.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; min-width: 0; }
 .field-actions { display: flex; gap: 10px; align-items: center; }
 .btn-block { flex: 1; }
 .btn-sm { padding: 8px 12px; font-size: 0.85rem; }
 
-.finance-form { display: grid; gap: 14px; margin-bottom: 18px; }
+.finance-form { display: grid; gap: 14px; margin-bottom: 18px; min-width: 0; }
 .finance-form input, .finance-form select {
-  font: inherit; width: 100%; min-width: 0; min-height: 46px; padding: 12px 14px;
+  font: inherit; width: 100%; max-width: 100%; min-width: 0; min-height: 46px; padding: 12px 14px;
   border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--ink);
 }
 .finance-form input:focus, .finance-form select:focus { outline: 2px solid var(--sea); border-color: var(--sea); }
