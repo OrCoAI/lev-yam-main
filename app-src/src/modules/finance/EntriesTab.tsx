@@ -174,7 +174,7 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
 
           <div className="field">
             <span className="field-label">אמצעי תשלום</span>
-            <div className="chips chips-scroll">
+            <div className="chips chips-grid">
               {PAYMENT_METHODS.map((p) => (
                 <button
                   key={p}
@@ -262,7 +262,7 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
                   <td data-label="סוג" className={e.kind === 'income' ? 'finance-income' : 'finance-expense'}>
                     {e.kind === 'income' ? 'הכנסה' : 'הוצאה'}
                   </td>
-                  <td data-label="קטגוריה">{CATEGORY_LABELS[e.category]}</td>
+                  <td data-label="קטגוריה">{CATEGORY_LABELS[e.category] ?? e.category}</td>
                   <td data-label="תשלום">{e.payment_method ? PAYMENT_LABELS[e.payment_method] : '—'}</td>
                   <td
                     data-label="סכום"

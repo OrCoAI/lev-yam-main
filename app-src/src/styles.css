@@ -247,10 +247,6 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 .chip.on { background: var(--sea); color: #fff; border-color: var(--sea-dark); }
 
-/* keep chip rows on one line; scroll horizontally instead of wrapping */
-.chips-scroll { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-.chips-scroll .chip { flex: 0 0 auto; }
-
 .section-title { margin: 22px 0 10px; font-family: var(--font-display); font-weight: 800; font-size: 1.1rem; color: var(--ink); }
 
 /* finance list + report tables */
@@ -345,6 +341,21 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
     flex: 0 0 auto; min-height: 36px; min-width: 36px; padding: 7px;
   }
 
+  /* report breakdown tables: same one-line treatment
+     (category/method  ..........  amount · count) */
+  .finance-breakdown tr { display: flex; align-items: center; gap: 8px; padding: 10px 12px; margin-bottom: 8px; }
+  .finance-breakdown td { display: block; padding: 0; }
+  .finance-breakdown td::before { content: none; }
+  .finance-breakdown td[data-label='סוג'] { display: none; }
+  .finance-breakdown td[data-label='קטגוריה'],
+  .finance-breakdown td[data-label='אמצעי'] {
+    flex: 1 1 auto; min-width: 0; font-weight: 600;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .finance-breakdown td[data-label='סכום'] { flex: 0 0 auto; }
+  .finance-breakdown td[data-label='תנועות'] { flex: 0 0 auto; color: var(--muted); font-size: 0.78rem; }
+  .finance-breakdown td[data-label='תנועות']::before { content: '· '; color: var(--line); }
+
   /* wide admin tables: freeze the label column while the rest scrolls horizontally,
      so a user never loses track of which row they're looking at */
   .grid-sticky-first th:first-child, .grid-sticky-first td:first-child {
@@ -356,6 +367,13 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   /* tabs read as a proper full-width segmented control, not sparse left-aligned pills */
   .tabs { gap: 6px; }
   .tab { flex: 1; text-align: center; padding: 10px 10px; min-height: 42px; }
+
+  /* payment method chips: even 2-column grid, never needs to scroll or wrap unevenly */
+  .chips-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .chips-grid .chip {
+    width: 100%; padding: 9px 6px; font-size: 0.88rem;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
 
   /* consistent tap targets */
   .btn-primary, .btn-ghost { min-height: 44px; }

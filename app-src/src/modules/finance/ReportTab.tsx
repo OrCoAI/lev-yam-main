@@ -101,7 +101,7 @@ export default function ReportTab() {
           </div>
 
           <h2 className="section-title">לפי קטגוריה</h2>
-          <div className="card finance-list">
+          <div className="card finance-list finance-breakdown">
             <table className="grid">
               <thead>
                 <tr>
@@ -117,8 +117,12 @@ export default function ReportTab() {
                     <td data-label="סוג" className={b.kind === 'income' ? 'finance-income' : 'finance-expense'}>
                       {b.kind === 'income' ? 'הכנסה' : 'הוצאה'}
                     </td>
-                    <td data-label="קטגוריה">{CATEGORY_LABELS[b.category]}</td>
-                    <td data-label="סכום" className="finance-amount">
+                    <td data-label="קטגוריה">{CATEGORY_LABELS[b.category] ?? b.category}</td>
+                    <td
+                      data-label="סכום"
+                      className={`finance-amount ${b.kind === 'income' ? 'finance-income' : 'finance-expense'}`}
+                    >
+                      {b.kind === 'income' ? '+' : '−'}
                       {Number(b.total).toLocaleString('he-IL')} ₪
                     </td>
                     <td data-label="תנועות">{b.entry_count}</td>
@@ -136,7 +140,7 @@ export default function ReportTab() {
           </div>
 
           <h2 className="section-title">לפי אמצעי תשלום</h2>
-          <div className="card finance-list">
+          <div className="card finance-list finance-breakdown">
             <table className="grid">
               <thead>
                 <tr>
@@ -153,7 +157,11 @@ export default function ReportTab() {
                       {b.kind === 'income' ? 'הכנסה' : 'הוצאה'}
                     </td>
                     <td data-label="אמצעי">{PAYMENT_LABELS[b.payment_method]}</td>
-                    <td data-label="סכום" className="finance-amount">
+                    <td
+                      data-label="סכום"
+                      className={`finance-amount ${b.kind === 'income' ? 'finance-income' : 'finance-expense'}`}
+                    >
+                      {b.kind === 'income' ? '+' : '−'}
                       {Number(b.total).toLocaleString('he-IL')} ₪
                     </td>
                     <td data-label="תנועות">{b.entry_count}</td>

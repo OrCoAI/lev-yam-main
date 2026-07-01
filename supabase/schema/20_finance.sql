@@ -27,10 +27,10 @@ create table if not exists finance.entries (
   constraint finance_entries_kind_check check (kind in ('income','expense')),
   constraint finance_entries_category_check check (
     (kind = 'expense' and category in
-      ('rent','utilities','salaries','supplies','marketing','maintenance','insurance','other'))
+      ('equipment','inventory','maintenance','marketing','salaries','or_prati','nimer','suppliers'))
     or
     (kind = 'income' and category in
-      ('bookings','events','donations','grants','other'))
+      ('events','bookings','makrer','other'))
   )
 );
 
@@ -40,6 +40,19 @@ do $$ begin
   alter table finance.entries add constraint finance_entries_payment_check
     check (payment_method is null or payment_method in ('cash','private','grow','bank'));
 exception when duplicate_object then null; end $$;
+
+-- Idempotent replace: category taxonomy updated to the venue's real categories
+-- (was a placeholder set: rent/utilities/insurance/... — never matched real usage).
+-- NOT VALID so it doesn't choke re-running this on a live DB that already has
+-- rows under the old category names; it still applies to every new insert/update.
+alter table finance.entries drop constraint if exists finance_entries_category_check;
+alter table finance.entries add constraint finance_entries_category_check check (
+  (kind = 'expense' and category in
+    ('equipment','inventory','maintenance','marketing','salaries','or_prati','nimer','suppliers'))
+  or
+  (kind = 'income' and category in
+    ('events','bookings','makrer','other'))
+) not valid;
 
 create index if not exists finance_entries_date_idx on finance.entries (entry_date desc);
 create index if not exists finance_entries_kind_idx on finance.entries (kind);

@@ -41,16 +41,16 @@ export interface AdminUser {
 export type FinanceKind = 'income' | 'expense'
 
 export type FinanceExpenseCategory =
-  | 'rent'
-  | 'utilities'
-  | 'salaries'
-  | 'supplies'
-  | 'marketing'
+  | 'equipment'
+  | 'inventory'
   | 'maintenance'
-  | 'insurance'
-  | 'other'
+  | 'marketing'
+  | 'salaries'
+  | 'or_prati'
+  | 'nimer'
+  | 'suppliers'
 
-export type FinanceIncomeCategory = 'bookings' | 'events' | 'donations' | 'grants' | 'other'
+export type FinanceIncomeCategory = 'events' | 'bookings' | 'makrer' | 'other'
 
 export type FinanceCategory = FinanceExpenseCategory | FinanceIncomeCategory
 

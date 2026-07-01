@@ -6,36 +6,30 @@ import type {
 } from '../../types'
 
 export const EXPENSE_CATEGORIES: FinanceExpenseCategory[] = [
-  'rent',
-  'utilities',
-  'salaries',
-  'supplies',
-  'marketing',
+  'equipment',
+  'inventory',
   'maintenance',
-  'insurance',
-  'other',
+  'marketing',
+  'salaries',
+  'or_prati',
+  'nimer',
+  'suppliers',
 ]
 
-export const INCOME_CATEGORIES: FinanceIncomeCategory[] = [
-  'bookings',
-  'events',
-  'donations',
-  'grants',
-  'other',
-]
+export const INCOME_CATEGORIES: FinanceIncomeCategory[] = ['events', 'bookings', 'makrer', 'other']
 
 export const CATEGORY_LABELS: Record<FinanceCategory, string> = {
-  rent: 'שכירות',
-  utilities: 'חשמל / מים / ארנונה',
-  salaries: 'משכורות',
-  supplies: 'ציוד / מלאי',
-  marketing: 'שיווק',
+  equipment: 'ציוד',
+  inventory: 'מלאי',
   maintenance: 'תחזוקה',
-  insurance: 'ביטוח',
-  bookings: 'הזמנות',
+  marketing: 'שיווק',
+  salaries: 'משכורות',
+  or_prati: 'אור פרטי',
+  nimer: 'נימר',
+  suppliers: 'ספקים',
   events: 'אירועים',
-  donations: 'תרומות',
-  grants: 'מענקים',
+  bookings: 'הזמנות',
+  makrer: 'מקרר',
   other: 'אחר',
 }
 
