@@ -38,7 +38,9 @@
   --muted: #4a6571;
   --line: #ecdcbb;
   --danger: #b3261e;
+  --danger-dark: #8a1e17;
   --ok: #2e7d32;
+  --ok-dark: #235f26;
   --radius: 14px;
   --radius-lg: 24px;
   --shadow: 0 2px 8px rgba(26, 51, 64, 0.06);
@@ -93,6 +95,10 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .btn-primary { background: var(--sea); color: #fff; border-color: var(--sea-dark); }
 .btn-primary:hover:not(:disabled) { background: var(--sea-dark); box-shadow: var(--shadow); }
 .btn-primary:active:not(:disabled) { transform: translateY(1px); }
+.btn-primary.btn-income { background: var(--ok); border-color: var(--ok-dark); }
+.btn-primary.btn-income:hover:not(:disabled) { background: var(--ok-dark); }
+.btn-primary.btn-expense { background: var(--danger); border-color: var(--danger-dark); }
+.btn-primary.btn-expense:hover:not(:disabled) { background: var(--danger-dark); }
 .btn-ghost { background: #fff; color: var(--sea-dark); border-color: var(--line); }
 .btn-ghost:hover:not(:disabled) { border-color: var(--sea); background: #fff; }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -241,6 +247,10 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 .chip.on { background: var(--sea); color: #fff; border-color: var(--sea-dark); }
 
+/* keep chip rows on one line; scroll horizontally instead of wrapping */
+.chips-scroll { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.chips-scroll .chip { flex: 0 0 auto; }
+
 .section-title { margin: 22px 0 10px; font-family: var(--font-display); font-weight: 800; font-size: 1.1rem; color: var(--ink); }
 
 /* finance list + report tables */
@@ -307,6 +317,33 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   }
   .finance-list td.finance-row-actions::before { content: none; }
   .finance-list td.finance-row-actions .btn-sm { flex: 1; min-height: 40px; }
+
+  /* transaction list: collapse each entry to one compact line
+     (date · category  ..........  amount [✎][✕]) instead of a stacked card */
+  .finance-entries tr {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 12px; margin-bottom: 8px;
+  }
+  .finance-entries td { display: block; padding: 0; }
+  .finance-entries td::before { content: none; }
+  .finance-entries td[data-label='סוג'],
+  .finance-entries td[data-label='תשלום'],
+  .finance-entries td[data-label='הערה'] { display: none; }
+  .finance-entries td[data-label='תאריך'] {
+    flex: 0 0 auto; color: var(--muted); font-size: 0.78rem; white-space: nowrap;
+  }
+  .finance-entries td[data-label='תאריך']::after { content: '·'; margin-inline-start: 6px; color: var(--line); }
+  .finance-entries td[data-label='קטגוריה'] {
+    flex: 1 1 auto; min-width: 0; font-weight: 600;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .finance-entries td[data-label='סכום'] { flex: 0 0 auto; }
+  .finance-entries td.finance-row-actions {
+    flex: 0 0 auto; display: flex; justify-content: flex-end; gap: 4px; margin: 0; padding: 0; border: none;
+  }
+  .finance-entries td.finance-row-actions .btn-sm {
+    flex: 0 0 auto; min-height: 36px; min-width: 36px; padding: 7px;
+  }
 
   /* wide admin tables: freeze the label column while the rest scrolls horizontally,
      so a user never loses track of which row they're looking at */

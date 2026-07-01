@@ -22,7 +22,7 @@ function categoriesFor(kind: FinanceKind) {
 const emptyForm = {
   kind: 'expense' as FinanceKind,
   category: EXPENSE_CATEGORIES[0] as FinanceCategory,
-  payment_method: 'cash' as FinancePaymentMethod | null,
+  payment_method: 'cash' as FinancePaymentMethod,
   amount: '',
   entry_date: todayStr(),
   note: '',
@@ -82,7 +82,7 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
     setForm({
       kind: e.kind,
       category: e.category,
-      payment_method: e.payment_method,
+      payment_method: e.payment_method ?? 'cash',
       amount: String(e.amount),
       entry_date: e.entry_date,
       note: e.note ?? '',
@@ -124,6 +124,7 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
   }
 
   async function remove(id: string) {
+    if (!window.confirm('למחוק את התנועה? לא ניתן לשחזר.')) return
     setBusy(true)
     const { error } = await finance().from('entries').delete().eq('id', id)
     setBusy(false)
@@ -173,7 +174,7 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
 
           <div className="field">
             <span className="field-label">אמצעי תשלום</span>
-            <div className="chips">
+            <div className="chips chips-scroll">
               {PAYMENT_METHODS.map((p) => (
                 <button
                   key={p}
@@ -184,13 +185,6 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
                   {PAYMENT_LABELS[p]}
                 </button>
               ))}
-              <button
-                type="button"
-                className={form.payment_method === null ? 'chip on' : 'chip'}
-                onClick={() => setForm((f) => ({ ...f, payment_method: null }))}
-              >
-                {PAYMENT_LABELS.unknown}
-              </button>
             </div>
           </div>
 
@@ -227,7 +221,11 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
           </label>
 
           <div className="field-actions">
-            <button className="btn-primary btn-block" disabled={busy} onClick={submit}>
+            <button
+              className={`btn-primary btn-block ${form.kind === 'income' ? 'btn-income' : 'btn-expense'}`}
+              disabled={busy}
+              onClick={submit}
+            >
               {editingId ? 'עדכן תנועה' : 'הוסף תנועה'}
             </button>
             {editingId && (
@@ -244,7 +242,7 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
       {loading ? (
         <div className="muted">טוען תנועות…</div>
       ) : (
-        <div className="card finance-list">
+        <div className="card finance-list finance-entries">
           <table className="grid">
             <thead>
               <tr>
@@ -266,7 +264,11 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
                   </td>
                   <td data-label="קטגוריה">{CATEGORY_LABELS[e.category]}</td>
                   <td data-label="תשלום">{e.payment_method ? PAYMENT_LABELS[e.payment_method] : '—'}</td>
-                  <td data-label="סכום" className="finance-amount">
+                  <td
+                    data-label="סכום"
+                    className={`finance-amount ${e.kind === 'income' ? 'finance-income' : 'finance-expense'}`}
+                  >
+                    {e.kind === 'income' ? '+' : '−'}
                     {e.amount.toLocaleString('he-IL')} ₪
                   </td>
                   <td data-label="הערה" className="muted">
@@ -274,8 +276,14 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
                   </td>
                   {canManage && (
                     <td className="finance-row-actions">
-                      <button className="btn-ghost btn-sm" disabled={busy} onClick={() => startEdit(e)}>
-                        ערוך
+                      <button
+                        className="btn-ghost btn-sm btn-icon-label"
+                        disabled={busy}
+                        onClick={() => startEdit(e)}
+                        aria-label="ערוך"
+                      >
+                        <span aria-hidden="true">✎</span>
+                        <span className="btn-label">ערוך</span>
                       </button>
                       <button
                         className="btn-ghost btn-sm"
