@@ -320,7 +320,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
     display: flex; align-items: center; gap: 8px;
     padding: 10px 12px; margin-bottom: 8px;
   }
-  .finance-entries td { display: block; padding: 0; }
+  .finance-entries td { display: block; padding: 0; text-align: start; }
   .finance-entries td::before { content: none; }
   .finance-entries td[data-label='סוג'],
   .finance-entries td[data-label='תשלום'],
@@ -344,7 +344,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   /* report breakdown tables: same one-line treatment
      (category/method  ..........  amount · count) */
   .finance-breakdown tr { display: flex; align-items: center; gap: 8px; padding: 10px 12px; margin-bottom: 8px; }
-  .finance-breakdown td { display: block; padding: 0; }
+  .finance-breakdown td { display: block; padding: 0; text-align: start; }
   .finance-breakdown td::before { content: none; }
   .finance-breakdown td[data-label='סוג'] { display: none; }
   .finance-breakdown td[data-label='קטגוריה'],

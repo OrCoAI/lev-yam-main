@@ -19,6 +19,12 @@ function categoriesFor(kind: FinanceKind) {
   return kind === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES
 }
 
+// 'YYYY-MM-DD' -> 'DD.MM' — compact for the one-line row; full date still shown via title.
+function shortDate(iso: string) {
+  const [, m, d] = iso.split('-')
+  return `${d}.${m}`
+}
+
 const emptyForm = {
   kind: 'expense' as FinanceKind,
   category: EXPENSE_CATEGORIES[0] as FinanceCategory,
@@ -258,7 +264,9 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
             <tbody>
               {entries.map((e) => (
                 <tr key={e.id}>
-                  <td data-label="תאריך">{e.entry_date}</td>
+                  <td data-label="תאריך" title={e.entry_date}>
+                    {shortDate(e.entry_date)}
+                  </td>
                   <td data-label="סוג" className={e.kind === 'income' ? 'finance-income' : 'finance-expense'}>
                     {e.kind === 'income' ? 'הכנסה' : 'הוצאה'}
                   </td>
