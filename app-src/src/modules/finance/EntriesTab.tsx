@@ -276,8 +276,10 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
                     data-label="סכום"
                     className={`finance-amount ${e.kind === 'income' ? 'finance-income' : 'finance-expense'}`}
                   >
-                    {e.kind === 'income' ? '+' : '−'}
-                    {e.amount.toLocaleString('he-IL')} ₪
+                    <span dir="ltr">
+                      {e.kind === 'income' ? '+' : '−'}
+                      {e.amount.toLocaleString('he-IL')} ₪
+                    </span>
                   </td>
                   <td data-label="הערה" className="muted">
                     {e.note ?? ''}

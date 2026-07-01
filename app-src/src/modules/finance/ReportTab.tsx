@@ -122,8 +122,10 @@ export default function ReportTab() {
                       data-label="סכום"
                       className={`finance-amount ${b.kind === 'income' ? 'finance-income' : 'finance-expense'}`}
                     >
-                      {b.kind === 'income' ? '+' : '−'}
-                      {Number(b.total).toLocaleString('he-IL')} ₪
+                      <span dir="ltr">
+                        {b.kind === 'income' ? '+' : '−'}
+                        {Number(b.total).toLocaleString('he-IL')} ₪
+                      </span>
                     </td>
                     <td data-label="תנועות">{b.entry_count}</td>
                   </tr>
@@ -161,8 +163,10 @@ export default function ReportTab() {
                       data-label="סכום"
                       className={`finance-amount ${b.kind === 'income' ? 'finance-income' : 'finance-expense'}`}
                     >
-                      {b.kind === 'income' ? '+' : '−'}
-                      {Number(b.total).toLocaleString('he-IL')} ₪
+                      <span dir="ltr">
+                        {b.kind === 'income' ? '+' : '−'}
+                        {Number(b.total).toLocaleString('he-IL')} ₪
+                      </span>
                     </td>
                     <td data-label="תנועות">{b.entry_count}</td>
                   </tr>
