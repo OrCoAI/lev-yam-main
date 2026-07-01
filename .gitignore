@@ -16,6 +16,10 @@ app-src/dist/
 .env.local
 .env.*.local
 
+# Local secrets — NEVER commit. Kept at repo root (outside app-src/ and the
+# deploy allowlist in .github/workflows/deploy.yml), so it is not published.
+.secrets/
+
 # Supabase CLI local artifacts (cache, branch state) — not source
 supabase/.temp/
 supabase/.branches/

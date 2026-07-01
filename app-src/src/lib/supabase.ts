@@ -15,3 +15,6 @@ export const supabase = createClient(
 
 /** PostgREST client scoped to the shared `core` schema (roles, permissions, RPCs). */
 export const core = () => supabase.schema('core')
+
+/** PostgREST client scoped to the finance module's schema (entries, report RPC). */
+export const finance = () => supabase.schema('finance')

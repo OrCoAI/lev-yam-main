@@ -1,0 +1,275 @@
+import { useCallback, useEffect, useState } from 'react'
+import { finance } from '../../lib/supabase'
+import type { FinanceCategory, FinanceEntry, FinanceKind, FinancePaymentMethod } from '../../types'
+import {
+  CATEGORY_LABELS,
+  EXPENSE_CATEGORIES,
+  INCOME_CATEGORIES,
+  PAYMENT_LABELS,
+  PAYMENT_METHODS,
+} from './categories'
+
+function todayStr() {
+  return new Date().toLocaleDateString('en-CA') // 'YYYY-MM-DD' in local time
+}
+
+function categoriesFor(kind: FinanceKind) {
+  return kind === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES
+}
+
+const emptyForm = {
+  kind: 'expense' as FinanceKind,
+  category: EXPENSE_CATEGORIES[0] as FinanceCategory,
+  payment_method: 'cash' as FinancePaymentMethod,
+  amount: '',
+  entry_date: todayStr(),
+  note: '',
+}
+
+export default function EntriesTab({ canManage }: { canManage: boolean }) {
+  const [entries, setEntries] = useState<FinanceEntry[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [form, setForm] = useState(emptyForm)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    const { data, error } = await finance()
+      .from('entries')
+      .select('*')
+      .order('entry_date', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(100)
+    if (error) setError(error.message)
+    else {
+      setEntries((data as FinanceEntry[] | null) ?? [])
+      setError(null)
+    }
+    setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    void load()
+  }, [load])
+
+  function changeKind(kind: FinanceKind) {
+    setForm((f) => ({ ...f, kind, category: categoriesFor(kind)[0] }))
+  }
+
+  function startEdit(e: FinanceEntry) {
+    setEditingId(e.id)
+    setForm({
+      kind: e.kind,
+      category: e.category,
+      payment_method: e.payment_method ?? 'cash',
+      amount: String(e.amount),
+      entry_date: e.entry_date,
+      note: e.note ?? '',
+    })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+    setForm(emptyForm)
+  }
+
+  async function submit() {
+    const amount = Number(form.amount)
+    if (!amount || amount <= 0) return
+    setBusy(true)
+    const payload = {
+      kind: form.kind,
+      category: form.category,
+      payment_method: form.payment_method,
+      amount,
+      entry_date: form.entry_date,
+      note: form.note.trim() || null,
+    }
+    const res = editingId
+      ? await finance().from('entries').update(payload).eq('id', editingId)
+      : await finance().from('entries').insert(payload)
+    setBusy(false)
+    if (res.error) {
+      setError(res.error.message)
+      return
+    }
+    cancelEdit()
+    await load()
+  }
+
+  async function remove(id: string) {
+    setBusy(true)
+    const { error } = await finance().from('entries').delete().eq('id', id)
+    setBusy(false)
+    if (error) {
+      setError(error.message)
+      return
+    }
+    if (editingId === id) cancelEdit()
+    await load()
+  }
+
+  return (
+    <div>
+      {canManage && (
+        <div className="card finance-form">
+          {/* income / expense */}
+          <div className="seg seg-2">
+            <button
+              type="button"
+              className={form.kind === 'expense' ? 'seg-btn on' : 'seg-btn'}
+              onClick={() => changeKind('expense')}
+            >
+              הוצאה
+            </button>
+            <button
+              type="button"
+              className={form.kind === 'income' ? 'seg-btn on income' : 'seg-btn'}
+              onClick={() => changeKind('income')}
+            >
+              הכנסה
+            </button>
+          </div>
+
+          <label className="field">
+            <span className="field-label">קטגוריה</span>
+            <select
+              value={form.category}
+              onChange={(e) => setForm((f) => ({ ...f, category: e.target.value as FinanceCategory }))}
+            >
+              {categoriesFor(form.kind).map((c) => (
+                <option key={c} value={c}>
+                  {CATEGORY_LABELS[c]}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <div className="field">
+            <span className="field-label">אמצעי תשלום</span>
+            <div className="chips">
+              {PAYMENT_METHODS.map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  className={form.payment_method === p ? 'chip on' : 'chip'}
+                  onClick={() => setForm((f) => ({ ...f, payment_method: p }))}
+                >
+                  {PAYMENT_LABELS[p]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="field-row">
+            <label className="field">
+              <span className="field-label">סכום (₪)</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                placeholder="0"
+                value={form.amount}
+                onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
+              />
+            </label>
+            <label className="field">
+              <span className="field-label">תאריך</span>
+              <input
+                type="date"
+                value={form.entry_date}
+                onChange={(e) => setForm((f) => ({ ...f, entry_date: e.target.value }))}
+              />
+            </label>
+          </div>
+
+          <label className="field">
+            <span className="field-label">הערה (לא חובה)</span>
+            <input
+              type="text"
+              placeholder="למשל: שכירות יוני"
+              value={form.note}
+              onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
+            />
+          </label>
+
+          <div className="field-actions">
+            <button className="btn-primary btn-block" disabled={busy} onClick={submit}>
+              {editingId ? 'עדכן תנועה' : 'הוסף תנועה'}
+            </button>
+            {editingId && (
+              <button className="btn-ghost" disabled={busy} onClick={cancelEdit}>
+                בטל
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {error && <div className="error">שגיאה: {error}</div>}
+
+      {loading ? (
+        <div className="muted">טוען תנועות…</div>
+      ) : (
+        <div className="card finance-list">
+          <table className="grid">
+            <thead>
+              <tr>
+                <th>תאריך</th>
+                <th>סוג</th>
+                <th>קטגוריה</th>
+                <th>תשלום</th>
+                <th>סכום</th>
+                <th>הערה</th>
+                {canManage && <th></th>}
+              </tr>
+            </thead>
+            <tbody>
+              {entries.map((e) => (
+                <tr key={e.id}>
+                  <td data-label="תאריך">{e.entry_date}</td>
+                  <td data-label="סוג" className={e.kind === 'income' ? 'finance-income' : 'finance-expense'}>
+                    {e.kind === 'income' ? 'הכנסה' : 'הוצאה'}
+                  </td>
+                  <td data-label="קטגוריה">{CATEGORY_LABELS[e.category]}</td>
+                  <td data-label="תשלום">{e.payment_method ? PAYMENT_LABELS[e.payment_method] : '—'}</td>
+                  <td data-label="סכום" className="finance-amount">
+                    {e.amount.toLocaleString('he-IL')} ₪
+                  </td>
+                  <td data-label="הערה" className="muted">
+                    {e.note ?? ''}
+                  </td>
+                  {canManage && (
+                    <td className="finance-row-actions">
+                      <button className="btn-ghost btn-sm" disabled={busy} onClick={() => startEdit(e)}>
+                        ערוך
+                      </button>
+                      <button
+                        className="btn-ghost btn-sm"
+                        disabled={busy}
+                        onClick={() => remove(e.id)}
+                        aria-label="מחק"
+                      >
+                        ✕
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+              {entries.length === 0 && (
+                <tr>
+                  <td colSpan={canManage ? 7 : 6} className="muted">
+                    אין תנועות עדיין.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  )
+}

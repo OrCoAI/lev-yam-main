@@ -52,8 +52,9 @@ export default function Login() {
   return (
     <div className="screen-center">
       <form className="card login" onSubmit={onSubmit}>
-        <h1 className="login-title">לב ים · מערכת</h1>
-        <p className="muted">כניסת צוות</p>
+        <img className="login-logo" src="/app/brand/logo-full.png" alt="לב ים" />
+        <h1 className="login-title">מערכת הצוות</h1>
+        <p className="login-sub muted">ברוכים הבאים · לב ים</p>
 
         {!configured && (
           <p className="notice">
