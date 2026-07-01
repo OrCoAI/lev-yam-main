@@ -27,20 +27,25 @@ export default function EnablePasskey() {
     }
   }
 
+  const label =
+    status === 'done'
+      ? '✓ Face ID מופעל'
+      : status === 'busy'
+        ? 'מפעיל…'
+        : status === 'error'
+          ? 'נסה שוב — Face ID'
+          : 'הפעלת Face ID'
+
   return (
     <button
-      className="btn-ghost"
+      className="btn-ghost btn-icon-label"
       onClick={enable}
       disabled={status === 'busy' || status === 'done'}
       title={status === 'error' ? msg : 'הוספת כניסה מהירה עם Face ID במכשיר זה'}
+      aria-label={label}
     >
-      {status === 'done'
-        ? '✓ Face ID מופעל'
-        : status === 'busy'
-          ? 'מפעיל…'
-          : status === 'error'
-            ? 'נסה שוב — Face ID'
-            : 'הפעלת Face ID'}
+      <span aria-hidden="true">🔐</span>
+      <span className="btn-label">{label}</span>
     </button>
   )
 }

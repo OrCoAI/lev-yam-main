@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { finance } from '../../lib/supabase'
 import type { FinanceCategory, FinanceEntry, FinanceKind, FinancePaymentMethod } from '../../types'
 import {
@@ -8,6 +8,8 @@ import {
   PAYMENT_LABELS,
   PAYMENT_METHODS,
 } from './categories'
+
+const PAGE_SIZE = 100
 
 function todayStr() {
   return new Date().toLocaleDateString('en-CA') // 'YYYY-MM-DD' in local time
@@ -20,7 +22,7 @@ function categoriesFor(kind: FinanceKind) {
 const emptyForm = {
   kind: 'expense' as FinanceKind,
   category: EXPENSE_CATEGORIES[0] as FinanceCategory,
-  payment_method: 'cash' as FinancePaymentMethod,
+  payment_method: 'cash' as FinancePaymentMethod | null,
   amount: '',
   entry_date: todayStr(),
   note: '',
@@ -29,25 +31,42 @@ const emptyForm = {
 export default function EntriesTab({ canManage }: { canManage: boolean }) {
   const [entries, setEntries] = useState<FinanceEntry[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState(emptyForm)
 
-  const load = useCallback(async () => {
-    setLoading(true)
+  const loadIdRef = useRef(0)
+  const offsetRef = useRef(0)
+
+  const load = useCallback(async (append = false) => {
+    const id = ++loadIdRef.current
+    if (append) setLoadingMore(true)
+    else {
+      setLoading(true)
+      offsetRef.current = 0
+    }
+    const offset = append ? offsetRef.current : 0
     const { data, error } = await finance()
       .from('entries')
       .select('*')
       .order('entry_date', { ascending: false })
       .order('created_at', { ascending: false })
-      .limit(100)
-    if (error) setError(error.message)
-    else {
-      setEntries((data as FinanceEntry[] | null) ?? [])
+      .range(offset, offset + PAGE_SIZE - 1)
+    if (id !== loadIdRef.current) return // a newer load superseded this one
+    if (error) {
+      setError(error.message)
+    } else {
+      const rows = (data as FinanceEntry[] | null) ?? []
+      setEntries((prev) => (append ? [...prev, ...rows] : rows))
+      offsetRef.current = offset + rows.length
+      setHasMore(rows.length === PAGE_SIZE)
       setError(null)
     }
     setLoading(false)
+    setLoadingMore(false)
   }, [])
 
   useEffect(() => {
@@ -63,7 +82,7 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
     setForm({
       kind: e.kind,
       category: e.category,
-      payment_method: e.payment_method ?? 'cash',
+      payment_method: e.payment_method,
       amount: String(e.amount),
       entry_date: e.entry_date,
       note: e.note ?? '',
@@ -74,11 +93,15 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
   function cancelEdit() {
     setEditingId(null)
     setForm(emptyForm)
+    setError(null)
   }
 
   async function submit() {
     const amount = Number(form.amount)
-    if (!amount || amount <= 0) return
+    if (!amount || amount <= 0) {
+      setError('נא להזין סכום תקין (גדול מ-0).')
+      return
+    }
     setBusy(true)
     const payload = {
       kind: form.kind,
@@ -161,6 +184,13 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
                   {PAYMENT_LABELS[p]}
                 </button>
               ))}
+              <button
+                type="button"
+                className={form.payment_method === null ? 'chip on' : 'chip'}
+                onClick={() => setForm((f) => ({ ...f, payment_method: null }))}
+              >
+                {PAYMENT_LABELS.unknown}
+              </button>
             </div>
           </div>
 
@@ -268,6 +298,13 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
               )}
             </tbody>
           </table>
+          {hasMore && (
+            <div className="finance-load-more">
+              <button className="btn-ghost" disabled={loadingMore} onClick={() => load(true)}>
+                {loadingMore ? 'טוען…' : 'טען עוד'}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

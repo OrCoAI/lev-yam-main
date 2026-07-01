@@ -75,7 +75,7 @@ function UsersTab({ canManage }: { canManage: boolean }) {
 
   return (
     <div className="card">
-      <table className="grid">
+      <table className="grid grid-sticky-first">
         <thead>
           <tr>
             <th>משתמש</th>
@@ -184,7 +184,7 @@ function MatrixTab({ canManage }: { canManage: boolean }) {
 
   return (
     <div className="card">
-      <table className="grid">
+      <table className="grid grid-sticky-first">
         <thead>
           <tr>
             <th>הרשאה</th>

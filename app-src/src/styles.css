@@ -96,6 +96,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .btn-ghost { background: #fff; color: var(--sea-dark); border-color: var(--line); }
 .btn-ghost:hover:not(:disabled) { border-color: var(--sea); background: #fff; }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-icon-label { display: inline-flex; align-items: center; gap: 6px; }
 
 /* ---------- login ---------- */
 .login { width: min(380px, 92vw); display: grid; gap: 12px; }
@@ -247,6 +248,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .finance-expense { color: var(--danger); font-weight: 700; }
 .finance-amount { font-weight: 700; white-space: nowrap; }
 .finance-row-actions { display: flex; gap: 6px; justify-content: flex-end; }
+.finance-load-more { display: flex; justify-content: center; margin-top: 14px; }
 .finance-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 8px; }
 .finance-stat { position: relative; overflow: hidden; display: grid; gap: 6px; text-align: center; padding-top: 22px; }
 .finance-stat::before { content: ''; position: absolute; inset-inline: 0; inset-block-start: 0; height: 4px; }
@@ -276,7 +278,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   .launcher-logo { height: 80px; }
 
   /* wide admin tables (e.g. users) scroll rather than overflow the screen */
-  .card { overflow-x: auto; }
+  .card { overflow-x: auto; padding: 16px; }
 
   /* finance/report tables become stacked cards, one row per entry */
   .finance-list { overflow-x: visible; padding: 12px; }
@@ -288,11 +290,12 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   .finance-list td { display: block; }
   .finance-list thead { display: none; }
   .finance-list tr {
-    border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 10px;
+    background: #fff; box-shadow: var(--shadow);
+    border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 10px;
   }
   .finance-list tr:last-child { margin-bottom: 0; }
   .finance-list td {
-    border: none; padding: 5px 0; gap: 12px;
+    border: none; padding: 6px 0; gap: 12px;
     display: flex; align-items: center; justify-content: space-between; text-align: end;
   }
   .finance-list td::before {
@@ -303,5 +306,27 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
     justify-content: stretch; margin-top: 6px; padding-top: 10px; border-top: 1px solid var(--line);
   }
   .finance-list td.finance-row-actions::before { content: none; }
-  .finance-list td.finance-row-actions .btn-sm { flex: 1; }
+  .finance-list td.finance-row-actions .btn-sm { flex: 1; min-height: 40px; }
+
+  /* wide admin tables: freeze the label column while the rest scrolls horizontally,
+     so a user never loses track of which row they're looking at */
+  .grid-sticky-first th:first-child, .grid-sticky-first td:first-child {
+    position: sticky; inset-inline-start: 0; z-index: 1; background: #fff;
+    box-shadow: 2px 0 6px -3px rgba(26, 51, 64, 0.18);
+  }
+  .grid input[type='checkbox'] { width: 22px; height: 22px; }
+
+  /* tabs read as a proper full-width segmented control, not sparse left-aligned pills */
+  .tabs { gap: 6px; }
+  .tab { flex: 1; text-align: center; padding: 10px 10px; min-height: 42px; }
+
+  /* consistent tap targets */
+  .btn-primary, .btn-ghost { min-height: 44px; }
+  .btn-icon-label .btn-label { display: none; }
+
+  /* keep income/expense/net readable as one row instead of wrapping 2+1 */
+  .finance-summary { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .finance-stat { padding: 14px 6px 10px; }
+  .finance-stat .muted { font-size: 0.72rem; }
+  .finance-stat strong { font-size: 1.15rem; }
 }
