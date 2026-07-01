@@ -8,6 +8,15 @@ import type { ModuleRow } from '../types'
 const DESTINATIONS: Record<string, { to?: string; href?: string }> = {
   users: { to: '/users' },
   pos: { href: '/pos.html' },
+  finance: { to: '/finance' },
+}
+
+// On-brand tile marks (only the shared brand icons — no emoji, no icon fonts).
+// A module without a mapping falls back to its core.modules emoji.
+const BRAND_ICONS: Record<string, string> = {
+  users: '/app/brand/heart.png',
+  finance: '/app/brand/sun-orange.png',
+  pos: '/app/brand/palm-orange.png',
 }
 
 export default function Launcher() {
@@ -47,9 +56,16 @@ export default function Launcher() {
         {modules.map((m, i) => {
           const dest = DESTINATIONS[m.key]
           const accent = i % 2 === 0 ? 'tile--blue' : 'tile--orange'
+          const brandIcon = BRAND_ICONS[m.key]
           const inner = (
             <>
-              <span className="tile-medallion">{m.icon ?? '▫️'}</span>
+              <span className="tile-medallion">
+                {brandIcon ? (
+                  <img className="tile-icon" src={brandIcon} alt="" aria-hidden="true" />
+                ) : (
+                  <span className="tile-emoji">{m.icon ?? '▫️'}</span>
+                )}
+              </span>
               <span className="tile-label">{m.label}</span>
               <span className="tile-go">{dest ? 'פתח ←' : 'בקרוב'}</span>
             </>

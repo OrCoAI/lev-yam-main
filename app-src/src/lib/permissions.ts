@@ -15,6 +15,8 @@ export const PERM = {
   posRefund: 'pos.refund',
   posReports: 'pos.reports',      // full financial report (revenue/net) — manager
   posManage: 'pos.manage',        // end-day, refunds/voids, settings — manager
+  financeView: 'finance.view',
+  financeManage: 'finance.manage',
 } as const
 
 export type PermissionKey = (typeof PERM)[keyof typeof PERM]

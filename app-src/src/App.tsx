@@ -5,6 +5,7 @@ import RequirePermission from './shell/RequirePermission'
 import Layout from './shell/Layout'
 import Launcher from './shell/Launcher'
 import UsersAdmin from './modules/users/UsersAdmin'
+import FinanceModule from './modules/finance/FinanceModule'
 import { PERM } from './lib/permissions'
 
 export default function App() {
@@ -21,6 +22,14 @@ export default function App() {
             element={
               <RequirePermission perm={PERM.usersView}>
                 <UsersAdmin />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="finance"
+            element={
+              <RequirePermission perm={PERM.financeView}>
+                <FinanceModule />
               </RequirePermission>
             }
           />
