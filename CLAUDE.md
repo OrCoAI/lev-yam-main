@@ -85,6 +85,14 @@ Push to `main`. The GitHub Action `.github/workflows/deploy.yml` builds the plat
 (`app-src` → `/app`), bundles it with the static marketing site, and publishes to GitHub Pages
 (levyam.com). There is no staging — verify locally before pushing.
 
+- **The site is assembled from an explicit allowlist** in `deploy.yml` (specific root files +
+  `css/js/img/fonts` + built `/app`). A new public page or asset folder **must be added
+  there**, or it 404s in production while working locally. `docs/`, `tests/`, and `supabase/`
+  are deliberately not deployed (the repo is public; the *site* only serves what's listed).
+- After deploying, the workflow **smoke-checks** `/`, `/app/`, and `/pos.html` (expects 200).
+- Branch pushes and PRs run **`ci.yml`** (typecheck + build) so breakage is caught before
+  anything reaches `main`, which deploys straight to production.
+
 **One-time setup:** repo Settings → Pages → Source = **GitHub Actions**; add repo Secrets
 `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`; apply `supabase/schema/*.sql` and add `core`
 (+ module schemas) under Supabase → API → Exposed schemas. See `supabase/README.md`.

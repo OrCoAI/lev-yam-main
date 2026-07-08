@@ -67,3 +67,21 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+      # Fail loudly if production doesn't actually serve the three live surfaces.
+      # Retries cover CDN propagation right after the deploy completes.
+      - name: Smoke-check production
+        run: |
+          for path in / /app/ /pos.html; do
+            url="https://levyam.com${path}"
+            for attempt in 1 2 3; do
+              code=$(curl -s -o /dev/null -w '%{http_code}' "$url")
+              [ "$code" = "200" ] && break
+              sleep 10
+            done
+            echo "${code}  ${url}"
+            if [ "$code" != "200" ]; then
+              echo "::error::Smoke check failed: ${url} returned ${code}"
+              exit 1
+            fi
+          done

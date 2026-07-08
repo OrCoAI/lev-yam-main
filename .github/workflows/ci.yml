@@ -1,0 +1,34 @@
+name: CI — typecheck & build
+
+# Catches platform breakage before it reaches main (which deploys straight to
+# production). Runs the same gate as the deploy build: tsc + vite build.
+# The VITE_* secrets are the anon/publishable values — safe to expose; the
+# build also succeeds without them (lib/supabase.ts handles unconfigured env),
+# so PRs from forks still get checked.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches-ignore: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app-src/package-lock.json
+
+      - name: Typecheck + build platform
+        working-directory: app-src
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          npm ci
+          npm run build
