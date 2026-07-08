@@ -1,0 +1,175 @@
+/* Quotes module — built on the platform tokens in styles.css.
+   Desktop: table. Under 760px: each row becomes a card grid (mobile-first rule). */
+
+.qdash { display: grid; gap: 14px; }
+
+/* ── Header ─────────────────────────────────────────────────────────── */
+.qdash-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.qdash-title { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 1.35rem; color: var(--ink); }
+.qdash-date { font-size: 0.85rem; }
+.qdash-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.qdash-actions .active { border-color: var(--sea); color: var(--sea-dark); }
+
+.qdash-revenue { display: grid; text-align: center; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 6px 14px; box-shadow: var(--shadow); }
+.qdash-revenue .lab { font-size: 0.7rem; color: var(--muted); }
+.qdash-revenue .val { font-weight: 800; color: var(--ok-dark); font-size: 1.05rem; }
+
+.seg { display: inline-flex; background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 3px; gap: 2px; }
+.seg-btn { border: 0; background: transparent; padding: 6px 12px; border-radius: 999px; font-size: 0.85rem; color: var(--muted); cursor: pointer; }
+.seg-btn.active { background: var(--sea); color: #fff; }
+
+/* ── Stat cards ─────────────────────────────────────────────────────── */
+.qdash-stats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+.qdash-stats[data-single] { grid-template-columns: 1fr; }
+.stat-card { border: 1px solid var(--line); background: #fff; border-radius: var(--radius); padding: 10px 6px; text-align: center; cursor: pointer; box-shadow: var(--shadow); }
+.stat-card.active { border-color: var(--sea); outline: 2px solid var(--sea); }
+.stat-num { font-weight: 800; font-size: 1.25rem; color: var(--ink); }
+.stat-label { font-size: 0.75rem; color: var(--muted); }
+.stat-card[data-status='approved'] .stat-num { color: var(--ok-dark); }
+.stat-card[data-status='declined'] .stat-num { color: var(--danger); }
+.stat-card[data-status='sent'] .stat-num { color: var(--sea-dark); }
+.stat-card[data-status='paid'] .stat-num { color: var(--ok-dark); }
+
+/* ── Table ──────────────────────────────────────────────────────────── */
+.qdash-table-wrap { padding: 0; overflow: visible; }
+.qdash-empty { text-align: center; color: var(--muted); padding: 28px; }
+.qdash-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.qdash-table th { text-align: start; font-size: 0.75rem; color: var(--muted); font-weight: 600; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.qdash-table td { padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.qdash-table tr:last-child td { border-bottom: 0; }
+.archived-row { opacity: 0.55; }
+
+.cell-primary { font-weight: 700; color: var(--ink); }
+.cell-secondary { font-size: 0.78rem; color: var(--muted); display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.cell-secondary .dot { opacity: 0.5; }
+.quote-num { direction: ltr; unicode-bidi: embed; }
+.event-line { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.event-date { font-weight: 600; direction: ltr; unicode-bidi: embed; }
+.event-date.empty { color: var(--muted); font-weight: 400; }
+.day-chip { font-size: 0.7rem; border-radius: 999px; padding: 1px 8px; background: var(--sand-2); color: var(--muted); }
+.day-chip.today { background: var(--sea); color: #fff; }
+.day-chip.soon { background: #e8f4f9; color: var(--sea-dark); }
+.day-chip.past { opacity: 0.7; }
+.price-strike { text-decoration: line-through; opacity: 0.6; }
+.vat-tag { font-size: 0.7rem; color: var(--muted); }
+
+/* ── Status / contract badges + dropdown ────────────────────────────── */
+.badge-anchor { position: relative; display: inline-flex; }
+.status-badge, .contract-badge, .btn-contract, .btn-checklist {
+  border: 1px solid var(--line); background: #fff; border-radius: 999px;
+  padding: 3px 10px; font-size: 0.78rem; cursor: pointer; color: var(--ink);
+}
+.status-badge:disabled, .contract-badge:disabled { cursor: default; }
+.status-badge[data-s='draft'] { background: var(--sand-2); color: var(--muted); }
+.status-badge[data-s='sent'] { background: #e8f4f9; color: var(--sea-dark); border-color: #bcdcea; }
+.status-badge[data-s='approved'] { background: #e6f4e7; color: var(--ok-dark); border-color: #bfe3c1; }
+.status-badge[data-s='declined'] { background: #fdecea; color: var(--danger-dark); border-color: #f5c6c1; }
+.status-badge[data-s='expired'] { background: #fdf3e6; color: #9a6b1f; border-color: #f0d9b2; }
+.status-badge[data-s='paid'] { background: var(--ok-dark); color: #fff; border-color: var(--ok-dark); }
+.contract-badge[data-cs='draft'] { background: var(--sand-2); color: var(--muted); }
+.contract-badge[data-cs='sent'] { background: #e8f4f9; color: var(--sea-dark); border-color: #bcdcea; }
+.contract-badge[data-cs='signed'] { background: var(--ok); color: #fff; border-color: var(--ok); }
+.btn-contract { border-style: dashed; border-color: var(--sea); color: var(--sea-dark); }
+.btn-checklist { border-color: var(--ok); color: var(--ok-dark); }
+.btn-checklist.all-done { background: var(--ok); color: #fff; }
+.cell-progress-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+.status-dropdown { position: fixed; z-index: 60; background: #fff; border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow-md); display: grid; padding: 4px; min-width: 122px; }
+.status-option { border: 0; background: transparent; text-align: start; padding: 7px 10px; border-radius: 7px; cursor: pointer; font-size: 0.85rem; }
+.status-option:hover { background: var(--sand-2); }
+
+.notes-input { width: 100%; min-width: 120px; border: 1px solid transparent; background: transparent; border-radius: 8px; padding: 5px 8px; font-size: 0.85rem; color: var(--ink); }
+.notes-input:hover:not(:disabled), .notes-input:focus { border-color: var(--line); background: #fff; outline: none; }
+
+.row-action-cluster { display: inline-flex; gap: 4px; }
+.row-archive, .row-del { border: 1px solid var(--line); background: #fff; border-radius: 8px; width: 26px; height: 26px; cursor: pointer; color: var(--muted); line-height: 1; }
+.row-del:hover { color: var(--danger); border-color: var(--danger); }
+.row-archive:hover { color: var(--sea-dark); border-color: var(--sea); }
+
+/* ── Calendar ───────────────────────────────────────────────────────── */
+.cal-wrap { display: grid; gap: 10px; }
+.cal-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.cal-title { font-family: var(--font-display); font-weight: 800; color: var(--ink); }
+.cal-nav { display: flex; gap: 6px; }
+.cal-btn { padding: 4px 10px; font-size: 0.8rem; border-radius: 999px; }
+.cal-btn.on { background: var(--sea); color: #fff; border-color: var(--sea); }
+.cal-arrow { min-width: 32px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal-dow { text-align: center; font-size: 0.72rem; color: var(--muted); padding-bottom: 2px; }
+.cal-day { min-height: 74px; border: 1px solid var(--line); border-radius: 8px; padding: 4px; background: #fff; display: grid; align-content: start; gap: 3px; }
+.cal-other { opacity: 0.45; }
+.cal-today { outline: 2px solid var(--sea); }
+.cal-day-num { font-size: 0.72rem; color: var(--muted); }
+.cal-event { display: block; width: 100%; border: 0; text-align: start; font-size: 0.7rem; border-radius: 6px; padding: 2px 6px; background: var(--sand-2); color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cal-event[data-s='sent'] { background: #e8f4f9; color: var(--sea-dark); }
+.cal-event[data-s='approved'] { background: #e6f4e7; color: var(--ok-dark); }
+.cal-event[data-s='declined'], .cal-event[data-s='expired'] { opacity: 0.6; }
+.cal-event.confirmed { background: var(--ok); color: #fff; cursor: pointer; }
+
+/* ── Modals ─────────────────────────────────────────────────────────── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(26, 51, 64, 0.45); display: grid; place-items: center; padding: 16px; z-index: 80; }
+.modal-box { background: #fff; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); padding: 20px; width: min(440px, 100%); max-height: 88vh; overflow-y: auto; display: grid; gap: 10px; }
+.modal-title { font-family: var(--font-display); font-weight: 800; font-size: 1.1rem; color: var(--ink); }
+.modal-field { display: grid; gap: 5px; font-size: 0.85rem; color: var(--muted); }
+.modal-field input { border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px; font-size: 0.95rem; }
+.modal-field input:focus { outline: 2px solid var(--sea); border-color: var(--sea); }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-start; margin-top: 4px; }
+
+/* ── Checklist ──────────────────────────────────────────────────────── */
+.chk-meta { font-size: 0.82rem; color: var(--muted); }
+.chk-bar { height: 6px; border-radius: 999px; background: var(--sand-2); overflow: hidden; }
+.chk-bar-fill { height: 100%; background: var(--ok); transition: width 0.25s; }
+.chk-list { display: grid; gap: 4px; }
+.chk-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; }
+.chk-item:hover { background: var(--sand-2); }
+.chk-item.done .chk-text { text-decoration: line-through; opacity: 0.6; }
+.chk-text { flex: 1; cursor: pointer; font-size: 0.9rem; }
+.chk-del { border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 1rem; }
+.chk-del:hover { color: var(--danger); }
+.chk-add { display: flex; gap: 6px; }
+.chk-add input { flex: 1; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 0.9rem; }
+.chk-add button { border: 1px solid var(--sea); background: #fff; color: var(--sea-dark); border-radius: 10px; padding: 0 14px; cursor: pointer; }
+.chk-add button:disabled { opacity: 0.5; cursor: default; }
+
+/* ── Settings modal ─────────────────────────────────────────────────── */
+.cfg-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); }
+.cfg-tab { border: 0; background: transparent; padding: 8px 12px; cursor: pointer; color: var(--muted); font-size: 0.9rem; border-bottom: 2px solid transparent; }
+.cfg-tab.active { color: var(--sea-dark); border-bottom-color: var(--sea); font-weight: 700; }
+.cfg-section { display: grid; gap: 10px; }
+.cfg-help { font-size: 0.82rem; margin: 0; }
+.cfg-sig-current img { max-height: 60px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+.cfg-sig-canvas { width: 100%; height: 120px; background: #fff; border: 1.5px dashed var(--sea); border-radius: 8px; cursor: crosshair; touch-action: none; display: block; }
+.cfg-prep-list { display: grid; gap: 4px; }
+.cfg-prep-item { display: flex; align-items: center; gap: 4px; }
+.cfg-prep-item input { flex: 1; border: 1px solid transparent; border-radius: 8px; padding: 6px 8px; font-size: 0.88rem; background: transparent; }
+.cfg-prep-item input:hover, .cfg-prep-item input:focus { border-color: var(--line); background: #fff; outline: none; }
+.cfg-prep-arrow, .cfg-prep-del { border: 1px solid var(--line); background: #fff; border-radius: 6px; width: 24px; height: 24px; cursor: pointer; color: var(--muted); line-height: 1; font-size: 0.8rem; }
+.cfg-prep-arrow:disabled { opacity: 0.35; cursor: default; }
+.cfg-prep-del:hover { color: var(--danger); border-color: var(--danger); }
+
+/* ── Mobile: rows become cards ──────────────────────────────────────── */
+@media (max-width: 760px) {
+  .qdash-stats { grid-template-columns: repeat(3, 1fr); }
+  .qdash-header { flex-direction: column; }
+  .qdash-actions { width: 100%; }
+  .seg { flex-wrap: wrap; }
+
+  .qdash-table-wrap { background: transparent; border: 0; box-shadow: none; }
+  .qdash-table, .qdash-table tbody { display: block; }
+  .qdash-table thead { display: none; }
+  .qdash-table tr {
+    display: grid; grid-template-columns: 1fr auto; gap: 6px 10px;
+    background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 12px; margin-bottom: 10px;
+  }
+  .qdash-table td { display: block; padding: 0; border: 0; }
+  .cell-customer { grid-column: 1; grid-row: 1; }
+  .cell-actions { grid-column: 2; grid-row: 1; justify-self: end; }
+  .cell-event { grid-column: 1; grid-row: 2; }
+  .cell-price { grid-column: 2; grid-row: 2; justify-self: end; text-align: end; }
+  .cell-progress { grid-column: 1 / -1; grid-row: 3; }
+  .cell-notes { grid-column: 1 / -1; grid-row: 4; }
+  .notes-input { border-color: var(--line); background: #fff; }
+  .cal-day { min-height: 56px; }
+  .cal-event { font-size: 0.62rem; padding: 1px 4px; }
+}

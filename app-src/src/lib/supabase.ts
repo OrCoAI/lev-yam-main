@@ -18,3 +18,6 @@ export const core = () => supabase.schema('core')
 
 /** PostgREST client scoped to the finance module's schema (entries, report RPC). */
 export const finance = () => supabase.schema('finance')
+
+/** PostgREST client scoped to the quotes module's schema (quotes, contracts, settings). */
+export const quotes = () => supabase.schema('quotes')

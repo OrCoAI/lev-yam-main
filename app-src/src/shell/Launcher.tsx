@@ -10,6 +10,7 @@ const DESTINATIONS: Record<string, { to?: string; href?: string }> = {
   users: { to: '/users' },
   pos: { href: '/pos.html' },
   finance: { to: '/finance' },
+  quotes: { to: '/quotes' },
 }
 
 // On-brand tile marks (only the shared brand icons — no emoji, no icon fonts).
@@ -18,6 +19,7 @@ const BRAND_ICONS: Record<string, string> = {
   users: '/app/brand/heart.png',
   finance: '/app/brand/sun-orange.png',
   pos: '/app/brand/palm-orange.png',
+  quotes: '/app/brand/house-blue.png',
 }
 
 export default function Launcher() {
