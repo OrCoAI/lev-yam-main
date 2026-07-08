@@ -28,9 +28,10 @@ POS is live on real service days). Its migration produces the documented module 
 that POS and every later module follow. The i18n layer lands at the very start so nothing
 bilingual is ever a retrofit.*
 
-- [ ] **Foundation:** platform i18n layer (HE + Levantine Arabic, RTL-aware) in the app
+- [x] **Foundation:** platform i18n layer (HE + Levantine Arabic, RTL-aware) in the app
       shell — dictionaries, language switcher, translated shell/login/launcher; every module
-      from here on ships in both languages
+      from here on ships in both languages *(live 2026-07-08; follow-ups: bilingual module
+      labels in `core.modules`, Arabic webfont — system-font fallback for now)*
 - [ ] **Quotes manager joins the platform** — migrate the local quotes & contracts app
       (`~/lev-yam-quotes`: Python API + React dashboard + `quotes-tracker.json` as source of
       truth) into a quotes module at `/app/quotes`.
