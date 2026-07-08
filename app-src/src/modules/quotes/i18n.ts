@@ -99,6 +99,9 @@ const he = {
   docUndo: '↩ ביטול שינוי',
   docReset: 'איפוס לתבנית',
   docNotFound: 'ההצעה לא נמצאה.',
+  docSaveContract: 'שמירת הסכם',
+  signedLocked: '✓ הסכם חתום — נעול לעריכה',
+  markSignedConfirm: 'לסמן את ההסכם כנחתם? לאחר מכן לא ניתן יהיה לערוך או למחוק אותו.',
   status: {
     draft: 'טיוטה',
     sent: 'נשלח',
@@ -213,6 +216,9 @@ const ar: QuotesStrings = {
   docUndo: '↩ تراجع',
   docReset: 'إعادة للنموذج',
   docNotFound: 'العرض غير موجود.',
+  docSaveContract: 'حفظ العقد',
+  signedLocked: '✓ عقد موقّع — مقفل للتحرير',
+  markSignedConfirm: 'وضع علامة "موقّع" على العقد؟ بعد ذلك لا يمكن تحريره أو حذفه.',
   status: {
     draft: 'مسودة',
     sent: 'أُرسل',

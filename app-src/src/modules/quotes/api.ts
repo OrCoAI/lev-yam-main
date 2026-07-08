@@ -74,15 +74,58 @@ export async function deleteQuote(id: string): Promise<void> {
 }
 
 export async function generateContract(quoteId: string): Promise<ContractRow> {
-  // v1: creates the contract *record* (number derived by trigger). The rendered
-  // document page arrives with plan step 3.
+  // Snapshot the template + quote data into contracts.content NOW — later edits
+  // to the master defaults must never change an existing contract.
+  const { DEFAULT_CLAUSES, DEFAULT_DETAILS_FIELDS, DEFAULT_CONTRACT_DATA } = await import('./contract-defaults')
+  const quote = await getQuote(quoteId)
+  let ownerSignature = ''
+  try {
+    ownerSignature = await getOwnerSignature() // needs quotes.settings; blank is fine
+  } catch {
+    /* signature stays blank — a line is printed instead */
+  }
+  const today = new Date()
+  const price =
+    quote.final_price != null
+      ? `${Math.round(quote.final_price).toLocaleString('en-US')} ₪ (כולל מע״מ)`
+      : quote.subtotal != null
+        ? `${Math.round(quote.subtotal).toLocaleString('en-US')} ₪`
+        : ''
+  const content = {
+    data: {
+      ...DEFAULT_CONTRACT_DATA,
+      signDate: `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`,
+      customerName: quote.customer_name,
+      phone: quote.phone,
+      email: quote.email,
+      eventDate: quote.event_date ?? '',
+      hours: quote.hours,
+      eventType: quote.event_type,
+      guests: quote.guests,
+      price,
+    },
+    clauses: DEFAULT_CLAUSES,
+    fields: DEFAULT_DETAILS_FIELDS,
+    ownerSignature,
+  }
   const { data, error } = await quotes()
     .from('contracts')
-    .insert({ quote_id: quoteId })
+    .insert({ quote_id: quoteId, content })
     .select()
     .single()
   if (error) throw new Error(error.message)
   return data as ContractRow
+}
+
+export async function getContractByQuote(quoteId: string): Promise<ContractRow | null> {
+  const { data, error } = await quotes().from('contracts').select('*').eq('quote_id', quoteId).maybeSingle()
+  if (error) throw new Error(error.message)
+  return data as ContractRow | null
+}
+
+export async function updateContract(id: string, patch: Partial<ContractRow>): Promise<void> {
+  const { error } = await quotes().from('contracts').update(patch).eq('id', id)
+  if (error) throw new Error(error.message)
 }
 
 export async function setContractStatus(id: string, status: ContractStatus): Promise<void> {

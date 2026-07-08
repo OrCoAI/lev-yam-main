@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { createPortal } from 'react-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { PERM, useCan } from '../../lib/permissions'
 import {
   deleteQuote,
   generateContract,
   loadAll,
-  setContractStatus,
   setQuoteArchived,
   setQuoteNotes,
   setQuoteStatus,
@@ -17,12 +17,11 @@ import { eventDayChip, formatDate, ILS } from './format'
 import { useQT } from './i18n'
 import NewQuoteModal from './NewQuoteModal'
 import SettingsModal from './SettingsModal'
-import type { ContractRow, ContractStatus, QuoteRow, QuoteStatus } from './types'
+import type { ContractRow, QuoteRow, QuoteStatus } from './types'
 import { isConfirmed } from './types'
 import './quotes.css'
 
 const STATUSES: QuoteStatus[] = ['draft', 'sent', 'approved', 'declined', 'expired', 'paid']
-const CONTRACT_STATUSES: ContractStatus[] = ['draft', 'sent', 'signed']
 type ViewMode = 'live' | 'happy' | 'archive' | 'all'
 
 interface MenuOption {
@@ -32,8 +31,9 @@ interface MenuOption {
   dot: { attr: 'data-s' | 'data-cs'; value: string }
 }
 
-/** Status picker: a polished popover on desktop, a bottom sheet on touch.
- *  position:fixed lets the popover escape the table's clipping. */
+/** Status picker: a compact chip palette (never a vertical list), rendered in
+ *  a portal on document.body so no ancestor can clip or reposition it.
+ *  Desktop: small floating panel by the anchor. Touch: bottom sheet. */
 function StatusMenu({
   open,
   title,
@@ -50,6 +50,7 @@ function StatusMenu({
   onClose: () => void
 }) {
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
   const isSheet = open && window.matchMedia('(max-width: 760px)').matches
 
   useLayoutEffect(() => {
@@ -58,18 +59,18 @@ function StatusMenu({
       return
     }
     const r = anchorRef.current.getBoundingClientRect()
-    const h = options.length * 40 + 16
-    const below = r.bottom + 6 + h <= window.innerHeight
-    setPos({
-      left: Math.min(Math.max(8, r.left - 40), window.innerWidth - 176),
-      top: below ? r.bottom + 6 : Math.max(8, r.top - h - 6),
-    })
-  }, [open, isSheet, anchorRef, options.length])
+    const panelW = Math.min(300, window.innerWidth - 16)
+    const left = Math.min(Math.max(8, r.left + r.width / 2 - panelW / 2), window.innerWidth - panelW - 8)
+    const below = r.bottom + 8 + 96 <= window.innerHeight
+    setPos({ left, top: below ? r.bottom + 8 : Math.max(8, r.top - 104) })
+  }, [open, isSheet, anchorRef])
 
   useEffect(() => {
     if (!open || isSheet) return
     const handler = (e: MouseEvent) => {
-      if (anchorRef.current && !anchorRef.current.contains(e.target as Node)) onClose()
+      const t = e.target as Node
+      if (anchorRef.current?.contains(t) || panelRef.current?.contains(t)) return
+      onClose()
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
@@ -77,38 +78,43 @@ function StatusMenu({
 
   if (!open) return null
 
-  const items = options.map((o) => (
-    <button
-      key={o.key}
-      className="status-option"
-      onClick={() => {
-        onPick(o.key)
-        onClose()
-      }}
-    >
-      <span className="s-dot" {...{ [o.dot.attr]: o.dot.value }} />
-      {o.label}
-    </button>
-  ))
+  const chips = (
+    <div className="status-chips">
+      {options.map((o) => (
+        <button
+          key={o.key}
+          className="status-chip"
+          onClick={() => {
+            onPick(o.key)
+            onClose()
+          }}
+        >
+          <span className="s-dot" {...{ [o.dot.attr]: o.dot.value }} />
+          {o.label}
+        </button>
+      ))}
+    </div>
+  )
 
   if (isSheet) {
-    return (
+    return createPortal(
       <div className="sheet-backdrop" onClick={onClose}>
         <div className="status-sheet" onClick={(e) => e.stopPropagation()}>
           <div className="sheet-handle" />
           <div className="sheet-title">{title}</div>
-          {items}
+          {chips}
         </div>
-      </div>
+      </div>,
+      document.body,
     )
   }
 
   if (!pos) return null
-  return (
-    <div className="status-dropdown" style={{ top: pos.top, left: pos.left }}>
-      <div className="dropdown-title">{title}</div>
-      {items}
-    </div>
+  return createPortal(
+    <div ref={panelRef} className="status-pop" style={{ top: pos.top, left: pos.left }}>
+      {chips}
+    </div>,
+    document.body,
   )
 }
 
@@ -152,22 +158,20 @@ function StatusBadge({
   )
 }
 
+/** Contract chip: a quiet dot+label that opens the contract document.
+ *  Status changes happen on the document page — the dashboard stays clean. */
 function ContractCell({
   quote,
   contract,
   canContracts,
   onGenerate,
-  onStatus,
 }: {
   quote: QuoteRow
   contract?: ContractRow
   canContracts: boolean
   onGenerate: (quoteId: string) => void
-  onStatus: (id: string, s: ContractStatus) => void
 }) {
   const qt = useQT()
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLSpanElement>(null)
 
   if (!contract) {
     if (quote.status === 'approved' && canContracts) {
@@ -181,30 +185,15 @@ function ContractCell({
   }
 
   return (
-    <span ref={ref} className="badge-anchor">
-      <button
-        className="contract-badge"
-        data-cs={contract.status}
-        title={contract.contract_number}
-        disabled={!canContracts || contract.status === 'signed'}
-        onClick={() => setOpen(!open)}
-      >
-        {qt.contractStatus[contract.status]}
-        {canContracts && contract.status !== 'signed' && <span className="badge-caret">▾</span>}
-      </button>
-      <StatusMenu
-        open={open}
-        title={qt.contractStatus[contract.status]}
-        anchorRef={ref}
-        options={CONTRACT_STATUSES.filter((s) => s !== contract.status).map((s) => ({
-          key: s,
-          label: qt.contractStatus[s],
-          dot: { attr: 'data-cs', value: s },
-        }))}
-        onPick={(s) => onStatus(contract.id, s as ContractStatus)}
-        onClose={() => setOpen(false)}
-      />
-    </span>
+    <Link
+      to={`/quotes/${quote.id}/contract`}
+      className="contract-chip"
+      title={contract.contract_number}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <span className="s-dot" data-cs={contract.status} />
+      {qt.contractStatus[contract.status]}
+    </Link>
   )
 }
 
@@ -335,18 +324,23 @@ export default function QuotesModule() {
         </div>
       </header>
 
-      <div className="qdash-stats" data-single={statCards.length === 1 || undefined}>
-        {statCards.map((s) => (
-          <button
-            key={s.key}
-            className={'stat-card' + (filter === s.key ? ' active' : '')}
-            data-status={s.key === 'all' && viewMode === 'happy' ? 'paid' : s.key}
-            onClick={() => setFilter(filter === s.key ? 'all' : s.key)}
-          >
-            <div className="stat-num">{counts[s.key] ?? 0}</div>
-            <div className="stat-label">{s.label}</div>
-          </button>
-        ))}
+      <div className="qdash-stats">
+        {statCards.map((s) => {
+          const dotStatus = s.key === 'all' ? (viewMode === 'happy' ? 'paid' : null) : s.key
+          return (
+            <button
+              key={s.key}
+              className={'stat' + (filter === s.key ? ' active' : '')}
+              onClick={() => setFilter(filter === s.key ? 'all' : s.key)}
+            >
+              <span className="stat-num">{counts[s.key] ?? 0}</span>
+              <span className="stat-label">
+                {dotStatus && <span className="s-dot" data-s={dotStatus} />}
+                {s.label}
+              </span>
+            </button>
+          )
+        })}
       </div>
 
       {showCal && (
@@ -427,15 +421,19 @@ export default function QuotesModule() {
                           quote={q}
                           contract={contract}
                           canContracts={canContracts}
-                          onGenerate={(id) => run(generateContract(id))}
-                          onStatus={(id, s) => run(setContractStatus(id, s))}
+                          onGenerate={(quoteId) =>
+                            generateContract(quoteId)
+                              .then(() => navigate(`/quotes/${quoteId}/contract`))
+                              .catch((e: Error) => alert(e.message))
+                          }
                         />
                         {confirmed && (
                           <button
                             className={'btn-checklist' + (clTotal > 0 && done === clTotal ? ' all-done' : '')}
                             onClick={() => setChecklistQuoteId(q.id)}
                           >
-                            ✓{clTotal ? ` ${done}/${clTotal}` : ` ${qt.prepBtn}`}
+                            {qt.prepBtn}
+                            <span className="chk-count">{clTotal ? `${done}/${clTotal}` : '✓'}</span>
                           </button>
                         )}
                       </div>

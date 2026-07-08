@@ -8,6 +8,7 @@ import UsersAdmin from './modules/users/UsersAdmin'
 import FinanceModule from './modules/finance/FinanceModule'
 import QuotesModule from './modules/quotes/QuotesModule'
 import QuotePage from './modules/quotes/QuotePage'
+import ContractPage from './modules/quotes/ContractPage'
 import { PERM } from './lib/permissions'
 
 export default function App() {
@@ -48,6 +49,14 @@ export default function App() {
             element={
               <RequirePermission perm={PERM.quotesView}>
                 <QuotePage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="quotes/:id/contract"
+            element={
+              <RequirePermission perm={PERM.quotesView}>
+                <ContractPage />
               </RequirePermission>
             }
           />

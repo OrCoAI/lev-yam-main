@@ -69,6 +69,14 @@ export interface QuoteRow {
   prep_checklist: ChecklistItem[]
 }
 
+/** Snapshot stored in contracts.content at generation time. */
+export interface ContractContent {
+  data: Record<string, string>
+  clauses: { title: string; text: string }[]
+  fields: { key: string; label: string; notes: string; suffix?: string }[]
+  ownerSignature: string
+}
+
 export interface ContractRow {
   id: string
   quote_id: string
@@ -77,6 +85,8 @@ export interface ContractRow {
   generated_date: string
   sent_date: string | null
   signed_date: string | null
+  signed_name: string | null
+  content: Record<string, unknown>
 }
 
 export interface QuoteSettings {
