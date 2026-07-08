@@ -8,6 +8,40 @@ export interface ChecklistItem {
   done: boolean
 }
 
+export interface QuoteItem {
+  id: string
+  desc: string
+  qty: string
+  price: string
+}
+
+export interface AgendaItem {
+  time: string
+  activity: string
+}
+
+export interface QuoteTweaks {
+  showVat: boolean
+  showDiscount: boolean
+  leftSection: 'off' | 'included' | 'agenda'
+  showTerms: boolean
+}
+
+/** The document body stored in quotes.quotes.content (jsonb) — same shape as
+ *  the master template's DEFAULT_DATA, minus the client fields (columns). */
+export interface QuoteContent {
+  greeting: string
+  items: QuoteItem[]
+  included: string[]
+  agenda: AgendaItem[]
+  vatRate: number
+  discountPct: string
+  depositPct: string
+  cancellation: string
+  terms: string
+  tweaks: QuoteTweaks
+}
+
 export interface QuoteRow {
   id: string
   quote_number: string

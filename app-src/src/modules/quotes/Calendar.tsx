@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useQT } from './i18n'
 import type { ContractRow, QuoteRow } from './types'
 import { isConfirmed } from './types'
@@ -125,14 +126,15 @@ export default function Calendar({
                   )
                 }
                 return (
-                  <span
+                  <Link
                     key={q.id}
+                    to={`/quotes/${q.id}`}
                     className="cal-event"
                     data-s={q.status}
                     title={`${q.customer_name} — ${qt.status[q.status]}`}
                   >
                     {q.customer_name}
-                  </span>
+                  </Link>
                 )
               })}
             </div>

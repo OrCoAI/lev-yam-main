@@ -7,6 +7,7 @@ import Launcher from './shell/Launcher'
 import UsersAdmin from './modules/users/UsersAdmin'
 import FinanceModule from './modules/finance/FinanceModule'
 import QuotesModule from './modules/quotes/QuotesModule'
+import QuotePage from './modules/quotes/QuotePage'
 import { PERM } from './lib/permissions'
 
 export default function App() {
@@ -39,6 +40,14 @@ export default function App() {
             element={
               <RequirePermission perm={PERM.quotesView}>
                 <QuotesModule />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="quotes/:id"
+            element={
+              <RequirePermission perm={PERM.quotesView}>
+                <QuotePage />
               </RequirePermission>
             }
           />

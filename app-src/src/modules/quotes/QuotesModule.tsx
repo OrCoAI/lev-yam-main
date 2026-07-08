@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { PERM, useCan } from '../../lib/permissions'
 import {
   deleteQuote,
@@ -24,35 +25,91 @@ const STATUSES: QuoteStatus[] = ['draft', 'sent', 'approved', 'declined', 'expir
 const CONTRACT_STATUSES: ContractStatus[] = ['draft', 'sent', 'signed']
 type ViewMode = 'live' | 'happy' | 'archive' | 'all'
 
-/** Fixed-position dropdown coords anchored to a trigger, flipped up near the
- *  viewport bottom (escapes the table's overflow clipping). */
-function usePopoverPos(open: boolean, anchorRef: React.RefObject<HTMLElement>, optionCount: number) {
+interface MenuOption {
+  key: string
+  label: string
+  /** data attribute driving the colored dot (mirrors the badge palette) */
+  dot: { attr: 'data-s' | 'data-cs'; value: string }
+}
+
+/** Status picker: a polished popover on desktop, a bottom sheet on touch.
+ *  position:fixed lets the popover escape the table's clipping. */
+function StatusMenu({
+  open,
+  title,
+  anchorRef,
+  options,
+  onPick,
+  onClose,
+}: {
+  open: boolean
+  title: string
+  anchorRef: React.RefObject<HTMLElement>
+  options: MenuOption[]
+  onPick: (key: string) => void
+  onClose: () => void
+}) {
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null)
+  const isSheet = open && window.matchMedia('(max-width: 760px)').matches
+
   useLayoutEffect(() => {
-    if (!open || !anchorRef.current) {
+    if (!open || isSheet || !anchorRef.current) {
       setPos(null)
       return
     }
     const r = anchorRef.current.getBoundingClientRect()
-    const h = optionCount * 34 + 12
-    const below = r.bottom + 4 + h <= window.innerHeight
+    const h = options.length * 40 + 16
+    const below = r.bottom + 6 + h <= window.innerHeight
     setPos({
-      left: Math.max(8, r.right - 130),
-      top: below ? r.bottom + 4 : Math.max(8, r.top - h - 4),
+      left: Math.min(Math.max(8, r.left - 40), window.innerWidth - 176),
+      top: below ? r.bottom + 6 : Math.max(8, r.top - h - 6),
     })
-  }, [open, anchorRef, optionCount])
-  return pos
-}
+  }, [open, isSheet, anchorRef, options.length])
 
-function useCloseOnOutside(open: boolean, ref: React.RefObject<HTMLElement>, close: () => void) {
   useEffect(() => {
-    if (!open) return
+    if (!open || isSheet) return
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) close()
+      if (anchorRef.current && !anchorRef.current.contains(e.target as Node)) onClose()
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
-  }, [open, ref, close])
+  }, [open, isSheet, anchorRef, onClose])
+
+  if (!open) return null
+
+  const items = options.map((o) => (
+    <button
+      key={o.key}
+      className="status-option"
+      onClick={() => {
+        onPick(o.key)
+        onClose()
+      }}
+    >
+      <span className="s-dot" {...{ [o.dot.attr]: o.dot.value }} />
+      {o.label}
+    </button>
+  ))
+
+  if (isSheet) {
+    return (
+      <div className="sheet-backdrop" onClick={onClose}>
+        <div className="status-sheet" onClick={(e) => e.stopPropagation()}>
+          <div className="sheet-handle" />
+          <div className="sheet-title">{title}</div>
+          {items}
+        </div>
+      </div>
+    )
+  }
+
+  if (!pos) return null
+  return (
+    <div className="status-dropdown" style={{ top: pos.top, left: pos.left }}>
+      <div className="dropdown-title">{title}</div>
+      {items}
+    </div>
+  )
 }
 
 function StatusBadge({
@@ -67,9 +124,6 @@ function StatusBadge({
   const qt = useQT()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLSpanElement>(null)
-  const options = STATUSES.filter((s) => s !== quote.status)
-  const pos = usePopoverPos(open, ref, options.length)
-  useCloseOnOutside(open, ref, () => setOpen(false))
 
   return (
     <span ref={ref} className="badge-anchor">
@@ -80,23 +134,20 @@ function StatusBadge({
         onClick={() => setOpen(!open)}
       >
         {qt.status[quote.status]}
+        {canEdit && <span className="badge-caret">▾</span>}
       </button>
-      {open && pos && (
-        <div className="status-dropdown" style={{ top: pos.top, left: pos.left }}>
-          {options.map((s) => (
-            <button
-              key={s}
-              className="status-option"
-              onClick={() => {
-                onUpdate(quote.id, s)
-                setOpen(false)
-              }}
-            >
-              {qt.status[s]}
-            </button>
-          ))}
-        </div>
-      )}
+      <StatusMenu
+        open={open}
+        title={qt.thProgress}
+        anchorRef={ref}
+        options={STATUSES.filter((s) => s !== quote.status).map((s) => ({
+          key: s,
+          label: qt.status[s],
+          dot: { attr: 'data-s', value: s },
+        }))}
+        onPick={(s) => onUpdate(quote.id, s as QuoteStatus)}
+        onClose={() => setOpen(false)}
+      />
     </span>
   )
 }
@@ -117,9 +168,6 @@ function ContractCell({
   const qt = useQT()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLSpanElement>(null)
-  const options = contract ? CONTRACT_STATUSES.filter((s) => s !== contract.status) : []
-  const pos = usePopoverPos(open, ref, options.length)
-  useCloseOnOutside(open, ref, () => setOpen(false))
 
   if (!contract) {
     if (quote.status === 'approved' && canContracts) {
@@ -142,29 +190,27 @@ function ContractCell({
         onClick={() => setOpen(!open)}
       >
         {qt.contractStatus[contract.status]}
+        {canContracts && contract.status !== 'signed' && <span className="badge-caret">▾</span>}
       </button>
-      {open && pos && (
-        <div className="status-dropdown" style={{ top: pos.top, left: pos.left }}>
-          {options.map((s) => (
-            <button
-              key={s}
-              className="status-option"
-              onClick={() => {
-                onStatus(contract.id, s)
-                setOpen(false)
-              }}
-            >
-              {qt.contractStatus[s]}
-            </button>
-          ))}
-        </div>
-      )}
+      <StatusMenu
+        open={open}
+        title={qt.contractStatus[contract.status]}
+        anchorRef={ref}
+        options={CONTRACT_STATUSES.filter((s) => s !== contract.status).map((s) => ({
+          key: s,
+          label: qt.contractStatus[s],
+          dot: { attr: 'data-cs', value: s },
+        }))}
+        onPick={(s) => onStatus(contract.id, s as ContractStatus)}
+        onClose={() => setOpen(false)}
+      />
     </span>
   )
 }
 
 export default function QuotesModule() {
   const qt = useQT()
+  const navigate = useNavigate()
   const canManage = useCan(PERM.quotesManage)
   const canContracts = useCan(PERM.quotesContracts)
 
@@ -337,7 +383,11 @@ export default function QuotesModule() {
                 const done = q.prep_checklist.filter((it) => it.done).length
                 const clTotal = q.prep_checklist.length
                 return (
-                  <tr key={q.id} className={q.archived && viewMode !== 'archive' ? 'archived-row' : ''}>
+                  <tr
+                    key={q.id}
+                    className={'row-link' + (q.archived && viewMode !== 'archive' ? ' archived-row' : '')}
+                    onClick={() => navigate(`/quotes/${q.id}`)}
+                  >
                     <td className="cell-customer">
                       <div className="cell-primary">{q.customer_name || '—'}</div>
                       <div className="cell-secondary">
@@ -370,7 +420,7 @@ export default function QuotesModule() {
                         </div>
                       )}
                     </td>
-                    <td className="cell-progress">
+                    <td className="cell-progress" onClick={(e) => e.stopPropagation()}>
                       <div className="cell-progress-row">
                         <StatusBadge quote={q} canEdit={canManage} onUpdate={(id, s) => run(setQuoteStatus(id, s))} />
                         <ContractCell
@@ -390,7 +440,7 @@ export default function QuotesModule() {
                         )}
                       </div>
                     </td>
-                    <td className="cell-notes">
+                    <td className="cell-notes" onClick={(e) => e.stopPropagation()}>
                       <input
                         className="notes-input"
                         defaultValue={q.notes}
@@ -404,7 +454,7 @@ export default function QuotesModule() {
                         }}
                       />
                     </td>
-                    <td className="cell-actions">
+                    <td className="cell-actions" onClick={(e) => e.stopPropagation()}>
                       {canManage && (
                         <span className="row-action-cluster">
                           <button

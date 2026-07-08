@@ -38,6 +38,9 @@
 .qdash-table td { padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
 .qdash-table tr:last-child td { border-bottom: 0; }
 .archived-row { opacity: 0.55; }
+.row-link { cursor: pointer; }
+.row-link:hover td { background: rgba(44, 146, 191, 0.03); }
+.cal-event { text-decoration: none; }
 
 .cell-primary { font-weight: 700; color: var(--ink); }
 .cell-secondary { font-size: 0.78rem; color: var(--muted); display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
@@ -74,9 +77,43 @@
 .btn-checklist.all-done { background: var(--ok); color: #fff; }
 .cell-progress-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 
-.status-dropdown { position: fixed; z-index: 60; background: #fff; border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow-md); display: grid; padding: 4px; min-width: 122px; }
-.status-option { border: 0; background: transparent; text-align: start; padding: 7px 10px; border-radius: 7px; cursor: pointer; font-size: 0.85rem; }
+.badge-caret { font-size: 0.6rem; opacity: 0.55; margin-inline-start: 4px; }
+
+@keyframes menu-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.status-dropdown {
+  position: fixed; z-index: 60; background: #fff; border: 1px solid var(--line);
+  border-radius: 14px; box-shadow: var(--shadow-md); display: grid; gap: 1px;
+  padding: 6px; min-width: 168px; animation: menu-in 0.12s ease-out;
+}
+.dropdown-title { font-size: 0.7rem; color: var(--muted); padding: 4px 12px 6px; border-bottom: 1px solid var(--sand-2); margin-bottom: 3px; }
+.status-option {
+  border: 0; background: transparent; text-align: start; padding: 9px 12px;
+  border-radius: 9px; cursor: pointer; font-size: 0.88rem; color: var(--ink);
+  display: flex; align-items: center; gap: 9px;
+}
 .status-option:hover { background: var(--sand-2); }
+.s-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--muted); }
+.s-dot[data-s='draft'] { background: #b7c3c9; }
+.s-dot[data-s='sent'] { background: var(--sea); }
+.s-dot[data-s='approved'] { background: var(--ok); }
+.s-dot[data-s='declined'] { background: var(--danger); }
+.s-dot[data-s='expired'] { background: #f49834; }
+.s-dot[data-s='paid'] { background: var(--ok-dark); }
+.s-dot[data-cs='draft'] { background: #b7c3c9; }
+.s-dot[data-cs='sent'] { background: var(--sea); }
+.s-dot[data-cs='signed'] { background: var(--ok); }
+
+/* Touch: the picker becomes a bottom sheet */
+@keyframes sheet-in { from { transform: translateY(100%); } to { transform: none; } }
+.sheet-backdrop { position: fixed; inset: 0; background: rgba(26, 51, 64, 0.4); z-index: 70; display: flex; align-items: flex-end; }
+.status-sheet {
+  background: #fff; width: 100%; border-radius: 18px 18px 0 0; padding: 8px 10px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom)); display: grid; gap: 2px;
+  box-shadow: 0 -12px 30px rgba(26, 51, 64, 0.18); animation: sheet-in 0.18s ease-out;
+}
+.sheet-handle { width: 38px; height: 4px; border-radius: 999px; background: var(--line); margin: 2px auto 6px; }
+.sheet-title { font-size: 0.75rem; color: var(--muted); padding: 2px 12px 8px; }
+.status-sheet .status-option { padding: 13px 12px; font-size: 1rem; }
 
 .notes-input { width: 100%; min-width: 120px; border: 1px solid transparent; background: transparent; border-radius: 8px; padding: 5px 8px; font-size: 0.85rem; color: var(--ink); }
 .notes-input:hover:not(:disabled), .notes-input:focus { border-color: var(--line); background: #fff; outline: none; }

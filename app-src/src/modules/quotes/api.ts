@@ -30,6 +30,12 @@ export async function loadAll(): Promise<AllData> {
   return { quotes: (q.data as QuoteRow[]) ?? [], contracts: (c.data as ContractRow[]) ?? [] }
 }
 
+export async function getQuote(id: string): Promise<QuoteRow> {
+  const { data, error } = await quotes().from('quotes').select('*').eq('id', id).single()
+  if (error) throw new Error(error.message)
+  return data as QuoteRow
+}
+
 export async function createQuote(fields: {
   customer_name: string
   contact_person: string
