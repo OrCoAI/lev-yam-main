@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
+import { useI18n } from '../lib/i18n'
 import { platformAuthenticatorAvailable, registerPasskey } from '../lib/passkeys'
 
 type Status = 'idle' | 'busy' | 'done' | 'error'
 
 /** Topbar action: register a Face ID / Touch ID passkey on the current device. */
 export default function EnablePasskey() {
+  const { t } = useI18n()
   const [available, setAvailable] = useState(false)
   const [status, setStatus] = useState<Status>('idle')
   const [msg, setMsg] = useState('')
@@ -19,7 +21,7 @@ export default function EnablePasskey() {
     setStatus('busy')
     setMsg('')
     try {
-      await registerPasskey(navigator.platform || 'מכשיר זה')
+      await registerPasskey(navigator.platform || t('passkey.thisDevice'))
       setStatus('done')
     } catch (e) {
       setStatus('error')
@@ -29,19 +31,19 @@ export default function EnablePasskey() {
 
   const label =
     status === 'done'
-      ? '✓ Face ID מופעל'
+      ? t('passkey.enabled')
       : status === 'busy'
-        ? 'מפעיל…'
+        ? t('passkey.enabling')
         : status === 'error'
-          ? 'נסה שוב — Face ID'
-          : 'הפעלת Face ID'
+          ? t('passkey.retry')
+          : t('passkey.enable')
 
   return (
     <button
       className="btn-ghost btn-icon-label"
       onClick={enable}
       disabled={status === 'busy' || status === 'done'}
-      title={status === 'error' ? msg : 'הוספת כניסה מהירה עם Face ID במכשיר זה'}
+      title={status === 'error' ? msg : t('passkey.hint')}
       aria-label={label}
     >
       <span aria-hidden="true">🔐</span>

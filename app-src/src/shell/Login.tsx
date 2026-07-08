@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
+import { LangToggle, useI18n } from '../lib/i18n'
 import { loginWithPasskey, platformAuthenticatorAvailable } from '../lib/passkeys'
 
 interface FromState {
@@ -9,6 +10,7 @@ interface FromState {
 
 export default function Login() {
   const { session, loading, configured, signIn } = useAuth()
+  const { t } = useI18n()
   const navigate = useNavigate()
   const location = useLocation()
   const from = (location.state as FromState | null)?.from?.pathname ?? '/'
@@ -52,19 +54,20 @@ export default function Login() {
   return (
     <div className="screen-center">
       <form className="card login" onSubmit={onSubmit}>
+        <LangToggle className="login-lang" />
         <img className="login-logo" src="/app/brand/logo-full.png" alt="לב ים" />
-        <h1 className="login-title">מערכת הצוות</h1>
-        <p className="login-sub muted">ברוכים הבאים · לב ים</p>
+        <h1 className="login-title">{t('login.title')}</h1>
+        <p className="login-sub muted">{t('login.sub')}</p>
 
         {!configured && (
           <p className="notice">
-            החיבור ל-Supabase לא הוגדר. צרו <code>app-src/.env.local</code> מתוך{' '}
+            {t('login.envNotice1')} <code>app-src/.env.local</code> {t('login.envNotice2')}{' '}
             <code>.env.example</code>.
           </p>
         )}
 
         <label>
-          אימייל
+          {t('login.email')}
           <input
             type="email"
             autoComplete="username"
@@ -75,7 +78,7 @@ export default function Login() {
         </label>
 
         <label>
-          סיסמה
+          {t('login.password')}
           <input
             type="password"
             autoComplete="current-password"
@@ -88,7 +91,7 @@ export default function Login() {
         {error && <p className="error">{error}</p>}
 
         <button type="submit" className="btn-primary" disabled={busy || !configured}>
-          {busy ? 'מתחבר…' : 'כניסה'}
+          {busy ? t('login.signingIn') : t('login.signIn')}
         </button>
 
         {pkAvailable && (
@@ -97,9 +100,9 @@ export default function Login() {
             className="btn-ghost"
             onClick={onPasskey}
             disabled={pkBusy || !configured}
-            title="כניסה מהירה עם Face ID / Touch ID"
+            title={t('login.passkeyHint')}
           >
-            {pkBusy ? 'מאמת…' : 'כניסה עם Face ID'}
+            {pkBusy ? t('login.verifying') : t('login.passkey')}
           </button>
         )}
       </form>

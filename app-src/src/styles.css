@@ -409,3 +409,9 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   .finance-stat .muted { font-size: 0.72rem; }
   .finance-stat strong { font-size: 1.15rem; }
 }
+
+/* ── Language switch (HE ⇄ AR) ─────────────────────────────────────── */
+.lang-toggle { font-size: 0.8rem; padding: 4px 12px; border-radius: 999px; }
+.login { position: relative; }
+/* corner of the login card; both languages are RTL so inline-start = right */
+.login .login-lang { position: absolute; top: 12px; inset-inline-start: 12px; }
