@@ -17,6 +17,10 @@ export const PERM = {
   posManage: 'pos.manage',        // end-day, refunds/voids, settings — manager
   financeView: 'finance.view',
   financeManage: 'finance.manage',
+  quotesView: 'quotes.view',         // dashboard, quotes, calendar — owner/manager
+  quotesManage: 'quotes.manage',     // create/edit quotes, statuses, notes, checklists
+  quotesContracts: 'quotes.contracts', // generate contracts, mark sent/signed
+  quotesSettings: 'quotes.settings', // owner signature, defaults, clause templates
 } as const
 
 export type PermissionKey = (typeof PERM)[keyof typeof PERM]
