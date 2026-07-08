@@ -21,6 +21,17 @@ holds two things deployed together to **levyam.com** via **GitHub Pages**:
 `pos.html` and `survey-june.html` stay standalone **until migrated into platform modules** —
 don't break them. See [README.md](README.md) and [supabase/README.md](supabase/README.md).
 
+The **quotes & contracts manager** is a separate *local* app at `~/lev-yam-quotes` (Python
+API server + React dashboard + real customer data and the owner's signature). **Never copy
+it into this repo** — everything here deploys publicly to GitHub Pages. It is the **first**
+planned module migration, ahead of POS (see the roadmap and `docs/plans/quotes-module.md`).
+
+**Where this is going:** the long-term product vision lives in [docs/VISION.md](docs/VISION.md),
+the phased task plan in [docs/ROADMAP.md](docs/ROADMAP.md), and the architecture overview
+(security model, RBAC, mobile-first, scalability) in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+When starting platform work, read the roadmap first and pick up the current phase; when
+finishing, tick completed tasks and add discovered ones.
+
 ## Conventions & gotchas
 
 ### Marketing site (`index.html`, `survey-june.html`, `pos.html`)
@@ -50,6 +61,11 @@ don't break them. See [README.md](README.md) and [supabase/README.md](supabase/R
 - **A new module** = a Postgres schema + RLS in `supabase/schema/`, a row in `core.modules`,
   permission rows in `core.permissions`/`core.role_permissions`, a folder in `src/modules/`,
   a route in `App.tsx`, and a launcher destination in `shell/Launcher.tsx`.
+- **Bilingual & mobile-first are platform requirements** (decided 2026-07: from Phase 1 on).
+  Platform UI ships in Hebrew + Levantine Arabic through the shell i18n layer — never
+  hardcode one language — and is designed and tested phone-first (staff and members work
+  from phones). The full "invariants that must never break" list is in
+  `docs/ARCHITECTURE.md`.
 
 ### Both
 - **`pos.html` and `/app` are internal.** Both are excluded from crawlers in `robots.txt`.
@@ -76,7 +92,8 @@ Push to `main`. The GitHub Action `.github/workflows/deploy.yml` builds the plat
 ## Repo housekeeping
 
 - Historical pre-launch records live in `docs/archive/` (checklist, tracker, original build
-  spec) — archive, not a to-do list.
+  spec) — archive, not a to-do list. Active migration/feature plans live in `docs/plans/`,
+  one file per initiative, linked from `docs/ROADMAP.md`.
 - `.claude/`, `.DS_Store`, `node_modules/`, `app-src/dist/`, and `.env*` are git-ignored. Raw
   source media (`.MOV`, `.webm`) is ignored; only optimized assets under `img/` are committed.
 - `tests/` holds Dynatrace bizevent test harnesses (open in a browser), not a unit-test suite.
