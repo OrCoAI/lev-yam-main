@@ -66,6 +66,9 @@ bilingual is ever a retrofit.*
         `pos_food`, `pos_labor`) blocked for manual entry, "expected" tab
 - [ ] POS: map `pos.html` features → module design under `app-src/src/modules/pos/`
       (against the spines: `pos.close_day()` posts to finance; bills carry optional `event_id`)
+      — **full migration plan: [plans/pos-module.md](plans/pos-module.md)** (kickoff
+      2026-07-09: finance UI pass first; scope = parity-ready + deployed alongside
+      `pos.html`; reuses the live `public.pos_*` tables)
 - [ ] Port billing: bills, items, combos, tips/discounts, payments, refunds/voids
 - [ ] Port kitchen pipeline (chef mode: qty → sent → done → served)
 - [ ] Port day report (chef ops view / manager P&L) + expenses + date presets
