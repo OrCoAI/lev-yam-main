@@ -63,6 +63,10 @@ function matches(row: Row, params: URLSearchParams): boolean {
   return true
 }
 
+// .select() after update/delete asks PostgREST to return the affected rows —
+// the app asserts on that count, so the mock must honor it like the real thing
+const wantsRows = (req: Request) => (req.headers.get('Prefer') ?? '').includes('return=representation')
+
 function respond(rows: Row[], req: Request, created = false): Response {
   const single = (req.headers.get('Accept') ?? '').includes('vnd.pgrst.object+json')
   if (!single) return json(rows, created ? 201 : 200)
@@ -119,12 +123,13 @@ async function handleRest(table: string, req: Request, params: URLSearchParams):
         const quote = db.quotes.find((q) => q.id === r.quote_id)
         if (quote) quote.event_confirmed = true
       })
-    return noContent()
+    return wantsRows(req) ? respond(hit, req) : noContent()
   }
   if (req.method === 'DELETE') {
+    const hit = rows.filter((r) => matches(r, params))
     db[table] = rows.filter((r) => !matches(r, params))
     if (table === 'quotes') db.contracts = db.contracts.filter((c) => db.quotes.some((q) => q.id === c.quote_id))
-    return noContent()
+    return wantsRows(req) ? respond(hit, req) : noContent()
   }
   return json({ message: 'unsupported' }, 405)
 }

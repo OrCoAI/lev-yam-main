@@ -10,14 +10,28 @@ export interface AllData {
   contracts: ContractRow[]
 }
 
-export async function loadAll(): Promise<AllData> {
-  // Lazy sweep first (parity with serve.py): sent → expired after 7 days.
-  // Ignore failures — a load must not break if the sweep is unavailable.
+// PostgREST answers 204 with error === null when RLS filters out every target
+// row, so a denied UPDATE/DELETE looks exactly like a success. Appending
+// .select() makes the affected rows observable; zero rows means the write was
+// silently dropped and must surface as an error (it reaches alert() directly,
+// hence the bilingual text).
+const WRITE_DENIED = 'השמירה נדחתה — אין הרשאה מתאימה / تم رفض الحفظ — لا توجد صلاحية مناسبة'
+function assertWritten(data: unknown[] | null): void {
+  if (!data || data.length === 0) throw new Error(WRITE_DENIED)
+}
+
+/** Lazy sweep (parity with serve.py): sent → expired after 7 days. Run once
+ *  per dashboard mount — not on every reload. Failures are ignored: a load
+ *  must not break if the sweep is unavailable. */
+export async function autoExpire(): Promise<void> {
   try {
     await quotes().rpc('auto_expire')
   } catch {
     /* ignore */
   }
+}
+
+export async function loadAll(): Promise<AllData> {
   const [q, c] = await Promise.all([
     quotes()
       .from('quotes')
@@ -57,8 +71,9 @@ export async function createQuote(fields: {
 }
 
 export async function updateQuote(id: string, patch: Partial<QuoteRow>): Promise<void> {
-  const { error } = await quotes().from('quotes').update(patch).eq('id', id)
+  const { data, error } = await quotes().from('quotes').update(patch).eq('id', id).select('id')
   if (error) throw new Error(error.message)
+  assertWritten(data)
 }
 
 export const setQuoteStatus = (id: string, status: QuoteStatus) => updateQuote(id, { status })
@@ -70,8 +85,9 @@ export const setChecklist = (id: string, prep_checklist: ChecklistItem[]) =>
 export async function deleteQuote(id: string): Promise<void> {
   // A signed contract blocks this at the DB level (legal record) — the trigger's
   // Hebrew message surfaces to the caller.
-  const { error } = await quotes().from('quotes').delete().eq('id', id)
+  const { data, error } = await quotes().from('quotes').delete().eq('id', id).select('id')
   if (error) throw new Error(error.message)
+  assertWritten(data)
 }
 
 /** The contract fields that come straight from the quote (document-formatted).
@@ -137,14 +153,16 @@ export async function getContractByQuote(quoteId: string): Promise<ContractRow |
 }
 
 export async function updateContract(id: string, patch: Partial<ContractRow>): Promise<void> {
-  const { error } = await quotes().from('contracts').update(patch).eq('id', id)
+  const { data, error } = await quotes().from('contracts').update(patch).eq('id', id).select('id')
   if (error) throw new Error(error.message)
+  assertWritten(data)
 }
 
 export async function setContractStatus(id: string, status: ContractStatus): Promise<void> {
   // status → 'signed' auto-confirms the event via the DB trigger.
-  const { error } = await quotes().from('contracts').update({ status }).eq('id', id)
+  const { data, error } = await quotes().from('contracts').update({ status }).eq('id', id).select('id')
   if (error) throw new Error(error.message)
+  assertWritten(data)
 }
 
 export async function getSettings(): Promise<QuoteSettings> {
@@ -154,11 +172,13 @@ export async function getSettings(): Promise<QuoteSettings> {
 }
 
 export async function saveDefaultChecklist(items: string[]): Promise<void> {
-  const { error } = await quotes()
+  const { data, error } = await quotes()
     .from('settings')
     .update({ default_prep_checklist: items })
     .eq('id', true)
+    .select('id')
   if (error) throw new Error(error.message)
+  assertWritten(data)
 }
 
 export async function getOwnerSignature(): Promise<string> {
@@ -169,9 +189,11 @@ export async function getOwnerSignature(): Promise<string> {
 }
 
 export async function saveOwnerSignature(dataUrl: string): Promise<void> {
-  const { error } = await quotes()
+  const { data, error } = await quotes()
     .from('owner_secrets')
     .update({ owner_signature: dataUrl })
     .eq('id', true)
+    .select('id')
   if (error) throw new Error(error.message)
+  assertWritten(data)
 }

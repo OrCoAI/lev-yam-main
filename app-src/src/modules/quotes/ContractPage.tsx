@@ -31,7 +31,9 @@ function AutoGrow(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
       el.style.height = el.scrollHeight + 'px'
     }
   }
-  useEffect(resize)
+  // re-measure only when the content changes (typing goes through onInput) —
+  // an empty-less dep array would force a sync reflow per textarea per render
+  useEffect(resize, [props.value])
   return <textarea ref={ref} rows={1} {...props} onInput={resize} />
 }
 
@@ -179,7 +181,7 @@ export default function ContractPage() {
   const setClause = (i: number, patch: Partial<{ title: string; text: string }>) =>
     setContent((c) => c && { ...c, clauses: c.clauses.map((x, j) => (j === i ? { ...x, ...patch } : x)) })
   const removeClause = (i: number) => {
-    if (!confirm(`למחוק את סעיף ${i + 1}?`)) return
+    if (!confirm(qt.confirmDeleteClause(i + 1))) return
     setContent((c) => c && { ...c, clauses: c.clauses.filter((_, j) => j !== i) })
   }
   const addClause = () =>
@@ -187,7 +189,7 @@ export default function ContractPage() {
   const setField = (i: number, patch: Partial<{ label: string; notes: string }>) =>
     setContent((c) => c && { ...c, fields: c.fields.map((x, j) => (j === i ? { ...x, ...patch } : x)) })
   const removeField = (i: number) => {
-    if (!confirm(`למחוק את "${content.fields[i].label}"?`)) return
+    if (!confirm(qt.confirmDeleteField(content.fields[i].label))) return
     setContent((c) => c && { ...c, fields: c.fields.filter((_, j) => j !== i) })
   }
   const addField = () =>
@@ -314,7 +316,7 @@ export default function ContractPage() {
               {content.clauses.slice(splitAt).map((c, i) => renderClause(c, splitAt + i))}
               {!locked && (
                 <button className="ct-add-btn" onClick={addClause}>
-                  + הוסף סעיף
+                  {qt.addClause}
                 </button>
               )}
             </div>
@@ -375,7 +377,7 @@ export default function ContractPage() {
                       <tr>
                         <td colSpan={4}>
                           <button className="ct-add-btn" style={{ margin: 0 }} onClick={addField}>
-                            + הוסף שדה
+                            {qt.addField}
                           </button>
                         </td>
                       </tr>

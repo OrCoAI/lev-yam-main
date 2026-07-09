@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { Link, useNavigate } from 'react-router-dom'
 import { PERM, useCan } from '../../lib/permissions'
 import {
+  autoExpire,
   deleteQuote,
   generateContract,
   loadAll,
@@ -17,7 +18,7 @@ import { eventDayChip, formatDate, ILS } from './format'
 import { useQT } from './i18n'
 import NewQuoteModal from './NewQuoteModal'
 import SettingsModal from './SettingsModal'
-import type { ContractRow, QuoteRow, QuoteStatus } from './types'
+import type { ChecklistItem, ContractRow, QuoteRow, QuoteStatus } from './types'
 import { isConfirmed } from './types'
 import './quotes.css'
 
@@ -239,6 +240,7 @@ export default function QuotesModule() {
   const navigate = useNavigate()
   const canManage = useCan(PERM.quotesManage)
   const canContracts = useCan(PERM.quotesContracts)
+  const canSettings = useCan(PERM.quotesSettings)
 
   const [data, setData] = useState<AllData | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -257,9 +259,19 @@ export default function QuotesModule() {
       })
       .catch((e: Error) => setError(e.message))
   }, [])
-  useEffect(load, [load])
+  useEffect(() => {
+    // sweep once per mount, then fetch — not on every reload/mutation
+    void autoExpire().then(load)
+  }, [load])
 
-  const run = (p: Promise<unknown>) => p.then(load).catch((e: Error) => alert(e.message))
+  // Mutations patch the affected row locally instead of refetching the whole
+  // board — the write either succeeded with exactly this value or threw
+  // (api.ts asserts the affected-row count).
+  const run = (p: Promise<unknown>, patch: (d: AllData) => AllData) =>
+    p.then(() => setData((d) => (d ? patch(d) : d))).catch((e: Error) => alert(e.message))
+  const patchQuote =
+    (id: string, p: Partial<QuoteRow>) =>
+    (d: AllData): AllData => ({ ...d, quotes: d.quotes.map((q) => (q.id === id ? { ...q, ...p } : q)) })
 
   if (error) return <div className="error">{qt.errorLoad} {error}</div>
   if (!data) return <div className="muted">{qt.loading}</div>
@@ -324,9 +336,11 @@ export default function QuotesModule() {
             <IcCal />
             <span>{qt.calendarBtn}</span>
           </button>
-          <button className="q-btn q-btn-icon" title={qt.settingsTitle} onClick={() => setShowSettings(true)}>
-            <IcGear />
-          </button>
+          {canSettings && (
+            <button className="q-btn q-btn-icon" title={qt.settingsTitle} onClick={() => setShowSettings(true)}>
+              <IcGear />
+            </button>
+          )}
           {canManage && (
             <button className="btn-primary q-btn-new" onClick={() => setShowNew(true)}>
               {qt.newQuote}
@@ -416,7 +430,11 @@ export default function QuotesModule() {
                 const custBits = [q.contact_person, q.guests && `${q.guests} ${qt.guestsSuffix}`].filter(Boolean)
                 const showStrike =
                   (q.discount_pct ?? 0) > 0 && subtotal > 0 && q.final_price != null && subtotal !== q.final_price
-                const showVat = q.final_price != null && q.final_price > 0
+                // same tweaks read as contractDataFromQuote — a quote saved with
+                // the VAT toggle off must not claim its total includes VAT
+                const withVat =
+                  (q.content as { tweaks?: { showVat?: boolean } } | null)?.tweaks?.showVat !== false
+                const showVat = q.final_price != null && q.final_price > 0 && withVat
                 const done = q.prep_checklist.filter((it) => it.done).length
                 const clTotal = q.prep_checklist.length
                 return (
@@ -465,7 +483,11 @@ export default function QuotesModule() {
                       )}
                     </td>
                     <td className="q-cell-status" onClick={(e) => e.stopPropagation()}>
-                      <StatusBadge quote={q} canEdit={canManage} onUpdate={(id, s) => run(setQuoteStatus(id, s))} />
+                      <StatusBadge
+                        quote={q}
+                        canEdit={canManage}
+                        onUpdate={(id, s) => run(setQuoteStatus(id, s), patchQuote(id, { status: s }))}
+                      />
                     </td>
                     <td className="q-cell-docs" onClick={(e) => e.stopPropagation()}>
                       <div className="q-chip-row">
@@ -497,7 +519,8 @@ export default function QuotesModule() {
                         placeholder={qt.notePlaceholder}
                         disabled={!canManage}
                         onBlur={(e) => {
-                          if (e.target.value !== q.notes) run(setQuoteNotes(q.id, e.target.value))
+                          if (e.target.value !== q.notes)
+                            run(setQuoteNotes(q.id, e.target.value), patchQuote(q.id, { notes: e.target.value }))
                         }}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
@@ -510,7 +533,9 @@ export default function QuotesModule() {
                           <button
                             className="q-iconbtn"
                             title={q.archived ? qt.restoreTitle : qt.archiveTitle}
-                            onClick={() => run(setQuoteArchived(q.id, !q.archived))}
+                            onClick={() =>
+                              run(setQuoteArchived(q.id, !q.archived), patchQuote(q.id, { archived: !q.archived }))
+                            }
                           >
                             {q.archived ? <IcRestore /> : <IcArchive />}
                           </button>
@@ -519,7 +544,11 @@ export default function QuotesModule() {
                               className="q-iconbtn q-iconbtn-danger"
                               title={qt.deleteTitle}
                               onClick={() => {
-                                if (confirm(`${qt.deleteConfirm} ${q.quote_number}?`)) run(deleteQuote(q.id))
+                                if (confirm(`${qt.deleteConfirm} ${q.quote_number}?`))
+                                  run(deleteQuote(q.id), (d) => ({
+                                    ...d,
+                                    quotes: d.quotes.filter((x) => x.id !== q.id),
+                                  }))
                               }}
                             >
                               <IcTrash />
@@ -547,7 +576,14 @@ export default function QuotesModule() {
       )}
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
       {checklistQuote && (
-        <ChecklistModal quote={checklistQuote} onClose={() => setChecklistQuoteId(null)} onChanged={load} />
+        <ChecklistModal
+          quote={checklistQuote}
+          readOnly={!canManage}
+          onClose={() => setChecklistQuoteId(null)}
+          onChanged={(items: ChecklistItem[]) =>
+            setData((d) => (d ? patchQuote(checklistQuote.id, { prep_checklist: items })(d) : d))
+          }
+        />
       )}
     </div>
   )

@@ -9,4 +9,16 @@ async function start() {
   await import('./boot')
 }
 
-void start()
+start().catch((err) => {
+  // A stale index.html after a redeploy 404s the old boot chunk — without this
+  // the rejection is discarded and the user sees a silent blank page.
+  console.error(err)
+  const root = document.getElementById('root')
+  if (root)
+    root.innerHTML =
+      '<div style="max-width:26rem;margin:20vh auto;padding:0 1.5rem;text-align:center;font-family:sans-serif;line-height:1.6">' +
+      '<p dir="rtl">שגיאה בטעינת המערכת — ייתכן שעודכנה גרסה חדשה.</p>' +
+      '<p dir="rtl">خطأ في تحميل النظام — ربما صدرت نسخة جديدة.</p>' +
+      '<button style="padding:.5rem 1.5rem;cursor:pointer" onclick="location.reload()">רענון / تحديث</button>' +
+      '</div>'
+})

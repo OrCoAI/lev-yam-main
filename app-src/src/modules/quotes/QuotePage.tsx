@@ -42,7 +42,9 @@ function AutoTextarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) 
       el.style.height = el.scrollHeight + 'px'
     }
   }
-  useLayoutEffect(resize)
+  // re-measure only when the content changes (typing goes through onInput) —
+  // an empty-less dep array would force a sync reflow per textarea per render
+  useLayoutEffect(resize, [props.value])
   return <textarea ref={ref} rows={1} {...props} onInput={resize} />
 }
 
@@ -276,8 +278,12 @@ export default function QuotePage() {
   }
 
   const changeStatus = (s: QuoteStatus) => {
+    const prev = status
     setStatus(s)
-    setQuoteStatus(row.id, s).catch((e: Error) => alert(e.message))
+    setQuoteStatus(row.id, s).catch((e: Error) => {
+      setStatus(prev) // the DB rejected it — don't keep showing the new status
+      alert(e.message)
+    })
   }
 
   const Toggle = ({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) => (
@@ -366,7 +372,7 @@ export default function QuotePage() {
                       <th style={{ width: '70px', textAlign: 'center' }}>כמות</th>
                       <th style={{ width: '110px', textAlign: 'center' }}>מחיר ליחידה</th>
                       <th style={{ width: '120px', textAlign: 'center' }}>סה"כ</th>
-                      <th style={{ width: '26px' }} aria-label="הסר"></th>
+                      <th style={{ width: '26px' }} aria-label={qt.remove}></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -389,7 +395,7 @@ export default function QuotePage() {
                         <td>
                           <button
                             className="lq-row-del"
-                            title="הסר שורה"
+                            title={qt.removeRow}
                             onClick={() => set({ items: d.items.filter((x) => x.id !== it.id) })}
                           >
                             ×
@@ -403,7 +409,7 @@ export default function QuotePage() {
                   className="lq-add"
                   onClick={() => set({ items: [...d.items, { id: uid(), desc: 'שירות נוסף', qty: '1', price: '0' }] })}
                 >
-                  + הוספת שורה
+                  {qt.addRow}
                 </button>
               </section>
 
@@ -424,7 +430,7 @@ export default function QuotePage() {
                           />
                           <button
                             className="lq-included-del"
-                            title="הסר"
+                            title={qt.remove}
                             onClick={() => set({ included: d.included.filter((_, j) => j !== i) })}
                           >
                             ×
@@ -433,7 +439,7 @@ export default function QuotePage() {
                       ))}
                     </ul>
                     <button className="lq-add" style={{ marginTop: '8px' }} onClick={() => set({ included: [...d.included, 'פריט נוסף'] })}>
-                      + הוספת פריט
+                      {qt.addItem}
                     </button>
                   </section>
                 ) : tweaks.leftSection === 'agenda' ? (
@@ -454,7 +460,7 @@ export default function QuotePage() {
                           />
                           <button
                             className="lq-included-del"
-                            title="הסר"
+                            title={qt.remove}
                             onClick={() => set({ agenda: d.agenda.filter((_, j) => j !== i) })}
                           >
                             ×
@@ -467,7 +473,7 @@ export default function QuotePage() {
                       style={{ marginTop: '8px' }}
                       onClick={() => set({ agenda: [...d.agenda, { time: '00:00', activity: 'פעילות נוספת' }] })}
                     >
-                      + הוספת שלב
+                      {qt.addStep}
                     </button>
                   </section>
                 ) : null}

@@ -63,7 +63,12 @@ function SignatureTab() {
     canvas.addEventListener('touchmove', move, { passive: false })
     canvas.addEventListener('touchend', end)
     return () => {
+      canvas.removeEventListener('mousedown', start)
+      canvas.removeEventListener('mousemove', move)
       window.removeEventListener('mouseup', end)
+      canvas.removeEventListener('touchstart', start)
+      canvas.removeEventListener('touchmove', move)
+      canvas.removeEventListener('touchend', end)
     }
   }, [])
 
