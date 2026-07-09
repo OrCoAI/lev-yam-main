@@ -60,7 +60,9 @@ finishing, tick completed tasks and add discovered ones.
   `supabase.schema('<module>')`. Permission keys are constants in `lib/permissions.ts`.
 - **A new module** = a Postgres schema + RLS in `supabase/schema/`, a row in `core.modules`,
   permission rows in `core.permissions`/`core.role_permissions`, a folder in `src/modules/`,
-  a route in `App.tsx`, and a launcher destination in `shell/Launcher.tsx`.
+  a route in `App.tsx`, and a launcher destination in `shell/Launcher.tsx`. The full
+  checklist (+ hard-won gotchas) is [docs/MODULE-TEMPLATE.md](docs/MODULE-TEMPLATE.md) —
+  follow it and keep it updated.
 - **Bilingual & mobile-first are platform requirements** (decided 2026-07: from Phase 1 on).
   Platform UI ships in Hebrew + Levantine Arabic through the shell i18n layer — never
   hardcode one language — and is designed and tested phone-first (staff and members work

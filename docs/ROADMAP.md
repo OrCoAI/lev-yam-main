@@ -44,9 +44,11 @@ bilingual is ever a retrofit.*
       3 contracts with full document content parsed from the saved HTML files, checklist
       template, signed-contract PDF/HTML snapshots in the private `quotes-docs` bucket;
       `~/lev-yam-quotes` archived to a private GitHub repo, read-only from now on)*
-- [ ] **Foundation:** extract a documented module template from the quotes migration
+- [x] **Foundation:** extract a documented module template from the quotes migration
       ("how to add a module": schema + RLS, `core.modules` row, permissions, folder, route,
       launcher tile) — this is what makes the flexibility dream cheap later
+      *(written 2026-07-09: [MODULE-TEMPLATE.md](MODULE-TEMPLATE.md) — the checklist the
+      POS migration follows; update it whenever a migration teaches something new)*
 - [ ] POS: map `pos.html` features → module design under `app-src/src/modules/pos/`
 - [ ] Port billing: bills, items, combos, tips/discounts, payments, refunds/voids
 - [ ] Port kitchen pipeline (chef mode: qty → sent → done → served)
