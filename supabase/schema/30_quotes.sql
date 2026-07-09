@@ -19,8 +19,9 @@
 
 create schema if not exists quotes;
 
--- Global sequence part of LY-YYMMDD-NNN. Live tracker's nextQuoteNumber is 17;
--- `if not exists` keeps re-runs from resetting it.
+-- Global sequence part of LY-YYMMDD-NNN. Seeded from the tracker at creation
+-- time; the live value now advances in prod (data import completed 2026-07-09)
+-- and `if not exists` keeps re-runs from ever resetting it.
 create sequence if not exists quotes.quote_number_seq start with 17;
 
 create or replace function quotes.next_quote_number()

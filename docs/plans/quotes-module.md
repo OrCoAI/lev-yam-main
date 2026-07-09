@@ -106,21 +106,27 @@ Port the dashboard's segments and features 1:1 first, redesign later:
 today too — needs public token links + an edge function; design later), alerts/reminders
 (their roadmap item 6 → platform notifications, Phase 4+), "happy customers" automations.
 
-## 6. One-time data import
+## 6. One-time data import — ✅ done 2026-07-09
 
-1. **Before anything: back up the source.** `git init` in `~/lev-yam-quotes` + push to a
-   **private** repo (it currently has no version control — legal documents included).
-2. Import script (TS, run locally with the anon key + owner login): tracker JSON → insert
-   9 quotes + 3 contracts, preserving numbers/dates/statuses; set the sequence so the next
-   quote is #17.
-3. Quote `content` (line items, agenda) lives only in the saved HTML files, not the
-   tracker: import it for the **3 approved** (still-active) quotes — parse their saved HTML
-   `DEFAULT_DATA`/localStorage block or re-enter by hand (3 quotes ≈ minutes); closed
-   quotes (paid/declined/expired) import tracker fields only.
-4. **Signed contracts:** export the 2 signed HTML files to PDF and upload to the private
-   storage bucket; set `document_path`. These are the legal record.
-5. `~/lev-yam-quotes` becomes a read-only archive — server stays stoppable, nothing new is
-   created there.
+How it actually ran (script in a local scratchpad, run via the Supabase management
+API — nothing with customer data ever entered this repo):
+
+1. ✅ **Source backed up** to the private repo `OrCoAI/lev-yam-quotes` (final state
+   incl. quotes 017–019, then marked ARCHIVED in its CLAUDE.md).
+2. ✅ Tracker JSON → **12 quotes + 3 contracts** inserted, preserving numbers, dates,
+   statuses, archived/confirmed flags and prep checklists; 3 test rows from module dev
+   were purged first. Sequence already at #20 — untouched.
+3. ✅ Quote `content` went in for **all 12 quotes** (better than planned): every saved
+   quote HTML embeds its persisted `DEFAULT_DATA`, so line items, included list, agenda,
+   pricing, terms and tweaks were parsed and imported verbatim. Contracts likewise carry
+   embedded `CONTRACT_DATA`/`CLAUSES`/`DETAILS_FIELDS` → full `content` snapshots.
+4. ✅ **Signed contracts:** both exported to PDF (headless Chrome) and uploaded together
+   with all 3 contract HTML originals to the **private `quotes-docs` bucket**;
+   `document_path` set on each contract (PDF for the signed pair, HTML for the sent one).
+5. ✅ `~/lev-yam-quotes` is a read-only archive — nothing new is created there.
+
+Parity checked in SQL: statuses, one-way sent/paid stamps, checklist counts, and the
+paid-revenue rollup (₪3,540) all match the old dashboard.
 
 ## 7. Build order & cut-over
 
@@ -131,11 +137,10 @@ template as a deliverable for POS and everything after.
 1. `30_quotes.sql` — schema, RLS, triggers, RPCs, permission seeds (≈1 session)
 2. Module scaffold + dashboard list/calendar port (≈1–2 sessions)
 3. QuotePage + ContractPage rendering/printing from DB (≈1–2 sessions)
-4. Import + side-by-side parity trial (create → edit → print → contract → sign-mark →
-   event confirmed + checklist; revenue rollup matches the old dashboard) (≈1 session)
-5. Cut over: new quotes only in `/app/quotes`; local app archived
+4. ✅ Import + parity check (see §6; revenue rollup matches the old dashboard)
+5. ✅ Cut over: new quotes only in `/app/quotes`; local app archived (2026-07-09)
 6. **Write the module template doc** from what this migration taught us — the checklist the
-   POS migration follows next
+   POS migration follows next ← **only remaining item**
 
 **Parity bar before cut-over:** a real quote taken through its full life in the module, and
 a printed A4 PDF that looks identical to today's output.

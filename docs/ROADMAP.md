@@ -32,7 +32,7 @@ bilingual is ever a retrofit.*
       shell — dictionaries, language switcher, translated shell/login/launcher; every module
       from here on ships in both languages *(live 2026-07-08; follow-ups: bilingual module
       labels in `core.modules`, Arabic webfont — system-font fallback for now)*
-- [ ] **Quotes manager joins the platform** — migrate the local quotes & contracts app
+- [x] **Quotes manager joins the platform** — migrate the local quotes & contracts app
       (`~/lev-yam-quotes`: Python API + React dashboard + `quotes-tracker.json` as source of
       truth) into a quotes module at `/app/quotes`.
       **Never copy that app into this repo** — it holds customer PII, signed contracts, and
@@ -40,6 +40,10 @@ bilingual is ever a retrofit.*
       separate local app until this migration. **Full migration plan:
       [plans/quotes-module.md](plans/quotes-module.md)** — schema `30_quotes.sql`, dashboard
       → module UI, documents rendered from DB, one-time data import, parity cut-over
+      *(done 2026-07-09: module live at `/app/quotes`; data imported — 12 quotes,
+      3 contracts with full document content parsed from the saved HTML files, checklist
+      template, signed-contract PDF/HTML snapshots in the private `quotes-docs` bucket;
+      `~/lev-yam-quotes` archived to a private GitHub repo, read-only from now on)*
 - [ ] **Foundation:** extract a documented module template from the quotes migration
       ("how to add a module": schema + RLS, `core.modules` row, permissions, folder, route,
       launcher tile) — this is what makes the flexibility dream cheap later
