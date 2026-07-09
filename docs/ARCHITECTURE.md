@@ -158,10 +158,14 @@ flexible"* — maps to specific structural choices:
   lifecycle fields stay relational and constrained.
 - **Owner-editable settings live in the DB** (default checklists, contract clauses,
   quote defaults): the team tunes the system from the app, without deployments.
-- **Shared spines, not silos:** one events/calendar backbone (Phase 2) that quotes,
-  initiatives, and public pages all feed; one identity + permission system for staff,
-  members, and guests; one visibility convention (public by default, `internal`
-  opt-out) on every content table from its first migration.
+- **Shared spines, not silos:** one events/calendar backbone that quotes, initiatives,
+  and public pages all feed; one finance journal with provenance that every module posts
+  into; one preparation model attached to events; one identity + permission system for
+  staff, members, and guests; one visibility convention (public by default, `internal`
+  opt-out) on every content table from its first migration. The full spine design —
+  event projection, posting rules, expected money, business-day settlement, and the
+  "database is the bus" integration rules — is
+  [plans/cross-module-foundation.md](plans/cross-module-foundation.md).
 - **Evolution, not revolution:** every migration runs the old tool and the new module
   side by side until parity is proven (quotes → then POS), so flexibility never costs
   operational continuity.

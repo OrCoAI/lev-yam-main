@@ -19,6 +19,19 @@ destination. Everything else is the module's own UI.
   data never enters this public repo), and keep the old tool running until the parity bar
   is met. Define that bar in the plan (for quotes: a real record through its full life +
   a printed A4 identical to the old output).
+- [ ] **Answer the two spine questions** (design:
+  [plans/cross-module-foundation.md](plans/cross-module-foundation.md)):
+  1. *What does this module project into `events`?* Anything with a date on the shared
+     calendar goes through a SECURITY DEFINER trigger upserting `events.events` on
+     `(source_module, source_id)` — plus a `backfill_events()`-style function. Rows whose
+     title carries PII are always `visibility='internal'` (see quotes' projector in
+     `40_events.sql` — the reference implementation).
+  2. *What does it post into `finance`, under which posting rule?* Money writes go through
+     a posting function that sets the `levyam.finance_posting` GUC and carries provenance
+     (`source_module`/`source_ref`, optional `event_id`); pick the granularity in the plan
+     (quotes: per payment via `finance.expected`; POS: per-day summary at `close_day`).
+     Any category the module posts becomes **derived-only** — remove it from manual entry
+     in the finance UI, or the same money gets typed twice.
 
 ## 1. Database — `supabase/schema/NN_<module>.sql`
 

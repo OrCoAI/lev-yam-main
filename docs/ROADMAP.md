@@ -49,7 +49,23 @@ bilingual is ever a retrofit.*
       launcher tile) — this is what makes the flexibility dream cheap later
       *(written 2026-07-09: [MODULE-TEMPLATE.md](MODULE-TEMPLATE.md) — the checklist the
       POS migration follows; update it whenever a migration teaches something new)*
+- [x] **Foundation: cross-module spines (events, money, preparation)** — design + owner
+      decisions (gross amounts, POS day-summaries, deposit due signing+N days, tentative
+      quotes on calendar): [plans/cross-module-foundation.md](plans/cross-module-foundation.md).
+      Landed **before** the POS port so POS integrates on day one:
+  - [x] `21_finance_spine.sql`: provenance (`source_module`/`source_ref`/`event_id`) +
+        derived-row immutability on `finance.entries`; `finance.expected` (deposits,
+        balances due); `finance.record_payment()`; `finance.event_pnl()`
+        *(applied to prod 2026-07-09)*
+  - [x] `40_events.sql`: `events` schema — canonical events + tasks, calendar/feed/
+        conflicts views, RLS + permission seeds (module row seeded **disabled** until the
+        Phase 2 UI); quotes → events projection trigger, backfill, expectations-on-sign,
+        income-on-paid *(applied + backfilled 2026-07-09: 2 confirmed + 1 tentative event
+        projected; full sent→signed→paid lifecycle verified on prod, 13/13 assertions)*
+  - [ ] Finance UI pass: provenance badges, derived-only categories (`events`, `pos`,
+        `pos_food`, `pos_labor`) blocked for manual entry, "expected" tab
 - [ ] POS: map `pos.html` features → module design under `app-src/src/modules/pos/`
+      (against the spines: `pos.close_day()` posts to finance; bills carry optional `event_id`)
 - [ ] Port billing: bills, items, combos, tips/discounts, payments, refunds/voids
 - [ ] Port kitchen pipeline (chef mode: qty → sent → done → served)
 - [ ] Port day report (chef ops view / manager P&L) + expenses + date presets
@@ -59,17 +75,20 @@ bilingual is ever a retrofit.*
 
 ## Phase 2 — What's happening: bookings & events
 
-*Replaces WhatsApp-thread reservation tracking; creates the shared calendar everything else
-plugs into — and takes it public immediately, because the feed is public by default.*
+*Replaces WhatsApp-thread reservation tracking. The shared calendar itself is the `events`
+spine landed in Phase 1 ([plans/cross-module-foundation.md](plans/cross-module-foundation.md))
+— this phase builds the bookings module **on** it and takes it public, because the feed is
+public by default.*
 
-- [ ] `40_bookings.sql`: reservations + events tables, RLS, permission keys; events carry a
-      **visibility flag — `public` by default, `internal` opt-out** (anon RLS reads published
-      events only)
+- [ ] `41_bookings.sql`: reservations table (RLS, permission keys) feeding the `events`
+      spine; spine events already carry the **visibility flag — `public` by default,
+      `internal` opt-out** (anon RLS reads published events only)
 - [ ] Bookings module: day/week calendar, reservation CRUD (party size, contact, notes, status)
 - [ ] Events management: community events, workshops, hosted dinners (title, time, capacity,
       owner) — designed so Phase 3 initiatives create these same events
-- [ ] Confirmed quote events (quotes module) surface in the same calendar — the quotes app
-      already tracks confirmed events + prep checklists; one calendar, not two
+- [ ] Confirmed quote events surface in the same calendar — the projection trigger +
+      backfill land with the Phase 1 spine; here: verify in the calendar UI and migrate
+      quotes prep checklists (jsonb) into `events.tasks`, then retire the column
 - [ ] "Happening" feed v1 on the launcher: today's reservations + upcoming events —
       the first taste of *see what's happening*
 - [ ] **Public "What's happening" on levyam.com** (HE/AR): the village and visitors see

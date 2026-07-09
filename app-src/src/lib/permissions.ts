@@ -17,6 +17,9 @@ export const PERM = {
   posManage: 'pos.manage',        // end-day, refunds/voids, settings — manager
   financeView: 'finance.view',
   financeManage: 'finance.manage',
+  eventsView: 'events.view',       // shared calendar spine (40_events.sql) — owner/manager/staff
+  eventsManage: 'events.manage',   // create/edit events directly — owner/manager
+  eventsTasks: 'events.tasks',     // mark/manage prep tasks — owner/manager/staff
   quotesView: 'quotes.view',         // dashboard, quotes, calendar — owner/manager
   quotesManage: 'quotes.manage',     // create/edit quotes, statuses, notes, checklists
   quotesContracts: 'quotes.contracts', // generate contracts, mark sent/signed
