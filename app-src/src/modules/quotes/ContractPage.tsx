@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { PERM, useCan } from '../../lib/permissions'
-import { getContractByQuote, getQuote, setContractStatus, updateContract } from './api'
+import {
+  contractDataFromQuote,
+  getContractByQuote,
+  getOwnerSignature,
+  getQuote,
+  setContractStatus,
+  updateContract,
+} from './api'
 import { useQT } from './i18n'
 import type { ContractContent, ContractRow, ContractStatus, QuoteRow } from './types'
 import './quote-doc.css'
@@ -108,8 +115,11 @@ export default function ContractPage() {
     return () => document.body.classList.remove('lq-doc-open')
   }, [])
 
-  // a4-fit per sheet: measure each .ct-sheet with editor chrome hidden and set
-  // --ct-scale on its scaler. Compress-only (never stretch).
+  // Fit, per sheet (a4-fit): one measuring pass computes BOTH scales.
+  // Screen: uniform scale(s) so the fixed-210mm sheet fits the stage width
+  // (without this the sheet is wider than the container and gets clipped).
+  // Print: --ct-scale = scaleY compress-only toward 297mm, measured with the
+  // editor chrome hidden (mirrors print CSS), applied by the !important rule.
   useEffect(() => {
     if (!content) return
     const stage = stageRef.current
@@ -117,30 +127,46 @@ export default function ContractPage() {
     const A4H = (297 / 25.4) * 96
     let tid: ReturnType<typeof setTimeout>
     const fit = () => {
+      const cs = getComputedStyle(stage)
+      const avail = stage.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)
       const chrome = Array.from(stage.querySelectorAll<HTMLElement>('.ct-del, .ct-add-btn, .ct-row-del'))
-      chrome.forEach((el) => (el.style.display = 'none'))
       stage.querySelectorAll<HTMLElement>('.ct-fit').forEach((fitEl) => {
         const sheet = fitEl.querySelector<HTMLElement>('.ct-sheet')
         const scaler = fitEl.querySelector<HTMLElement>('.ct-scaler')
         if (!sheet || !scaler) return
-        scaler.style.setProperty('--ct-scale', '1')
-        const h = sheet.offsetHeight
-        scaler.style.setProperty('--ct-scale', (h > A4H ? A4H / h : 1).toFixed(6))
+        scaler.style.transform = 'none'
+        fitEl.style.width = ''
+        fitEl.style.height = ''
+        const w = sheet.offsetWidth
+        const hScreen = sheet.offsetHeight
+        chrome.forEach((el) => (el.style.display = 'none'))
+        const hPrint = sheet.offsetHeight
+        chrome.forEach((el) => (el.style.display = ''))
+        scaler.style.setProperty('--ct-scale', (hPrint > A4H ? A4H / hPrint : 1).toFixed(6))
+        const s = Math.min(1, avail / w)
+        // RTL document: the sheet anchors to the scaler's right edge, so the
+        // scale must originate there or the sheet drifts out of its box.
+        scaler.style.transformOrigin = 'top right'
+        scaler.style.transform = `scale(${s})`
+        fitEl.style.width = w * s + 'px'
+        fitEl.style.height = hScreen * s + 'px'
       })
-      chrome.forEach((el) => (el.style.display = ''))
     }
     const raf = requestAnimationFrame(fit)
-    const ro = new ResizeObserver(() => {
+    const queueFit = () => {
       clearTimeout(tid)
       tid = setTimeout(fit, 60)
-    })
+    }
+    window.addEventListener('resize', queueFit)
+    const ro = new ResizeObserver(queueFit)
     stage.querySelectorAll('.ct-sheet').forEach((s) => ro.observe(s))
     return () => {
       cancelAnimationFrame(raf)
+      window.removeEventListener('resize', queueFit)
       ro.disconnect()
       clearTimeout(tid)
     }
-  }, [content])
+  }, [content === null])
 
   if (notFound) return <div className="card notice">{qt.docNotFound}</div>
   if (!quote || !row || !content) return <div className="muted">{qt.loading}</div>
@@ -181,6 +207,22 @@ export default function ContractPage() {
     } finally {
       setSaving(false)
     }
+  }
+
+  // Re-import the quote-derived fields (and the signature, if it was missing)
+  // into the open contract — covers contracts generated before the quote was
+  // finalized. Only touches local state; nothing changes until Save.
+  const syncFromQuote = async () => {
+    let sig = content.ownerSignature
+    if (!sig) {
+      try {
+        sig = await getOwnerSignature()
+      } catch {
+        /* stays blank — a signature line prints instead */
+      }
+    }
+    const fresh = contractDataFromQuote(quote)
+    setContent((c) => c && { ...c, ownerSignature: sig, data: { ...c.data, ...fresh } })
   }
 
   const changeStatus = async (s: ContractStatus) => {
@@ -308,7 +350,9 @@ export default function ContractPage() {
                           <input value={f.label} readOnly={locked} onChange={(e) => setField(i, { label: e.target.value })} />
                         </td>
                         <td className="ct-field-value">
-                          <input value={d[f.key] ?? ''} readOnly={locked} onChange={(e) => setData(f.key, e.target.value)} />
+                          {/* dir=auto: LTR runs (hours, phones, emails) keep their
+                              internal order instead of being reordered by the RTL cell */}
+                          <input dir="auto" value={d[f.key] ?? ''} readOnly={locked} onChange={(e) => setData(f.key, e.target.value)} />
                         </td>
                         <td className="ct-field-notes">
                           <input
@@ -400,6 +444,11 @@ export default function ContractPage() {
         {!locked && (
           <button className="lq-ctrl-btn" disabled={saving} data-saved={String(saved)} onClick={save}>
             {saving ? qt.saving : saved ? qt.docSaved : qt.docSaveContract}
+          </button>
+        )}
+        {!locked && (
+          <button className="lq-ctrl-btn secondary" onClick={syncFromQuote}>
+            {qt.docSyncQuote}
           </button>
         )}
         <button className="lq-ctrl-btn" onClick={() => window.print()}>

@@ -100,6 +100,9 @@
 .ct-details .ct-field-value { font-weight: 600; color: var(--ly-blue-deep); width: auto; }
 .ct-details .ct-field-notes { font-size: 10.5px; color: var(--ly-ink-soft); width: 30%; }
 .ct-details input { border: 0; border-bottom: 1px dashed transparent; background: transparent; font: inherit; color: inherit; font-weight: inherit; padding: 2px 4px; width: 100%; }
+/* values use dir="auto"; pin the physical alignment so LTR-resolved values
+   (times, emails) still sit at the visual start of the RTL table */
+.ct-details .ct-field-value input { text-align: right; }
 .ct-details .ct-field-value input { border-bottom-color: var(--ly-line); }
 .ct-details input:hover:not(:read-only) { border-bottom-color: var(--ly-blue); }
 .ct-details input:focus { outline: none; border-bottom: 1px solid var(--ly-orange); background: #fff; border-radius: 4px 4px 0 0; }

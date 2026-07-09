@@ -60,7 +60,9 @@ function Field({
   return (
     <label className="lq-field">
       <span className="lq-field-label">{label}</span>
-      <input type={type ?? 'text'} value={value} onChange={(e) => onChange(e.target.value)} />
+      {/* dir=auto keeps LTR values (hours, phone, email) in their real order
+          inside the RTL sheet; CSS pins the visual alignment */}
+      <input type={type ?? 'text'} dir="auto" value={value} onChange={(e) => onChange(e.target.value)} />
     </label>
   )
 }
@@ -168,7 +170,9 @@ export default function QuotePage() {
       const w = sheet.offsetWidth
       const h = sheet.offsetHeight
       const s = Math.min(1, (window.innerWidth * zoom - 48) / w, (window.innerHeight * zoom - 48) / h)
-      scaler.style.transformOrigin = 'top left'
+      // RTL document: the sheet anchors to the scaler's right edge, so the
+      // scale must originate there or the sheet drifts out of its box.
+      scaler.style.transformOrigin = 'top right'
       scaler.style.transform = 'scale(' + s + ')'
       fitEl.style.width = w * s + 'px'
       fitEl.style.height = h * s + 'px'

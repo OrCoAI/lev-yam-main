@@ -83,7 +83,7 @@
 .lq-client { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px 18px; }
 .lq-field { display: flex; flex-direction: column; gap: 2px; }
 .lq-field-label { font-size: 10.5px; color: var(--ly-ink-soft); font-weight: 600; letter-spacing: 0.02em; }
-.lq-field input { border: 0; border-bottom: 1px dashed var(--ly-line); background: transparent; font: inherit; font-size: 13px; font-weight: 600; color: var(--ly-ink); padding: 3px 2px; width: 100%; }
+.lq-field input { border: 0; border-bottom: 1px dashed var(--ly-line); background: transparent; font: inherit; font-size: 13px; font-weight: 600; color: var(--ly-ink); padding: 3px 2px; width: 100%; text-align: right; }
 .lq-field input:hover { border-bottom-color: var(--ly-blue); }
 .lq-field input:focus { outline: none; border-bottom-color: var(--ly-orange); border-bottom-style: solid; }
 .lq-field input[type='date'] { direction: ltr; text-align: right; }

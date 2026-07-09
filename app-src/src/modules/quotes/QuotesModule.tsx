@@ -24,16 +24,58 @@ import './quotes.css'
 const STATUSES: QuoteStatus[] = ['draft', 'sent', 'approved', 'declined', 'expired', 'paid']
 type ViewMode = 'live' | 'happy' | 'archive' | 'all'
 
+/* ── small inline icons (stroke = currentColor, work in both directions) ── */
+const IcCal = () => (
+  <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <rect x="3" y="4.5" width="14" height="12" rx="2" />
+    <path d="M3 8.5h14M7 2.5v3.5M13 2.5v3.5" />
+  </svg>
+)
+const IcGear = () => (
+  <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <circle cx="10" cy="10" r="2.6" />
+    <path d="M10 3.2v2M10 14.8v2M3.2 10h2M14.8 10h2M5.2 5.2l1.4 1.4M13.4 13.4l1.4 1.4M14.8 5.2l-1.4 1.4M6.6 13.4l-1.4 1.4" />
+  </svg>
+)
+const IcDoc = () => (
+  <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M5.5 2.5h6L15 6v11.5h-9.5z" />
+    <path d="M11.5 2.5V6H15" />
+  </svg>
+)
+const IcArchive = () => (
+  <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <rect x="3" y="3.5" width="14" height="4" rx="1" />
+    <path d="M4.5 7.5V15a1.5 1.5 0 0 0 1.5 1.5h8a1.5 1.5 0 0 0 1.5-1.5V7.5M8 10.8h4" />
+  </svg>
+)
+const IcRestore = () => (
+  <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M6.5 8.5 3.5 11l3 2.5" />
+    <path d="M3.5 11h8a4.5 4.5 0 1 0-1-8.9" />
+  </svg>
+)
+const IcTrash = () => (
+  <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M3.5 5.5h13M8 5.5V3.5h4v2M5.5 5.5l.8 11h7.4l.8-11M8.3 8.5v5M11.7 8.5v5" />
+  </svg>
+)
+const Caret = () => (
+  <svg className="q-caret" width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M2 3.5 5 6.5 8 3.5" />
+  </svg>
+)
+
 interface MenuOption {
   key: string
   label: string
-  /** data attribute driving the colored dot (mirrors the badge palette) */
-  dot: { attr: 'data-s' | 'data-cs'; value: string }
+  /** which data attribute drives the pill tint (quote vs contract palette) */
+  attr: 'data-s' | 'data-cs'
 }
 
-/** Status picker: a compact chip palette (never a vertical list), rendered in
- *  a portal on document.body so no ancestor can clip or reposition it.
- *  Desktop: small floating panel by the anchor. Touch: bottom sheet. */
+/** Status picker: the same tinted pills as in the table, laid out as a small
+ *  floating palette. Rendered in a portal on document.body so no ancestor can
+ *  clip or reposition it; on touch widths it becomes a bottom sheet. */
 function StatusMenu({
   open,
   title,
@@ -59,7 +101,7 @@ function StatusMenu({
       return
     }
     const r = anchorRef.current.getBoundingClientRect()
-    const panelW = Math.min(300, window.innerWidth - 16)
+    const panelW = Math.min(320, window.innerWidth - 16)
     const left = Math.min(Math.max(8, r.left + r.width / 2 - panelW / 2), window.innerWidth - panelW - 8)
     const below = r.bottom + 8 + 96 <= window.innerHeight
     setPos({ left, top: below ? r.bottom + 8 : Math.max(8, r.top - 104) })
@@ -79,17 +121,17 @@ function StatusMenu({
   if (!open) return null
 
   const chips = (
-    <div className="status-chips">
+    <div className="q-pop-chips">
       {options.map((o) => (
         <button
           key={o.key}
-          className="status-chip"
+          className="q-pill"
+          {...{ [o.attr]: o.key }}
           onClick={() => {
             onPick(o.key)
             onClose()
           }}
         >
-          <span className="s-dot" {...{ [o.dot.attr]: o.dot.value }} />
           {o.label}
         </button>
       ))}
@@ -98,10 +140,10 @@ function StatusMenu({
 
   if (isSheet) {
     return createPortal(
-      <div className="sheet-backdrop" onClick={onClose}>
-        <div className="status-sheet" onClick={(e) => e.stopPropagation()}>
-          <div className="sheet-handle" />
-          <div className="sheet-title">{title}</div>
+      <div className="q-sheet-backdrop" onClick={onClose}>
+        <div className="q-sheet" onClick={(e) => e.stopPropagation()}>
+          <div className="q-sheet-handle" />
+          <div className="q-sheet-title">{title}</div>
           {chips}
         </div>
       </div>,
@@ -111,7 +153,7 @@ function StatusMenu({
 
   if (!pos) return null
   return createPortal(
-    <div ref={panelRef} className="status-pop" style={{ top: pos.top, left: pos.left }}>
+    <div ref={panelRef} className="q-pop" style={{ top: pos.top, left: pos.left }}>
       {chips}
     </div>,
     document.body,
@@ -132,15 +174,10 @@ function StatusBadge({
   const ref = useRef<HTMLSpanElement>(null)
 
   return (
-    <span ref={ref} className="badge-anchor">
-      <button
-        className="status-badge"
-        data-s={quote.status}
-        disabled={!canEdit}
-        onClick={() => setOpen(!open)}
-      >
+    <span ref={ref} className="q-badge-anchor">
+      <button className="q-pill" data-s={quote.status} disabled={!canEdit} onClick={() => setOpen(!open)}>
         {qt.status[quote.status]}
-        {canEdit && <span className="badge-caret">▾</span>}
+        {canEdit && <Caret />}
       </button>
       <StatusMenu
         open={open}
@@ -149,7 +186,7 @@ function StatusBadge({
         options={STATUSES.filter((s) => s !== quote.status).map((s) => ({
           key: s,
           label: qt.status[s],
-          dot: { attr: 'data-s', value: s },
+          attr: 'data-s',
         }))}
         onPick={(s) => onUpdate(quote.id, s as QuoteStatus)}
         onClose={() => setOpen(false)}
@@ -158,8 +195,7 @@ function StatusBadge({
   )
 }
 
-/** Contract chip: a quiet dot+label that opens the contract document.
- *  Status changes happen on the document page — the dashboard stays clean. */
+/** Contract chip: opens the contract document; status changes live there. */
 function ContractCell({
   quote,
   contract,
@@ -176,8 +212,8 @@ function ContractCell({
   if (!contract) {
     if (quote.status === 'approved' && canContracts) {
       return (
-        <button className="btn-contract" onClick={() => onGenerate(quote.id)}>
-          {qt.createContract}
+        <button className="q-chip q-chip-new" onClick={() => onGenerate(quote.id)}>
+          <IcDoc /> {qt.createContract}
         </button>
       )
     }
@@ -187,12 +223,13 @@ function ContractCell({
   return (
     <Link
       to={`/quotes/${quote.id}/contract`}
-      className="contract-chip"
+      className="q-chip"
+      data-cs={contract.status}
       title={contract.contract_number}
       onClick={(e) => e.stopPropagation()}
     >
-      <span className="s-dot" data-cs={contract.status} />
-      {qt.contractStatus[contract.status]}
+      <IcDoc />
+      {qt.contractWord} · {qt.contractStatus[contract.status]}
     </Link>
   )
 }
@@ -247,24 +284,17 @@ export default function QuotesModule() {
     .filter((q) => q.status === revenueStatus)
     .reduce((sum, q) => sum + (q.final_price ?? q.subtotal ?? 0), 0)
 
-  const statCards: { key: 'all' | QuoteStatus; label: string }[] =
-    viewMode === 'happy'
-      ? [{ key: 'all', label: qt.statPaid }]
-      : [
-          { key: 'all', label: qt.statTotal },
-          { key: 'draft', label: qt.statDrafts },
-          { key: 'sent', label: qt.statSent },
-          { key: 'approved', label: qt.statApproved },
-          { key: 'declined', label: qt.statDeclined },
-          { key: 'expired', label: qt.statExpired },
-        ]
-
-  const segments: { key: ViewMode; label: string }[] = [
-    { key: 'live', label: qt.segLive },
-    { key: 'happy', label: `${qt.segHappy}${happyQuotes.length ? ` (${happyQuotes.length})` : ''}` },
-    { key: 'archive', label: `${qt.segArchive}${archivedQuotes.length ? ` (${archivedQuotes.length})` : ''}` },
+  const segments: { key: ViewMode; label: string; n?: number }[] = [
+    { key: 'live', label: qt.segLive, n: liveQuotes.length },
+    { key: 'happy', label: qt.segHappy, n: happyQuotes.length },
+    { key: 'archive', label: qt.segArchive, n: archivedQuotes.length },
     { key: 'all', label: qt.segAll },
   ]
+
+  // statuses that can actually appear in the current view — the filter row
+  // stays short and meaningful instead of listing the whole vocabulary
+  const filterStatuses =
+    viewMode === 'live' ? STATUSES.filter((s) => s !== 'paid') : viewMode === 'happy' ? [] : STATUSES
 
   const todayChip = (() => {
     const d = new Date()
@@ -284,82 +314,96 @@ export default function QuotesModule() {
 
   return (
     <div className="qdash">
-      <header className="qdash-header">
+      <header className="q-head">
         <div>
-          <h1 className="qdash-title">{qt.title}</h1>
-          <div className="muted qdash-date">{todayChip}</div>
+          <h1 className="q-title">{qt.title}</h1>
+          <div className="q-date">{todayChip}</div>
         </div>
-        <div className="qdash-actions">
-          {revenueTotal > 0 && (
-            <div className="qdash-revenue">
-              <span className="lab">{viewMode === 'happy' ? qt.revenuePaid : qt.revenueApproved}</span>
-              <span className="val">{ILS(revenueTotal)}</span>
-            </div>
-          )}
-          <div className="seg">
-            {segments.map((m) => (
-              <button
-                key={m.key}
-                className={'seg-btn' + (viewMode === m.key ? ' active' : '')}
-                onClick={() => {
-                  setViewMode(m.key)
-                  setFilter('all')
-                }}
-              >
-                {m.label}
-              </button>
-            ))}
-          </div>
-          <button className={'btn-ghost' + (showCal ? ' active' : '')} onClick={() => setShowCal(!showCal)}>
-            {qt.calendarBtn}
+        <div className="q-head-actions">
+          <button className={'q-btn' + (showCal ? ' on' : '')} onClick={() => setShowCal(!showCal)}>
+            <IcCal />
+            <span>{qt.calendarBtn}</span>
           </button>
-          <button className="btn-ghost" title={qt.settingsTitle} onClick={() => setShowSettings(true)}>
-            ⚙
+          <button className="q-btn q-btn-icon" title={qt.settingsTitle} onClick={() => setShowSettings(true)}>
+            <IcGear />
           </button>
           {canManage && (
-            <button className="btn-primary" onClick={() => setShowNew(true)}>
+            <button className="btn-primary q-btn-new" onClick={() => setShowNew(true)}>
               {qt.newQuote}
             </button>
           )}
         </div>
       </header>
 
-      <div className="qdash-stats">
-        {statCards.map((s) => {
-          const dotStatus = s.key === 'all' ? (viewMode === 'happy' ? 'paid' : null) : s.key
-          return (
+      <div className="q-toolbar">
+        <div className="q-seg" role="tablist">
+          {segments.map((m) => (
             <button
-              key={s.key}
-              className={'stat' + (filter === s.key ? ' active' : '')}
-              onClick={() => setFilter(filter === s.key ? 'all' : s.key)}
+              key={m.key}
+              role="tab"
+              aria-selected={viewMode === m.key}
+              className={'q-seg-btn' + (viewMode === m.key ? ' on' : '')}
+              onClick={() => {
+                setViewMode(m.key)
+                setFilter('all')
+              }}
             >
-              <span className="stat-num">{counts[s.key] ?? 0}</span>
-              <span className="stat-label">
-                {dotStatus && <span className="s-dot" data-s={dotStatus} />}
-                {s.label}
-              </span>
+              {m.label}
+              {m.n != null && m.n > 0 && <span className="q-seg-n">{m.n}</span>}
             </button>
-          )
-        })}
+          ))}
+        </div>
+        {revenueTotal > 0 && (
+          <div className="q-kpi">
+            <span className="q-kpi-label">{viewMode === 'happy' ? qt.revenuePaid : qt.revenueApproved}</span>
+            <span className="q-kpi-val">{ILS(revenueTotal)}</span>
+          </div>
+        )}
       </div>
+
+      {filterStatuses.length > 0 && (
+        <div className="q-filters">
+          <button className={'q-filter' + (filter === 'all' ? ' on' : '')} onClick={() => setFilter('all')}>
+            {qt.segAll}
+            <span className="q-count">{counts.all}</span>
+          </button>
+          {filterStatuses.map((s) => (
+            <button
+              key={s}
+              className={'q-filter' + (filter === s ? ' on' : '')}
+              data-s={s}
+              disabled={counts[s] === 0 && filter !== s}
+              onClick={() => setFilter(filter === s ? 'all' : s)}
+            >
+              <span className="s-dot" data-s={s} />
+              {qt.status[s]}
+              <span className="q-count">{counts[s]}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {showCal && (
         <Calendar quotes={liveQuotes} contractsByQuoteId={contractsByQuoteId} onOpenChecklist={(q) => setChecklistQuoteId(q.id)} />
       )}
 
       {filtered.length === 0 ? (
-        <div className="card qdash-empty">{emptyText}</div>
+        <div className="q-empty">
+          <img src="/app/brand/halfcircle-blue.png" alt="" />
+          <p>{emptyText}</p>
+        </div>
       ) : (
-        <div className="qdash-table-wrap card">
-          <table className="qdash-table">
+        <div className="q-tablecard">
+          <table className="q-table">
             <thead>
               <tr>
                 <th>{qt.thCustomer}</th>
                 <th>{qt.thEvent}</th>
-                <th>{qt.thPrice}</th>
+                <th className="q-th-price">{qt.thPrice}</th>
                 <th>{qt.thProgress}</th>
+                <th>{qt.thDocs}</th>
                 <th>{qt.thNotes}</th>
-                <th></th>
+                <th aria-hidden="true"></th>
               </tr>
             </thead>
             <tbody>
@@ -370,7 +414,6 @@ export default function QuotesModule() {
                 const confirmed = isConfirmed(q, contract)
                 const day = eventDayChip(q.event_date, qt)
                 const custBits = [q.contact_person, q.guests && `${q.guests} ${qt.guestsSuffix}`].filter(Boolean)
-                const evtBits = [q.event_type, q.hours].filter(Boolean)
                 const showStrike =
                   (q.discount_pct ?? 0) > 0 && subtotal > 0 && q.final_price != null && subtotal !== q.final_price
                 const showVat = q.final_price != null && q.final_price > 0
@@ -379,44 +422,53 @@ export default function QuotesModule() {
                 return (
                   <tr
                     key={q.id}
-                    className={'row-link' + (q.archived && viewMode !== 'archive' ? ' archived-row' : '')}
+                    className={'q-row' + (q.archived && viewMode !== 'archive' ? ' q-row-archived' : '')}
                     onClick={() => navigate(`/quotes/${q.id}`)}
                   >
-                    <td className="cell-customer">
-                      <div className="cell-primary">{q.customer_name || '—'}</div>
-                      <div className="cell-secondary">
+                    <td className="q-cell-customer">
+                      <div className="q-main">{q.customer_name || '—'}</div>
+                      <div className="q-sub">
                         {custBits.length > 0 && (
                           <>
                             {custBits.join(' · ')}
-                            <span className="dot">·</span>
+                            <span className="q-sep">·</span>
                           </>
                         )}
-                        <span className="quote-num">{q.quote_number}</span>
+                        <span className="q-num">{q.quote_number}</span>
                       </div>
                     </td>
-                    <td className="cell-event">
-                      <div className="event-line">
+                    <td className="q-cell-event">
+                      <div className="q-event-line">
                         {q.event_date ? (
-                          <span className="event-date">{formatDate(q.event_date)}</span>
+                          <span className="q-date-val">{formatDate(q.event_date)}</span>
                         ) : (
-                          <span className="event-date empty">{qt.noDate}</span>
+                          <span className="q-date-val q-none">{qt.noDate}</span>
                         )}
-                        {day && <span className={'day-chip ' + day.kind}>{day.text}</span>}
+                        {day && <span className={'q-day ' + day.kind}>{day.text}</span>}
                       </div>
-                      {evtBits.length > 0 && <div className="cell-secondary">{evtBits.join(' · ')}</div>}
-                    </td>
-                    <td className="cell-price">
-                      <div className="cell-primary">{total ? ILS(total) : '—'}</div>
-                      {(showStrike || showVat) && (
-                        <div className="cell-secondary">
-                          {showStrike && <span className="price-strike">{ILS(subtotal)}</span>}
-                          {showVat && <span className="vat-tag">{qt.vatIncluded}</span>}
+                      {(q.event_type || q.hours) && (
+                        <div className="q-sub">
+                          {q.event_type}
+                          {q.event_type && q.hours && <span className="q-sep">·</span>}
+                          {/* bdi: the LTR time range must not get reordered by the RTL line */}
+                          {q.hours && <bdi className="q-hours">{q.hours}</bdi>}
                         </div>
                       )}
                     </td>
-                    <td className="cell-progress" onClick={(e) => e.stopPropagation()}>
-                      <div className="cell-progress-row">
-                        <StatusBadge quote={q} canEdit={canManage} onUpdate={(id, s) => run(setQuoteStatus(id, s))} />
+                    <td className="q-cell-price">
+                      <div className="q-main q-price">{total ? ILS(total) : '—'}</div>
+                      {(showStrike || showVat) && (
+                        <div className="q-sub">
+                          {showStrike && <span className="q-strike">{ILS(subtotal)}</span>}
+                          {showVat && <span>{qt.vatIncluded}</span>}
+                        </div>
+                      )}
+                    </td>
+                    <td className="q-cell-status" onClick={(e) => e.stopPropagation()}>
+                      <StatusBadge quote={q} canEdit={canManage} onUpdate={(id, s) => run(setQuoteStatus(id, s))} />
+                    </td>
+                    <td className="q-cell-docs" onClick={(e) => e.stopPropagation()}>
+                      <div className="q-chip-row">
                         <ContractCell
                           quote={q}
                           contract={contract}
@@ -429,18 +481,18 @@ export default function QuotesModule() {
                         />
                         {confirmed && (
                           <button
-                            className={'btn-checklist' + (clTotal > 0 && done === clTotal ? ' all-done' : '')}
+                            className={'q-chip q-chip-prep' + (clTotal > 0 && done === clTotal ? ' done' : '')}
                             onClick={() => setChecklistQuoteId(q.id)}
                           >
                             {qt.prepBtn}
-                            <span className="chk-count">{clTotal ? `${done}/${clTotal}` : '✓'}</span>
+                            <span className="q-count">{clTotal ? `${done}/${clTotal}` : '✓'}</span>
                           </button>
                         )}
                       </div>
                     </td>
-                    <td className="cell-notes" onClick={(e) => e.stopPropagation()}>
+                    <td className="q-cell-notes" onClick={(e) => e.stopPropagation()}>
                       <input
-                        className="notes-input"
+                        className="q-note"
                         defaultValue={q.notes}
                         placeholder={qt.notePlaceholder}
                         disabled={!canManage}
@@ -452,25 +504,25 @@ export default function QuotesModule() {
                         }}
                       />
                     </td>
-                    <td className="cell-actions" onClick={(e) => e.stopPropagation()}>
+                    <td className="q-cell-actions" onClick={(e) => e.stopPropagation()}>
                       {canManage && (
-                        <span className="row-action-cluster">
+                        <span className="q-rowact">
                           <button
-                            className={'row-archive' + (q.archived ? ' restore' : '')}
+                            className="q-iconbtn"
                             title={q.archived ? qt.restoreTitle : qt.archiveTitle}
                             onClick={() => run(setQuoteArchived(q.id, !q.archived))}
                           >
-                            {q.archived ? '↩' : '⊡'}
+                            {q.archived ? <IcRestore /> : <IcArchive />}
                           </button>
                           {!q.archived && (
                             <button
-                              className="row-del"
+                              className="q-iconbtn q-iconbtn-danger"
                               title={qt.deleteTitle}
                               onClick={() => {
                                 if (confirm(`${qt.deleteConfirm} ${q.quote_number}?`)) run(deleteQuote(q.id))
                               }}
                             >
-                              ×
+                              <IcTrash />
                             </button>
                           )}
                         </span>

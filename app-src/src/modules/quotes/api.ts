@@ -2,6 +2,7 @@
 // user's JWT — RLS + the triggers in 30_quotes.sql enforce all invariants
 // (stamps, immutability, event confirmation); this file just moves data.
 import { quotes } from '../../lib/supabase'
+import { formatDate } from './format'
 import type { ChecklistItem, ContractRow, ContractStatus, QuoteRow, QuoteSettings, QuoteStatus } from './types'
 
 export interface AllData {
@@ -73,6 +74,31 @@ export async function deleteQuote(id: string): Promise<void> {
   if (error) throw new Error(error.message)
 }
 
+/** The contract fields that come straight from the quote (document-formatted).
+ *  Used at generation AND by the contract page's "import from quote" action,
+ *  so both paths always agree. Empty quote fields are skipped on re-import to
+ *  never wipe values typed on the contract. */
+export function contractDataFromQuote(quote: QuoteRow): Record<string, string> {
+  const tweaks = (quote.content as { tweaks?: { showVat?: boolean } } | null)?.tweaks
+  const withVat = tweaks?.showVat !== false // template default is VAT on
+  const amount = quote.final_price ?? quote.subtotal
+  const out: Record<string, string> = {
+    customerName: quote.customer_name,
+    phone: quote.phone,
+    email: quote.email,
+    eventDate: formatDate(quote.event_date),
+    hours: quote.hours,
+    eventType: quote.event_type,
+    guests: quote.guests,
+  }
+  if (amount != null && amount > 0)
+    out.price = `${Math.round(amount).toLocaleString('en-US')} ₪ ${withVat ? '(כולל מע״מ)' : '(לא כולל מע״מ)'}`
+  if (quote.deposit_pct != null && quote.deposit_pct > 0)
+    out.paymentTerms = `מקדמה ${Math.round(quote.deposit_pct)}% בהזמנה, היתרה ביום האירוע`
+  for (const k of Object.keys(out)) if (!out[k]) delete out[k]
+  return out
+}
+
 export async function generateContract(quoteId: string): Promise<ContractRow> {
   // Snapshot the template + quote data into contracts.content NOW — later edits
   // to the master defaults must never change an existing contract.
@@ -85,24 +111,11 @@ export async function generateContract(quoteId: string): Promise<ContractRow> {
     /* signature stays blank — a line is printed instead */
   }
   const today = new Date()
-  const price =
-    quote.final_price != null
-      ? `${Math.round(quote.final_price).toLocaleString('en-US')} ₪ (כולל מע״מ)`
-      : quote.subtotal != null
-        ? `${Math.round(quote.subtotal).toLocaleString('en-US')} ₪`
-        : ''
   const content = {
     data: {
       ...DEFAULT_CONTRACT_DATA,
       signDate: `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`,
-      customerName: quote.customer_name,
-      phone: quote.phone,
-      email: quote.email,
-      eventDate: quote.event_date ?? '',
-      hours: quote.hours,
-      eventType: quote.event_type,
-      guests: quote.guests,
-      price,
+      ...contractDataFromQuote(quote),
     },
     clauses: DEFAULT_CLAUSES,
     fields: DEFAULT_DETAILS_FIELDS,

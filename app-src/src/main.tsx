@@ -1,20 +1,12 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import { BrowserRouter } from 'react-router-dom'
-import { AuthProvider } from './lib/auth'
-import { I18nProvider } from './lib/i18n'
-import App from './App'
-import './styles.css'
+// Entry indirection: in dev, `?preview` boots the in-memory Supabase mock
+// (src/dev/) BEFORE any app module evaluates, so the UI can be exercised
+// without a session or network. Production builds drop the branch entirely
+// (import.meta.env.DEV is statically false) and boot the real app directly.
+async function start() {
+  if (import.meta.env.DEV && new URLSearchParams(window.location.search).has('preview')) {
+    await import('./dev/mock-net')
+  }
+  await import('./boot')
+}
 
-// basename '/app' matches Vite's base — routes are written without the /app prefix.
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <I18nProvider>
-      <BrowserRouter basename="/app">
-        <AuthProvider>
-          <App />
-        </AuthProvider>
-      </BrowserRouter>
-    </I18nProvider>
-  </StrictMode>,
-)
+void start()
