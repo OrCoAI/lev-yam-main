@@ -81,6 +81,22 @@ finishing, tick completed tasks and add discovered ones.
   the source of truth for the `core` schema; `10_pos.sql` for the live POS. Change the model
   there and re-run it in the Supabase SQL editor. Add new module schemas in the same folder.
 
+## Pre-commit quality gate (MANDATORY)
+
+**No commit happens until all of these pass**, in this order, on the pending diff. Run each
+review skill at **high effort** (`high`) using the most capable Claude model available —
+never a lighter model or a lower effort level to save time. Fix every finding (or get the
+user's explicit sign-off to skip one) and re-run the step until it comes back clean:
+
+1. **`/simplify`** — reuse/simplification/efficiency cleanups on the changed code.
+2. **`/code-review high`** — correctness-bug hunt on the diff; all findings resolved.
+3. **`/security-review`** — security review of the pending changes; all findings resolved.
+4. **`/verify`** — drive the affected flow end-to-end in the real app (localhost browser),
+   not just typecheck/build. Skip only for diffs with no runtime surface (docs-only).
+
+This gate applies to **every** commit — there is no staging, so `main` deploys straight to
+production. A commit with an unrun or failing gate step is a process violation.
+
 ## Deploying
 
 Push to `main`. The GitHub Action `.github/workflows/deploy.yml` builds the platform
