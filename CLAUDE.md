@@ -81,6 +81,36 @@ finishing, tick completed tasks and add discovered ones.
   the source of truth for the `core` schema; `10_pos.sql` for the live POS. Change the model
   there and re-run it in the Supabase SQL editor. Add new module schemas in the same folder.
 
+## Module work kickoff (MANDATORY)
+
+**Step zero — alignment questions.** Before starting any new roadmap item, go over it with
+the user question-by-question (scope, expected outcome, what's explicitly out of scope, how
+it serves `docs/VISION.md` and fits `docs/ARCHITECTURE.md`) until both sides are **100%
+aligned** on what is about to be built. No kickoff artifacts and no code until that
+agreement is explicit.
+
+Then, when the user asks to work on a module (fixes or features), **before writing any
+code**, generate the full tracking & alignment set — all of it, in parallel:
+
+1. **Plan file** — `docs/plans/<module>-<initiative>.md` (one per initiative): scope, the
+   schema / RLS / permission changes, UI surface, and open questions. Link it from
+   `docs/ROADMAP.md`.
+2. **Roadmap alignment** — confirm the work belongs to the current phase in
+   `docs/ROADMAP.md`; add the task there if it's missing, or flag it if it jumps phases.
+3. **Architecture invariants check** — walk the planned work through `docs/ARCHITECTURE.md`:
+   permissions DB-first (RLS via `core.has_permission`, UI mirror second), schema changes in
+   `supabase/schema/` as source of truth, money/lifecycle flowing through the cross-module
+   spine (no module-local silos), bilingual HE/AR via shell i18n, mobile-first.
+4. **Vision check** — confirm the work serves the direction in `docs/VISION.md`.
+5. **Branch** — create a working branch (`main` deploys straight to production); merge via
+   PR after the pre-commit gate below passes.
+
+**Conflict rule:** if any part of the requested work contradicts the vision, roadmap, or
+architecture — or those docs contradict each other — **stop and raise it with the user
+explicitly**. Never code around a conflict or silently pick a side. Work proceeds only after
+the disagreement is discussed and resolved together, and the agreed resolution is written
+back into the relevant doc so it can't resurface.
+
 ## Pre-commit quality gate (MANDATORY)
 
 **No commit happens until all of these pass**, in this order, on the pending diff. Run each
@@ -96,6 +126,22 @@ user's explicit sign-off to skip one) and re-run the step until it comes back cl
 
 This gate applies to **every** commit — there is no staging, so `main` deploys straight to
 production. A commit with an unrun or failing gate step is a process violation.
+
+## Roadmap item close-out (MANDATORY)
+
+When a roadmap item is finished, it is not done until it is closed out:
+
+1. **Write a close-out summary** — append a `## Close-out` section to the item's plan file
+   in `docs/plans/` explaining exactly what was done: what shipped, schema/permission
+   changes applied, decisions made along the way, and anything deliberately left out.
+2. **Verify alignment** — check the delivered result against `docs/VISION.md` and
+   `docs/ARCHITECTURE.md` and state the verdict explicitly in the summary. Any drift found
+   is a conflict: raise it with the user and resolve it (see the conflict rule above)
+   before the item can be marked done.
+3. **Update the roadmap** — tick the item in `docs/ROADMAP.md` and add any newly
+   discovered follow-up tasks.
+4. **Present the summary to the user** — the item is closed only after the user has seen
+   the close-out and the alignment verdict.
 
 ## Deploying
 
