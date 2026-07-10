@@ -256,4 +256,65 @@ export const permissionsFixture = [
   'quotes.settings',
   'users.view',
   'finance.view',
+  'finance.manage',
+]
+
+// finance.entries — a manual row, a quote-posted row, and a POS reversal pair
+export const financeEntriesFixture = [
+  {
+    id: '00000000-0000-4000-8000-00000000f001',
+    kind: 'expense', category: 'suppliers', amount: 1250, payment_method: 'bank',
+    entry_date: '2026-07-06', note: 'דגים — שוק הדייגים', source_module: null, source_ref: null,
+    event_id: null, created_by: '00000000-0000-4000-8000-00000000dead',
+    created_at: '2026-07-06T09:00:00Z', updated_at: '2026-07-06T09:00:00Z',
+  },
+  {
+    id: '00000000-0000-4000-8000-00000000f002',
+    kind: 'income', category: 'events', amount: 2520, payment_method: 'bank',
+    entry_date: '2026-07-05', note: 'מקדמה', source_module: 'quotes',
+    source_ref: 'expected:00000000-0000-4000-8000-00000000e001', event_id: null,
+    created_by: '00000000-0000-4000-8000-00000000dead',
+    created_at: '2026-07-05T12:00:00Z', updated_at: '2026-07-05T12:00:00Z',
+  },
+  {
+    id: '00000000-0000-4000-8000-00000000f003',
+    kind: 'income', category: 'pos', amount: 3480, payment_method: 'cash',
+    entry_date: '2026-07-04', note: 'סגירת יום', source_module: 'pos',
+    source_ref: 'pos:2026-07-04:cash', event_id: null,
+    created_by: '00000000-0000-4000-8000-00000000dead',
+    created_at: '2026-07-04T22:00:00Z', updated_at: '2026-07-04T22:00:00Z',
+  },
+  {
+    id: '00000000-0000-4000-8000-00000000f004',
+    kind: 'income', category: 'pos', amount: -180, payment_method: 'cash',
+    entry_date: '2026-07-04', note: 'היפוך — חשבון בוטל', source_module: 'pos',
+    source_ref: 'pos:2026-07-04:cash:r2', event_id: null,
+    created_by: '00000000-0000-4000-8000-00000000dead',
+    created_at: '2026-07-04T23:00:00Z', updated_at: '2026-07-04T23:00:00Z',
+  },
+]
+
+// finance.expected — open deposit, overdue balance, fulfilled deposit
+export const financeExpectedFixture = [
+  {
+    id: '00000000-0000-4000-8000-00000000e002',
+    direction: 'in', category: 'events', amount: 5880, due_date: '2026-08-14',
+    reason: 'balance', event_id: null, source_module: 'quotes', source_ref: 'balance:LY-2026-011',
+    status: 'open', fulfilled_by: null, note: 'יתרה — אירוע 14.8', created_by: null,
+    created_at: '2026-07-05T12:00:00Z', updated_at: '2026-07-05T12:00:00Z',
+  },
+  {
+    id: '00000000-0000-4000-8000-00000000e003',
+    direction: 'in', category: 'events', amount: 1800, due_date: '2026-07-02',
+    reason: 'deposit', event_id: null, source_module: 'quotes', source_ref: 'deposit:LY-2026-009',
+    status: 'open', fulfilled_by: null, note: '', created_by: null,
+    created_at: '2026-06-25T10:00:00Z', updated_at: '2026-06-25T10:00:00Z',
+  },
+  {
+    id: '00000000-0000-4000-8000-00000000e001',
+    direction: 'in', category: 'events', amount: 2520, due_date: '2026-07-05',
+    reason: 'deposit', event_id: null, source_module: 'quotes', source_ref: 'deposit:LY-2026-011',
+    status: 'fulfilled', fulfilled_by: '00000000-0000-4000-8000-00000000f002', note: '',
+    created_by: null, created_at: '2026-07-01T09:00:00Z', updated_at: '2026-07-05T12:00:00Z',
+  },
 ]

@@ -76,6 +76,9 @@ create or replace function finance.entries_guard()
 returns trigger language plpgsql as $$
 declare
   posting boolean := coalesce(current_setting('levyam.finance_posting', true), '') = 'on';
+  -- one writer per category (docs §3b): these are module-written only.
+  -- Mirrored for the form UI in app-src/src/modules/finance/categories.ts (DERIVED_ONLY).
+  derived_only text[] := array['events','pos','pos_food','pos_labor'];
 begin
   if posting then
     return coalesce(new, old);
@@ -84,6 +87,9 @@ begin
     if new.source_module is not null then
       raise exception 'רישום ממקור מודול (%.%) נכתב רק דרך פונקציית הרישום של אותו מודול', new.source_module, new.source_ref;
     end if;
+    if new.category = any (derived_only) then
+      raise exception 'הקטגוריה "%" נרשמת אוטומטית על ידי מודול — לא ניתן להזין אותה ידנית', new.category;
+    end if;
     return new;
   end if;
   if old.source_module is not null then
@@ -91,6 +97,11 @@ begin
   end if;
   if tg_op = 'UPDATE' and new.source_module is not null then
     raise exception 'לא ניתן להפוך רישום ידני לרישום ממקור מודול';
+  end if;
+  -- legacy manual rows in a now-derived category stay editable, but a manual row
+  -- cannot MOVE into a derived-only category
+  if tg_op = 'UPDATE' and new.category = any (derived_only) and new.category is distinct from old.category then
+    raise exception 'הקטגוריה "%" נרשמת אוטומטית על ידי מודול — לא ניתן להזין אותה ידנית', new.category;
   end if;
   return coalesce(new, old);
 end; $$;

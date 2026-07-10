@@ -4,6 +4,8 @@
 // zero network. Loaded by main.tsx before any app module, never in prod.
 import {
   contractsFixture,
+  financeEntriesFixture,
+  financeExpectedFixture,
   ownerSecretsFixture,
   permissionsFixture,
   quotesFixture,
@@ -44,6 +46,8 @@ const db: Record<string, Row[]> = {
   contracts: contractsFixture.map((r) => ({ ...r })),
   settings: [{ ...settingsFixture }],
   owner_secrets: [{ ...ownerSecretsFixture }],
+  entries: financeEntriesFixture.map((r) => ({ ...r })),
+  expected: financeExpectedFixture.map((r) => ({ ...r })),
 }
 let seq = 100
 
@@ -87,28 +91,43 @@ async function handleRest(table: string, req: Request, params: URLSearchParams):
           String(b.issue_date).localeCompare(String(a.issue_date)) ||
           String(b.quote_number).localeCompare(String(a.quote_number)),
       )
+    if (table === 'entries')
+      out = [...out].sort(
+        (a, b) =>
+          String(b.entry_date).localeCompare(String(a.entry_date)) ||
+          String(b.created_at).localeCompare(String(a.created_at)),
+      )
+    if (table === 'expected')
+      out = [...out].sort(
+        (a, b) => String(a.due_date ?? '9999').localeCompare(String(b.due_date ?? '9999')),
+      )
     return respond(out, req)
   }
   if (req.method === 'POST') {
     const body = (await req.json()) as Row
     const now = new Date()
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-    const row: Row =
-      table === 'quotes'
-        ? {
-            status: 'draft', archived: false, event_confirmed: false, notes: '',
-            subtotal: null, discount_pct: null, final_price: null, vat_rate: 0.18,
-            deposit_pct: 30, content: {}, prep_checklist: [], sent_date: null, paid_date: null,
-            issue_date: today, quote_number: `LY-MOCK-${String(++seq)}`,
-            id: `00000000-0000-4000-8000-${String(++seq).padStart(12, '0')}`,
-            ...body,
-          }
-        : {
-            id: `00000000-0000-4000-8000-${String(++seq).padStart(12, '0')}`,
-            contract_number: 'C-' + String((db.quotes.find((q) => q.id === body.quote_id) ?? {}).quote_number ?? 'LY-MOCK'),
-            status: 'draft', generated_date: today, sent_date: null, signed_date: null, signed_name: null,
-            ...body,
-          }
+    const defaults: Record<string, Row> = {
+      quotes: {
+        status: 'draft', archived: false, event_confirmed: false, notes: '',
+        subtotal: null, discount_pct: null, final_price: null, vat_rate: 0.18,
+        deposit_pct: 30, content: {}, prep_checklist: [], sent_date: null, paid_date: null,
+        issue_date: today, quote_number: `LY-MOCK-${String(++seq)}`,
+      },
+      contracts: {
+        contract_number: 'C-' + String((db.quotes.find((q) => q.id === body.quote_id) ?? {}).quote_number ?? 'LY-MOCK'),
+        status: 'draft', generated_date: today, sent_date: null, signed_date: null, signed_name: null,
+      },
+      entries: {
+        source_module: null, source_ref: null, event_id: null, note: null,
+        created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+      },
+    }
+    const row: Row = {
+      id: `00000000-0000-4000-8000-${String(++seq).padStart(12, '0')}`,
+      ...(defaults[table] ?? {}),
+      ...body,
+    }
     rows.push(row)
     return respond([row], req, true)
   }
@@ -149,6 +168,32 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise
   const rpc = path.match(/^\/rest\/v1\/rpc\/(.+)$/)
   if (rpc) {
     if (rpc[1] === 'my_permissions') return json(permissionsFixture)
+    if (rpc[1] === 'record_payment') {
+      // mirror finance.record_payment: post the entry + fulfill the expectation
+      const body = (await req.json()) as Row
+      const exp = db.expected.find((r) => r.id === body.p_expected)
+      if (!exp) return json({ message: 'expected payment not found' }, 400)
+      if (exp.status !== 'open') return json({ message: `הצפי כבר במצב ${exp.status}` }, 400)
+      const entry: Row = {
+        id: `00000000-0000-4000-8000-${String(++seq).padStart(12, '0')}`,
+        kind: exp.direction === 'in' ? 'income' : 'expense',
+        category: exp.category,
+        amount: body.p_amount ?? exp.amount,
+        payment_method: body.p_method ?? null,
+        entry_date: body.p_date ?? new Date().toISOString().slice(0, 10),
+        note: body.p_note ?? exp.reason,
+        source_module: exp.source_module ?? 'finance',
+        source_ref: `expected:${exp.id}`,
+        event_id: exp.event_id,
+        created_by: user.id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+      db.entries.unshift(entry)
+      exp.status = 'fulfilled'
+      exp.fulfilled_by = entry.id
+      return json(entry.id)
+    }
     return json(null) // auto_expire and anything else: succeed quietly
   }
   const rest = path.match(/^\/rest\/v1\/([^/]+)$/)

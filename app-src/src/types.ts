@@ -49,8 +49,15 @@ export type FinanceExpenseCategory =
   | 'or_prati'
   | 'nimer'
   | 'suppliers'
+  | 'pos_food' // derived-only: pos.close_day()
+  | 'pos_labor' // derived-only: pos.close_day()
 
-export type FinanceIncomeCategory = 'events' | 'bookings' | 'makrer' | 'other'
+export type FinanceIncomeCategory =
+  | 'events' // derived-only: quotes postings via finance.record_payment()
+  | 'bookings'
+  | 'makrer'
+  | 'other'
+  | 'pos' // derived-only: pos.close_day()
 
 export type FinanceCategory = FinanceExpenseCategory | FinanceIncomeCategory
 
@@ -64,7 +71,31 @@ export interface FinanceEntry {
   payment_method: FinancePaymentMethod | null
   entry_date: string // 'YYYY-MM-DD'
   note: string | null
+  source_module: string | null // null = manual entry; set = posted by a module (immutable)
+  source_ref: string | null
+  event_id: string | null
   created_by: string
+  created_at: string
+  updated_at: string
+}
+
+// finance.expected — money that should move (deposits, balances, supplier bills)
+export type FinanceExpectedStatus = 'open' | 'fulfilled' | 'cancelled'
+
+export interface FinanceExpected {
+  id: string
+  direction: 'in' | 'out'
+  category: FinanceCategory
+  amount: number
+  due_date: string | null // 'YYYY-MM-DD'
+  reason: string // 'deposit' | 'balance' | 'supplier' | free text
+  event_id: string | null
+  source_module: string | null
+  source_ref: string | null
+  status: FinanceExpectedStatus
+  fulfilled_by: string | null
+  note: string
+  created_by: string | null
   created_at: string
   updated_at: string
 }

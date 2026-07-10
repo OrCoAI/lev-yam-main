@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useCan, PERM } from '../../lib/permissions'
 import EntriesTab from './EntriesTab'
+import ExpectedTab from './ExpectedTab'
 import ReportTab from './ReportTab'
 
-type Tab = 'entries' | 'report'
+type Tab = 'entries' | 'expected' | 'report'
 
 export default function FinanceModule() {
   const canManage = useCan(PERM.financeManage)
@@ -20,12 +21,17 @@ export default function FinanceModule() {
         <button className={tab === 'entries' ? 'tab on' : 'tab'} onClick={() => setTab('entries')}>
           תנועות
         </button>
+        <button className={tab === 'expected' ? 'tab on' : 'tab'} onClick={() => setTab('expected')}>
+          צפי
+        </button>
         <button className={tab === 'report' ? 'tab on' : 'tab'} onClick={() => setTab('report')}>
           דוח
         </button>
       </div>
 
-      {tab === 'entries' ? <EntriesTab canManage={canManage} /> : <ReportTab />}
+      {tab === 'entries' && <EntriesTab canManage={canManage} />}
+      {tab === 'expected' && <ExpectedTab canManage={canManage} />}
+      {tab === 'report' && <ReportTab />}
     </section>
   )
 }
