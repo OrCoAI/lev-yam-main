@@ -73,17 +73,23 @@ bilingual is ever a retrofit.*
         `source='finance'` and are immutable with no corrector); **HE/AR retrofit** of the
         finance module chrome (predates the i18n layer); EntriesTab form → child component
         (keystrokes re-render the entries table)
-- [ ] POS: map `pos.html` features → module design under `app-src/src/modules/pos/`
+- [x] POS: map `pos.html` features → module design under `app-src/src/modules/pos/`
       (against the spines: `pos.close_day()` posts to finance; bills carry optional `event_id`)
       — **full migration plan: [plans/pos-module.md](plans/pos-module.md)** (kickoff
       2026-07-09: finance UI pass first; scope = parity-ready + deployed alongside
       `pos.html`; reuses the live `public.pos_*` tables)
-- [ ] Port billing: bills, items, combos, tips/discounts, payments, refunds/voids
-- [ ] Port kitchen pipeline (chef mode: qty → sent → done → served)
-- [ ] Port day report (chef ops view / manager P&L) + expenses + date presets
-- [ ] Wire `pos.*` permissions per role (order/kitchen/analytics/costs/reports/manage)
+- [x] Port billing: bills, items, combos, tips/discounts, payments, reopen/voids
+      *(done 2026-07-10, PR #4 — `42_pos_platform.sql` applied to prod, `pos` schema
+      exposed; anon pos.html path probe-verified unchanged)*
+- [x] Port kitchen pipeline (chef mode: qty → sent → done → served)
+- [x] Port day report (chef ops view / manager P&L) + expenses + date presets
+      (+ new: close-day button posting the business day into finance)
+- [x] Wire `pos.*` permissions per role (order/kitchen/analytics/costs/reports/manage;
+      legacy create_bill/refund retired)
 - [ ] Parity trial: run `/app/pos` alongside `pos.html` on real service days
-- [ ] Cut over: `pos.html` redirects to `/app/pos`
+- [ ] Cut over: `pos.html` redirects to `/app/pos` (+ drop anon policies, harden
+      `created_by` from JWT, consider `pos` schema move + menu-as-data +
+      server-side bill recompute + `pos.range_report` — see plan §8a)
 
 ## Phase 2 — What's happening: bookings & events
 

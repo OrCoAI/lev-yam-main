@@ -154,7 +154,43 @@ entry + brand icon.
 - **Realtime:** `/app` Supabase client must subscribe to `pos_tables` changes the same
   way (publication already includes it).
 
-## Close-out
+## Close-out (2026-07-10 — parity-ready milestone; trial + cut-over remain open)
 
-*(to be written when the initiative finishes — what shipped, decisions, alignment
-verdict vs VISION.md + ARCHITECTURE.md)*
+**Shipped (PR #3 finance UI pass → PR #4 POS module, both squash-merged to main and
+deployed; `42_pos_platform.sql` applied to prod, `pos` added to Exposed schemas):**
+
+- **Finance UI pass first, as agreed:** provenance badges, immutable derived rows,
+  expected tab (fulfill/cancel), derived-only categories blocked in the UI **and** in the
+  DB (`entries_guard` extended — probe-verified on prod).
+- **The full POS port at `/app/pos`:** floor, table/billing (combos, custom items,
+  tips/discounts, cash-card split, underpay-as-discount), kitchen pipeline
+  (qty→sent→done→served, chef mode), day report (ops vs full, date presets/ranges,
+  expenses) — HE/AR via the shell language state, phone-first, realtime sync with the
+  same local-first/offline behavior as pos.html. Platform login + RBAC replace the
+  device PIN + role codes.
+- **The spines integration:** `pos.close_day()` posts the business day into
+  `finance.entries` (per-leg provenance `pos:<date>:cash|card|food|labor`, tips never
+  post, corrections as delta rows) — verified end-to-end in the preview harness: close
+  day in POS → badged immutable rows appear in the finance module. `pos_bills.event_id`
+  ready for event attribution.
+- **Security hardening beyond the plan:** day-report money-stripping is DB-side and
+  allowlist-based; expense reads require `pos.reports`; the `v_sales_*` views are NOT
+  granted to authenticated (owner-rights views would bypass the money gate); bill
+  arithmetic is DB-checked; permission denials surface in the UI instead of masquerading
+  as offline.
+
+**Decisions made along the way:** platform "staff" role = chef-level grants (waiter/chef
+split deferred to a new role if needed); card income posts as payment method `grow`;
+POS renders full-screen outside the shell Layout; menu stays code until cut-over.
+
+**Deliberately left out (per locked scope):** the parity trial and cut-over (real
+service days); §8a follow-ups (server-side bill recompute + menu-as-data, `created_by`
+from JWT, `pos.range_report`, partial-payments on expected).
+
+**Alignment verdict:** ✅ Aligned. VISION — "everything is a module", "one login, roles
+decide", "evolution not revolution" (pos.html untouched and probe-verified working;
+cut-over earns on real service days). ARCHITECTURE — RLS is the guard (every table has
+authenticated policies; UI gating is convenience), bilingual + mobile-first from day
+one, spines not silos (POS money flows through finance with provenance; the module
+template's two spine questions answered in §3). One documented deviation stands:
+pos_* tables stay in `public` until cut-over (plan §4, template deviation noted).
