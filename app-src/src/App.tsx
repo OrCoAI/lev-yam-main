@@ -6,6 +6,7 @@ import Layout from './shell/Layout'
 import Launcher from './shell/Launcher'
 import UsersAdmin from './modules/users/UsersAdmin'
 import FinanceModule from './modules/finance/FinanceModule'
+import PosModule from './modules/pos/PosModule'
 import QuotesModule from './modules/quotes/QuotesModule'
 import QuotePage from './modules/quotes/QuotePage'
 import ContractPage from './modules/quotes/ContractPage'
@@ -18,6 +19,15 @@ export default function App() {
 
       {/* Everything below requires a session */}
       <Route element={<RequireAuth />}>
+        {/* POS is full-screen (its own headers/dock, phone-first floor UI) — no shell Layout */}
+        <Route
+          path="pos"
+          element={
+            <RequirePermission perm={PERM.posView}>
+              <PosModule />
+            </RequirePermission>
+          }
+        />
         <Route element={<Layout />}>
           <Route index element={<Launcher />} />
           <Route

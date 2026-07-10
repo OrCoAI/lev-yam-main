@@ -21,3 +21,6 @@ export const finance = () => supabase.schema('finance')
 
 /** PostgREST client scoped to the quotes module's schema (quotes, contracts, settings). */
 export const quotes = () => supabase.schema('quotes')
+
+/** The pos schema — platform-side functions (close_day). The live pos_* tables stay in public until cut-over. */
+export const pos = () => supabase.schema('pos')

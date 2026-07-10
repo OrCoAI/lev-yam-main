@@ -127,6 +127,22 @@ entry + brand icon.
   grants from `10_pos.sql`; consider moving `pos_*` tables into the `pos` schema; retire
   in-file PIN/role codes.
 
+## 8a. Follow-ups discovered in the build review (2026-07-10)
+
+- **Money is still client-authored** — `pos_close_table` now enforces internal
+  consistency (`grand = oh + extras − discount`, `cash+card = grand + tip`), but a
+  consistent forgery is possible for any `pos.order` holder. Full fix = menu/pricing
+  as DB data + server-side recompute — a **cut-over item** (menu-as-data is already
+  the plan for owner-editable menus).
+- **`created_by` on expenses is client-authored** — harden at cut-over with a
+  trigger defaulting it from `auth.jwt()` (can't today: anon pos.html path has no JWT).
+- **`pos.range_report(from,to)` RPC** — replace the client's per-day fan-out
+  (up to 92 RPCs, all-or-nothing, 92-day cap) with one DB aggregate.
+- **Parity-inherited quirks kept deliberately** (same behavior in live pos.html):
+  device-local "today" for home totals/end-day vs Jerusalem-pinned reports;
+  active-table resurrection if another device closes it mid-edit; range report
+  fails whole if one day errors.
+
 ## 8. Open questions / risks
 
 - **Waiter vs chef split:** platform "staff" role covers both (chef-level grants). If

@@ -281,6 +281,9 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 .finance-badge-warn { background: #fbe9e7; color: var(--danger); }
 .finance-fulfill { margin: 14px 0 4px; padding: 14px; border: 1px dashed var(--sea); border-radius: 12px; }
+
+/* POS module (full-screen; visuals are inline styles ported from pos.html) */
+.pos-tap:active { transform: scale(0.92); }
 .finance-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 8px; }
 .finance-stat { position: relative; overflow: hidden; display: grid; gap: 6px; text-align: center; padding-top: 22px; }
 .finance-stat::before { content: ''; position: absolute; inset-inline: 0; inset-block-start: 0; height: 4px; }
