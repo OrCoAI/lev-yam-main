@@ -57,7 +57,7 @@ Follows [MODULE-TEMPLATE.md](../MODULE-TEMPLATE.md); built on the spines from
    - Categories `pos`, `pos_food`, `pos_labor` are already seeded as **derived-only** in
      `21_finance_spine.sql`; the finance UI pass blocks them from manual entry.
 
-## 4. Database plan — `supabase/schema/11_pos_platform.sql` (new file)
+## 4. Database plan — `supabase/schema/42_pos_platform.sql` (new file)
 
 `10_pos.sql` stays the live tool's schema (pos.html keeps working untouched). The new
 file layers the platform on top — idempotent, additive only:

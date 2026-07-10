@@ -9,21 +9,19 @@ import {
   PAYMENT_METHODS,
 } from './categories'
 import DateField from './DateField'
+import { shortDate, todayStr } from './format'
+import SourceBadge from './SourceBadge'
 
 const PAGE_SIZE = 100
 
-function todayStr() {
-  return new Date().toLocaleDateString('en-CA') // 'YYYY-MM-DD' in local time
-}
-
-function categoriesFor(kind: FinanceKind) {
+function categoriesFor(kind: FinanceKind): FinanceCategory[] {
   return kind === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES
 }
 
-// 'YYYY-MM-DD' -> 'DD.MM' — compact for the one-line row; full date still shown via title.
-function shortDate(iso: string) {
-  const [, m, d] = iso.split('-')
-  return `${d}.${m}`
+// Derived rows may be negative (reversals) — the sign follows the net effect.
+function signedAmount(e: FinanceEntry) {
+  const net = e.kind === 'income' ? e.amount : -e.amount
+  return `${net >= 0 ? '+' : '−'}${Math.abs(net).toLocaleString('he-IL')} ₪`
 }
 
 const emptyForm = {
@@ -171,6 +169,10 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
               value={form.category}
               onChange={(e) => setForm((f) => ({ ...f, category: e.target.value as FinanceCategory }))}
             >
+              {/* editing a legacy row whose category is now derived-only keeps its option */}
+              {!categoriesFor(form.kind).includes(form.category) && (
+                <option value={form.category}>{CATEGORY_LABELS[form.category] ?? form.category}</option>
+              )}
               {categoriesFor(form.kind).map((c) => (
                 <option key={c} value={c}>
                   {CATEGORY_LABELS[c]}
@@ -271,39 +273,45 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
                   <td data-label="סוג" className={e.kind === 'income' ? 'finance-income' : 'finance-expense'}>
                     {e.kind === 'income' ? 'הכנסה' : 'הוצאה'}
                   </td>
-                  <td data-label="קטגוריה">{CATEGORY_LABELS[e.category] ?? e.category}</td>
+                  <td data-label="קטגוריה">
+                    {CATEGORY_LABELS[e.category] ?? e.category}
+                    <SourceBadge module={e.source_module} sourceRef={e.source_ref} />
+                  </td>
                   <td data-label="תשלום">{e.payment_method ? PAYMENT_LABELS[e.payment_method] : '—'}</td>
                   <td
                     data-label="סכום"
                     className={`finance-amount ${e.kind === 'income' ? 'finance-income' : 'finance-expense'}`}
                   >
-                    <span dir="ltr">
-                      {e.kind === 'income' ? '+' : '−'}
-                      {e.amount.toLocaleString('he-IL')} ₪
-                    </span>
+                    <span dir="ltr">{signedAmount(e)}</span>
                   </td>
                   <td data-label="הערה" className="muted">
                     {e.note ?? ''}
                   </td>
                   {canManage && (
                     <td className="finance-row-actions">
-                      <button
-                        className="btn-ghost btn-sm btn-icon-label"
-                        disabled={busy}
-                        onClick={() => startEdit(e)}
-                        aria-label="ערוך"
-                      >
-                        <span aria-hidden="true">✎</span>
-                        <span className="btn-label">ערוך</span>
-                      </button>
-                      <button
-                        className="btn-ghost btn-sm"
-                        disabled={busy}
-                        onClick={() => remove(e.id)}
-                        aria-label="מחק"
-                      >
-                        ✕
-                      </button>
+                      {/* module-posted rows are immutable (DB guard) — corrections are
+                          reversals posted by the source module, so no edit/delete here */}
+                      {!e.source_module && (
+                        <>
+                          <button
+                            className="btn-ghost btn-sm btn-icon-label"
+                            disabled={busy}
+                            onClick={() => startEdit(e)}
+                            aria-label="ערוך"
+                          >
+                            <span aria-hidden="true">✎</span>
+                            <span className="btn-label">ערוך</span>
+                          </button>
+                          <button
+                            className="btn-ghost btn-sm"
+                            disabled={busy}
+                            onClick={() => remove(e.id)}
+                            aria-label="מחק"
+                          >
+                            ✕
+                          </button>
+                        </>
+                      )}
                     </td>
                   )}
                 </tr>

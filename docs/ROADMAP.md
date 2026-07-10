@@ -62,8 +62,17 @@ bilingual is ever a retrofit.*
         Phase 2 UI); quotes → events projection trigger, backfill, expectations-on-sign,
         income-on-paid *(applied + backfilled 2026-07-09: 2 confirmed + 1 tentative event
         projected; full sent→signed→paid lifecycle verified on prod, 13/13 assertions)*
-  - [ ] Finance UI pass: provenance badges, derived-only categories (`events`, `pos`,
-        `pos_food`, `pos_labor`) blocked for manual entry, "expected" tab
+  - [x] Finance UI pass: provenance badges, derived-only categories (`events`, `pos`,
+        `pos_food`, `pos_labor`) blocked for manual entry, "expected" tab *(done
+        2026-07-10; one-writer-per-category is now also DB-enforced in `entries_guard`;
+        verified end-to-end in the preview harness at phone width)*
+  - [ ] Finance follow-ups (discovered in the UI-pass review, 2026-07-09): **partial
+        payments** on `finance.expected` (`record_payment` closes the expectation at any
+        amount — needs remainder/split support; UI warns for now); a **reversal path** for
+        posted entries with no owning module (payments on hand-created expectations get
+        `source='finance'` and are immutable with no corrector); **HE/AR retrofit** of the
+        finance module chrome (predates the i18n layer); EntriesTab form → child component
+        (keystrokes re-render the entries table)
 - [ ] POS: map `pos.html` features → module design under `app-src/src/modules/pos/`
       (against the spines: `pos.close_day()` posts to finance; bills carry optional `event_id`)
       — **full migration plan: [plans/pos-module.md](plans/pos-module.md)** (kickoff

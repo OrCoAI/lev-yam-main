@@ -3,10 +3,7 @@ import { finance } from '../../lib/supabase'
 import type { FinanceReport } from '../../types'
 import { CATEGORY_LABELS, PAYMENT_LABELS } from './categories'
 import DateField from './DateField'
-
-function toDateStr(d: Date) {
-  return d.toLocaleDateString('en-CA') // 'YYYY-MM-DD' in local time
-}
+import { toDateStr } from './format'
 
 function monthRange(offset: number) {
   const now = new Date()
@@ -113,24 +110,28 @@ export default function ReportTab() {
                 </tr>
               </thead>
               <tbody>
-                {byCategory.map((b) => (
-                  <tr key={`${b.kind}:${b.category}`}>
-                    <td data-label="סוג" className={b.kind === 'income' ? 'finance-income' : 'finance-expense'}>
-                      {b.kind === 'income' ? 'הכנסה' : 'הוצאה'}
-                    </td>
-                    <td data-label="קטגוריה">{CATEGORY_LABELS[b.category] ?? b.category}</td>
-                    <td
-                      data-label="סכום"
-                      className={`finance-amount ${b.kind === 'income' ? 'finance-income' : 'finance-expense'}`}
-                    >
-                      <span dir="ltr">
-                        {b.kind === 'income' ? '+' : '−'}
-                        {Number(b.total).toLocaleString('he-IL')} ₪
-                      </span>
-                    </td>
-                    <td data-label="תנועות">{b.entry_count}</td>
-                  </tr>
-                ))}
+                {byCategory.map((b) => {
+                  const net = b.kind === 'income' ? Number(b.total) : -Number(b.total)
+                  return (
+                    <tr key={`${b.kind}:${b.category}`}>
+                      <td data-label="סוג" className={b.kind === 'income' ? 'finance-income' : 'finance-expense'}>
+                        {b.kind === 'income' ? 'הכנסה' : 'הוצאה'}
+                      </td>
+                      <td data-label="קטגוריה">{CATEGORY_LABELS[b.category] ?? b.category}</td>
+                      <td
+                        data-label="סכום"
+                        className={`finance-amount ${b.kind === 'income' ? 'finance-income' : 'finance-expense'}`}
+                      >
+                        {/* reversal rows can turn a range's total negative — sign follows the net */}
+                        <span dir="ltr">
+                          {net >= 0 ? '+' : '−'}
+                          {Math.abs(net).toLocaleString('he-IL')} ₪
+                        </span>
+                      </td>
+                      <td data-label="תנועות">{b.entry_count}</td>
+                    </tr>
+                  )
+                })}
                 {byCategory.length === 0 && (
                   <tr>
                     <td colSpan={4} className="muted">
@@ -154,24 +155,27 @@ export default function ReportTab() {
                 </tr>
               </thead>
               <tbody>
-                {byPayment.map((b) => (
-                  <tr key={`${b.kind}:${b.payment_method}`}>
-                    <td data-label="סוג" className={b.kind === 'income' ? 'finance-income' : 'finance-expense'}>
-                      {b.kind === 'income' ? 'הכנסה' : 'הוצאה'}
-                    </td>
-                    <td data-label="אמצעי">{PAYMENT_LABELS[b.payment_method]}</td>
-                    <td
-                      data-label="סכום"
-                      className={`finance-amount ${b.kind === 'income' ? 'finance-income' : 'finance-expense'}`}
-                    >
-                      <span dir="ltr">
-                        {b.kind === 'income' ? '+' : '−'}
-                        {Number(b.total).toLocaleString('he-IL')} ₪
-                      </span>
-                    </td>
-                    <td data-label="תנועות">{b.entry_count}</td>
-                  </tr>
-                ))}
+                {byPayment.map((b) => {
+                  const net = b.kind === 'income' ? Number(b.total) : -Number(b.total)
+                  return (
+                    <tr key={`${b.kind}:${b.payment_method}`}>
+                      <td data-label="סוג" className={b.kind === 'income' ? 'finance-income' : 'finance-expense'}>
+                        {b.kind === 'income' ? 'הכנסה' : 'הוצאה'}
+                      </td>
+                      <td data-label="אמצעי">{PAYMENT_LABELS[b.payment_method]}</td>
+                      <td
+                        data-label="סכום"
+                        className={`finance-amount ${b.kind === 'income' ? 'finance-income' : 'finance-expense'}`}
+                      >
+                        <span dir="ltr">
+                          {net >= 0 ? '+' : '−'}
+                          {Math.abs(net).toLocaleString('he-IL')} ₪
+                        </span>
+                      </td>
+                      <td data-label="תנועות">{b.entry_count}</td>
+                    </tr>
+                  )
+                })}
                 {byPayment.length === 0 && (
                   <tr>
                     <td colSpan={4} className="muted">
