@@ -6,15 +6,13 @@ export const PERM = {
   usersView: 'users.view',
   usersManage: 'users.manage',
   posView: 'pos.view',
-  posOrder: 'pos.order',          // add/edit items, take payment, close — waiter, chef, manager
-  posKitchen: 'pos.kitchen',      // kitchen queue, mark dishes done — chef, manager
-  posAnalytics: 'pos.analytics',  // operational day report (no money) — chef, manager
-  posCostsFood: 'pos.costs_food', // log food costs / receipts — chef, manager
+  posOrder: 'pos.order',          // add/edit items, take payment, close — staff+
+  posKitchen: 'pos.kitchen',      // kitchen queue, mark dishes done — staff+
+  posAnalytics: 'pos.analytics',  // operational day report (no money) — staff+
+  posCostsFood: 'pos.costs_food', // log food costs / receipts — staff+
   posCostsLabor: 'pos.costs_labor', // log employee/labor costs — manager
-  posCreateBill: 'pos.create_bill',
-  posRefund: 'pos.refund',
   posReports: 'pos.reports',      // full financial report (revenue/net) — manager
-  posManage: 'pos.manage',        // end-day, refunds/voids, settings — manager
+  posManage: 'pos.manage',        // end-day + close_day posting, voids — manager
   financeView: 'finance.view',
   financeManage: 'finance.manage',
   eventsView: 'events.view',       // shared calendar spine (40_events.sql) — owner/manager/staff

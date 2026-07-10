@@ -8,6 +8,9 @@ import {
   financeExpectedFixture,
   ownerSecretsFixture,
   permissionsFixture,
+  posBillsFixture,
+  posExpensesFixture,
+  posTablesFixture,
   quotesFixture,
   settingsFixture,
 } from './fixtures'
@@ -48,6 +51,9 @@ const db: Record<string, Row[]> = {
   owner_secrets: [{ ...ownerSecretsFixture }],
   entries: financeEntriesFixture.map((r) => ({ ...r })),
   expected: financeExpectedFixture.map((r) => ({ ...r })),
+  pos_tables: posTablesFixture.map((r) => ({ ...r })),
+  pos_bills: posBillsFixture.map((r) => ({ ...r })),
+  pos_expenses: posExpensesFixture.map((r) => ({ ...r })),
 }
 let seq = 100
 
@@ -105,6 +111,12 @@ async function handleRest(table: string, req: Request, params: URLSearchParams):
   }
   if (req.method === 'POST') {
     const body = (await req.json()) as Row
+    // upsert (Prefer: resolution=merge-duplicates / on_conflict): merge into the existing row
+    const existing = body.id != null ? rows.find((r) => r.id === body.id) : undefined
+    if (existing) {
+      Object.assign(existing, body)
+      return respond([existing], req)
+    }
     const now = new Date()
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
     const defaults: Record<string, Row> = {
@@ -122,6 +134,7 @@ async function handleRest(table: string, req: Request, params: URLSearchParams):
         source_module: null, source_ref: null, event_id: null, note: null,
         created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
       },
+      pos_expenses: { note: null, created_by: null, created_at: new Date().toISOString() },
     }
     const row: Row = {
       id: `00000000-0000-4000-8000-${String(++seq).padStart(12, '0')}`,
@@ -168,6 +181,13 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise
   const rpc = path.match(/^\/rest\/v1\/rpc\/(.+)$/)
   if (rpc) {
     if (rpc[1] === 'my_permissions') return json(permissionsFixture)
+    if (rpc[1] === 'my_modules')
+      return json([
+        { key: 'users', label: 'Users & Permissions', icon: '🔐', sort: 10 },
+        { key: 'pos', label: 'קופה', icon: '🧾', sort: 20 },
+        { key: 'finance', label: 'כספים', icon: '💰', sort: 30 },
+        { key: 'quotes', label: 'הצעות מחיר', icon: '📋', sort: 40 },
+      ])
     if (rpc[1] === 'record_payment') {
       // mirror finance.record_payment: post the entry + fulfill the expectation
       const body = (await req.json()) as Row
@@ -193,6 +213,101 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise
       exp.status = 'fulfilled'
       exp.fulfilled_by = entry.id
       return json(entry.id)
+    }
+    // ── POS RPCs — mirror the server behavior the module relies on ──
+    if (rpc[1] === 'pos_day_report') {
+      const body = (await req.json()) as { p_date: string }
+      const day = body.p_date
+      const bills = db.pos_bills.filter((b) => b.status === 'paid' && String(b.paid_at).slice(0, 10) === day)
+      const exps = db.pos_expenses.filter((e) => e.business_date === day)
+      const num = (v: unknown) => Number(v) || 0
+      const sum = (k: string) => bills.reduce((s, b) => s + num(b[k]), 0)
+      return json({
+        date: day,
+        summary: {
+          bills: bills.length,
+          covers: bills.reduce((s, b) => s + num(b.guests_adults) + num(b.guests_children), 0),
+          revenue: sum('grand_total'), cash: sum('cash_paid'), card: sum('card_paid'),
+          tips: sum('tip'), discounts: sum('discount'),
+          avg_bill: bills.length ? Math.round(sum('grand_total') / bills.length) : 0,
+          avg_minutes: 45,
+        },
+        food: exps.filter((e) => e.kind === 'food').reduce((s, e) => s + num(e.amount), 0),
+        labor: exps.filter((e) => e.kind === 'labor').reduce((s, e) => s + num(e.amount), 0),
+        items: [
+          { name: 'לבנה', category: 'פתיחים וסלטים', units: 3, value: 60 },
+          { name: 'מנת דג', category: 'תוספות', units: 2, value: 160 },
+        ],
+        expenses: exps.map((e) => ({ id: e.id, kind: e.kind, amount: e.amount, note: e.note, by: e.created_by, at: e.created_at })),
+      })
+    }
+    if (rpc[1] === 'pos_close_table') {
+      const body = (await req.json()) as { p_bill: Row; p_items: Row[] }
+      const bill: Row = { ...body.p_bill, archived_at: null }
+      const i = db.pos_bills.findIndex((b) => b.id === bill.id)
+      if (i >= 0) db.pos_bills[i] = { ...db.pos_bills[i], ...bill }
+      else db.pos_bills.unshift(bill)
+      db.pos_tables = db.pos_tables.filter((t) => t.id !== bill.id)
+      return json(null)
+    }
+    if (rpc[1] === 'pos_reopen_bill') {
+      const body = (await req.json()) as { p_id: string; p_num: number }
+      const b = db.pos_bills.find((x) => x.id === body.p_id)
+      if (b) {
+        db.pos_tables.push({
+          id: b.id, num: body.p_num, name: b.name, guests_adults: b.guests_adults,
+          guests_children: b.guests_children, pricing_mode: b.pricing_mode,
+          opened_at: b.opened_at, items: b.items, updated_at: new Date().toISOString(),
+        })
+        db.pos_bills = db.pos_bills.filter((x) => x.id !== body.p_id)
+      }
+      return json(null)
+    }
+    if (rpc[1] === 'pos_mark_item') {
+      const body = (await req.json()) as { p_id: string; p_item_id: string; p_ready: boolean }
+      const t = db.pos_tables.find((x) => x.id === body.p_id)
+      if (t && Array.isArray(t.items)) {
+        t.items = (t.items as Row[]).map((e) => (e.id === body.p_item_id
+          ? { ...e, done: body.p_ready ? Number(e.sent) || 0 : Number(e.served) || 0 }
+          : e))
+      }
+      return json(null)
+    }
+    if (rpc[1] === 'close_day') {
+      // mirror pos.close_day: post day-summary legs into finance entries, idempotent
+      const body = (await req.json()) as { p_date: string }
+      const day = body.p_date
+      const bills = db.pos_bills.filter((b) => b.status === 'paid' && String(b.paid_at).slice(0, 10) === day)
+      const num = (v: unknown) => Number(v) || 0
+      const card = bills.reduce((s, b) => s + Math.min(num(b.card_paid), num(b.grand_total)), 0)
+      const cash = bills.reduce((s, b) => s + num(b.grand_total) - Math.min(num(b.card_paid), num(b.grand_total)), 0)
+      const exps = db.pos_expenses.filter((e) => e.business_date === day)
+      const food = exps.filter((e) => e.kind === 'food').reduce((s, e) => s + num(e.amount), 0)
+      const labor = exps.filter((e) => e.kind === 'labor').reduce((s, e) => s + num(e.amount), 0)
+      const legs: [string, string, string, number, string | null][] = [
+        ['cash', 'income', 'pos', cash, 'cash'],
+        ['card', 'income', 'pos', card, 'grow'],
+        ['food', 'expense', 'pos_food', food, null],
+        ['labor', 'expense', 'pos_labor', labor, null],
+      ]
+      // plausible preview only — the real delta/correction machinery is the DB's
+      // job (pos.close_day); here a leg posts once and re-runs report "no change"
+      const posted: Row[] = []
+      for (const [leg, kind, category, amount, method] of legs) {
+        const ref = `pos:${day}:${leg}`
+        if (amount === 0 || db.entries.some((e) => e.source_ref === ref)) continue
+        const entry: Row = {
+          id: `00000000-0000-4000-8000-${String(++seq).padStart(12, '0')}`,
+          kind, category, amount, payment_method: method,
+          entry_date: day, note: 'סגירת יום',
+          source_module: 'pos', source_ref: ref,
+          event_id: null, created_by: user.id,
+          created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+        }
+        db.entries.unshift(entry)
+        posted.push({ leg, amount, entry_id: entry.id, correction: false })
+      }
+      return json({ date: day, cash, card, food, labor, posted })
     }
     return json(null) // auto_expire and anything else: succeed quietly
   }

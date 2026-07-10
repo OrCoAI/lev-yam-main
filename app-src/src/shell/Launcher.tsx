@@ -8,7 +8,7 @@ import type { ModuleRow } from '../types'
 // not-yet-migrated tools (POS) link out to their live standalone page (`href`).
 const DESTINATIONS: Record<string, { to?: string; href?: string }> = {
   users: { to: '/users' },
-  pos: { href: '/pos.html' },
+  pos: { to: '/pos' }, // platform module (parity trial); pos.html stays live at /pos.html until cut-over
   finance: { to: '/finance' },
   quotes: { to: '/quotes' },
 }

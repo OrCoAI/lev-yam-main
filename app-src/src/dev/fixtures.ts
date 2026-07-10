@@ -257,6 +257,58 @@ export const permissionsFixture = [
   'users.view',
   'finance.view',
   'finance.manage',
+  'pos.view',
+  'pos.order',
+  'pos.kitchen',
+  'pos.analytics',
+  'pos.costs_food',
+  'pos.costs_labor',
+  'pos.reports',
+  'pos.manage',
+]
+
+// ── POS fixtures: two open tables (kitchen states) + today's paid bills + costs ──
+const nowIso = new Date().toISOString()
+const hourAgo = new Date(Date.now() - 3600_000).toISOString()
+
+export const posTablesFixture = [
+  {
+    id: 't-preview-1', num: 1, name: 'משפחת מרינה', guests_adults: 2, guests_children: 3,
+    pricing_mode: 'open_house', opened_at: hourAgo, updated_at: nowIso,
+    items: [
+      { id: '0-1', name: 'לבנה', nameAr: 'لبنة', price: 20, oh: true, cat: 'פתיחים וסלטים', qty: 2, sent: 2, done: 1, served: 0, firedAt: hourAgo },
+      { id: '4-0', name: 'מנת דג', nameAr: 'صحن سمك', price: 80, oh: false, cat: 'תוספות', qty: 1, sent: 1, done: 0, served: 0, firedAt: hourAgo },
+    ],
+  },
+  {
+    id: 't-preview-2', num: 2, name: '', guests_adults: 2, guests_children: 0,
+    pricing_mode: 'a_la_carte', opened_at: nowIso, updated_at: nowIso,
+    items: [
+      { id: '2-1', name: 'קפה עם חלב', nameAr: 'قهوة بحليب', price: 8, oh: true, cat: 'שתייה חמה', qty: 2, sent: 0, done: 0, served: 0 },
+    ],
+  },
+]
+
+export const posBillsFixture = [
+  {
+    id: 'b-preview-1', table_num: 3, name: '', status: 'paid', closed_by: null,
+    guests_adults: 4, guests_children: 0, pricing_mode: 'open_house',
+    opened_at: hourAgo, paid_at: nowIso, items_count: 3,
+    oh_charge: 300, extras_total: 80, menu_value: 140, discount: 0, tip: 20,
+    grand_total: 380, cash_paid: 400, card_paid: 0, items: [], archived_at: null,
+  },
+  {
+    id: 'b-preview-2', table_num: 4, name: 'זוג ליד הים', status: 'paid', closed_by: null,
+    guests_adults: 2, guests_children: 0, pricing_mode: 'a_la_carte',
+    opened_at: hourAgo, paid_at: nowIso, items_count: 2,
+    oh_charge: 0, extras_total: 130, menu_value: 130, discount: 10, tip: 0,
+    grand_total: 120, cash_paid: 0, card_paid: 120, items: [], archived_at: null,
+  },
+]
+
+export const posExpensesFixture = [
+  { id: 9001, business_date: nowIso.slice(0, 10), kind: 'food', amount: 250, note: 'דגים — שוק', created_by: 'preview@levyam.com', created_at: nowIso },
+  { id: 9002, business_date: nowIso.slice(0, 10), kind: 'labor', amount: 400, note: 'משמרת בוקר', created_by: 'preview@levyam.com', created_at: nowIso },
 ]
 
 // finance.entries — a manual row, a quote-posted row, and a POS reversal pair
