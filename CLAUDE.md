@@ -124,6 +124,12 @@ user's explicit sign-off to skip one) and re-run the step until it comes back cl
 4. **`/verify`** — drive the affected flow end-to-end in the real app (localhost browser),
    not just typecheck/build. Skip only for diffs with no runtime surface (docs-only).
 
+**Diff-class scaling (decided 2026-07-11):** for diffs with **no runtime or schema
+surface** (docs-only), run steps 1–3 **inline** — the reviewing model does each pass
+itself, no agent fan-out — the same carve-out step 4 already has. The full multi-agent
+gate at high effort stays mandatory for any diff touching `app-src/`, `supabase/`, any
+file in `deploy.yml`'s site allowlist, or `.github/workflows/`.
+
 This gate applies to **every** commit — there is no staging, so `main` deploys straight to
 production. A commit with an unrun or failing gate step is a process violation.
 
