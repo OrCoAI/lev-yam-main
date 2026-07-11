@@ -57,7 +57,9 @@ file storage, and the only place privileged code runs.
   rows readable only via `quotes.settings`-class permissions. Money visibility follows
   the same rule: finance data is owner+manager only, and initiative budgets (Phase 3)
   get **per-initiative row-level grants** — finer than role→module→action, designed in
-  RLS before any UI exists.
+  RLS before any UI exists. One known escape by design: generated contracts snapshot
+  the owner's signature into `contracts.content`, readable at `quotes.view` — keep that
+  permission owner+manager-scoped (or split the snapshot) before ever widening it.
 - **Invariants live in the database, not in app code.** One contract per quote = UNIQUE
   FK. Signed = immutable = trigger. One-way date stamps = trigger. A buggy or malicious
   client cannot violate them.

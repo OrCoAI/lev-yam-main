@@ -91,6 +91,30 @@ bilingual is ever a retrofit.*
       `created_by` from JWT, consider `pos` schema move + menu-as-data +
       server-side bill recompute + `pos.range_report` — see plan §8a)
 
+## Phase 1.5 — Platform hardening (2026-07-10 audit)
+
+*Follow-ups from the full-project best-practices audit — details, sizing, and owner
+questions: [plans/platform-hardening.md](plans/platform-hardening.md). The audit's #1
+item — the anon `pos_*` surface — is the POS cut-over task above, not repeated here.*
+
+- [ ] **H1** RLS regression suite (`supabase/tests/rls_matrix.sql`: per-role can/can't
+      matrix) + `PERM` ↔ `core.permissions` drift check as a `ci.yml` step
+- [ ] **H2** Schema migration pipeline (Supabase CLI, versioned migrations + drift
+      check in the gate) — owner decision Q2
+- [ ] **H3** Permission governance: last-admin lockout guard + `core.audit_log` on
+      role/permission changes *(ships with H6 — one guards branch)*
+- [ ] **H4** RLS initplan sweep: wrap `core.has_permission()` / `auth.uid()` in policies
+      as `(select …)`; add the pattern to MODULE-TEMPLATE.md — gates Phase 2's
+      public feed
+- [ ] **H5** Invite flow (`admin-invite` edge function + users-module action) +
+      self-service password reset on the login screen — gates Phase 3's member role;
+      timing = owner decision Q3
+- [ ] **H6** `finance.expected` module-row guard (status-only client transitions on
+      module-sourced expectations)
+- [ ] **H7** Hygiene batch — nine small repo/UX/ops items (storage policies into
+      `supabase/schema/`, users-module HE/AR, error boundary, dependabot, …; PITR
+      deferred — trigger rule in the plan); full list in the plan
+
 ## Phase 2 — What's happening: bookings & events
 
 *Replaces WhatsApp-thread reservation tracking. The shared calendar itself is the `events`
@@ -111,6 +135,7 @@ public by default.*
       the first taste of *see what's happening*
 - [ ] **Public "What's happening" on levyam.com** (HE/AR): the village and visitors see
       published events on the marketing site, read straight from Supabase
+      *(prereq: the H4 initplan sweep — Phase 1.5)*
 
 ## Phase 3 — Community creation (the heart of the dream)
 
@@ -119,7 +144,9 @@ container for **any** dream (fishing trip, workshop, festival, tour…) — no h
 categories.*
 
 - [ ] New role: **member** (community), created **by team invitation only** for now
-      (staff invite people they know; opening a public request → approve flow is Phase 6)
+      (staff invite people they know; opening a public request → approve flow is Phase 6).
+      *Prerequisite: the H5 invite + password-reset flows (timing = plan Q3) — members
+      must onboard without anyone opening the Supabase dashboard*
 - [ ] `50_initiatives.sql` + Initiatives module: **propose → approve → run** (any member
       proposes; the Lev Yam team approves before it goes live)
 - [ ] Initiative workspace: description, team, tasks/next-steps, its own events
@@ -168,7 +195,9 @@ is bilingual HE/AR like the marketing site.*
 - **Public by default:** feed/calendar content is visible on levyam.com unless marked
   internal — every content table carries a visibility flag from its first migration
 - **Mobile-first:** staff and members work from phones — test there first
-- **RLS is the guard:** every new table gets policies before UI; `lib/permissions.ts` mirrors
-  the seeded keys. Money data is the strictest: initiative finance uses per-initiative
-  grants, never platform-wide visibility
+- **RLS is the guard — and it's tested, not just written** (from Phase 1.5): every new
+  table gets policies before UI; the regression suite runs after every schema apply and
+  a new module adds its can/can't assertions with its policies; `lib/permissions.ts`
+  mirrors the seeded keys. Money data is the strictest: initiative finance uses
+  per-initiative grants, never platform-wide visibility
 - **This file is the tracker:** update checkboxes and add discovered tasks each session
