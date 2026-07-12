@@ -23,9 +23,9 @@ instead of retrofitting it.
    safe-area insets, no horizontal page scroll, `:focus-visible` rings,
    `prefers-reduced-motion` respected, tabular numerals for money.
 5. **RTL-native + bilingual:** logical properties only; **every new string ships HE + AR**
-   (shell dict for shell strings; a module `i18n.ts` — the quotes `useQT` pattern — is
-   *started* for finance/users to hold the new strings; the full retrofit of their old
-   hardcoded-Hebrew chrome stays its own tracked roadmap item).
+   (shell dict for shell strings; module `i18n.ts` files — via `makeDictHook`, see the
+   close-out — are *started* for finance/users to hold the new strings; the full retrofit
+   of their old hardcoded-Hebrew chrome stays its own tracked roadmap item).
 6. **One design language.** Brand tokens from `styles.css`; disclosure CSS lives once at
    shell level and is class-keyed (the current mobile CSS keys on *Hebrew `data-label`
    attribute values*, which is fragile and blocks the i18n retrofit — replaced).
@@ -106,3 +106,70 @@ touch targets. Screenshots attached to the close-out.
 - **Q2:** Users tab as role-chip cards on desktop too (one code path), matrix tab
   unchanged? (Default: yes — chips read better at every width for ~5 users; the matrix
   tab remains the dense power view.)
+
+## Close-out (2026-07-12 — PR #5, awaiting merge)
+
+**What shipped** (branch `feat/mobile-ux`, 18 files, +702/−217):
+
+- **The disclosure system** — shared `.rowline` CSS (styles.css) + `useRowDisclosure`
+  / `useMediaQuery` hooks: rows collapse to a one-line summary at phone width and
+  tap-expand into the full record (all fields as label→value lines, full-width 44px
+  labeled actions, keyboard operable). Nothing that exists on desktop is unreachable
+  on a phone anymore — the old CSS *deleted* payment/type/note at phone width.
+- **Finance** — entries + expected on disclosure rows; module-posted rows explain
+  their immutability in-place; the add/edit form collapses behind a `+ הוספת תנועה`
+  button on phones (opens for edits, closes after a phone save); the record-payment
+  form opens inline under its expectation row (desktop too — better context);
+  report re-keyed with a payment-label fallback.
+- **Users** — users tab is now a card per user with role toggle-chips (each chip
+  shows role + state = context on the button itself); permission matrix gained
+  bilingual module group headers whose label stays pinned during horizontal scroll.
+- **Launcher** — one `MODULE_META` record per module (route + icon + bilingual
+  description); every tile now says what's behind it.
+- **Quotes** — 40px icon buttons, visible (not hover-only) checklist delete,
+  16px note input. Cards/bottom-sheet pattern untouched (it was the reference).
+- **Shell foundation** — ≥16px form controls at phone width (kills iOS focus
+  auto-zoom), 44px tap targets everywhere, `touch-action: manipulation`,
+  `:focus-visible` rings, `prefers-reduced-motion`, safe-area insets.
+- **i18n** — `makeDictHook` in `lib/i18n.tsx` is now THE module-dictionary pattern;
+  `finance/i18n.ts` + `users/i18n.ts` created holding every string this pass added
+  (HE + AR). Mobile CSS is class-keyed, no longer keyed on Hebrew label text —
+  this unblocks the tracked finance/users HE/AR retrofits.
+- **Dev harness** — users-module fixtures + `admin_list_users`/`report` RPC mocks;
+  order-dependence mirrored; all redesigned surfaces drivable in `?preview`.
+- **MODULE-TEMPLATE.md** — rowline contract (cell roles, data-label rule, formrow,
+  collapsed-form recipe), the 640px platform breakpoint (`PHONE_MQ`; quotes' 760px
+  recorded as the sanctioned exception), `MODULE_META` registration, `makeDictHook`.
+
+**Decisions made along the way**
+- POS shipped zero visual changes (parity trial protected) — per plan conflict #1.
+- Launcher context is static descriptions, not live counts — per plan conflict #2
+  (Phase 2's happening feed owns live data).
+- Disclosure state is gated by viewport (`isPhone`): desktop renders the full table
+  with no row interactivity; rotation resets the finance form to the mode default
+  unless an edit is in progress.
+- A row stays expanded after saving its edit (you see what you just changed) —
+  deliberate.
+- Screen-reader depth: rows carry `aria-expanded` + keyboard toggle but not
+  `role="button"` (nested-button validity); noted as a future a11y refinement.
+
+**Quality gate** — `/simplify` (11 fixes: i18n factory + canonical shape, users CSS
+namespacing, launcher registry merge, actions-cell single-keying, fixture helpers,
+template write-backs…); `/code-review high` (10 findings fixed, incl. a real
+keyboard bug — `preventDefault` before the interactive-child guard blocked Enter on
+buttons inside rows); `/security-review` (no findings; dev-harness prod-exclusion
+independently verified); `/verify` (19-step Playwright drive at 390×844 + desktop:
+add/edit round-trips, record-payment crossing into the entries tab, chip-toggle
+persistence, rotation across the breakpoint, keyboard paths, zero page errors).
+
+**Deliberately left out** (tracked): full finance/users HE/AR retrofit (roadmap);
+quotes document pages (A4 print artifacts); live launcher data (Phase 2);
+`role="button"` row semantics; relative-day chips on finance dates; quotes i18n
+migration to `makeDictHook` (opportunistic).
+
+**Alignment verdict** — **Aligned.** Architecture: no schema/RLS/permission
+changes; disclosure reveals only data the RLS-gated query already returned; all new
+strings HE+AR through dictionaries; mobile-first is the substance of the work; POS
+freeze honors invariant 7 (live tools until parity). Vision: serves principle 5
+(staff and members work from phones) and principle 2 (the pattern + template
+write-backs keep "new module in ~1 hour" true on phones). No drift found.

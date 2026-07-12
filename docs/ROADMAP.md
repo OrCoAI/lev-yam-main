@@ -120,6 +120,7 @@ item — the anon `pos_*` surface — is the POS cut-over task above, not repeat
       tab → role-chip cards, class-keyed mobile CSS (unblocks the HE/AR retrofits).
       POS deliberately untouched (parity trial). Plan:
       [plans/platform-mobile-ux.md](plans/platform-mobile-ux.md)
+      *(built + gated 2026-07-12 — **PR #5 open, tick on merge**; close-out in the plan)*
 
 ## Phase 2 — What's happening: bookings & events
 
