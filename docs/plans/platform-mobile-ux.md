@@ -107,7 +107,8 @@ touch targets. Screenshots attached to the close-out.
   unchanged? (Default: yes — chips read better at every width for ~5 users; the matrix
   tab remains the dense power view.)
 
-## Close-out (2026-07-12 — PR #5, awaiting merge)
+## Close-out (2026-07-12 — PR #5 MERGED + DEPLOYED to production: deploy run green
+incl. smoke checks; live bundle probe-verified serving the rowline CSS + bilingual strings)
 
 **What shipped** (branch `feat/mobile-ux`, 18 files, +702/−217):
 
