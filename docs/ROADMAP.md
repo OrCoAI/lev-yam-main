@@ -114,6 +114,12 @@ item — the anon `pos_*` surface — is the POS cut-over task above, not repeat
 - [ ] **H7** Hygiene batch — nine small repo/UX/ops items (storage policies into
       `supabase/schema/`, users-module HE/AR, error boundary, dependabot, …; PITR
       deferred — trigger rule in the plan); full list in the plan
+- [ ] **Mobile-UX foundation pass** (owner-directed 2026-07-11, not from the audit):
+      progressive-disclosure rows (summary → tap → full detail + actions) shell-wide,
+      ≥44px touch targets, ≥16px inputs (iOS zoom), launcher tile descriptions, users
+      tab → role-chip cards, class-keyed mobile CSS (unblocks the HE/AR retrofits).
+      POS deliberately untouched (parity trial). Plan:
+      [plans/platform-mobile-ux.md](plans/platform-mobile-ux.md)
 
 ## Phase 2 — What's happening: bookings & events
 

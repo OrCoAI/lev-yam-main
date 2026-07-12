@@ -35,6 +35,11 @@ const dict = {
   'launcher.sub': { he: 'בחרו מודול כדי להתחיל', ar: 'اختاروا وحدة للبدء' },
   'launcher.open': { he: 'פתח ←', ar: 'افتح ←' },
   'launcher.soon': { he: 'בקרוב', ar: 'قريبًا' },
+  // one-line tile descriptions — every launcher button says what's inside it
+  'launcher.desc.users': { he: 'משתמשים, תפקידים והרשאות', ar: 'مستخدمون، أدوار وصلاحيات' },
+  'launcher.desc.finance': { he: 'תנועות, צפי ודוח כספי', ar: 'حركات، متوقّع وتقرير مالي' },
+  'launcher.desc.pos': { he: 'שולחנות, מטבח ודוח יום', ar: 'طاولات، مطبخ وتقرير اليوم' },
+  'launcher.desc.quotes': { he: 'הצעות מחיר, חוזים והכנות', ar: 'عروض أسعار، عقود وتحضيرات' },
   'passkey.enabled': { he: '✓ Face ID מופעל', ar: '✓ Face ID مفعّل' },
   'passkey.enabling': { he: 'מפעיל…', ar: 'جارٍ التفعيل…' },
   'passkey.retry': { he: 'נסה שוב — Face ID', ar: 'حاول مجددًا — Face ID' },
@@ -88,6 +93,16 @@ export function useI18n(): I18nState {
   const ctx = useContext(I18nContext)
   if (!ctx) throw new Error('useI18n must be used inside <I18nProvider>')
   return ctx
+}
+
+/** Factory for module-local dictionaries (module chrome only): pass two
+ *  parallel typed objects and get a hook returning the active one. This is
+ *  THE module i18n pattern — see modules/finance/i18n.ts for the shape. */
+export function makeDictHook<T>(he: T, ar: T): () => T {
+  return function useDict(): T {
+    const { lang } = useI18n()
+    return lang === 'ar' ? ar : he
+  }
 }
 
 /** The one-tap language switch, shown in the topbar and on the login card. */

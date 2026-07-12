@@ -290,8 +290,10 @@
   .q-cell-docs { grid-column: 1 / -1; grid-row: 4; }
   .q-cell-docs .q-chip-row:not(:empty) { margin-top: 6px; }
   .q-cell-notes { grid-column: 1 / -1; grid-row: 5; margin-top: 8px; }
-  .q-note { background: #fbf8f1; }
+  .q-note { background: #fbf8f1; font-size: 16px; } /* <16px makes iOS zoom on focus */
   .q-rowact { opacity: 1; }
+  .q-iconbtn { width: 40px; height: 40px; } /* finger-sized archive/delete targets */
+  .chk-del { opacity: 0.6; } /* hover-reveal doesn't exist on touch — keep it visible */
 
   .cal-day { min-height: 54px; }
   .cal-event { font-size: 0.62rem; padding: 1px 4px; }

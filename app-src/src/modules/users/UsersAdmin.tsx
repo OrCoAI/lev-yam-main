@@ -1,7 +1,9 @@
-import { useEffect, useState, useCallback } from 'react'
+import { Fragment, useEffect, useState, useCallback } from 'react'
 import { core } from '../../lib/supabase'
 import { useCan, PERM } from '../../lib/permissions'
 import type { AdminUser, RoleRow, PermissionRow, RolePermissionRow } from '../../types'
+import { useUT } from './i18n'
+import './users.css'
 
 type Tab = 'users' | 'matrix'
 
@@ -73,47 +75,38 @@ function UsersTab({ canManage }: { canManage: boolean }) {
   if (loading) return <div className="muted">טוען משתמשים…</div>
   if (error) return <div className="error">שגיאה: {error}</div>
 
+  // A card per user, roles as toggle chips: each chip carries its own context
+  // (role name + on/off state) and is a real touch target — the same picture
+  // and controls at every width, no matrix to scroll on a phone.
   return (
-    <div className="card">
-      <table className="grid grid-sticky-first">
-        <thead>
-          <tr>
-            <th>משתמש</th>
-            {roles.map((r) => (
-              <th key={r.id} className="center">
-                {r.label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {users.map((u) => (
-            <tr key={u.user_id}>
-              <td>{u.email ?? u.user_id}</td>
-              {roles.map((r) => {
-                const assigned = u.roles.includes(r.key)
-                return (
-                  <td key={r.id} className="center">
-                    <input
-                      type="checkbox"
-                      checked={assigned}
-                      disabled={!canManage || busy === u.user_id + r.id}
-                      onChange={() => toggleRole(u, r, assigned)}
-                    />
-                  </td>
-                )
-              })}
-            </tr>
-          ))}
-          {users.length === 0 && (
-            <tr>
-              <td colSpan={roles.length + 1} className="muted">
-                אין משתמשים. צרו משתמש ב-Supabase → Authentication.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+    <div className="u-list">
+      {users.map((u) => (
+        <div key={u.user_id} className="card u-card">
+          <div className="u-mail" title={u.email ?? u.user_id}>
+            {u.email ?? u.user_id}
+          </div>
+          <div className="chips">
+            {roles.map((r) => {
+              const assigned = u.roles.includes(r.key)
+              return (
+                <button
+                  key={r.id}
+                  type="button"
+                  className={assigned ? 'chip on' : 'chip'}
+                  aria-pressed={assigned}
+                  disabled={!canManage || busy === u.user_id + r.id}
+                  onClick={() => toggleRole(u, r, assigned)}
+                >
+                  {r.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      ))}
+      {users.length === 0 && (
+        <div className="card notice">אין משתמשים. צרו משתמש ב-Supabase → Authentication.</div>
+      )}
     </div>
   )
 }
@@ -121,6 +114,7 @@ function UsersTab({ canManage }: { canManage: boolean }) {
 /* ------------------------------------------------- Roles × Permissions matrix */
 
 function MatrixTab({ canManage }: { canManage: boolean }) {
+  const ut = useUT()
   const [roles, setRoles] = useState<RoleRow[]>([])
   const [perms, setPerms] = useState<PermissionRow[]>([])
   const [grants, setGrants] = useState<Set<string>>(new Set()) // `${role_id}:${permission_id}`
@@ -196,26 +190,37 @@ function MatrixTab({ canManage }: { canManage: boolean }) {
           </tr>
         </thead>
         <tbody>
-          {perms.map((p) => (
-            <tr key={p.id}>
-              <td>
-                <code className="perm-key">{p.key}</code>
-                <span className="perm-label">{p.label}</span>
-              </td>
-              {roles.map((r) => {
-                const key = `${r.id}:${p.id}`
-                return (
-                  <td key={r.id} className="center">
-                    <input
-                      type="checkbox"
-                      checked={grants.has(key)}
-                      disabled={!canManage || busy === key}
-                      onChange={() => toggle(r, p)}
-                    />
+          {perms.map((p, i) => (
+            <Fragment key={p.id}>
+              {/* perms arrive ordered by module — a group header per module keeps
+                  the long matrix scannable, especially while phone-scrolling */}
+              {(i === 0 || perms[i - 1].module !== p.module) && (
+                <tr className="u-permgroup">
+                  <td colSpan={roles.length + 1}>
+                    <span>{ut.moduleNames[p.module] ?? p.module}</span>
                   </td>
-                )
-              })}
-            </tr>
+                </tr>
+              )}
+              <tr>
+                <td>
+                  <code className="u-permkey">{p.key}</code>
+                  <span className="u-permlabel">{p.label}</span>
+                </td>
+                {roles.map((r) => {
+                  const key = `${r.id}:${p.id}`
+                  return (
+                    <td key={r.id} className="center">
+                      <input
+                        type="checkbox"
+                        checked={grants.has(key)}
+                        disabled={!canManage || busy === key}
+                        onChange={() => toggle(r, p)}
+                      />
+                    </td>
+                  )
+                })}
+              </tr>
+            </Fragment>
           ))}
         </tbody>
       </table>

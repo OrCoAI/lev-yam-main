@@ -64,6 +64,14 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .muted { color: var(--muted); }
 .error { color: var(--danger); }
 
+/* touch fundamentals: no double-tap zoom delay on controls, visible keyboard focus,
+   and no motion for people who asked the OS for none */
+button, [role='button'] { touch-action: manipulation; }
+:focus-visible { outline: 2px solid var(--sea); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
+
 .screen-center { min-height: 100%; display: grid; place-items: center; padding: 24px; }
 
 /* ---------- cards & notices ---------- */
@@ -120,7 +128,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .app { min-height: 100%; display: flex; flex-direction: column; }
 .topbar {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 20px;
+  padding: 10px max(20px, env(safe-area-inset-right)) 10px max(20px, env(safe-area-inset-left));
   background: rgba(255, 255, 255, 0.85);
   backdrop-filter: saturate(1.1) blur(6px);
   border-bottom: 1px solid var(--line);
@@ -132,7 +140,10 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .brand-sub { font-size: 0.68rem; font-weight: 600; color: var(--muted); }
 .topbar-right { display: flex; align-items: center; gap: 12px; }
 .user-email { font-size: 0.85rem; }
-.content { flex: 1; padding: 24px; max-width: 1040px; width: 100%; margin: 0 auto; }
+.content {
+  flex: 1; max-width: 1040px; width: 100%; margin: 0 auto;
+  padding: 24px max(24px, env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+}
 .page-title { margin: 0 0 16px; font-family: var(--font-display); font-weight: 800; font-size: 1.5rem; }
 
 /* ---------- launcher (modules page) ---------- */
@@ -190,6 +201,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .tile--orange::after { background: var(--orange); }
 .tile--blue::after { background: var(--sea); }
 .tile-label { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; }
+.tile-desc { font-size: 0.78rem; color: var(--muted); line-height: 1.35; margin-top: -6px; }
 .tile-go { font-size: 0.85rem; color: var(--muted); transition: color 0.12s ease; }
 .tile:hover .tile-go { color: var(--sea-dark); }
 .tile--orange:hover .tile-go { color: var(--orange-dark); }
@@ -209,8 +221,6 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .grid th { font-size: 0.85rem; color: var(--muted); font-weight: 700; }
 .grid .center { text-align: center; }
 .grid input[type='checkbox'] { width: 18px; height: 18px; accent-color: var(--sea); }
-.perm-key { display: block; color: var(--sea-dark); }
-.perm-label { display: block; font-size: 0.8rem; color: var(--muted); }
 
 /* ---------- form fields (used by finance; reusable) ---------- */
 .field { display: grid; gap: 6px; min-width: 0; }
@@ -268,11 +278,27 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .section-title { margin: 22px 0 10px; font-family: var(--font-display); font-weight: 800; font-size: 1.1rem; color: var(--ink); }
 
+/* ---------- disclosure lists (shared, any module) ----------
+   A `.rowline` table shows every column on desktop. Under the phone breakpoint
+   each row collapses to a one-line summary (.rl-lead · .rl-main … .rl-amt ⌄,
+   optional .rl-tail for a trailing count); rows carrying aria-expanded (spread
+   `rowProps(id)` from lib/useRowDisclosure) open on tap into a stacked card
+   that reveals the .rl-more cells (label from their data-label), the
+   .rl-actions row and .rl-lock explainers. Rows without aria-expanded (report
+   breakdowns) stay one line; a .rl-formrow row is a plain block for inline
+   forms. Full contract: docs/MODULE-TEMPLATE.md §3.
+   Class-keyed on purpose — never key mobile CSS on translated label text. */
+.rl-lock { display: none; }
+.rl-actions { display: flex; gap: 6px; justify-content: flex-end; }
+.rl-formrow > td { padding-top: 0; }
+
+/* full-width opener for a form that collapses behind a button on phones */
+.form-open-btn { width: 100%; min-height: 48px; margin-bottom: 18px; }
+
 /* finance list + report tables */
 .finance-income { color: var(--ok); font-weight: 700; }
 .finance-expense { color: var(--danger); font-weight: 700; }
 .finance-amount { font-weight: 700; white-space: nowrap; }
-.finance-row-actions { display: flex; gap: 6px; justify-content: flex-end; }
 .finance-load-more { display: flex; justify-content: center; margin-top: 14px; }
 .finance-badge {
   display: inline-block; margin-inline-start: 6px; padding: 1px 8px;
@@ -310,80 +336,66 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   .tile-icon { width: 40px; height: 40px; }
   .tile-emoji { font-size: 1.6rem; }
   .tile-label { font-size: 1rem; }
+  .tile-desc { font-size: 0.72rem; }
   .launcher-logo { height: 80px; }
 
   /* wide admin tables (e.g. users) scroll rather than overflow the screen */
   .card { overflow-x: auto; padding: 16px; }
 
-  /* finance/report tables become stacked cards, one row per entry */
-  .finance-list { overflow-x: visible; padding: 12px; }
-  .finance-list table,
-  .finance-list thead,
-  .finance-list tbody,
-  .finance-list tr,
-  .finance-list th,
-  .finance-list td { display: block; }
-  .finance-list thead { display: none; }
-  .finance-list tr {
-    background: #fff; box-shadow: var(--shadow);
-    border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 10px;
+  /* disclosure lists: rows collapse to a one-line summary card; a row that
+     carries aria-expanded opens on tap into its full stacked detail + actions */
+  .card.rowline { background: transparent; border: 0; box-shadow: none; padding: 0; overflow-x: visible; }
+  .rowline table, .rowline thead, .rowline tbody, .rowline tr, .rowline th, .rowline td { display: block; }
+  .rowline thead { display: none; }
+  .rowline tr {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px; row-gap: 10px;
+    background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 12px; margin-bottom: 8px;
   }
-  .finance-list tr:last-child { margin-bottom: 0; }
-  .finance-list td {
-    border: none; padding: 6px 0; gap: 12px;
-    display: flex; align-items: center; justify-content: space-between; text-align: end;
+  .rowline tr:last-child { margin-bottom: 0; }
+  .rowline td { padding: 0; border: none; min-width: 0; text-align: start; }
+  .rowline td:empty { display: none; }
+  .rowline .rl-lead { flex: 0 0 auto; color: var(--muted); font-size: 0.78rem; white-space: nowrap; }
+  .rowline .rl-lead::after { content: '·'; margin-inline-start: 6px; color: var(--line); }
+  .rowline .rl-main {
+    flex: 1 1 auto; min-width: 0; font-weight: 600;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  .finance-list td::before {
+  .rowline .rl-amt { flex: 0 0 auto; }
+  .rowline .rl-tail { flex: 0 0 auto; color: var(--muted); font-size: 0.78rem; }
+  .rowline .rl-tail::before { content: '· '; color: var(--line); }
+  .rowline .rl-more, .rowline .rl-actions { display: none; }
+
+  /* tap affordance: a chevron only on rows that actually expand */
+  .rowline tr[aria-expanded] { cursor: pointer; touch-action: manipulation; }
+  .rowline tr[aria-expanded]::after {
+    content: ''; width: 8px; height: 8px; flex: 0 0 auto; align-self: center;
+    margin-inline-start: 2px; margin-block-start: -4px;
+    /* physical borders on purpose: rotation is physical too, so right+bottom
+       rotated 45° reads "down" in RTL and LTR alike */
+    border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted);
+    transform: rotate(45deg); transition: transform 0.15s ease;
+  }
+  .rowline tr[aria-expanded='true']::after { transform: rotate(-135deg); margin-block-start: 4px; }
+
+  /* expanded: reveal every remaining field as a label→value line, then actions */
+  .rowline tr[aria-expanded='true'] .rl-more:not(:empty) {
+    display: flex; order: 10; flex: 1 1 100%;
+    justify-content: space-between; align-items: center; gap: 12px; text-align: end;
+  }
+  .rowline tr[aria-expanded='true'] .rl-more::before {
     content: attr(data-label); color: var(--muted); font-weight: 600; font-size: 0.82rem; text-align: start;
   }
-  .finance-list td:empty { display: none; }
-  .finance-list td.finance-row-actions {
-    justify-content: stretch; margin-top: 6px; padding-top: 10px; border-top: 1px solid var(--line);
+  .rowline tr[aria-expanded='true'] .rl-actions:not(:empty) {
+    display: flex; order: 11; flex: 1 1 100%; gap: 8px;
+    padding-top: 10px; border-top: 1px solid var(--line);
   }
-  .finance-list td.finance-row-actions::before { content: none; }
-  .finance-list td.finance-row-actions .btn-sm { flex: 1; min-height: 40px; }
+  .rowline tr[aria-expanded='true'] .rl-actions .btn-sm { flex: 1; min-height: 44px; min-width: 0; }
+  .rowline tr[aria-expanded='true'] .rl-actions .btn-label { display: inline; }
+  .rowline tr[aria-expanded='true'] .rl-lock { display: block; flex: 1 1 100%; color: var(--muted); font-size: 0.8rem; text-align: start; }
 
-  /* transaction list: collapse each entry to one compact line
-     (date · category  ..........  amount [✎][✕]) instead of a stacked card */
-  .finance-entries tr {
-    display: flex; align-items: center; gap: 8px;
-    padding: 10px 12px; margin-bottom: 8px;
-  }
-  .finance-entries td { display: block; padding: 0; text-align: start; }
-  .finance-entries td::before { content: none; }
-  .finance-entries td[data-label='סוג'],
-  .finance-entries td[data-label='תשלום'],
-  .finance-entries td[data-label='הערה'] { display: none; }
-  .finance-entries td[data-label='תאריך'] {
-    flex: 0 0 auto; color: var(--muted); font-size: 0.78rem; white-space: nowrap;
-  }
-  .finance-entries td[data-label='תאריך']::after { content: '·'; margin-inline-start: 6px; color: var(--line); }
-  .finance-entries td[data-label='קטגוריה'] {
-    flex: 1 1 auto; min-width: 0; font-weight: 600;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-  .finance-entries td[data-label='סכום'] { flex: 0 0 auto; }
-  .finance-entries td.finance-row-actions {
-    flex: 0 0 auto; display: flex; justify-content: flex-end; gap: 4px; margin: 0; padding: 0; border: none;
-  }
-  .finance-entries td.finance-row-actions .btn-sm {
-    flex: 0 0 auto; min-height: 36px; min-width: 36px; padding: 7px;
-  }
-
-  /* report breakdown tables: same one-line treatment
-     (category/method  ..........  amount · count) */
-  .finance-breakdown tr { display: flex; align-items: center; gap: 8px; padding: 10px 12px; margin-bottom: 8px; }
-  .finance-breakdown td { display: block; padding: 0; text-align: start; }
-  .finance-breakdown td::before { content: none; }
-  .finance-breakdown td[data-label='סוג'] { display: none; }
-  .finance-breakdown td[data-label='קטגוריה'],
-  .finance-breakdown td[data-label='אמצעי'] {
-    flex: 1 1 auto; min-width: 0; font-weight: 600;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-  .finance-breakdown td[data-label='סכום'] { flex: 0 0 auto; }
-  .finance-breakdown td[data-label='תנועות'] { flex: 0 0 auto; color: var(--muted); font-size: 0.78rem; }
-  .finance-breakdown td[data-label='תנועות']::before { content: '· '; color: var(--line); }
+  /* an inline form row (e.g. record-payment) is a plain block, not a summary line */
+  .rowline tr.rl-formrow { display: block; cursor: default; }
 
   /* wide admin tables: freeze the label column while the rest scrolls horizontally,
      so a user never loses track of which row they're looking at */
@@ -395,7 +407,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 
   /* tabs read as a proper full-width segmented control, not sparse left-aligned pills */
   .tabs { gap: 6px; }
-  .tab { flex: 1; text-align: center; padding: 10px 10px; min-height: 42px; }
+  .tab { flex: 1; text-align: center; padding: 10px 10px; min-height: 44px; }
 
   /* payment method chips: even 2-column grid, never needs to scroll or wrap unevenly */
   .chips-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
@@ -411,7 +423,14 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 
   /* consistent tap targets */
   .btn-primary, .btn-ghost { min-height: 44px; }
+  .chip { min-height: 44px; }
   .btn-icon-label .btn-label { display: none; }
+
+  /* form controls never render under 16px — below that iOS auto-zooms on focus
+     (POS keeps its inline-styled sizes: inline styles outrank any selector) */
+  #root input:not([type='checkbox']):not([type='radio']),
+  #root select,
+  #root textarea { font-size: 16px; }
 
   /* keep income/expense/net readable as one row instead of wrapping 2+1 */
   .finance-summary { grid-template-columns: repeat(3, 1fr); gap: 8px; }

@@ -3,16 +3,21 @@
 // run and *see* the authed UI (dashboard, documents) with realistic data and
 // zero network. Loaded by main.tsx before any app module, never in prod.
 import {
+  adminUsersFixture,
   contractsFixture,
   financeEntriesFixture,
   financeExpectedFixture,
   ownerSecretsFixture,
+  permissionRowsFixture,
   permissionsFixture,
   posBillsFixture,
   posExpensesFixture,
   posTablesFixture,
   quotesFixture,
+  rolePermissionsFixture,
+  rolesFixture,
   settingsFixture,
+  userRolesFixture,
 } from './fixtures'
 
 type Row = Record<string, unknown>
@@ -51,6 +56,10 @@ const db: Record<string, Row[]> = {
   owner_secrets: [{ ...ownerSecretsFixture }],
   entries: financeEntriesFixture.map((r) => ({ ...r })),
   expected: financeExpectedFixture.map((r) => ({ ...r })),
+  roles: rolesFixture.map((r) => ({ ...r })),
+  permissions: permissionRowsFixture.map((r) => ({ ...r })),
+  role_permissions: rolePermissionsFixture.map((r) => ({ ...r })),
+  user_roles: userRolesFixture.map((r) => ({ ...r })),
   pos_tables: posTablesFixture.map((r) => ({ ...r })),
   pos_bills: posBillsFixture.map((r) => ({ ...r })),
   pos_expenses: posExpensesFixture.map((r) => ({ ...r })),
@@ -106,6 +115,15 @@ async function handleRest(table: string, req: Request, params: URLSearchParams):
     if (table === 'expected')
       out = [...out].sort(
         (a, b) => String(a.due_date ?? '9999').localeCompare(String(b.due_date ?? '9999')),
+      )
+    // the UI relies on server ordering here (role columns by sort; the matrix
+    // emits a group header on every module change) — don't trust fixture order
+    if (table === 'roles') out = [...out].sort((a, b) => Number(a.sort) - Number(b.sort))
+    if (table === 'permissions')
+      out = [...out].sort(
+        (a, b) =>
+          String(a.module).localeCompare(String(b.module)) ||
+          String(a.action).localeCompare(String(b.action)),
       )
     return respond(out, req)
   }
@@ -181,6 +199,50 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise
   const rpc = path.match(/^\/rest\/v1\/rpc\/(.+)$/)
   if (rpc) {
     if (rpc[1] === 'my_permissions') return json(permissionsFixture)
+    if (rpc[1] === 'admin_list_users')
+      return json(
+        adminUsersFixture.map((u) => ({
+          ...u,
+          roles: db.user_roles
+            .filter((ur) => ur.user_id === u.user_id)
+            .map((ur) => db.roles.find((r) => r.id === ur.role_id)?.key)
+            .filter(Boolean),
+        })),
+      )
+    if (rpc[1] === 'report') {
+      const body = (await req.json()) as { p_from: string; p_to: string }
+      const inRange = db.entries.filter(
+        (e) => String(e.entry_date) >= body.p_from && String(e.entry_date) <= body.p_to,
+      )
+      const total = (kind: string) =>
+        inRange.filter((e) => e.kind === kind).reduce((s, e) => s + Number(e.amount), 0)
+      const income = total('income')
+      const expense = total('expense')
+      const groupBy = (field: string) => {
+        const acc = new Map<string, { kind: unknown; k: unknown; total: number; n: number }>()
+        for (const e of inRange) {
+          const key = `${e.kind}:${e[field] ?? 'unknown'}`
+          const g = acc.get(key) ?? { kind: e.kind, k: e[field] ?? 'unknown', total: 0, n: 0 }
+          g.total += Number(e.amount)
+          g.n += 1
+          acc.set(key, g)
+        }
+        return [...acc.values()]
+      }
+      return json({
+        from: body.p_from,
+        to: body.p_to,
+        income_total: income,
+        expense_total: expense,
+        net: income - expense,
+        by_category: groupBy('category').map((g) => ({
+          kind: g.kind, category: g.k, total: g.total, entry_count: g.n,
+        })),
+        by_payment: groupBy('payment_method').map((g) => ({
+          kind: g.kind, payment_method: g.k, total: g.total, entry_count: g.n,
+        })),
+      })
+    }
     if (rpc[1] === 'my_modules')
       return json([
         { key: 'users', label: 'Users & Permissions', icon: '🔐', sort: 10 },

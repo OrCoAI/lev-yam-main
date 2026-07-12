@@ -99,7 +99,7 @@ export default function ReportTab() {
           </div>
 
           <h2 className="section-title">לפי קטגוריה</h2>
-          <div className="card finance-list finance-breakdown">
+          <div className="card rowline">
             <table className="grid">
               <thead>
                 <tr>
@@ -114,13 +114,12 @@ export default function ReportTab() {
                   const net = b.kind === 'income' ? Number(b.total) : -Number(b.total)
                   return (
                     <tr key={`${b.kind}:${b.category}`}>
-                      <td data-label="סוג" className={b.kind === 'income' ? 'finance-income' : 'finance-expense'}>
+                      <td className={`rl-more ${b.kind === 'income' ? 'finance-income' : 'finance-expense'}`}>
                         {b.kind === 'income' ? 'הכנסה' : 'הוצאה'}
                       </td>
-                      <td data-label="קטגוריה">{CATEGORY_LABELS[b.category] ?? b.category}</td>
+                      <td className="rl-main">{CATEGORY_LABELS[b.category] ?? b.category}</td>
                       <td
-                        data-label="סכום"
-                        className={`finance-amount ${b.kind === 'income' ? 'finance-income' : 'finance-expense'}`}
+                        className={`rl-amt finance-amount ${b.kind === 'income' ? 'finance-income' : 'finance-expense'}`}
                       >
                         {/* reversal rows can turn a range's total negative — sign follows the net */}
                         <span dir="ltr">
@@ -128,7 +127,7 @@ export default function ReportTab() {
                           {Math.abs(net).toLocaleString('he-IL')} ₪
                         </span>
                       </td>
-                      <td data-label="תנועות">{b.entry_count}</td>
+                      <td className="rl-tail">{b.entry_count}</td>
                     </tr>
                   )
                 })}
@@ -144,7 +143,7 @@ export default function ReportTab() {
           </div>
 
           <h2 className="section-title">לפי אמצעי תשלום</h2>
-          <div className="card finance-list finance-breakdown">
+          <div className="card rowline">
             <table className="grid">
               <thead>
                 <tr>
@@ -159,20 +158,20 @@ export default function ReportTab() {
                   const net = b.kind === 'income' ? Number(b.total) : -Number(b.total)
                   return (
                     <tr key={`${b.kind}:${b.payment_method}`}>
-                      <td data-label="סוג" className={b.kind === 'income' ? 'finance-income' : 'finance-expense'}>
+                      <td className={`rl-more ${b.kind === 'income' ? 'finance-income' : 'finance-expense'}`}>
                         {b.kind === 'income' ? 'הכנסה' : 'הוצאה'}
                       </td>
-                      <td data-label="אמצעי">{PAYMENT_LABELS[b.payment_method]}</td>
+                      {/* close_day food/labor legs post with no method — grouped as 'unknown' */}
+                      <td className="rl-main">{PAYMENT_LABELS[b.payment_method] ?? '—'}</td>
                       <td
-                        data-label="סכום"
-                        className={`finance-amount ${b.kind === 'income' ? 'finance-income' : 'finance-expense'}`}
+                        className={`rl-amt finance-amount ${b.kind === 'income' ? 'finance-income' : 'finance-expense'}`}
                       >
                         <span dir="ltr">
                           {net >= 0 ? '+' : '−'}
                           {Math.abs(net).toLocaleString('he-IL')} ₪
                         </span>
                       </td>
-                      <td data-label="תנועות">{b.entry_count}</td>
+                      <td className="rl-tail">{b.entry_count}</td>
                     </tr>
                   )
                 })}
