@@ -66,11 +66,12 @@ destination. Everything else is the module's own UI.
 - [ ] `app-src/src/App.tsx` — route(s) under the `RequireAuth`/`Layout` tree, wrapped in
   `<RequirePermission perm={PERM.<module>View}>`. Sub-pages (like `quotes/:id`) are
   separate routes behind the same view permission.
-- [ ] `app-src/src/shell/Launcher.tsx` — add the module key to `DESTINATIONS`
-  (`{ to: '/<module>' }`; a not-yet-migrated external tool uses `href`) and a brand icon
-  to `BRAND_ICONS` (shared brand art from `/app/brand/`, no emoji/icon fonts — the
-  `core.modules` emoji is only the fallback). The tile itself appears automatically via
-  `core.my_modules()` once the seed row exists.
+- [ ] `app-src/src/shell/Launcher.tsx` — add **one `MODULE_META` entry** for the module:
+  route (`to: '/<module>'`; a not-yet-migrated external tool uses `href`), a brand icon
+  (shared brand art from `/app/brand/`, no emoji/icon fonts — the `core.modules` emoji is
+  only the fallback), and a `descKey` pointing at a bilingual one-line "what's inside"
+  description added to the shell dict (`lib/i18n.tsx`, `launcher.desc.<module>`). The
+  tile itself appears automatically via `core.my_modules()` once the seed row exists.
 - [ ] No deploy config needed — `/app` is built and published as a whole. (Only *new
   public static files* outside the app need the `deploy.yml` allowlist.)
 
@@ -82,7 +83,7 @@ Anatomy proven by quotes (adapt, don't cargo-cult):
 |---|---|
 | `types.ts` | Row shapes exactly as PostgREST returns them; jsonb payload interfaces |
 | `api.ts` | All data access; components never call supabase directly |
-| `i18n.ts` | Module-local HE+AR dictionary for module *chrome* (`useQT`-style hook on top of the shell's `useI18n`) |
+| `i18n.ts` | Module-local HE+AR dictionary for module *chrome*: two parallel typed objects through `makeDictHook(he, ar)` from `lib/i18n.tsx` (see `finance/i18n.ts` — the canonical shape) |
 | `<Module>Module.tsx` | Dashboard/entry route |
 | `*.css` | **Every class prefixed with the module's letter(s)** (`q-…`) |
 | `defaults.ts` etc. | Ported template/default data, kept verbatim from the source tool |
@@ -100,8 +101,29 @@ Rules that came from real bugs:
 - **RTL specifics:** scaled/absolutely-positioned sheets need `transform-origin: top
   right`; LTR runs like `10:00–16:00` need `<bdi>`/`dir="auto"`; popover menus render via
   `createPortal(document.body)` so ancestor transforms can't clip them.
-- **Mobile-first is a requirement, not polish** — table rows become cards below ~760px;
-  test at 390px width first.
+- **Mobile-first is a requirement, not polish** — test at 390px width first. The
+  platform phone breakpoint is **640px**, defined once as `PHONE_MQ`
+  (`lib/useMediaQuery.ts`) and mirrored by the `@media (max-width: 640px)` blocks in
+  `styles.css` — new modules use those two, never a third number. (Quotes' 760px is a
+  sanctioned module-local exception: its wide dashboard table needs the room.)
+- **Phone list rows use the shared `.rowline` disclosure system** (styles.css) — one-line
+  summaries that expand to full detail, so no field is ever amputated on mobile. The
+  contract:
+  - wrapper: `className="card rowline"` around the `<table className="grid">`;
+  - one cell per role: `.rl-lead` (leading muted context, e.g. date), **exactly one**
+    `.rl-main` (flexible, ellipsized), `.rl-amt` (trailing figure), optional `.rl-tail`
+    (trailing muted count);
+  - every remaining field is `.rl-more` **with a `data-label`** (it becomes the visible
+    label when expanded; an empty cell hides itself — render `''`, never placeholder
+    text);
+  - actions go in one `.rl-actions` cell — full-width ≥44px buttons when expanded; a row
+    that must not be edited explains itself with a `.rl-lock` span there instead;
+  - spread `{...rowProps(id)}` from `useRowDisclosure()` (`lib/useRowDisclosure.ts`) on
+    each expandable `<tr>` — rows without it (pure breakdowns) stay one line, no chevron;
+  - an inline form belongs in a `<tr className="rl-formrow"><td colSpan={n}>` directly
+    under its row (see ExpectedTab's record-payment form);
+  - a big always-open form collapses behind a `.form-open-btn` primary button on phones:
+    `useState(!isPhone)`, open it on edit, close it after a phone save (see EntriesTab).
 - **Printable A4 documents:** load the `a4-fit` skill before touching them; keep both fit
   mechanisms (screen scale + print scaleY) and verify page count through the real print
   pipeline (headless Chrome `page.pdf`).

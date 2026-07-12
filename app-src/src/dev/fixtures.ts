@@ -255,6 +255,7 @@ export const permissionsFixture = [
   'quotes.contracts',
   'quotes.settings',
   'users.view',
+  'users.manage',
   'finance.view',
   'finance.manage',
   'pos.view',
@@ -369,4 +370,58 @@ export const financeExpectedFixture = [
     status: 'fulfilled', fulfilled_by: '00000000-0000-4000-8000-00000000f002', note: '',
     created_by: null, created_at: '2026-07-01T09:00:00Z', updated_at: '2026-07-05T12:00:00Z',
   },
+]
+
+// ── users module: role catalog, user↔role links, and the permission matrix ──
+export const rolesFixture = [
+  { id: 'role-owner', key: 'owner', label: 'בעלים', sort: 10 },
+  { id: 'role-manager', key: 'manager', label: 'מנהל', sort: 20 },
+  { id: 'role-staff', key: 'staff', label: 'צוות', sort: 30 },
+  { id: 'role-viewer', key: 'viewer', label: 'צפייה', sort: 40 },
+]
+
+export const adminUsersFixture = [
+  { user_id: '00000000-0000-4000-8000-00000000aa01', email: 'or@levyam.com', created_at: '2026-01-01T08:00:00Z' },
+  { user_id: '00000000-0000-4000-8000-00000000aa02', email: 'manager@levyam.com', created_at: '2026-02-10T08:00:00Z' },
+  { user_id: '00000000-0000-4000-8000-00000000aa03', email: 'staff@levyam.com', created_at: '2026-03-15T08:00:00Z' },
+]
+
+export const userRolesFixture = [
+  { user_id: '00000000-0000-4000-8000-00000000aa01', role_id: 'role-owner' },
+  { user_id: '00000000-0000-4000-8000-00000000aa02', role_id: 'role-manager' },
+  { user_id: '00000000-0000-4000-8000-00000000aa03', role_id: 'role-staff' },
+]
+
+// A representative subset of the real catalog, in the '<module>.<action>'
+// format of lib/permissions.ts (PERM itself is not imported: fixtures must stay
+// free of app-runtime imports — PERM pulls in auth → supabase, which would
+// evaluate before mock-net seeds the fake session).
+const permRow = (key: string, label: string) => {
+  const [module, action] = key.split('.')
+  return { id: `perm-${key}`, key, module, action, label }
+}
+const grant = (role: string, permKey: string) => ({ role_id: `role-${role}`, permission_id: `perm-${permKey}` })
+
+// ordered by module then action — the UI groups on module transitions
+export const permissionRowsFixture = [
+  permRow('finance.manage', 'ניהול כספים'),
+  permRow('finance.view', 'צפייה בכספים'),
+  permRow('pos.order', 'הזמנות'),
+  permRow('pos.view', 'צפייה בקופה'),
+  permRow('quotes.manage', 'ניהול הצעות'),
+  permRow('quotes.view', 'צפייה בהצעות'),
+  permRow('users.manage', 'ניהול משתמשים'),
+  permRow('users.view', 'צפייה במשתמשים'),
+]
+
+export const rolePermissionsFixture = [
+  ...permissionRowsFixture.map((p) => ({ role_id: 'role-owner', permission_id: p.id })),
+  grant('manager', 'finance.manage'),
+  grant('manager', 'finance.view'),
+  grant('manager', 'pos.view'),
+  grant('manager', 'quotes.manage'),
+  grant('manager', 'quotes.view'),
+  grant('staff', 'pos.order'),
+  grant('staff', 'pos.view'),
+  grant('viewer', 'finance.view'),
 ]

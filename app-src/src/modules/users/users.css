@@ -1,0 +1,20 @@
+/* Users module styles — every class u- prefixed (MODULE-TEMPLATE §3: module CSS
+   never collides with the shell sheet or other modules). */
+
+/* card per user, roles as toggle chips */
+.u-list { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); align-items: start; }
+.u-card { display: grid; gap: 12px; padding: 16px; }
+.u-mail { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* permission matrix: module group headers + key/label cell */
+.grid tr.u-permgroup td {
+  background: var(--sand); color: var(--sea-dark);
+  font-weight: 800; font-size: 0.8rem;
+}
+/* the shell pins td:first-child for row context on phones — a full-width
+   colSpan header cell must not inherit that (it can't pin; it only gains a
+   stray shadow). Instead its label span pins itself while the band scrolls. */
+.grid-sticky-first tr.u-permgroup td { position: static; box-shadow: none; }
+.u-permgroup td > span { position: sticky; inset-inline-start: 14px; display: inline-block; }
+.u-permkey { display: block; color: var(--sea-dark); }
+.u-permlabel { display: block; font-size: 0.8rem; color: var(--muted); }

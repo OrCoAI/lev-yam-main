@@ -8,8 +8,10 @@ import {
   PAYMENT_LABELS,
   PAYMENT_METHODS,
 } from './categories'
+import { useRowDisclosure } from '../../lib/useRowDisclosure'
 import DateField from './DateField'
 import { shortDate, todayStr } from './format'
+import { useFT } from './i18n'
 import SourceBadge from './SourceBadge'
 
 const PAGE_SIZE = 100
@@ -34,6 +36,8 @@ const emptyForm = {
 }
 
 export default function EntriesTab({ canManage }: { canManage: boolean }) {
+  const ft = useFT()
+  const { isPhone, rowProps } = useRowDisclosure()
   const [entries, setEntries] = useState<FinanceEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -42,6 +46,14 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
   const [busy, setBusy] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState(emptyForm)
+  // on phones the form starts collapsed behind a button so the list leads
+  const [formOpen, setFormOpen] = useState(!isPhone)
+  useEffect(() => {
+    // viewport mode changed (rotation/resize): reset to that mode's default,
+    // unless an edit is in progress — never yank an open edit away
+    if (!editingId) setFormOpen(!isPhone)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPhone])
 
   const loadIdRef = useRef(0)
   const offsetRef = useRef(0)
@@ -84,6 +96,7 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
 
   function startEdit(e: FinanceEntry) {
     setEditingId(e.id)
+    setFormOpen(true)
     setForm({
       kind: e.kind,
       category: e.category,
@@ -125,6 +138,7 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
       return
     }
     cancelEdit()
+    if (isPhone) setFormOpen(false) // land back on the list — the saved row is the feedback
     await load()
   }
 
@@ -143,7 +157,12 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
 
   return (
     <div>
-      {canManage && (
+      {canManage && !formOpen && (
+        <button className="btn-primary form-open-btn" onClick={() => setFormOpen(true)}>
+          + {ft.addEntry}
+        </button>
+      )}
+      {canManage && formOpen && (
         <div className="card finance-form">
           {/* income / expense */}
           <div className="seg seg-2">
@@ -242,6 +261,11 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
                 בטל
               </button>
             )}
+            {!editingId && isPhone && (
+              <button className="btn-ghost" disabled={busy} onClick={() => setFormOpen(false)}>
+                {ft.closeForm}
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -251,7 +275,7 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
       {loading ? (
         <div className="muted">טוען תנועות…</div>
       ) : (
-        <div className="card finance-list finance-entries">
+        <div className="card rowline">
           <table className="grid">
             <thead>
               <tr>
@@ -266,51 +290,56 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
             </thead>
             <tbody>
               {entries.map((e) => (
-                <tr key={e.id}>
-                  <td data-label="תאריך" title={e.entry_date}>
+                <tr key={e.id} {...rowProps(e.id)}>
+                  <td className="rl-lead" title={e.entry_date}>
                     {shortDate(e.entry_date)}
                   </td>
-                  <td data-label="סוג" className={e.kind === 'income' ? 'finance-income' : 'finance-expense'}>
+                  <td
+                    className={`rl-more ${e.kind === 'income' ? 'finance-income' : 'finance-expense'}`}
+                    data-label="סוג"
+                  >
                     {e.kind === 'income' ? 'הכנסה' : 'הוצאה'}
                   </td>
-                  <td data-label="קטגוריה">
+                  <td className="rl-main">
                     {CATEGORY_LABELS[e.category] ?? e.category}
                     <SourceBadge module={e.source_module} sourceRef={e.source_ref} />
                   </td>
-                  <td data-label="תשלום">{e.payment_method ? PAYMENT_LABELS[e.payment_method] : '—'}</td>
-                  <td
-                    data-label="סכום"
-                    className={`finance-amount ${e.kind === 'income' ? 'finance-income' : 'finance-expense'}`}
-                  >
+                  <td className="rl-more" data-label="תשלום">
+                    {e.payment_method ? PAYMENT_LABELS[e.payment_method] : '—'}
+                  </td>
+                  <td className={`rl-amt finance-amount ${e.kind === 'income' ? 'finance-income' : 'finance-expense'}`}>
                     <span dir="ltr">{signedAmount(e)}</span>
                   </td>
-                  <td data-label="הערה" className="muted">
+                  <td className="rl-more muted" data-label="הערה">
                     {e.note ?? ''}
                   </td>
                   {canManage && (
-                    <td className="finance-row-actions">
+                    <td className="rl-actions">
                       {/* module-posted rows are immutable (DB guard) — corrections are
                           reversals posted by the source module, so no edit/delete here */}
-                      {!e.source_module && (
+                      {!e.source_module ? (
                         <>
                           <button
                             className="btn-ghost btn-sm btn-icon-label"
                             disabled={busy}
                             onClick={() => startEdit(e)}
-                            aria-label="ערוך"
+                            aria-label={ft.edit}
                           >
                             <span aria-hidden="true">✎</span>
-                            <span className="btn-label">ערוך</span>
+                            <span className="btn-label">{ft.edit}</span>
                           </button>
                           <button
-                            className="btn-ghost btn-sm"
+                            className="btn-ghost btn-sm btn-icon-label"
                             disabled={busy}
                             onClick={() => remove(e.id)}
-                            aria-label="מחק"
+                            aria-label={ft.delete}
                           >
-                            ✕
+                            <span aria-hidden="true">✕</span>
+                            <span className="btn-label">{ft.delete}</span>
                           </button>
                         </>
+                      ) : (
+                        <span className="rl-lock">{ft.lockedByModule}</span>
                       )}
                     </td>
                   )}

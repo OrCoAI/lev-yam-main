@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
+import { Fragment, useCallback, useEffect, useState } from 'react'
 import { finance } from '../../lib/supabase'
 import type { FinanceExpected, FinancePaymentMethod } from '../../types'
+import { useRowDisclosure } from '../../lib/useRowDisclosure'
 import { CATEGORY_LABELS, PAYMENT_LABELS, PAYMENT_METHODS, reasonLabel } from './categories'
 import DateField from './DateField'
 import { shortDate, todayStr } from './format'
+import { useFT } from './i18n'
 import SourceBadge from './SourceBadge'
 
 const STATUS_LABELS: Record<FinanceExpected['status'], string> = {
@@ -24,6 +26,8 @@ type FulfillValues = {
 }
 
 export default function ExpectedTab({ canManage }: { canManage: boolean }) {
+  const ft = useFT()
+  const { rowProps } = useRowDisclosure()
   const [rows, setRows] = useState<FinanceExpected[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -107,30 +111,34 @@ export default function ExpectedTab({ canManage }: { canManage: boolean }) {
   function renderRow(r: FinanceExpected) {
     const overdue = r.status === 'open' && !!r.due_date && r.due_date < today
     return (
-      <tr key={r.id}>
-        <td data-label="יעד" title={r.due_date ?? undefined}>
+      <tr key={r.id} {...rowProps(r.id)}>
+        <td className="rl-lead" title={r.due_date ?? undefined}>
           {r.due_date ? shortDate(r.due_date) : '—'}
           {overdue && <span className="finance-badge finance-badge-warn">באיחור</span>}
         </td>
-        <td data-label="כיוון" className={r.direction === 'in' ? 'finance-income' : 'finance-expense'}>
+        <td
+          className={`rl-more ${r.direction === 'in' ? 'finance-income' : 'finance-expense'}`}
+          data-label="כיוון"
+        >
           {r.direction === 'in' ? 'צפי הכנסה' : 'צפי הוצאה'}
         </td>
-        <td data-label="עבור">
+        <td className="rl-main">
           {expectedTitle(r)}
           <SourceBadge module={r.source_module} sourceRef={r.source_ref} />
         </td>
         <td
-          data-label="סכום"
-          className={`finance-amount ${r.direction === 'in' ? 'finance-income' : 'finance-expense'}`}
+          className={`rl-amt finance-amount ${r.direction === 'in' ? 'finance-income' : 'finance-expense'}`}
         >
           <span dir="ltr">{Number(r.amount).toLocaleString('he-IL')} ₪</span>
         </td>
-        <td data-label="מצב">{STATUS_LABELS[r.status]}</td>
-        <td data-label="הערה" className="muted">
+        <td className="rl-more" data-label="מצב">
+          {STATUS_LABELS[r.status]}
+        </td>
+        <td className="rl-more muted" data-label="הערה">
           {r.note}
         </td>
         {canManage && (
-          <td className="finance-row-actions">
+          <td className="rl-actions">
             {r.status === 'open' && (
               <>
                 <button
@@ -139,10 +147,16 @@ export default function ExpectedTab({ canManage }: { canManage: boolean }) {
                   onClick={() => setFulfillId((id) => (id === r.id ? null : r.id))}
                 >
                   <span aria-hidden="true">₪</span>
-                  <span className="btn-label">נרשם תשלום</span>
+                  <span className="btn-label">{ft.recordPayment}</span>
                 </button>
-                <button className="btn-ghost btn-sm" disabled={busy} onClick={() => cancel(r)} aria-label="בטל צפי">
-                  ✕
+                <button
+                  className="btn-ghost btn-sm btn-icon-label"
+                  disabled={busy}
+                  onClick={() => cancel(r)}
+                  aria-label={ft.cancelExpected}
+                >
+                  <span aria-hidden="true">✕</span>
+                  <span className="btn-label">{ft.cancelExpected}</span>
                 </button>
               </>
             )}
@@ -170,7 +184,7 @@ export default function ExpectedTab({ canManage }: { canManage: boolean }) {
       {loading ? (
         <div className="muted">טוען צפי…</div>
       ) : (
-        <div className="card finance-list finance-entries">
+        <div className="card rowline">
           <table className="grid">
             <thead>
               <tr>
@@ -184,7 +198,25 @@ export default function ExpectedTab({ canManage }: { canManage: boolean }) {
               </tr>
             </thead>
             <tbody>
-              {open.map(renderRow)}
+              {open.map((r) => (
+                <Fragment key={r.id}>
+                  {renderRow(r)}
+                  {/* the record-payment form opens right under its row, in context */}
+                  {canManage && fulfillRow?.id === r.id && (
+                    <tr className="rl-formrow">
+                      <td colSpan={7}>
+                        <FulfillForm
+                          key={fulfillRow.id}
+                          row={fulfillRow}
+                          busy={busy}
+                          onSubmit={(v) => submitFulfill(fulfillRow, v)}
+                          onCancel={() => setFulfillId(null)}
+                        />
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              ))}
               {open.length === 0 && (
                 <tr>
                   <td colSpan={canManage ? 7 : 6} className="muted">
@@ -194,16 +226,6 @@ export default function ExpectedTab({ canManage }: { canManage: boolean }) {
               )}
             </tbody>
           </table>
-
-          {fulfillRow && canManage && (
-            <FulfillForm
-              key={fulfillRow.id}
-              row={fulfillRow}
-              busy={busy}
-              onSubmit={(v) => submitFulfill(fulfillRow, v)}
-              onCancel={() => setFulfillId(null)}
-            />
-          )}
 
           {closed.length > 0 && (
             <div className="finance-load-more">

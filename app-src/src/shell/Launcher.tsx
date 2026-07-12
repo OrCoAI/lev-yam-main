@@ -1,25 +1,28 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useI18n } from '../lib/i18n'
+import { useI18n, type TKey } from '../lib/i18n'
 import { core } from '../lib/supabase'
 import type { ModuleRow } from '../types'
 
-// Where each module key routes to. Internal modules use a React route (`to`);
-// not-yet-migrated tools (POS) link out to their live standalone page (`href`).
-const DESTINATIONS: Record<string, { to?: string; href?: string }> = {
-  users: { to: '/users' },
-  pos: { to: '/pos' }, // platform module (parity trial); pos.html stays live at /pos.html until cut-over
-  finance: { to: '/finance' },
-  quotes: { to: '/quotes' },
+// One launcher registration per module: where it routes (`to`, or `href` for a
+// not-yet-migrated external tool), its on-brand tile mark (shared brand art from
+// /app/brand — no emoji/icon fonts; a module without one falls back to its
+// core.modules emoji), and the bilingual one-line "what's inside" description
+// (static — live counts belong to the Phase 2 happening feed). The tile itself
+// appears via core.my_modules(); this record only decorates it.
+interface ModuleMeta {
+  to?: string
+  href?: string
+  icon?: string
+  descKey?: TKey
 }
 
-// On-brand tile marks (only the shared brand icons — no emoji, no icon fonts).
-// A module without a mapping falls back to its core.modules emoji.
-const BRAND_ICONS: Record<string, string> = {
-  users: '/app/brand/heart.png',
-  finance: '/app/brand/sun-orange.png',
-  pos: '/app/brand/palm-orange.png',
-  quotes: '/app/brand/house-blue.png',
+const MODULE_META: Record<string, ModuleMeta> = {
+  users: { to: '/users', icon: '/app/brand/heart.png', descKey: 'launcher.desc.users' },
+  // POS is a platform module (parity trial); pos.html stays live at /pos.html until cut-over
+  pos: { to: '/pos', icon: '/app/brand/palm-orange.png', descKey: 'launcher.desc.pos' },
+  finance: { to: '/finance', icon: '/app/brand/sun-orange.png', descKey: 'launcher.desc.finance' },
+  quotes: { to: '/quotes', icon: '/app/brand/house-blue.png', descKey: 'launcher.desc.quotes' },
 }
 
 export default function Launcher() {
@@ -58,32 +61,33 @@ export default function Launcher() {
 
       <div className="launcher-grid">
         {modules.map((m, i) => {
-          const dest = DESTINATIONS[m.key]
+          const meta = MODULE_META[m.key] ?? {}
+          const hasDest = Boolean(meta.to || meta.href)
           const accent = i % 2 === 0 ? 'tile--blue' : 'tile--orange'
-          const brandIcon = BRAND_ICONS[m.key]
           const inner = (
             <>
               <span className="tile-medallion">
-                {brandIcon ? (
-                  <img className="tile-icon" src={brandIcon} alt="" aria-hidden="true" />
+                {meta.icon ? (
+                  <img className="tile-icon" src={meta.icon} alt="" aria-hidden="true" />
                 ) : (
                   <span className="tile-emoji">{m.icon ?? '▫️'}</span>
                 )}
               </span>
               <span className="tile-label">{m.label}</span>
-              <span className="tile-go">{dest ? t('launcher.open') : t('launcher.soon')}</span>
+              {meta.descKey && <span className="tile-desc">{t(meta.descKey)}</span>}
+              <span className="tile-go">{hasDest ? t('launcher.open') : t('launcher.soon')}</span>
             </>
           )
-          if (dest?.to) {
+          if (meta.to) {
             return (
-              <Link key={m.key} to={dest.to} className={`tile ${accent}`}>
+              <Link key={m.key} to={meta.to} className={`tile ${accent}`}>
                 {inner}
               </Link>
             )
           }
-          if (dest?.href) {
+          if (meta.href) {
             return (
-              <a key={m.key} href={dest.href} className={`tile ${accent}`}>
+              <a key={m.key} href={meta.href} className={`tile ${accent}`}>
                 {inner}
               </a>
             )
