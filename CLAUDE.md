@@ -89,7 +89,8 @@ it serves `docs/VISION.md` and fits `docs/ARCHITECTURE.md`) until both sides are
 aligned** on what is about to be built. No kickoff artifacts and no code until that
 agreement is explicit.
 
-Then, when the user asks to work on a module (fixes or features), **before writing any
+Then, when the user asks to work on a **new initiative** for a module — a migration, a new
+cross-module flow, a new UI surface, anything with real scope — **before writing any
 code**, generate the full tracking & alignment set — all of it, in parallel:
 
 1. **Plan file** — `docs/plans/<module>-<initiative>.md` (one per initiative): scope, the
@@ -110,6 +111,27 @@ architecture — or those docs contradict each other — **stop and raise it wit
 explicitly**. Never code around a conflict or silently pick a side. Work proceeds only after
 the disagreement is discussed and resolved together, and the agreed resolution is written
 back into the relevant doc so it can't resurface.
+
+## Ongoing module work — bug fixes & small features
+
+Not every change to a live module is a new initiative. For a **bug fix or small,
+self-contained feature** on a module that's already shipped, skip the kickoff above and
+use the lighter log instead — automatically, the moment the user says they want to work on
+an existing module, without waiting to be asked:
+
+1. Check `docs/modules/<module>.md` for existing open items before starting, and surface
+   what's already logged there to the user — avoids duplicate or conflicting fixes.
+2. Log the item there under **Open bugs** or **Open feature ideas** if it isn't already —
+   one line: what's wrong/wanted, and why if the reason isn't obvious.
+3. Do the work, then move the entry to **Done** with the date and a one-line note of what
+   changed — as part of finishing the task, not a separate step the user has to request.
+4. The pre-commit quality gate below still applies in full — it is never optional, kickoff
+   or no kickoff.
+
+If the fix turns out bigger than expected once you're in it — new schema, new permissions,
+touches the events/finance spine, a UI surface with real design decisions — stop and run
+the full kickoff process above instead; it has grown into an initiative. See
+`docs/modules/README.md` for the convention.
 
 ## Pre-commit quality gate (MANDATORY)
 
