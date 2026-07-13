@@ -14,16 +14,19 @@ import {
 } from './api'
 import Calendar from './Calendar'
 import ChecklistModal from './ChecklistModal'
-import { eventDayChip, formatDate, ILS } from './format'
+import { eventDayChip, formatDate, ILS, todayDbDate } from './format'
 import { useQT } from './i18n'
 import NewQuoteModal from './NewQuoteModal'
 import SettingsModal from './SettingsModal'
 import type { ChecklistItem, ContractRow, QuoteRow, QuoteStatus } from './types'
-import { isConfirmed } from './types'
+import { isConfirmed, isWaitingPayment } from './types'
 import './quotes.css'
 
 const STATUSES: QuoteStatus[] = ['draft', 'sent', 'approved', 'declined', 'expired', 'paid']
 type ViewMode = 'live' | 'happy' | 'archive' | 'all'
+/** 'waiting_payment' is a derived filter (confirmed + event date passed + not paid),
+ *  not a real quotes.status value — see isWaitingPayment. */
+type StatusFilter = 'all' | QuoteStatus | 'waiting_payment'
 
 /* ── small inline icons (stroke = currentColor, work in both directions) ── */
 const IcCal = () => (
@@ -244,8 +247,10 @@ export default function QuotesModule() {
 
   const [data, setData] = useState<AllData | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [filter, setFilter] = useState<'all' | QuoteStatus>('all')
+  const [filter, setFilter] = useState<StatusFilter>('all')
   const [viewMode, setViewMode] = useState<ViewMode>('live')
+  const [search, setSearch] = useState('')
+  const [sort, setSort] = useState<{ key: 'date' | 'price'; dir: 1 | -1 } | null>(null)
   const [showCal, setShowCal] = useState(false)
   const [showNew, setShowNew] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
@@ -287,9 +292,48 @@ export default function QuotesModule() {
   const quotesForView =
     viewMode === 'live' ? liveQuotes : viewMode === 'happy' ? happyQuotes : viewMode === 'archive' ? archivedQuotes : allQuotes
 
-  const counts: Record<string, number> = { all: quotesForView.length }
-  for (const s of STATUSES) counts[s] = quotesForView.filter((q) => q.status === s).length
-  const filtered = filter === 'all' ? quotesForView : quotesForView.filter((q) => q.status === filter)
+  const searchQ = search.trim().toLowerCase()
+  const searchedQuotes = searchQ
+    ? quotesForView.filter((q) =>
+        [q.customer_name, q.contact_person, q.phone, q.email, q.quote_number].some((v) => v.toLowerCase().includes(searchQ)),
+      )
+    : quotesForView
+
+  // computed once per quote, then reused for the count, the filter and the row tint
+  const waitingIds = new Set(
+    searchedQuotes.filter((q) => isWaitingPayment(q, contractsByQuoteId[q.id])).map((q) => q.id),
+  )
+
+  // one grouping pass instead of a separate .filter() per status — counts and
+  // statusFiltered both read from the same buckets rather than re-scanning
+  const byStatus = new Map<QuoteStatus, QuoteRow[]>()
+  for (const qu of searchedQuotes) {
+    const bucket = byStatus.get(qu.status)
+    if (bucket) bucket.push(qu)
+    else byStatus.set(qu.status, [qu])
+  }
+
+  const counts: Record<string, number> = { all: searchedQuotes.length, waiting_payment: waitingIds.size }
+  for (const s of STATUSES) counts[s] = byStatus.get(s)?.length ?? 0
+  const statusFiltered =
+    filter === 'all'
+      ? searchedQuotes
+      : filter === 'waiting_payment'
+        ? searchedQuotes.filter((q) => waitingIds.has(q.id))
+        : (byStatus.get(filter) ?? [])
+
+  const filtered = sort
+    ? [...statusFiltered].sort((a, b) => {
+        if (sort.key === 'date') return sort.dir * (a.event_date ?? '').localeCompare(b.event_date ?? '')
+        const av = a.final_price ?? a.subtotal ?? 0
+        const bv = b.final_price ?? b.subtotal ?? 0
+        return sort.dir * (av - bv)
+      })
+    : statusFiltered
+
+  const toggleSort = (key: 'date' | 'price') =>
+    setSort((cur) => (cur?.key === key ? { key, dir: cur.dir === 1 ? -1 : 1 } : { key, dir: 1 }))
+  const sortArrow = (key: 'date' | 'price') => (sort?.key === key ? (sort.dir === 1 ? ' ▲' : ' ▼') : '')
 
   const revenueStatus: QuoteStatus = viewMode === 'happy' ? 'paid' : 'approved'
   const revenueTotal = quotesForView
@@ -303,26 +347,28 @@ export default function QuotesModule() {
     { key: 'all', label: qt.segAll },
   ]
 
-  // statuses that can actually appear in the current view — the filter row
-  // stays short and meaningful instead of listing the whole vocabulary
+  // statuses (+ the derived "waiting for payment" filter) that can actually appear
+  // in the current view — the filter row stays short and meaningful instead of
+  // listing the whole vocabulary; one array drives one render loop below.
   const filterStatuses =
     viewMode === 'live' ? STATUSES.filter((s) => s !== 'paid') : viewMode === 'happy' ? [] : STATUSES
+  const filterChips: { key: StatusFilter; label: string }[] =
+    filterStatuses.length > 0
+      ? [...filterStatuses.map((s) => ({ key: s as StatusFilter, label: qt.status[s] })), { key: 'waiting_payment', label: qt.waitingPayment }]
+      : []
 
-  const todayChip = (() => {
-    const d = new Date()
-    return `${qt.dayPrefix} ${qt.dow[d.getDay()]} · ${formatDate(
-      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
-    )}`
-  })()
+  const todayChip = `${qt.dayPrefix} ${qt.dow[new Date().getDay()]} · ${formatDate(todayDbDate())}`
 
   const checklistQuote = checklistQuoteId ? allQuotes.find((q) => q.id === checklistQuoteId) : null
 
-  const emptyText =
-    viewMode === 'archive'
+  const filterLabel = filter === 'waiting_payment' ? qt.waitingPayment : filter !== 'all' ? qt.status[filter] : null
+  const emptyText = searchQ
+    ? qt.emptySearch
+    : viewMode === 'archive'
       ? qt.emptyArchive
       : viewMode === 'happy'
         ? qt.emptyHappy
-        : `${qt.emptyLive}${filter !== 'all' ? ` ${qt.emptyInStatus} ${qt.status[filter]}` : ''}`
+        : `${qt.emptyLive}${filterLabel ? ` ${qt.emptyInStatus} ${filterLabel}` : ''}`
 
   return (
     <div className="qdash">
@@ -375,30 +421,40 @@ export default function QuotesModule() {
         )}
       </div>
 
-      {filterStatuses.length > 0 && (
+      <div className="q-search">
+        <input
+          type="search"
+          className="q-search-input"
+          placeholder={qt.searchPlaceholder}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+
+      {filterChips.length > 0 && (
         <div className="q-filters">
           <button className={'q-filter' + (filter === 'all' ? ' on' : '')} onClick={() => setFilter('all')}>
             {qt.segAll}
             <span className="q-count">{counts.all}</span>
           </button>
-          {filterStatuses.map((s) => (
+          {filterChips.map((c) => (
             <button
-              key={s}
-              className={'q-filter' + (filter === s ? ' on' : '')}
-              data-s={s}
-              disabled={counts[s] === 0 && filter !== s}
-              onClick={() => setFilter(filter === s ? 'all' : s)}
+              key={c.key}
+              className={'q-filter' + (filter === c.key ? ' on' : '')}
+              data-s={c.key}
+              disabled={counts[c.key] === 0 && filter !== c.key}
+              onClick={() => setFilter(filter === c.key ? 'all' : c.key)}
             >
-              <span className="s-dot" data-s={s} />
-              {qt.status[s]}
-              <span className="q-count">{counts[s]}</span>
+              <span className="s-dot" data-s={c.key} />
+              {c.label}
+              <span className="q-count">{counts[c.key]}</span>
             </button>
           ))}
         </div>
       )}
 
       {showCal && (
-        <Calendar quotes={liveQuotes} contractsByQuoteId={contractsByQuoteId} onOpenChecklist={(q) => setChecklistQuoteId(q.id)} />
+        <Calendar quotes={activeQuotes} contractsByQuoteId={contractsByQuoteId} onOpenChecklist={(q) => setChecklistQuoteId(q.id)} />
       )}
 
       {filtered.length === 0 ? (
@@ -411,13 +467,19 @@ export default function QuotesModule() {
           <table className="q-table">
             <thead>
               <tr>
-                <th>{qt.thCustomer}</th>
-                <th>{qt.thEvent}</th>
-                <th className="q-th-price">{qt.thPrice}</th>
-                <th>{qt.thProgress}</th>
-                <th>{qt.thDocs}</th>
-                <th>{qt.thNotes}</th>
-                <th aria-hidden="true"></th>
+                <th className="q-th-customer">{qt.thCustomer}</th>
+                <th className="q-th-center q-th-sortable" onClick={() => toggleSort('date')}>
+                  {qt.thEvent}
+                  {sortArrow('date')}
+                </th>
+                <th className="q-th-price q-th-center q-th-sortable" onClick={() => toggleSort('price')}>
+                  {qt.thPrice}
+                  {sortArrow('price')}
+                </th>
+                <th className="q-th-center">{qt.thProgress}</th>
+                <th className="q-th-center">{qt.thDocs}</th>
+                <th className="q-th-notes">{qt.thNotes}</th>
+                <th className="q-th-center" aria-hidden="true"></th>
               </tr>
             </thead>
             <tbody>
@@ -437,10 +499,15 @@ export default function QuotesModule() {
                 const showVat = q.final_price != null && q.final_price > 0 && withVat
                 const done = q.prep_checklist.filter((it) => it.done).length
                 const clTotal = q.prep_checklist.length
+                const waiting = waitingIds.has(q.id)
                 return (
                   <tr
                     key={q.id}
-                    className={'q-row' + (q.archived && viewMode !== 'archive' ? ' q-row-archived' : '')}
+                    className={
+                      'q-row' +
+                      (q.archived && viewMode !== 'archive' ? ' q-row-archived' : '') +
+                      (waiting ? ' q-row-waiting' : '')
+                    }
                     onClick={() => navigate(`/quotes/${q.id}`)}
                   >
                     <td className="q-cell-customer">
@@ -488,6 +555,7 @@ export default function QuotesModule() {
                         canEdit={canManage}
                         onUpdate={(id, s) => run(setQuoteStatus(id, s), patchQuote(id, { status: s }))}
                       />
+                      {waiting && <span className="q-pill" data-s="waiting_payment">{qt.waitingPayment}</span>}
                     </td>
                     <td className="q-cell-docs" onClick={(e) => e.stopPropagation()}>
                       <div className="q-chip-row">
@@ -567,10 +635,11 @@ export default function QuotesModule() {
 
       {showNew && (
         <NewQuoteModal
+          existingQuotes={activeQuotes}
           onClose={() => setShowNew(false)}
-          onCreated={() => {
+          onCreated={(id) => {
             setShowNew(false)
-            load()
+            navigate(`/quotes/${id}`)
           }}
         />
       )}

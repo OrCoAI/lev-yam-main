@@ -22,6 +22,11 @@ touching schema, permissions, or the events/finance spine graduates to a `docs/p
 - Server-side provenance resolution — `source_ref` parsing currently lives client-side in
   `modules/finance/provenance.ts`; move into a DB view/generated column once a second
   surface (events module, dashboards) needs entry→quote/POS links
+- When `finance.expected` grows real receivables tracking (the partial-payments item
+  above), retire the quotes module's client-side-only `isWaitingPayment` derived status
+  (`modules/quotes/types.ts`, added 2026-07-13) in favor of it — right now it's a UI-only
+  stopgap (status + event_date, no due-date/deposit-vs-balance granularity) that will
+  become a second, drifting source of truth once real receivables land
 
 ## Done
 

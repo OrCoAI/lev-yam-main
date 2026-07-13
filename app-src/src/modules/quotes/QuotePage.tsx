@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { PERM, useCan } from '../../lib/permissions'
 import { getQuote, setQuoteStatus, updateQuote } from './api'
 import { DEFAULT_CONTENT } from './defaults'
-import { ILS, formatDate } from './format'
+import { ILS, formatDate, swapAdjacent } from './format'
 import { useQT } from './i18n'
 import type { AgendaItem, QuoteContent, QuoteItem, QuoteRow, QuoteStatus, QuoteTweaks } from './types'
 import './quote-doc.css'
@@ -154,6 +154,17 @@ export default function QuotePage() {
     return () => document.body.classList.remove('lq-doc-open')
   }, [])
 
+  // Browsers suggest the tab title as the "print to PDF" filename — use the
+  // quote number so exports are the same identifier the app tracks it by.
+  useEffect(() => {
+    if (!row) return
+    const prevTitle = document.title
+    document.title = row.quote_number
+    return () => {
+      document.title = prevTitle
+    }
+  }, [row])
+
   // ── Screen fit (zoom-invariant scale, ported from the template) ──────
   const fitRef = useRef<HTMLDivElement>(null)
   const scalerRef = useRef<HTMLDivElement>(null)
@@ -198,7 +209,7 @@ export default function QuotePage() {
       const sheet = sheetRef.current
       if (!sheet) return
       // Mirror print CSS: hide UI controls that won't appear in the PDF
-      const els = Array.from(sheet.querySelectorAll<HTMLElement>('.lq-row-del, .lq-add, .lq-included-del'))
+      const els = Array.from(sheet.querySelectorAll<HTMLElement>('.lq-row-del, .lq-add, .lq-included-del, .lq-row-move'))
       els.forEach((el) => (el.style.display = 'none'))
       const h = sheet.offsetHeight
       els.forEach((el) => (el.style.display = ''))
@@ -245,6 +256,11 @@ export default function QuotePage() {
 
   const updateItem = (itemId: string, k: keyof QuoteItem, v: string) =>
     set({ items: d.items.map((it) => (it.id === itemId ? { ...it, [k]: v } : it)) })
+  const moveItem = (index: number, dir: -1 | 1) => {
+    const j = index + dir
+    if (j < 0 || j >= d.items.length) return
+    set({ items: swapAdjacent(d.items, index, j) })
+  }
   const setAgendaItem = (i: number, k: keyof AgendaItem, v: string) =>
     set({ agenda: d.agenda.map((x, j) => (j === i ? { ...x, [k]: v } : x)) })
 
@@ -372,11 +388,12 @@ export default function QuotePage() {
                       <th style={{ width: '70px', textAlign: 'center' }}>כמות</th>
                       <th style={{ width: '110px', textAlign: 'center' }}>מחיר ליחידה</th>
                       <th style={{ width: '120px', textAlign: 'center' }}>סה"כ</th>
+                      <th style={{ width: '38px' }} aria-label={qt.reorderRow}></th>
                       <th style={{ width: '26px' }} aria-label={qt.remove}></th>
                     </tr>
                   </thead>
                   <tbody>
-                    {d.items.map((it) => (
+                    {d.items.map((it, i) => (
                       <tr key={it.id}>
                         <td style={{ verticalAlign: 'top', paddingTop: '9px' }}>
                           <AutoTextarea
@@ -392,6 +409,14 @@ export default function QuotePage() {
                           <input className="lq-num" value={it.price} onChange={(e) => updateItem(it.id, 'price', e.target.value)} />
                         </td>
                         <td className="lq-col-amt lq-col-tot">{ILS(num(it.qty) * num(it.price))}</td>
+                        <td className="lq-row-move">
+                          <button title={qt.moveUp} disabled={i === 0} onClick={() => moveItem(i, -1)}>
+                            ↑
+                          </button>
+                          <button title={qt.moveDown} disabled={i === d.items.length - 1} onClick={() => moveItem(i, 1)}>
+                            ↓
+                          </button>
+                        </td>
                         <td>
                           <button
                             className="lq-row-del"

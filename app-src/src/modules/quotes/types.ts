@@ -1,4 +1,5 @@
 // Row shapes as PostgREST returns them from the `quotes` schema (30_quotes.sql).
+import { todayDbDate } from './format'
 
 export type QuoteStatus = 'draft' | 'sent' | 'approved' | 'declined' | 'expired' | 'paid'
 export type ContractStatus = 'draft' | 'sent' | 'signed'
@@ -98,4 +99,14 @@ export interface QuoteSettings {
 /** Confirmed event: explicitly confirmed on the quote, or its contract is signed. */
 export function isConfirmed(quote: QuoteRow, contract?: ContractRow): boolean {
   return quote.event_confirmed || contract?.status === 'signed'
+}
+
+/** Confirmed event whose date has already passed but payment hasn't landed yet.
+ *  Excludes dead-end statuses too — event_confirmed isn't cleared when a quote is
+ *  later declined/expired, so a once-confirmed-then-declined quote must not still
+ *  read as "waiting for payment". */
+export function isWaitingPayment(quote: QuoteRow, contract?: ContractRow): boolean {
+  if (['paid', 'declined', 'expired'].includes(quote.status)) return false
+  if (!quote.event_date || !isConfirmed(quote, contract)) return false
+  return quote.event_date < todayDbDate()
 }

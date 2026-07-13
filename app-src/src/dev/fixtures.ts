@@ -195,6 +195,37 @@ export const quotesFixture: QuoteRow[] = [
     subtotal: 7800,
     final_price: 9204,
   }),
+  // Confirmed + event date passed + not yet paid — exercises the
+  // "waiting for payment" tint/badge/filter (2026-07-13 batch).
+  q({
+    quote_number: 'LY-260618-014b',
+    customer_name: 'מכינת הים',
+    contact_person: 'עומר',
+    event_type: 'סמינר',
+    event_date: iso(-6),
+    guests: '20',
+    issue_date: iso(-25),
+    status: 'approved',
+    event_confirmed: true,
+    subtotal: 6600,
+    final_price: 7788,
+  }),
+  // Confirmed + already paid — exercises the calendar "confirmed only" fix:
+  // must still show up on the calendar even though it's out of the live view.
+  q({
+    quote_number: 'LY-260530-011b',
+    customer_name: 'צוות נטפים',
+    contact_person: 'רותם',
+    event_type: 'יום גיבוש',
+    event_date: iso(-30),
+    guests: '16',
+    issue_date: iso(-45),
+    status: 'paid',
+    event_confirmed: true,
+    paid_date: iso(-28),
+    subtotal: 5400,
+    final_price: 6372,
+  }),
 ]
 
 const contract = (quote: QuoteRow, over: Partial<ContractRow>): ContractRow => ({
