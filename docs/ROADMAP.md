@@ -75,7 +75,7 @@ bilingual is ever a retrofit.*
         client-side in `modules/finance/provenance.ts` — when a second surface needs
         entry→quote/POS links (events module, dashboards), move it into a DB view or
         generated columns next to the posting functions that own the formats
-  - [ ] Finance UX pass (kickoff 2026-07-12, Or's brief) —
+  - [x] Finance UX pass (kickoff 2026-07-12, Or's brief; **done 2026-07-13, PR #6**) —
         [plans/finance-ux-pass.md](plans/finance-ux-pass.md): report tab drill-down
         (expandable breakdown rows → underlying entries), date-preset chips + kind
         filters, source links on module-posted rows (`/pos?report=<date>` deep link,

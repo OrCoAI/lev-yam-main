@@ -1,6 +1,6 @@
 # Finance UX pass — informative report, source links, HE/AR retrofit
 
-**Status:** in progress (kickoff 2026-07-12)
+**Status:** done — PR [#6](https://github.com/OrCoAI/lev-yam-main/pull/6) (close-out below)
 **Branch:** `finance-ux-pass`
 
 ## Why now
@@ -96,3 +96,64 @@ the tool that owns it. No conflicts found with VISION.md / ROADMAP.md.
 - Preset set chosen (today/7d/this month/last month/this year) — adjust to taste.
 - The report drill-down caps at 1000 entries per range (soft warning shown) —
   fine at current volumes; server-side pagination there is a later need.
+
+## Close-out (2026-07-13)
+
+**Shipped** (PR [#6](https://github.com/OrCoAI/lev-yam-main/pull/6), branch `finance-ux-pass`, CI green; production once merged):
+
+- **Report tab**: date-preset chips (today / 7 days / this month / prev month /
+  this year) with active detection + a collapsible custom range and an
+  always-visible range caption; all/income/expense segmented filter; stat
+  cards with entry counts; **every breakdown row expands** into the entries
+  behind its number (date, note, source badge+link, payment method, signed
+  amount, share-of-side) — desktop via a `.rl-chev` cell, phones via the
+  rowline disclosure. Totals stay `finance.report`-RPC-authoritative; the
+  drill-down is one ≤1000-row range query with truncation surfaced in the UI.
+- **Transactions tab**: module-posted rows link to their source — quotes refs
+  resolve through a batched `expected→quote` map (`provenance.ts`
+  `useQuoteMap`, fetches only the ids on screen), POS refs deep-link to
+  `/pos?report=<date>`; locked rows show "מעבר למקור" next to the
+  immutability explainer; kind filter (server-side, paging-safe); EntryForm
+  extracted (keystrokes no longer re-render the list; epoch-keyed remount
+  after insert prevents stale-value double submits).
+- **POS**: honors `?report=YYYY-MM-DD` (initial state only); the deep-link
+  contract (`posReportHref` + `REPORT_DATE_RE`) lives in `pos/logic.ts` so
+  producer and consumer can't drift.
+- **Platform**: `useRowDisclosure` gained `allViewports` (desktop drill-downs
+  ride the shared mechanism incl. its interactive-child guard) — documented
+  in MODULE-TEMPLATE §3; shared chevron CSS in the disclosure section.
+- **HE/AR retrofit** (tracked follow-up, done): the whole finance chrome +
+  category/payment/status/source/reason label maps live in the module
+  dictionary; enum maps are `satisfies`-exhaustive against the DB mirrors.
+- **Dev harness**: mock-net `gte/lte` (numeric-or-date compare); fixtures use
+  the real provenance ref grammars with pinned quote ids so `?preview`
+  exercises the links end-to-end.
+
+**Schema/permission changes applied:** none — read paths only, existing
+`finance.view`/`finance.manage` RLS governs everything new.
+
+**Decisions along the way:**
+- Client-side `source_ref` parsing accepted as the interim mechanism; a
+  server-side view/generated-columns follow-up is on the roadmap for when a
+  second surface needs the resolution.
+- Preset ranges recompute per render on purpose (midnight-safe); the
+  `?report=` param is initial-state-only on purpose (no URL↔state sync).
+- Kind filtering is server-side on the entries tab (pagination) and
+  client-side on the report (breakdowns arrive complete) — deliberate.
+
+**Deliberately left out:** partial payments + finance-source reversal path
+(pre-existing roadmap follow-ups); charts (Dashboards v2); debouncing the
+custom-range queries (two small requests; empty-value guard added instead).
+
+**Gate:** `/simplify` (4 agents, all applied) → `/code-review high` (8 angles,
+10 verified findings all fixed — incl. a desktop duplicate-insert regression
+and dead quote links in the report drill-down) → `/security-review` (no
+findings) → `/verify` (26 browser checks + 9 adversarial probes, phone +
+desktop, HE + AR, `?preview` harness).
+
+**Alignment verdict:** delivered result checked against `docs/VISION.md` and
+`docs/ARCHITECTURE.md` — **aligned, no drift**. Permissions stay DB-first (no
+new write paths), no schema changes outside `supabase/schema/`, money
+provenance became *navigable* across the spine rather than siloed, bilingual
+HE/AR is now fully met by this module (it previously violated the invariant),
+and every new surface was designed and verified phone-first.
