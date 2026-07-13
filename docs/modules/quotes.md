@@ -20,6 +20,22 @@ it for fixes; everything now happens in this module.
 
 ## Done
 
+- **2026-07-13 — follow-up: fixed the actual root cause of "confirmed" never matching
+  real quotes, and reworked item reorder as real drag-and-drop** (same branch/PR cycle
+  as the batch below, shipped as a second commit after user-reported regressions):
+  - Root cause of both the calendar "confirmed only" filter and "waiting for payment"
+    still not matching real quotes: `isConfirmed()` checked `event_confirmed`, a flag
+    that's only ever set by the in-app contract-sign trigger — verified against
+    production that 0 of 2 real `approved` quotes had it set, since staff approve
+    quotes without generating/signing a contract in the app. Fixed `isConfirmed()` to
+    check `status` (`approved`/`paid`) directly, with declined/expired always losing
+    confirmed status regardless of a stale flag. This also fixes the "הכנות" prep-
+    checklist chip, which had never shown on any real quote for the same reason.
+  - Reworked line-item reorder from tiny up/down buttons to real pointer-based
+    drag-and-drop (touch + mouse, no library) — row height unaffected by design (the
+    handle fills the row's own height rather than adding to it); verified with real
+    touch events (not just mouse) via CDP. Gate review caught and fixed an off-by-one
+    in the insertion-index math on downward drags before ship.
 - **2026-07-13 — batch of 9 bug fixes/small features** (branch
   `fix/quotes-batch-2026-07-13`), full gate run (simplify, code-review high, security-review,
   browser-verified in the preview harness):

@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { PERM, useCan } from '../../lib/permissions'
 import { getQuote, setQuoteStatus, updateQuote } from './api'
 import { DEFAULT_CONTENT } from './defaults'
-import { ILS, formatDate, swapAdjacent } from './format'
+import { ILS, formatDate } from './format'
 import { useQT } from './i18n'
 import type { AgendaItem, QuoteContent, QuoteItem, QuoteRow, QuoteStatus, QuoteTweaks } from './types'
 import './quote-doc.css'
@@ -74,6 +74,71 @@ const Tick = () => (
     <path d="M4 10.5l3.5 3.5L16 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 )
+
+const DragHandle = () => (
+  <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+    <circle cx="7" cy="5" r="1.6" /><circle cx="13" cy="5" r="1.6" />
+    <circle cx="7" cy="10" r="1.6" /><circle cx="13" cy="10" r="1.6" />
+    <circle cx="7" cy="15" r="1.6" /><circle cx="13" cy="15" r="1.6" />
+  </svg>
+)
+
+/** Pointer-based drag reorder for quote line items (touch + mouse, no library) — Pointer
+ *  Events with `setPointerCapture` keep firing on the handle regardless of where the
+ *  finger/cursor travels, so a single element's own handlers are enough; no window
+ *  listeners to add/clean up. `onLostPointerCapture` is the spec's own signal for capture
+ *  being released without a normal up/cancel (app switch, OS gesture) — without it a
+ *  dropped drag would leave `displayItems` showing an order never committed to `d.items`.
+ *  Reordering only commits to `onDrop` once, on release, so it's one undo step and never
+ *  touches saved state mid-drag. Target row is found by comparing the pointer's Y against
+ *  each row's own measured rect — items have variable height (multi-line descriptions),
+ *  so a fixed row-height assumption would misplace the drop. */
+function useItemDrag(items: QuoteItem[], onDrop: (reordered: QuoteItem[]) => void) {
+  const [drag, setDrag] = useState<{ id: string; order: string[] } | null>(null)
+  const rowRefs = useRef<Record<string, HTMLElement | null>>({})
+
+  const toItems = (order: string[]) => order.map((oid) => items.find((it) => it.id === oid)!)
+  const displayItems = drag ? toItems(drag.order) : items
+  const endDrag = () => setDrag(null)
+
+  const handlers = (id: string) => ({
+    onPointerDown: (e: React.PointerEvent) => {
+      e.currentTarget.setPointerCapture(e.pointerId)
+      setDrag({ id, order: items.map((it) => it.id) })
+    },
+    onPointerMove: (e: React.PointerEvent) => {
+      if (!drag) return
+      const y = e.clientY
+      const from = drag.order.indexOf(id)
+      let to = drag.order.length - 1
+      for (let i = 0; i < drag.order.length; i++) {
+        const rect = rowRefs.current[drag.order[i]]?.getBoundingClientRect()
+        if (rect && y < rect.top + rect.height / 2) {
+          to = i
+          break
+        }
+      }
+      if (to === from) return
+      // `to` was found against the pre-removal array — once `from` is spliced out,
+      // every index after it shifts down by one, so an earlier `from` needs `to - 1`
+      // to land in the same visual gap (splice(from,1) then splice(to,0,...) alone
+      // over-shoots by one slot whenever dragging downward, i.e. from < to).
+      const insertAt = from < to ? to - 1 : to
+      const order = drag.order.slice()
+      order.splice(from, 1)
+      order.splice(insertAt, 0, id)
+      setDrag({ id, order })
+    },
+    onPointerUp: () => {
+      if (drag) onDrop(toItems(drag.order))
+      endDrag()
+    },
+    onPointerCancel: endDrag,
+    onLostPointerCapture: endDrag,
+  })
+
+  return { displayItems, dragId: drag?.id ?? null, rowRefs, handlers }
+}
 
 export default function QuotePage() {
   const { id } = useParams<{ id: string }>()
@@ -209,7 +274,7 @@ export default function QuotePage() {
       const sheet = sheetRef.current
       if (!sheet) return
       // Mirror print CSS: hide UI controls that won't appear in the PDF
-      const els = Array.from(sheet.querySelectorAll<HTMLElement>('.lq-row-del, .lq-add, .lq-included-del, .lq-row-move'))
+      const els = Array.from(sheet.querySelectorAll<HTMLElement>('.lq-row-del, .lq-add, .lq-included-del, .lq-row-drag'))
       els.forEach((el) => (el.style.display = 'none'))
       const h = sheet.offsetHeight
       els.forEach((el) => (el.style.display = ''))
@@ -238,6 +303,8 @@ export default function QuotePage() {
     return p
   }, [])
 
+  const itemDrag = useItemDrag(d?.items ?? [], (reordered) => setD((cur) => ({ ...cur, items: reordered })))
+
   if (notFound) return <div className="card notice">{qt.docNotFound}</div>
   if (!row || !c || !d) return <div className="muted">{qt.loading}</div>
 
@@ -256,11 +323,6 @@ export default function QuotePage() {
 
   const updateItem = (itemId: string, k: keyof QuoteItem, v: string) =>
     set({ items: d.items.map((it) => (it.id === itemId ? { ...it, [k]: v } : it)) })
-  const moveItem = (index: number, dir: -1 | 1) => {
-    const j = index + dir
-    if (j < 0 || j >= d.items.length) return
-    set({ items: swapAdjacent(d.items, index, j) })
-  }
   const setAgendaItem = (i: number, k: keyof AgendaItem, v: string) =>
     set({ agenda: d.agenda.map((x, j) => (j === i ? { ...x, [k]: v } : x)) })
 
@@ -388,13 +450,20 @@ export default function QuotePage() {
                       <th style={{ width: '70px', textAlign: 'center' }}>כמות</th>
                       <th style={{ width: '110px', textAlign: 'center' }}>מחיר ליחידה</th>
                       <th style={{ width: '120px', textAlign: 'center' }}>סה"כ</th>
-                      <th style={{ width: '38px' }} aria-label={qt.reorderRow}></th>
+                      <th style={{ width: '44px' }} aria-label={qt.reorderRow}></th>
                       <th style={{ width: '26px' }} aria-label={qt.remove}></th>
                     </tr>
                   </thead>
                   <tbody>
-                    {d.items.map((it, i) => (
-                      <tr key={it.id}>
+                    {itemDrag.displayItems.map((it) => (
+                      <tr
+                        key={it.id}
+                        ref={(el) => {
+                          if (el) itemDrag.rowRefs.current[it.id] = el
+                          else delete itemDrag.rowRefs.current[it.id]
+                        }}
+                        className={itemDrag.dragId === it.id ? 'lq-row-dragging' : ''}
+                      >
                         <td style={{ verticalAlign: 'top', paddingTop: '9px' }}>
                           <AutoTextarea
                             className="lq-desc"
@@ -409,12 +478,9 @@ export default function QuotePage() {
                           <input className="lq-num" value={it.price} onChange={(e) => updateItem(it.id, 'price', e.target.value)} />
                         </td>
                         <td className="lq-col-amt lq-col-tot">{ILS(num(it.qty) * num(it.price))}</td>
-                        <td className="lq-row-move">
-                          <button title={qt.moveUp} disabled={i === 0} onClick={() => moveItem(i, -1)}>
-                            ↑
-                          </button>
-                          <button title={qt.moveDown} disabled={i === d.items.length - 1} onClick={() => moveItem(i, 1)}>
-                            ↓
+                        <td>
+                          <button className="lq-row-drag" title={qt.reorderRow} {...itemDrag.handlers(it.id)}>
+                            <DragHandle />
                           </button>
                         </td>
                         <td>
