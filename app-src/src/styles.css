@@ -259,6 +259,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 /* segmented control (income / expense) */
 .seg { display: grid; gap: 6px; padding: 4px; background: var(--sand-2); border-radius: 12px; }
 .seg-2 { grid-template-columns: 1fr 1fr; }
+.seg-3 { grid-template-columns: repeat(3, 1fr); }
 .seg-btn {
   font: inherit; font-weight: 700; min-height: 46px; padding: 12px;
   border: none; border-radius: 9px; background: transparent; color: var(--muted); cursor: pointer;
@@ -266,6 +267,12 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 .seg-btn.on { background: #fff; color: var(--danger); box-shadow: var(--shadow); }
 .seg-btn.on.income { color: var(--ok); }
+
+/* all / income / expense view filter (entries + report tabs) */
+.finance-kind-filter { margin: 12px 0 14px; }
+.finance-kind-filter .seg-btn.on { color: var(--sea-dark); }
+.finance-kind-filter .seg-btn.on.income { color: var(--ok); }
+.finance-kind-filter .seg-btn.on.expense { color: var(--danger); }
 
 /* chips (payment methods, date presets) */
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -291,6 +298,17 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .rl-lock { display: none; }
 .rl-actions { display: flex; gap: 6px; justify-content: flex-end; }
 .rl-formrow > td { padding-top: 0; }
+/* desktop affordance for allViewports drill-down rows (useRowDisclosure):
+   a trailing .rl-chev cell; on phones it's hidden and the row's own ::after
+   chevron takes over */
+.rowline tr[aria-expanded] { cursor: pointer; }
+.rl-chev { width: 30px; text-align: center; }
+.rl-chev .chev {
+  display: inline-block; width: 8px; height: 8px;
+  border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg); transition: transform 0.15s ease;
+}
+.rowline tr[aria-expanded='true'] .rl-chev .chev { transform: rotate(-135deg); }
 
 /* full-width opener for a form that collapses behind a button on phones */
 .form-open-btn { width: 100%; min-height: 48px; margin-bottom: 18px; }
@@ -306,7 +324,27 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   background: var(--sand-2); color: var(--sea-dark); vertical-align: 1px; white-space: nowrap;
 }
 .finance-badge-warn { background: #fbe9e7; color: var(--danger); }
+a.finance-badge-link { text-decoration: none; }
+a.finance-badge-link:hover { text-decoration: underline; }
+a.btn-ghost, a.btn-primary {
+  text-decoration: none; display: inline-flex; align-items: center; justify-content: center;
+}
 .finance-fulfill { margin: 14px 0 4px; padding: 14px; border: 1px dashed var(--sea); border-radius: 12px; }
+
+/* report: date-range caption, stat-card counts + drill-down entry lists */
+.finance-range-caption { font-size: 0.8rem; text-align: center; }
+.finance-stat-sub { color: var(--muted); font-size: 0.72rem; }
+.report-detail > td { padding-top: 0; }
+.report-detail-head { font-size: 0.8rem; margin-bottom: 4px; }
+.report-entries { list-style: none; margin: 0; padding: 0; }
+.report-entries li {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  padding: 7px 0; border-top: 1px solid var(--line);
+}
+.report-entries .re-date { flex: 0 0 auto; font-size: 0.78rem; white-space: nowrap; }
+.report-entries .re-main { flex: 1 1 auto; min-width: 0; }
+.report-entries .re-method { flex: 0 0 auto; font-size: 0.78rem; }
+.report-entries li > .finance-amount { margin-inline-start: auto; }
 
 /* POS module (full-screen; visuals are inline styles ported from pos.html) */
 .pos-tap:active { transform: scale(0.92); }
@@ -366,8 +404,9 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   .rowline .rl-tail::before { content: '· '; color: var(--line); }
   .rowline .rl-more, .rowline .rl-actions { display: none; }
 
-  /* tap affordance: a chevron only on rows that actually expand */
-  .rowline tr[aria-expanded] { cursor: pointer; touch-action: manipulation; }
+  /* tap affordance: a chevron only on rows that actually expand
+     (cursor comes from the shared desktop rule above) */
+  .rowline tr[aria-expanded] { touch-action: manipulation; }
   .rowline tr[aria-expanded]::after {
     content: ''; width: 8px; height: 8px; flex: 0 0 auto; align-self: center;
     margin-inline-start: 2px; margin-block-start: -4px;
@@ -387,7 +426,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
     content: attr(data-label); color: var(--muted); font-weight: 600; font-size: 0.82rem; text-align: start;
   }
   .rowline tr[aria-expanded='true'] .rl-actions:not(:empty) {
-    display: flex; order: 11; flex: 1 1 100%; gap: 8px;
+    display: flex; flex-wrap: wrap; order: 11; flex: 1 1 100%; gap: 8px;
     padding-top: 10px; border-top: 1px solid var(--line);
   }
   .rowline tr[aria-expanded='true'] .rl-actions .btn-sm { flex: 1; min-height: 44px; min-width: 0; }
@@ -408,6 +447,17 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   /* tabs read as a proper full-width segmented control, not sparse left-aligned pills */
   .tabs { gap: 6px; }
   .tab { flex: 1; text-align: center; padding: 10px 10px; min-height: 44px; }
+
+  /* date-preset chips: one swipeable line instead of a tall wrapped block */
+  .chips-scroll {
+    flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; margin-inline: -2px; padding: 2px;
+  }
+  .chips-scroll::-webkit-scrollbar { display: none; }
+  .chips-scroll .chip { flex: 0 0 auto; }
+
+  /* the desktop chevron cell duplicates the row's own ::after chevron — hide it */
+  .rowline .rl-chev { display: none; }
 
   /* payment method chips: even 2-column grid, never needs to scroll or wrap unevenly */
   .chips-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }

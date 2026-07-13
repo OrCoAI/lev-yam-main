@@ -70,9 +70,18 @@ bilingual is ever a retrofit.*
         payments** on `finance.expected` (`record_payment` closes the expectation at any
         amount — needs remainder/split support; UI warns for now); a **reversal path** for
         posted entries with no owning module (payments on hand-created expectations get
-        `source='finance'` and are immutable with no corrector); **HE/AR retrofit** of the
-        finance module chrome (predates the i18n layer); EntriesTab form → child component
-        (keystrokes re-render the entries table)
+        `source='finance'` and are immutable with no corrector); **server-side provenance
+        resolution** (2026-07-12 UX-pass review): the `source_ref` grammar is parsed
+        client-side in `modules/finance/provenance.ts` — when a second surface needs
+        entry→quote/POS links (events module, dashboards), move it into a DB view or
+        generated columns next to the posting functions that own the formats
+  - [ ] Finance UX pass (kickoff 2026-07-12, Or's brief) —
+        [plans/finance-ux-pass.md](plans/finance-ux-pass.md): report tab drill-down
+        (expandable breakdown rows → underlying entries), date-preset chips + kind
+        filters, source links on module-posted rows (`/pos?report=<date>` deep link,
+        quotes → quote page); folds in two tracked follow-ups: **HE/AR retrofit** of
+        the finance module chrome (predates the i18n layer) and EntriesTab form →
+        child component (keystrokes re-render the entries table)
 - [x] POS: map `pos.html` features → module design under `app-src/src/modules/pos/`
       (against the spines: `pos.close_day()` posts to finance; bills carry optional `event_id`)
       — **full migration plan: [plans/pos-module.md](plans/pos-module.md)** (kickoff
