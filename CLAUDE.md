@@ -125,7 +125,12 @@ an existing module, without waiting to be asked:
    one line: what's wrong/wanted, and why if the reason isn't obvious.
 3. Do the work, then move the entry to **Done** with the date and a one-line note of what
    changed — as part of finishing the task, not a separate step the user has to request.
-4. The pre-commit quality gate below still applies in full — it is never optional, kickoff
+4. Before running the pre-commit gate, give the user a plain list of every fix/change made
+   this session to confirm by hand, plus the local environment to test them in: the exact
+   command(s) to run (e.g. `python3 -m http.server 8080` for static pages/`pos.html`, `cd
+   app-src && npm run dev` for the platform) and, per item, what to open/click to see it
+   working. Wait for the user's confirmation before moving on to the gate.
+5. The pre-commit quality gate below still applies in full — it is never optional, kickoff
    or no kickoff.
 
 If the fix turns out bigger than expected once you're in it — new schema, new permissions,
