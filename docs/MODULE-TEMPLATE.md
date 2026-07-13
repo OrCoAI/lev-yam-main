@@ -120,6 +120,10 @@ Rules that came from real bugs:
     that must not be edited explains itself with a `.rl-lock` span there instead;
   - spread `{...rowProps(id)}` from `useRowDisclosure()` (`lib/useRowDisclosure.ts`) on
     each expandable `<tr>` — rows without it (pure breakdowns) stay one line, no chevron;
+  - rows that must also expand on **desktop** (drill-downs, e.g. the finance report's
+    breakdown tables) use `useRowDisclosure({ allViewports: true })` and render a
+    trailing `<td className="rl-chev"><span className="chev" /></td>` as the desktop
+    affordance (hidden on phones, where the row's own ::after chevron shows);
   - an inline form belongs in a `<tr className="rl-formrow"><td colSpan={n}>` directly
     under its row (see ExpectedTab's record-payment form);
   - a big always-open form collapses behind a `.form-open-btn` primary button on phones:

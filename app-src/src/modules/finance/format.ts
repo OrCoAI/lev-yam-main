@@ -14,3 +14,16 @@ export function shortDate(iso: string) {
   const [, m, d] = iso.split('-')
   return `${d}.${m}`
 }
+
+// 'YYYY-MM-DD' -> 'DD.MM.YYYY' — full date for captions (module-local format).
+export function displayDate(iso: string) {
+  if (!iso) return '' // a cleared date input passes '' mid-edit
+  const [y, m, d] = iso.split('-')
+  return `${d}.${m}.${y}`
+}
+
+// Derived rows may be negative (reversals) — the sign follows the net effect.
+export function signedAmount(kind: 'income' | 'expense', amount: number) {
+  const net = kind === 'income' ? amount : -amount
+  return `${net >= 0 ? '+' : '−'}${Math.abs(net).toLocaleString('he-IL')} ₪`
+}

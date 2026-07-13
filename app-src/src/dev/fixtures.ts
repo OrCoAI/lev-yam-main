@@ -69,6 +69,8 @@ export const quotesFixture: QuoteRow[] = [
     notes: 'מחכים לתאריך סופי מהם',
   }),
   q({
+    // fixed id: finance fixtures point their provenance refs here (quote links)
+    id: '00000000-0000-4000-8000-00000000c002',
     quote_number: 'LY-260705-018',
     customer_name: 'קרן רש"י',
     contact_person: 'יעל',
@@ -97,6 +99,8 @@ export const quotesFixture: QuoteRow[] = [
     final_price: 4956,
   }),
   q({
+    // fixed id: finance fixtures point their provenance refs here (quote links)
+    id: '00000000-0000-4000-8000-00000000c001',
     quote_number: 'LY-260628-016',
     customer_name: 'אינטל ישראל',
     contact_person: 'דנה פרידמן',
@@ -312,63 +316,75 @@ export const posExpensesFixture = [
   { id: 9002, business_date: nowIso.slice(0, 10), kind: 'labor', amount: 400, note: 'משמרת בוקר', created_by: 'preview@levyam.com', created_at: nowIso },
 ]
 
-// finance.entries — a manual row, a quote-posted row, and a POS reversal pair
+// finance.entries — a manual row, a quote-posted row, and a POS reversal pair.
+// Relative dates keep the report's "this month / 7 days" presets alive;
+// provenance refs use the REAL schema formats ('expected:<uuid>' from
+// finance.record_payment, 'pos:<date>:<leg>[:rN]' from pos.close_day) so the
+// source links resolve in the preview.
+// -3 days: always inside the report's default '7 days' preset (and 'this
+// month' except the first days of a month) so the POS legs + reversal demo show
+const posDay = iso(-3)
 export const financeEntriesFixture = [
   {
     id: '00000000-0000-4000-8000-00000000f001',
     kind: 'expense', category: 'suppliers', amount: 1250, payment_method: 'bank',
-    entry_date: '2026-07-06', note: 'דגים — שוק הדייגים', source_module: null, source_ref: null,
+    entry_date: iso(-6), note: 'דגים — שוק הדייגים', source_module: null, source_ref: null,
     event_id: null, created_by: '00000000-0000-4000-8000-00000000dead',
-    created_at: '2026-07-06T09:00:00Z', updated_at: '2026-07-06T09:00:00Z',
+    created_at: `${iso(-6)}T09:00:00Z`, updated_at: `${iso(-6)}T09:00:00Z`,
   },
   {
     id: '00000000-0000-4000-8000-00000000f002',
     kind: 'income', category: 'events', amount: 2520, payment_method: 'bank',
-    entry_date: '2026-07-05', note: 'מקדמה', source_module: 'quotes',
+    entry_date: iso(-7), note: 'מקדמה', source_module: 'quotes',
     source_ref: 'expected:00000000-0000-4000-8000-00000000e001', event_id: null,
     created_by: '00000000-0000-4000-8000-00000000dead',
-    created_at: '2026-07-05T12:00:00Z', updated_at: '2026-07-05T12:00:00Z',
+    created_at: `${iso(-7)}T12:00:00Z`, updated_at: `${iso(-7)}T12:00:00Z`,
   },
   {
     id: '00000000-0000-4000-8000-00000000f003',
     kind: 'income', category: 'pos', amount: 3480, payment_method: 'cash',
-    entry_date: '2026-07-04', note: 'סגירת יום', source_module: 'pos',
-    source_ref: 'pos:2026-07-04:cash', event_id: null,
+    entry_date: posDay, note: 'סגירת יום', source_module: 'pos',
+    source_ref: `pos:${posDay}:cash`, event_id: null,
     created_by: '00000000-0000-4000-8000-00000000dead',
-    created_at: '2026-07-04T22:00:00Z', updated_at: '2026-07-04T22:00:00Z',
+    created_at: `${posDay}T22:00:00Z`, updated_at: `${posDay}T22:00:00Z`,
   },
   {
     id: '00000000-0000-4000-8000-00000000f004',
     kind: 'income', category: 'pos', amount: -180, payment_method: 'cash',
-    entry_date: '2026-07-04', note: 'היפוך — חשבון בוטל', source_module: 'pos',
-    source_ref: 'pos:2026-07-04:cash:r2', event_id: null,
+    entry_date: posDay, note: 'היפוך — חשבון בוטל', source_module: 'pos',
+    source_ref: `pos:${posDay}:cash:r2`, event_id: null,
     created_by: '00000000-0000-4000-8000-00000000dead',
-    created_at: '2026-07-04T23:00:00Z', updated_at: '2026-07-04T23:00:00Z',
+    created_at: `${posDay}T23:00:00Z`, updated_at: `${posDay}T23:00:00Z`,
   },
 ]
 
-// finance.expected — open deposit, overdue balance, fulfilled deposit
+// finance.expected — open balance, overdue deposit, fulfilled deposit.
+// Quote-planned rows carry '<quote_uuid>:deposit|:balance' (quotes.plan_money),
+// pointing at the fixed-id quote fixtures above.
 export const financeExpectedFixture = [
   {
     id: '00000000-0000-4000-8000-00000000e002',
-    direction: 'in', category: 'events', amount: 5880, due_date: '2026-08-14',
-    reason: 'balance', event_id: null, source_module: 'quotes', source_ref: 'balance:LY-2026-011',
-    status: 'open', fulfilled_by: null, note: 'יתרה — אירוע 14.8', created_by: null,
-    created_at: '2026-07-05T12:00:00Z', updated_at: '2026-07-05T12:00:00Z',
+    direction: 'in', category: 'events', amount: 5880, due_date: iso(33),
+    reason: 'balance', event_id: null, source_module: 'quotes',
+    source_ref: '00000000-0000-4000-8000-00000000c001:balance',
+    status: 'open', fulfilled_by: null, note: 'יתרה — אירוע', created_by: null,
+    created_at: `${iso(-7)}T12:00:00Z`, updated_at: `${iso(-7)}T12:00:00Z`,
   },
   {
     id: '00000000-0000-4000-8000-00000000e003',
-    direction: 'in', category: 'events', amount: 1800, due_date: '2026-07-02',
-    reason: 'deposit', event_id: null, source_module: 'quotes', source_ref: 'deposit:LY-2026-009',
+    direction: 'in', category: 'events', amount: 1800, due_date: iso(-10),
+    reason: 'deposit', event_id: null, source_module: 'quotes',
+    source_ref: '00000000-0000-4000-8000-00000000c002:deposit',
     status: 'open', fulfilled_by: null, note: '', created_by: null,
-    created_at: '2026-06-25T10:00:00Z', updated_at: '2026-06-25T10:00:00Z',
+    created_at: `${iso(-17)}T10:00:00Z`, updated_at: `${iso(-17)}T10:00:00Z`,
   },
   {
     id: '00000000-0000-4000-8000-00000000e001',
-    direction: 'in', category: 'events', amount: 2520, due_date: '2026-07-05',
-    reason: 'deposit', event_id: null, source_module: 'quotes', source_ref: 'deposit:LY-2026-011',
+    direction: 'in', category: 'events', amount: 2520, due_date: iso(-7),
+    reason: 'deposit', event_id: null, source_module: 'quotes',
+    source_ref: '00000000-0000-4000-8000-00000000c001:deposit',
     status: 'fulfilled', fulfilled_by: '00000000-0000-4000-8000-00000000f002', note: '',
-    created_by: null, created_at: '2026-07-01T09:00:00Z', updated_at: '2026-07-05T12:00:00Z',
+    created_by: null, created_at: `${iso(-11)}T09:00:00Z`, updated_at: `${iso(-7)}T12:00:00Z`,
   },
 ]
 

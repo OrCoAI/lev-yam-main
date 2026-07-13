@@ -136,3 +136,9 @@ export function fmtDate(ts?: number | string) {
   const d = ts ? new Date(ts) : new Date()
   return d.getDate() + '/' + (d.getMonth() + 1) + '/' + d.getFullYear()
 }
+
+// /pos?report=<YYYY-MM-DD> deep-link contract. POS owns it (PosModule parses
+// the param); other modules (finance provenance links) build hrefs through
+// posReportHref so producer and consumer can't drift apart.
+export const REPORT_DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+export const posReportHref = (date: string) => `/pos?report=${date}`

@@ -1,38 +1,29 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { finance } from '../../lib/supabase'
 import type { FinanceCategory, FinanceEntry, FinanceKind, FinancePaymentMethod } from '../../types'
-import {
-  CATEGORY_LABELS,
-  EXPENSE_CATEGORIES,
-  INCOME_CATEGORIES,
-  PAYMENT_LABELS,
-  PAYMENT_METHODS,
-} from './categories'
+import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, PAYMENT_METHODS } from './categories'
 import { useRowDisclosure } from '../../lib/useRowDisclosure'
 import DateField from './DateField'
-import { shortDate, todayStr } from './format'
+import { shortDate, signedAmount, todayStr } from './format'
 import { useFT } from './i18n'
+import KindFilterChips, { type KindFilter } from './KindFilterChips'
+import { sourceHref, useQuoteMap } from './provenance'
 import SourceBadge from './SourceBadge'
 
 const PAGE_SIZE = 100
 
+type EntryPayload = {
+  kind: FinanceKind
+  category: FinanceCategory
+  payment_method: FinancePaymentMethod
+  amount: number
+  entry_date: string
+  note: string | null
+}
+
 function categoriesFor(kind: FinanceKind): FinanceCategory[] {
   return kind === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES
-}
-
-// Derived rows may be negative (reversals) — the sign follows the net effect.
-function signedAmount(e: FinanceEntry) {
-  const net = e.kind === 'income' ? e.amount : -e.amount
-  return `${net >= 0 ? '+' : '−'}${Math.abs(net).toLocaleString('he-IL')} ₪`
-}
-
-const emptyForm = {
-  kind: 'expense' as FinanceKind,
-  category: EXPENSE_CATEGORIES[0] as FinanceCategory,
-  payment_method: 'cash' as FinancePaymentMethod,
-  amount: '',
-  entry_date: todayStr(),
-  note: '',
 }
 
 export default function EntriesTab({ canManage }: { canManage: boolean }) {
@@ -44,93 +35,74 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
   const [hasMore, setHasMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [form, setForm] = useState(emptyForm)
+  const [editing, setEditing] = useState<FinanceEntry | null>(null)
+  // remounts EntryForm after a successful insert — the fields must not keep
+  // their just-saved values (a second submit would duplicate the entry)
+  const [formEpoch, setFormEpoch] = useState(0)
+  const [kindFilter, setKindFilter] = useState<KindFilter>('all')
+  const quoteMap = useQuoteMap(entries)
   // on phones the form starts collapsed behind a button so the list leads
   const [formOpen, setFormOpen] = useState(!isPhone)
   useEffect(() => {
     // viewport mode changed (rotation/resize): reset to that mode's default,
     // unless an edit is in progress — never yank an open edit away
-    if (!editingId) setFormOpen(!isPhone)
+    if (!editing) setFormOpen(!isPhone)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPhone])
 
   const loadIdRef = useRef(0)
   const offsetRef = useRef(0)
 
-  const load = useCallback(async (append = false) => {
-    const id = ++loadIdRef.current
-    if (append) setLoadingMore(true)
-    else {
-      setLoading(true)
-      offsetRef.current = 0
-    }
-    const offset = append ? offsetRef.current : 0
-    const { data, error } = await finance()
-      .from('entries')
-      .select('*')
-      .order('entry_date', { ascending: false })
-      .order('created_at', { ascending: false })
-      .range(offset, offset + PAGE_SIZE - 1)
-    if (id !== loadIdRef.current) return // a newer load superseded this one
-    if (error) {
-      setError(error.message)
-    } else {
-      const rows = (data as FinanceEntry[] | null) ?? []
-      setEntries((prev) => (append ? [...prev, ...rows] : rows))
-      offsetRef.current = offset + rows.length
-      setHasMore(rows.length === PAGE_SIZE)
-      setError(null)
-    }
-    setLoading(false)
-    setLoadingMore(false)
-  }, [])
+  const load = useCallback(
+    async (append = false) => {
+      const id = ++loadIdRef.current
+      if (append) setLoadingMore(true)
+      else {
+        setLoading(true)
+        offsetRef.current = 0
+      }
+      const offset = append ? offsetRef.current : 0
+      let query = finance().from('entries').select('*')
+      if (kindFilter !== 'all') query = query.eq('kind', kindFilter)
+      const { data, error } = await query
+        .order('entry_date', { ascending: false })
+        .order('created_at', { ascending: false })
+        .range(offset, offset + PAGE_SIZE - 1)
+      if (id !== loadIdRef.current) return // a newer load superseded this one
+      if (error) {
+        setError(error.message)
+      } else {
+        const rows = (data as FinanceEntry[] | null) ?? []
+        setEntries((prev) => (append ? [...prev, ...rows] : rows))
+        offsetRef.current = offset + rows.length
+        setHasMore(rows.length === PAGE_SIZE)
+        setError(null)
+      }
+      setLoading(false)
+      setLoadingMore(false)
+    },
+    [kindFilter],
+  )
 
   useEffect(() => {
     void load()
   }, [load])
 
-  function changeKind(kind: FinanceKind) {
-    setForm((f) => ({ ...f, kind, category: categoriesFor(kind)[0] }))
-  }
-
   function startEdit(e: FinanceEntry) {
-    setEditingId(e.id)
+    setEditing(e)
     setFormOpen(true)
-    setForm({
-      kind: e.kind,
-      category: e.category,
-      payment_method: e.payment_method ?? 'cash',
-      amount: String(e.amount),
-      entry_date: e.entry_date,
-      note: e.note ?? '',
-    })
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   function cancelEdit() {
-    setEditingId(null)
-    setForm(emptyForm)
+    setEditing(null)
     setError(null)
   }
 
-  async function submit() {
-    const amount = Number(form.amount)
-    if (!amount || amount <= 0) {
-      setError('נא להזין סכום תקין (גדול מ-0).')
-      return
-    }
+  async function save(payload: EntryPayload) {
     setBusy(true)
-    const payload = {
-      kind: form.kind,
-      category: form.category,
-      payment_method: form.payment_method,
-      amount,
-      entry_date: form.entry_date,
-      note: form.note.trim() || null,
-    }
-    const res = editingId
-      ? await finance().from('entries').update(payload).eq('id', editingId)
+    const res = editing
+      ? await finance().from('entries').update(payload).eq('id', editing.id)
       : await finance().from('entries').insert(payload)
     setBusy(false)
     if (res.error) {
@@ -138,12 +110,13 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
       return
     }
     cancelEdit()
+    setFormEpoch((n) => n + 1)
     if (isPhone) setFormOpen(false) // land back on the list — the saved row is the feedback
     await load()
   }
 
   async function remove(id: string) {
-    if (!window.confirm('למחוק את התנועה? לא ניתן לשחזר.')) return
+    if (!window.confirm(ft.confirmDelete)) return
     setBusy(true)
     const { error } = await finance().from('entries').delete().eq('id', id)
     setBusy(false)
@@ -151,7 +124,7 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
       setError(error.message)
       return
     }
-    if (editingId === id) cancelEdit()
+    if (editing?.id === id) cancelEdit()
     await load()
   }
 
@@ -163,192 +136,116 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
         </button>
       )}
       {canManage && formOpen && (
-        <div className="card finance-form">
-          {/* income / expense */}
-          <div className="seg seg-2">
-            <button
-              type="button"
-              className={form.kind === 'expense' ? 'seg-btn on' : 'seg-btn'}
-              onClick={() => changeKind('expense')}
-            >
-              הוצאה
-            </button>
-            <button
-              type="button"
-              className={form.kind === 'income' ? 'seg-btn on income' : 'seg-btn'}
-              onClick={() => changeKind('income')}
-            >
-              הכנסה
-            </button>
-          </div>
+        <EntryForm
+          key={editing?.id ?? `new-${formEpoch}`}
+          initial={editing}
+          busy={busy}
+          onSubmit={save}
+          onCancelEdit={cancelEdit}
+          onClose={!editing && isPhone ? () => setFormOpen(false) : undefined}
+        />
+      )}
 
-          <label className="field">
-            <span className="field-label">קטגוריה</span>
-            <select
-              value={form.category}
-              onChange={(e) => setForm((f) => ({ ...f, category: e.target.value as FinanceCategory }))}
-            >
-              {/* editing a legacy row whose category is now derived-only keeps its option */}
-              {!categoriesFor(form.kind).includes(form.category) && (
-                <option value={form.category}>{CATEGORY_LABELS[form.category] ?? form.category}</option>
-              )}
-              {categoriesFor(form.kind).map((c) => (
-                <option key={c} value={c}>
-                  {CATEGORY_LABELS[c]}
-                </option>
-              ))}
-            </select>
-          </label>
+      <KindFilterChips value={kindFilter} onChange={setKindFilter} />
 
-          <div className="field">
-            <span className="field-label">אמצעי תשלום</span>
-            <div className="chips chips-grid">
-              {PAYMENT_METHODS.map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  className={form.payment_method === p ? 'chip on' : 'chip'}
-                  onClick={() => setForm((f) => ({ ...f, payment_method: p }))}
-                >
-                  {PAYMENT_LABELS[p]}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="field-row">
-            <label className="field">
-              <span className="field-label">סכום (₪)</span>
-              <input
-                type="number"
-                dir="ltr"
-                inputMode="decimal"
-                step="0.01"
-                placeholder="0"
-                value={form.amount}
-                onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
-              />
-            </label>
-            <label className="field">
-              <span className="field-label">תאריך</span>
-              <DateField
-                value={form.entry_date}
-                onChange={(v) => setForm((f) => ({ ...f, entry_date: v }))}
-              />
-            </label>
-          </div>
-
-          <label className="field">
-            <span className="field-label">הערה (לא חובה)</span>
-            <input
-              type="text"
-              placeholder="למשל: שכירות יוני"
-              value={form.note}
-              onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
-            />
-          </label>
-
-          <div className="field-actions">
-            <button
-              className={`btn-primary btn-block ${form.kind === 'income' ? 'btn-income' : 'btn-expense'}`}
-              disabled={busy}
-              onClick={submit}
-            >
-              {editingId ? 'עדכן תנועה' : 'הוסף תנועה'}
-            </button>
-            {editingId && (
-              <button className="btn-ghost" disabled={busy} onClick={cancelEdit}>
-                בטל
-              </button>
-            )}
-            {!editingId && isPhone && (
-              <button className="btn-ghost" disabled={busy} onClick={() => setFormOpen(false)}>
-                {ft.closeForm}
-              </button>
-            )}
-          </div>
+      {error && (
+        <div className="error">
+          {ft.errorPrefix} {error}
         </div>
       )}
 
-      {error && <div className="error">שגיאה: {error}</div>}
-
       {loading ? (
-        <div className="muted">טוען תנועות…</div>
+        <div className="muted">{ft.loadingEntries}</div>
       ) : (
         <div className="card rowline">
           <table className="grid">
             <thead>
               <tr>
-                <th>תאריך</th>
-                <th>סוג</th>
-                <th>קטגוריה</th>
-                <th>תשלום</th>
-                <th>סכום</th>
-                <th>הערה</th>
+                <th>{ft.colDate}</th>
+                <th>{ft.colKind}</th>
+                <th>{ft.colCategory}</th>
+                <th>{ft.colPayment}</th>
+                <th>{ft.colAmount}</th>
+                <th>{ft.colNote}</th>
                 {canManage && <th></th>}
               </tr>
             </thead>
             <tbody>
-              {entries.map((e) => (
-                <tr key={e.id} {...rowProps(e.id)}>
-                  <td className="rl-lead" title={e.entry_date}>
-                    {shortDate(e.entry_date)}
-                  </td>
-                  <td
-                    className={`rl-more ${e.kind === 'income' ? 'finance-income' : 'finance-expense'}`}
-                    data-label="סוג"
-                  >
-                    {e.kind === 'income' ? 'הכנסה' : 'הוצאה'}
-                  </td>
-                  <td className="rl-main">
-                    {CATEGORY_LABELS[e.category] ?? e.category}
-                    <SourceBadge module={e.source_module} sourceRef={e.source_ref} />
-                  </td>
-                  <td className="rl-more" data-label="תשלום">
-                    {e.payment_method ? PAYMENT_LABELS[e.payment_method] : '—'}
-                  </td>
-                  <td className={`rl-amt finance-amount ${e.kind === 'income' ? 'finance-income' : 'finance-expense'}`}>
-                    <span dir="ltr">{signedAmount(e)}</span>
-                  </td>
-                  <td className="rl-more muted" data-label="הערה">
-                    {e.note ?? ''}
-                  </td>
-                  {canManage && (
-                    <td className="rl-actions">
-                      {/* module-posted rows are immutable (DB guard) — corrections are
-                          reversals posted by the source module, so no edit/delete here */}
-                      {!e.source_module ? (
-                        <>
-                          <button
-                            className="btn-ghost btn-sm btn-icon-label"
-                            disabled={busy}
-                            onClick={() => startEdit(e)}
-                            aria-label={ft.edit}
-                          >
-                            <span aria-hidden="true">✎</span>
-                            <span className="btn-label">{ft.edit}</span>
-                          </button>
-                          <button
-                            className="btn-ghost btn-sm btn-icon-label"
-                            disabled={busy}
-                            onClick={() => remove(e.id)}
-                            aria-label={ft.delete}
-                          >
-                            <span aria-hidden="true">✕</span>
-                            <span className="btn-label">{ft.delete}</span>
-                          </button>
-                        </>
-                      ) : (
-                        <span className="rl-lock">{ft.lockedByModule}</span>
-                      )}
+              {entries.map((e) => {
+                const href = sourceHref(e.source_module, e.source_ref, quoteMap)
+                return (
+                  <tr key={e.id} {...rowProps(e.id)}>
+                    <td className="rl-lead" title={e.entry_date}>
+                      {shortDate(e.entry_date)}
                     </td>
-                  )}
-                </tr>
-              ))}
+                    <td
+                      className={`rl-more ${e.kind === 'income' ? 'finance-income' : 'finance-expense'}`}
+                      data-label={ft.colKind}
+                    >
+                      {e.kind === 'income' ? ft.income : ft.expense}
+                    </td>
+                    <td className="rl-main">
+                      {ft.categoryLabels[e.category] ?? e.category}
+                      <SourceBadge module={e.source_module} sourceRef={e.source_ref} href={href} />
+                    </td>
+                    <td className="rl-more" data-label={ft.colPayment}>
+                      {e.payment_method ? ft.paymentLabels[e.payment_method] : '—'}
+                    </td>
+                    <td className={`rl-amt finance-amount ${e.kind === 'income' ? 'finance-income' : 'finance-expense'}`}>
+                      <span dir="ltr">{signedAmount(e.kind, e.amount)}</span>
+                    </td>
+                    <td className="rl-more muted" data-label={ft.colNote}>
+                      {e.note ?? ''}
+                    </td>
+                    {canManage && (
+                      <td className="rl-actions">
+                        {/* module-posted rows are immutable (DB guard) — corrections are
+                            reversals posted by the source module, so no edit/delete here */}
+                        {!e.source_module ? (
+                          <>
+                            <button
+                              className="btn-ghost btn-sm btn-icon-label"
+                              disabled={busy}
+                              onClick={() => startEdit(e)}
+                              aria-label={ft.edit}
+                            >
+                              <span aria-hidden="true">✎</span>
+                              <span className="btn-label">{ft.edit}</span>
+                            </button>
+                            <button
+                              className="btn-ghost btn-sm btn-icon-label"
+                              disabled={busy}
+                              onClick={() => remove(e.id)}
+                              aria-label={ft.delete}
+                            >
+                              <span aria-hidden="true">✕</span>
+                              <span className="btn-label">{ft.delete}</span>
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <span className="rl-lock">{ft.lockedByModule}</span>
+                            {href && (
+                              <Link
+                                className="btn-ghost btn-sm btn-icon-label"
+                                to={href}
+                                aria-label={ft.openSource}
+                              >
+                                <span aria-hidden="true">↗</span>
+                                <span className="btn-label">{ft.openSource}</span>
+                              </Link>
+                            )}
+                          </>
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                )
+              })}
               {entries.length === 0 && (
                 <tr>
                   <td colSpan={canManage ? 7 : 6} className="muted">
-                    אין תנועות עדיין.
+                    {kindFilter === 'all' ? ft.noEntries : ft.noEntriesFiltered}
                   </td>
                 </tr>
               )}
@@ -357,12 +254,165 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
           {hasMore && (
             <div className="finance-load-more">
               <button className="btn-ghost" disabled={loadingMore} onClick={() => load(true)}>
-                {loadingMore ? 'טוען…' : 'טען עוד'}
+                {loadingMore ? ft.loading : ft.loadMore}
               </button>
             </div>
           )}
         </div>
       )}
+    </div>
+  )
+}
+
+// Owns its field state so keystrokes don't re-render the entries table
+// (same pattern as ExpectedTab's FulfillForm). Remounted via key on edit.
+function EntryForm({
+  initial,
+  busy,
+  onSubmit,
+  onCancelEdit,
+  onClose,
+}: {
+  initial: FinanceEntry | null
+  busy: boolean
+  onSubmit: (payload: EntryPayload) => void
+  onCancelEdit: () => void
+  onClose?: () => void
+}) {
+  const ft = useFT()
+  const [kind, setKind] = useState<FinanceKind>(initial?.kind ?? 'expense')
+  const [category, setCategory] = useState<FinanceCategory>(
+    initial?.category ?? EXPENSE_CATEGORIES[0],
+  )
+  const [method, setMethod] = useState<FinancePaymentMethod>(initial?.payment_method ?? 'cash')
+  const [amount, setAmount] = useState(initial ? String(initial.amount) : '')
+  const [entryDate, setEntryDate] = useState(initial?.entry_date ?? todayStr())
+  const [note, setNote] = useState(initial?.note ?? '')
+  const [invalid, setInvalid] = useState(false)
+
+  function changeKind(next: FinanceKind) {
+    setKind(next)
+    setCategory(categoriesFor(next)[0])
+  }
+
+  function submit() {
+    const n = Number(amount)
+    if (!n || n <= 0) {
+      setInvalid(true)
+      return
+    }
+    setInvalid(false)
+    onSubmit({
+      kind,
+      category,
+      payment_method: method,
+      amount: n,
+      entry_date: entryDate,
+      note: note.trim() || null,
+    })
+  }
+
+  return (
+    <div className="card finance-form">
+      {/* income / expense */}
+      <div className="seg seg-2">
+        <button
+          type="button"
+          className={kind === 'expense' ? 'seg-btn on' : 'seg-btn'}
+          onClick={() => changeKind('expense')}
+        >
+          {ft.expense}
+        </button>
+        <button
+          type="button"
+          className={kind === 'income' ? 'seg-btn on income' : 'seg-btn'}
+          onClick={() => changeKind('income')}
+        >
+          {ft.income}
+        </button>
+      </div>
+
+      <label className="field">
+        <span className="field-label">{ft.category}</span>
+        <select value={category} onChange={(e) => setCategory(e.target.value as FinanceCategory)}>
+          {/* editing a legacy row whose category is now derived-only keeps its option */}
+          {!categoriesFor(kind).includes(category) && (
+            <option value={category}>{ft.categoryLabels[category] ?? category}</option>
+          )}
+          {categoriesFor(kind).map((c) => (
+            <option key={c} value={c}>
+              {ft.categoryLabels[c]}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <div className="field">
+        <span className="field-label">{ft.paymentMethod}</span>
+        <div className="chips chips-grid">
+          {PAYMENT_METHODS.map((p) => (
+            <button
+              key={p}
+              type="button"
+              className={method === p ? 'chip on' : 'chip'}
+              onClick={() => setMethod(p)}
+            >
+              {ft.paymentLabels[p]}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="field-row">
+        <label className="field">
+          <span className="field-label">{ft.amountShekel}</span>
+          <input
+            type="number"
+            dir="ltr"
+            inputMode="decimal"
+            step="0.01"
+            placeholder="0"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+          />
+        </label>
+        <label className="field">
+          <span className="field-label">{ft.date}</span>
+          <DateField value={entryDate} onChange={setEntryDate} />
+        </label>
+      </div>
+
+      <label className="field">
+        <span className="field-label">{ft.noteOptional}</span>
+        <input
+          type="text"
+          placeholder={ft.notePlaceholder}
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+        />
+      </label>
+
+      {invalid && <div className="error">{ft.invalidAmount}</div>}
+
+      <div className="field-actions">
+        <button
+          className={`btn-primary btn-block ${kind === 'income' ? 'btn-income' : 'btn-expense'}`}
+          disabled={busy}
+          onClick={submit}
+        >
+          {initial ? ft.updateEntry : ft.submitEntry}
+        </button>
+        {initial && (
+          <button className="btn-ghost" disabled={busy} onClick={onCancelEdit}>
+            {ft.cancel}
+          </button>
+        )}
+        {onClose && (
+          <button className="btn-ghost" disabled={busy} onClick={onClose}>
+            {ft.closeForm}
+          </button>
+        )}
+      </div>
     </div>
   )
 }

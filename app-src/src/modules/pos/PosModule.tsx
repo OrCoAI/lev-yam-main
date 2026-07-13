@@ -3,12 +3,12 @@
 // staff work it on phones mid-service. pos.html's device PIN + RoleModal are
 // replaced by the platform login + RBAC (useCan on pos.* keys).
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../lib/auth'
 import { PERM, useCan } from '../../lib/permissions'
 import ChefView from './ChefView'
 import { usePosTr } from './i18n'
-import { fmtDate, tableTotals, todayKey } from './logic'
+import { fmtDate, REPORT_DATE_RE, tableTotals, todayKey } from './logic'
 import ReportView from './ReportView'
 import S, { INK, SEA, SUN } from './styles'
 import TableView from './TableView'
@@ -26,8 +26,15 @@ export default function PosModule() {
   const canAddFood = useCan(PERM.posCostsFood)
   const canAddLabor = useCan(PERM.posCostsLabor)
 
+  // ?report=YYYY-MM-DD deep link (finance provenance, built via posReportHref):
+  // open the day report at that date. Initial state only — the URL is not kept
+  // in sync afterwards.
+  const [searchParams] = useSearchParams()
+  const reportParam = searchParams.get('report')
+  const reportDate = reportParam && REPORT_DATE_RE.test(reportParam) ? reportParam : null
+
   const [activeId, setActiveId] = useState<string | null>(null)
-  const [showReport, setShowReport] = useState(false)
+  const [showReport, setShowReport] = useState(reportDate !== null)
   const [chefMode, setChefMode] = useState(false)
 
   const pos = usePosData(activeId, (message) =>
@@ -156,6 +163,7 @@ export default function PosModule() {
 
       {showReport && (canAnalytics || canReports) && (
         <ReportView
+          initialDate={reportDate ?? undefined}
           full={canReports}
           canAddFood={canAddFood}
           canAddLabor={canAddLabor}

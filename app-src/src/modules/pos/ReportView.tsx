@@ -11,7 +11,8 @@ import S, { INK, SEA, SEA_DEEP, SUN } from './styles'
 import type { ClosedBill, DayReport, DayReportExpense } from './types'
 import { TotalCell } from './widgets'
 
-export default function ReportView({ full, canAddFood, canAddLabor, canManage, closed, byName, onReopen, onClear, onClose }: {
+export default function ReportView({ initialDate, full, canAddFood, canAddLabor, canManage, closed, byName, onReopen, onClear, onClose }: {
+  initialDate?: string
   full: boolean
   canAddFood: boolean
   canAddLabor: boolean
@@ -24,8 +25,8 @@ export default function ReportView({ full, canAddFood, canAddLabor, canManage, c
 }) {
   const { tr, lang } = usePosTr()
   const today = jerusalemDate()
-  const [from, setFrom] = useState(today)
-  const [to, setTo] = useState(today)
+  const [from, setFrom] = useState(initialDate ?? today)
+  const [to, setTo] = useState(initialDate ?? today)
   const [rep, setRep] = useState<DayReport | null>(null)
   const [loading, setLoad] = useState(true)
   const [tick, setTick] = useState(0)

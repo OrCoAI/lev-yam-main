@@ -73,11 +73,25 @@ const json = (body: unknown, status = 200) =>
   })
 const noContent = () => new Response(null, { status: 204 })
 
+// gte/lte operand comparison: numeric when both sides are numbers, else
+// lexicographic (correct for ISO dates; '99' vs '100' would lie as strings)
+function compare(value: unknown, operand: string): number {
+  const a = Number(value)
+  const b = Number(operand)
+  if (Number.isFinite(a) && Number.isFinite(b) && String(value).trim() !== '' && operand.trim() !== '')
+    return a - b
+  const s = String(value)
+  return s < operand ? -1 : s > operand ? 1 : 0
+}
+
 function matches(row: Row, params: URLSearchParams): boolean {
   for (const [k, v] of params) {
     if (['select', 'order', 'limit', 'offset', 'on_conflict', 'columns'].includes(k)) continue
-    const m = v.match(/^eq\.(.*)$/)
-    if (m && String(row[k]) !== m[1]) return false
+    const m = v.match(/^(eq|gte|lte)\.(.*)$/)
+    if (!m) continue
+    if (m[1] === 'eq' && String(row[k]) !== m[2]) return false
+    if (m[1] === 'gte' && compare(row[k], m[2]) < 0) return false
+    if (m[1] === 'lte' && compare(row[k], m[2]) > 0) return false
   }
   return true
 }

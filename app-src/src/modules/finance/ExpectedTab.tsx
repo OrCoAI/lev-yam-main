@@ -2,20 +2,15 @@ import { Fragment, useCallback, useEffect, useState } from 'react'
 import { finance } from '../../lib/supabase'
 import type { FinanceExpected, FinancePaymentMethod } from '../../types'
 import { useRowDisclosure } from '../../lib/useRowDisclosure'
-import { CATEGORY_LABELS, PAYMENT_LABELS, PAYMENT_METHODS, reasonLabel } from './categories'
+import { PAYMENT_METHODS } from './categories'
 import DateField from './DateField'
 import { shortDate, todayStr } from './format'
-import { useFT } from './i18n'
+import { useFT, type FinanceDict } from './i18n'
+import { sourceHref } from './provenance'
 import SourceBadge from './SourceBadge'
 
-const STATUS_LABELS: Record<FinanceExpected['status'], string> = {
-  open: 'פתוח',
-  fulfilled: 'שולם',
-  cancelled: 'בוטל',
-}
-
-function expectedTitle(r: FinanceExpected) {
-  return reasonLabel(r.reason) || (CATEGORY_LABELS[r.category] ?? r.category)
+function expectedTitle(ft: FinanceDict, r: FinanceExpected) {
+  return ft.reasonLabels[r.reason] ?? (r.reason || (ft.categoryLabels[r.category] ?? r.category))
 }
 
 type FulfillValues = {
@@ -87,7 +82,7 @@ export default function ExpectedTab({ canManage }: { canManage: boolean }) {
   }
 
   async function cancel(r: FinanceExpected) {
-    if (!window.confirm('לבטל את הצפי? המסמך המקורי (הצעה/חוזה) לא מושפע.')) return
+    if (!window.confirm(ft.confirmCancelExpected)) return
     setBusy(true)
     const { data, error } = await finance()
       .from('expected')
@@ -102,7 +97,7 @@ export default function ExpectedTab({ canManage }: { canManage: boolean }) {
     }
     // PostgREST answers 200 with zero rows when RLS filters the write out — treat as denial
     if (!data || data.length === 0) {
-      setError('הביטול לא נשמר — ייתכן שאין הרשאה או שהצפי כבר טופל.')
+      setError(ft.cancelDenied)
       return
     }
     await load()
@@ -114,27 +109,31 @@ export default function ExpectedTab({ canManage }: { canManage: boolean }) {
       <tr key={r.id} {...rowProps(r.id)}>
         <td className="rl-lead" title={r.due_date ?? undefined}>
           {r.due_date ? shortDate(r.due_date) : '—'}
-          {overdue && <span className="finance-badge finance-badge-warn">באיחור</span>}
+          {overdue && <span className="finance-badge finance-badge-warn">{ft.overdue}</span>}
         </td>
         <td
           className={`rl-more ${r.direction === 'in' ? 'finance-income' : 'finance-expense'}`}
-          data-label="כיוון"
+          data-label={ft.colDirection}
         >
-          {r.direction === 'in' ? 'צפי הכנסה' : 'צפי הוצאה'}
+          {r.direction === 'in' ? ft.expectedIn : ft.expectedOut}
         </td>
         <td className="rl-main">
-          {expectedTitle(r)}
-          <SourceBadge module={r.source_module} sourceRef={r.source_ref} />
+          {expectedTitle(ft, r)}
+          <SourceBadge
+            module={r.source_module}
+            sourceRef={r.source_ref}
+            href={sourceHref(r.source_module, r.source_ref)}
+          />
         </td>
         <td
           className={`rl-amt finance-amount ${r.direction === 'in' ? 'finance-income' : 'finance-expense'}`}
         >
           <span dir="ltr">{Number(r.amount).toLocaleString('he-IL')} ₪</span>
         </td>
-        <td className="rl-more" data-label="מצב">
-          {STATUS_LABELS[r.status]}
+        <td className="rl-more" data-label={ft.colStatus}>
+          {ft.statusLabels[r.status]}
         </td>
-        <td className="rl-more muted" data-label="הערה">
+        <td className="rl-more muted" data-label={ft.colNote}>
           {r.note}
         </td>
         {canManage && (
@@ -170,30 +169,34 @@ export default function ExpectedTab({ canManage }: { canManage: boolean }) {
     <div>
       <div className="finance-summary">
         <div className="card finance-stat stat-income">
-          <span className="muted">צפי הכנסות פתוח</span>
+          <span className="muted">{ft.openExpectedIn}</span>
           <strong className="finance-income">{openIn.toLocaleString('he-IL')} ₪</strong>
         </div>
         <div className="card finance-stat stat-expense">
-          <span className="muted">צפי הוצאות פתוח</span>
+          <span className="muted">{ft.openExpectedOut}</span>
           <strong className="finance-expense">{openOut.toLocaleString('he-IL')} ₪</strong>
         </div>
       </div>
 
-      {error && <div className="error">שגיאה: {error}</div>}
+      {error && (
+        <div className="error">
+          {ft.errorPrefix} {error}
+        </div>
+      )}
 
       {loading ? (
-        <div className="muted">טוען צפי…</div>
+        <div className="muted">{ft.loadingExpected}</div>
       ) : (
         <div className="card rowline">
           <table className="grid">
             <thead>
               <tr>
-                <th>יעד</th>
-                <th>כיוון</th>
-                <th>עבור</th>
-                <th>סכום</th>
-                <th>מצב</th>
-                <th>הערה</th>
+                <th>{ft.colDue}</th>
+                <th>{ft.colDirection}</th>
+                <th>{ft.colFor}</th>
+                <th>{ft.colAmount}</th>
+                <th>{ft.colStatus}</th>
+                <th>{ft.colNote}</th>
                 {canManage && <th></th>}
               </tr>
             </thead>
@@ -220,7 +223,7 @@ export default function ExpectedTab({ canManage }: { canManage: boolean }) {
               {open.length === 0 && (
                 <tr>
                   <td colSpan={canManage ? 7 : 6} className="muted">
-                    אין צפי פתוח — חתימת חוזה יוצרת כאן מקדמה ויתרה אוטומטית.
+                    {ft.noOpenExpected}
                   </td>
                 </tr>
               )}
@@ -230,7 +233,7 @@ export default function ExpectedTab({ canManage }: { canManage: boolean }) {
           {closed.length > 0 && (
             <div className="finance-load-more">
               <button className="btn-ghost" onClick={() => setShowClosed((v) => !v)}>
-                {showClosed ? 'הסתר היסטוריה' : `היסטוריה (${closed.length})`}
+                {showClosed ? ft.hideHistory : `${ft.history} (${closed.length})`}
               </button>
             </div>
           )}
@@ -257,6 +260,7 @@ function FulfillForm({
   onSubmit: (v: FulfillValues) => void
   onCancel: () => void
 }) {
+  const ft = useFT()
   const [amount, setAmount] = useState(String(row.amount))
   const [method, setMethod] = useState<FinancePaymentMethod>('cash')
   const [date, setDate] = useState(todayStr())
@@ -274,9 +278,7 @@ function FulfillForm({
     // roadmap follow-up)
     if (
       n !== Number(row.amount) &&
-      !window.confirm(
-        `הסכום שונה מהצפי (${Number(row.amount).toLocaleString('he-IL')} ₪). הצפי ייסגר במלואו — להמשיך?`,
-      )
+      !window.confirm(ft.amountDiffers(Number(row.amount).toLocaleString('he-IL')))
     )
       return
     setInvalid(false)
@@ -286,13 +288,13 @@ function FulfillForm({
   return (
     <div className="finance-form finance-fulfill">
       <div className="muted">
-        רישום תשלום — {expectedTitle(row)} (
-        <span dir="ltr">{Number(row.amount).toLocaleString('he-IL')} ₪</span> צפוי)
+        {ft.recordPaymentTitle} — {expectedTitle(ft, row)} (
+        <span dir="ltr">{Number(row.amount).toLocaleString('he-IL')} ₪</span> {ft.expectedSuffix})
       </div>
-      {invalid && <div className="error">נא להזין סכום תקין (גדול מ-0).</div>}
+      {invalid && <div className="error">{ft.invalidAmount}</div>}
       <div className="field-row">
         <label className="field">
-          <span className="field-label">סכום (₪)</span>
+          <span className="field-label">{ft.amountShekel}</span>
           <input
             type="number"
             dir="ltr"
@@ -303,12 +305,12 @@ function FulfillForm({
           />
         </label>
         <label className="field">
-          <span className="field-label">תאריך</span>
+          <span className="field-label">{ft.date}</span>
           <DateField value={date} onChange={setDate} />
         </label>
       </div>
       <div className="field">
-        <span className="field-label">אמצעי תשלום</span>
+        <span className="field-label">{ft.paymentMethod}</span>
         <div className="chips chips-grid">
           {PAYMENT_METHODS.map((p) => (
             <button
@@ -317,21 +319,21 @@ function FulfillForm({
               className={method === p ? 'chip on' : 'chip'}
               onClick={() => setMethod(p)}
             >
-              {PAYMENT_LABELS[p]}
+              {ft.paymentLabels[p]}
             </button>
           ))}
         </div>
       </div>
       <label className="field">
-        <span className="field-label">הערה (לא חובה)</span>
+        <span className="field-label">{ft.noteOptional}</span>
         <input type="text" value={note} onChange={(e) => setNote(e.target.value)} />
       </label>
       <div className="field-actions">
         <button className="btn-primary btn-block" disabled={busy} onClick={submit}>
-          רשום תשלום
+          {ft.submitPayment}
         </button>
         <button className="btn-ghost" disabled={busy} onClick={onCancel}>
-          בטל
+          {ft.cancel}
         </button>
       </div>
     </div>
