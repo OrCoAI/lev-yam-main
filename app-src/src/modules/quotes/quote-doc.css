@@ -106,6 +106,11 @@
 .lq-row-del { border: 0; background: transparent; cursor: pointer; color: var(--ly-ink-soft); width: 22px; height: 22px; border-radius: 999px; line-height: 1; font-size: 15px; opacity: 0; transition: opacity 120ms, background 120ms, color 120ms; }
 .lq-table tbody tr:hover .lq-row-del { opacity: 1; }
 .lq-row-del:hover { background: rgba(184, 92, 42, 0.12); color: #b85c2a; }
+.lq-row-move { display: flex; flex-direction: column; gap: 1px; opacity: 0; transition: opacity 120ms; }
+.lq-table tbody tr:hover .lq-row-move { opacity: 1; }
+.lq-row-move button { border: 0; background: transparent; cursor: pointer; color: var(--ly-ink-soft); width: 20px; height: 15px; line-height: 1; font-size: 11px; border-radius: 4px; }
+.lq-row-move button:hover:not(:disabled) { background: rgba(44, 146, 191, 0.1); color: var(--ly-blue-deep); }
+.lq-row-move button:disabled { opacity: 0.3; cursor: default; }
 .lq-add { margin-top: 8px; border: 1px dashed var(--ly-blue); background: transparent; color: var(--ly-blue-deep); font: inherit; font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 999px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background 120ms, transform 120ms; }
 .lq-add:hover { background: rgba(44, 146, 191, 0.08); transform: scale(1.02); }
 
@@ -200,6 +205,8 @@
   .lq-stage { flex-direction: column; align-items: stretch; padding: 12px; gap: 12px; }
   .lq-controls { position: static; width: 100%; order: -1; }
   .lq-fit { align-self: flex-start; }
+  /* hover-reveal doesn't exist on touch — keep row actions visible */
+  .lq-row-move, .lq-row-del { opacity: 1; }
 }
 
 /* ── Print (a4-fit) ────────────────────────────────────────────────── */
@@ -213,6 +220,6 @@
   .lq-fit { width: 210mm !important; height: 297mm !important; overflow: hidden !important; }
   .lq-sheet { box-shadow: none; width: 210mm; min-height: 297mm; height: auto; overflow: visible; }
   .lq-scaler { transform: scaleY(var(--lq-print-scale, 1)) !important; transform-origin: top center !important; }
-  .lq-row-del, .lq-add, .lq-included-del { display: none !important; }
+  .lq-row-del, .lq-add, .lq-included-del, .lq-row-move { display: none !important; }
   .lq-controls { display: none !important; }
 }

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { createQuote } from './api'
 import { useQT } from './i18n'
 import type { QuotesStrings } from './i18n'
+import type { QuoteRow } from './types'
 
 const EMPTY = {
   customer_name: '',
@@ -29,19 +30,25 @@ const FIELDS: { key: keyof FormState; label: keyof QuotesStrings; type?: string;
 export default function NewQuoteModal({
   onClose,
   onCreated,
+  existingQuotes,
 }: {
   onClose: () => void
-  onCreated: () => void
+  onCreated: (id: string) => void
+  existingQuotes: QuoteRow[]
 }) {
   const qt = useQT()
   const [form, setForm] = useState<FormState>(EMPTY)
   const [saving, setSaving] = useState(false)
 
   const submit = async () => {
+    if (form.event_date) {
+      const conflict = existingQuotes.find((q) => q.event_date === form.event_date)
+      if (conflict && !confirm(qt.dateConflictConfirm(conflict.customer_name, qt.status[conflict.status]))) return
+    }
     setSaving(true)
     try {
-      await createQuote(form)
-      onCreated()
+      const created = await createQuote(form)
+      onCreated(created.id)
     } catch (e) {
       alert((e as Error).message)
     } finally {

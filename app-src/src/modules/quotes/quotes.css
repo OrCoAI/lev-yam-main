@@ -44,6 +44,13 @@
 .q-kpi-label { display: block; font-size: 0.72rem; color: var(--muted); }
 .q-kpi-val { font-family: var(--font-display); font-weight: 800; font-size: 1.2rem; color: var(--ink); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
 
+/* ── Search box ───────────────────────────────────────────────────────── */
+.q-search-input {
+  width: 100%; max-width: 360px; border: 1px solid var(--line); border-radius: 999px;
+  padding: 9px 16px; font: inherit; font-size: 0.88rem; color: var(--ink); background: #fff;
+}
+.q-search-input:focus { outline: none; border-color: var(--sea); }
+
 /* ── Status filter chips (counts double as the stats) ───────────────── */
 .q-filters { display: flex; gap: 8px; flex-wrap: wrap; }
 .q-filter {
@@ -69,6 +76,7 @@
 .s-dot[data-s='declined'] { background: var(--danger); }
 .s-dot[data-s='expired'] { background: #e08a1e; }
 .s-dot[data-s='paid'] { background: var(--ok-dark); }
+.s-dot[data-s='waiting_payment'] { background: var(--danger); }
 .s-dot[data-cs='sent'] { background: var(--sea); }
 .s-dot[data-cs='signed'] { background: var(--ok); }
 
@@ -87,6 +95,7 @@
 .q-pill[data-s='declined'],  .q-filter.on[data-s='declined']  { background: #fae8e6; color: #8a1e17; }
 .q-pill[data-s='expired'],   .q-filter.on[data-s='expired']   { background: #fdeeda; color: #8f560e; }
 .q-pill[data-s='paid'],      .q-filter.on[data-s='paid']      { background: var(--ok); color: #fff; }
+.q-pill[data-s='waiting_payment'], .q-filter.on[data-s='waiting_payment'] { background: var(--danger); color: #fff; }
 .q-filter.on[data-s='draft'] { background: #ebeff1; color: #46606c; }
 .q-caret { opacity: 0.55; margin-inline-start: 1px; }
 
@@ -150,6 +159,8 @@
   font-weight: 700; padding: 14px 10px 10px; border-bottom: 1px solid var(--line);
   white-space: nowrap;
 }
+.q-th-sortable { cursor: pointer; user-select: none; }
+.q-th-sortable:hover { color: var(--sea-dark); }
 .q-table td { padding: 13px 10px; border-bottom: 1px solid color-mix(in srgb, var(--line) 45%, #fff); vertical-align: middle; }
 .q-table tr:last-child td { border-bottom: 0; }
 .q-row { cursor: pointer; }
@@ -157,6 +168,8 @@
 .q-row td:first-child { border-start-start-radius: 10px; border-end-start-radius: 10px; }
 .q-row td:last-child { border-start-end-radius: 10px; border-end-end-radius: 10px; }
 .q-row-archived { opacity: 0.5; }
+.q-row-waiting td { background: #fdf1ef; }
+.q-row-waiting:hover td { background: #fbe6e2; }
 
 .q-main { font-weight: 700; color: var(--ink); }
 .q-sub { font-size: 0.76rem; color: var(--muted); display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-top: 3px; }
@@ -172,6 +185,16 @@
 .q-day.past { opacity: 0.6; }
 .q-price { font-variant-numeric: tabular-nums; }
 .q-strike { text-decoration: line-through; opacity: 0.55; }
+
+/* Desktop table: every column centered except customer (לקוח) and notes (הערות) —
+   mobile turns rows into cards below 760px, where this doesn't apply. */
+@media (min-width: 761px) {
+  .q-th-center,
+  .q-cell-event, .q-cell-price, .q-cell-status, .q-cell-docs, .q-cell-actions { text-align: center; }
+  .q-cell-event .q-event-line, .q-cell-event .q-sub,
+  .q-cell-price .q-sub,
+  .q-cell-docs .q-chip-row { justify-content: center; }
+}
 
 /* notes: invisible until needed */
 .q-note {
@@ -263,6 +286,7 @@
   .q-btn span { display: none; }        /* calendar collapses to its icon */
   .q-btn { padding: 9px 11px; }
   .q-toolbar { flex-direction: column; align-items: stretch; gap: 10px; }
+  .q-search-input { max-width: none; font-size: 16px; } /* <16px makes iOS zoom on focus */
   .q-seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; }
   .q-seg-btn { justify-content: center; padding: 8px 3px; font-size: 0.76rem; white-space: nowrap; min-width: 0; }
   .q-seg-n { display: none; }

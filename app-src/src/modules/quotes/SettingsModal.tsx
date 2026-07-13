@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useCan } from '../../lib/permissions'
 import { PERM } from '../../lib/permissions'
 import { getOwnerSignature, getSettings, saveDefaultChecklist, saveOwnerSignature } from './api'
+import { swapAdjacent } from './format'
 import { useQT } from './i18n'
 
 function SignatureTab() {
@@ -137,9 +138,7 @@ function PrepDefaultsTab() {
 
   const swap = (i: number, j: number) => {
     if (!items || j < 0 || j >= items.length) return
-    const next = items.slice()
-    ;[next[i], next[j]] = [next[j], next[i]]
-    save(next)
+    save(swapAdjacent(items, i, j))
   }
   const edit = (i: number, text: string) => save(items!.map((t, j) => (j === i ? text : t)))
   const remove = (i: number) => save(items!.filter((_, j) => j !== i))
