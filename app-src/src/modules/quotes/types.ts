@@ -96,9 +96,16 @@ export interface QuoteSettings {
   contract_template: Record<string, unknown>
 }
 
-/** Confirmed event: explicitly confirmed on the quote, or its contract is signed. */
+/** Confirmed event: approved/paid, explicitly confirmed on the quote, or its contract is
+ *  signed. `event_confirmed` only gets set by the in-app contract-sign trigger — staff
+ *  routinely approve quotes without ever generating/signing a contract in the app, so
+ *  `status` is the real-world signal and must be checked directly (2026-07-13: verified
+ *  0 of 2 production 'approved' quotes had event_confirmed set). Declined/expired always
+ *  lose confirmed status even if a stale event_confirmed/signed-contract flag lingers
+ *  from before the quote was declined. */
 export function isConfirmed(quote: QuoteRow, contract?: ContractRow): boolean {
-  return quote.event_confirmed || contract?.status === 'signed'
+  if (['declined', 'expired'].includes(quote.status)) return false
+  return ['approved', 'paid'].includes(quote.status) || quote.event_confirmed || contract?.status === 'signed'
 }
 
 /** Confirmed event whose date has already passed but payment hasn't landed yet.
