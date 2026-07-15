@@ -11,14 +11,13 @@ import S, { INK, SEA, SEA_DEEP, SUN } from './styles'
 import type { ClosedBill, DayReport, DayReportExpense } from './types'
 import { TotalCell } from './widgets'
 
-export default function ReportView({ initialDate, full, canAddFood, canAddLabor, canManage, closed, byName, onReopen, onClear, onClose }: {
+export default function ReportView({ initialDate, full, canAddFood, canAddLabor, canManage, closed, onReopen, onClear, onClose }: {
   initialDate?: string
   full: boolean
   canAddFood: boolean
   canAddLabor: boolean
   canManage: boolean
   closed: ClosedBill[]
-  byName: string
   onReopen: (id: string) => void
   onClear: () => void
   onClose: () => void
@@ -84,7 +83,7 @@ export default function ReportView({ initialDate, full, canAddFood, canAddLabor,
   const submit = (kind: 'food' | 'labor', d: { amount: string; note: string }, set: (v: { amount: string; note: string }) => void) => {
     const amt = parseInt(d.amount, 10)
     if (!amt) return
-    void addExpense(from, kind, amt, d.note.trim(), byName).then(({ error }) => {
+    void addExpense(from, kind, amt, d.note.trim()).then(({ error }) => {
       if (error) { alert(tr('שמירת ההוצאה נכשלה', 'فشل حفظ المصروف') + ': ' + error.message); return }
       set({ amount: '', note: '' })
       setTick((t) => t + 1)

@@ -1,8 +1,7 @@
-// All POS data access. The live pos_* tables sit in the DEFAULT (public)
-// schema until cut-over, so reads/writes use the base client; the platform's
-// own functions (close_day) live in the `pos` schema.
-import { pos, supabase } from '../../lib/supabase'
-import { jerusalemDate, reconcileItems, dateRange } from './logic'
+// All POS data access — tables and RPCs both live in the `pos` schema
+// (moved out of `public` at cut-over, docs/plans/pos-cutover-hardening.md).
+import { pos } from '../../lib/supabase'
+import { jerusalemDate, reconcileItems } from './logic'
 import type { CloseDayResult, ClosedBill, DayReport, PosTable } from './types'
 
 // ── row mappers (wire format frozen — shared with pos.html) ──
@@ -68,8 +67,8 @@ export function billToClosed(r: BillRow): ClosedBill {
 // ── live floor ──
 export async function fetchAll(): Promise<{ tables: PosTable[]; closed: ClosedBill[] }> {
   const [tg, bg] = await Promise.all([
-    supabase.from('pos_tables').select('*'),
-    supabase.from('pos_bills').select('*').is('archived_at', null)
+    pos().from('pos_tables').select('*'),
+    pos().from('pos_bills').select('*').is('archived_at', null)
       .order('paid_at', { ascending: false }).limit(300),
   ])
   if (tg.error) throw tg.error
@@ -81,70 +80,50 @@ export async function fetchAll(): Promise<{ tables: PosTable[]; closed: ClosedBi
 }
 
 export function upsertTable(t: PosTable) {
-  return supabase.from('pos_tables').upsert(tableToRow(t))
+  return pos().from('pos_tables').upsert(tableToRow(t))
 }
 
 export function deleteTable(id: string) {
-  return supabase.from('pos_tables').delete().eq('id', id)
+  return pos().from('pos_tables').delete().eq('id', id)
 }
 
 export function closeTableRpc(bill: unknown, items: unknown) {
-  return supabase.rpc('pos_close_table', { p_bill: bill, p_items: items })
+  return pos().rpc('pos_close_table', { p_bill: bill, p_items: items })
 }
 
 export function reopenBillRpc(id: string, num: number) {
-  return supabase.rpc('pos_reopen_bill', { p_id: id, p_num: num })
+  return pos().rpc('pos_reopen_bill', { p_id: id, p_num: num })
 }
 
 export function markItemRpc(tableId: string, itemId: string, ready: boolean) {
-  return supabase.rpc('pos_mark_item', { p_id: tableId, p_item_id: itemId, p_ready: ready })
+  return pos().rpc('pos_mark_item', { p_id: tableId, p_item_id: itemId, p_ready: ready })
 }
 
 export function archiveBills(ids: string[]) {
-  return supabase.from('pos_bills').update({ archived_at: new Date().toISOString() }).in('id', ids)
+  return pos().from('pos_bills').update({ archived_at: new Date().toISOString() }).in('id', ids)
 }
 
 // ── day report + costs (date-scoped, read from the DB so past days work) ──
 export async function fetchDayReport(date: string): Promise<DayReport> {
-  const { data, error } = await supabase.rpc('pos_day_report', { p_date: date })
+  const { data, error } = await pos().rpc('pos_day_report', { p_date: date })
   if (error) throw error
   return data as DayReport
 }
 
-// Multi-day analysis: fetch each day's report (parallel) and merge into one shape.
+// Range analysis: one DB aggregate (pos.range_report) instead of a per-day fan-out.
 export async function fetchRangeReport(from: string, to: string): Promise<DayReport> {
-  const reps = await Promise.all(dateRange(from, to).map((d) => fetchDayReport(d)))
-  const sum: Record<string, number> = { bills: 0, covers: 0, revenue: 0, cash: 0, card: 0, tips: 0, discounts: 0 }
-  let food = 0
-  let labor = 0
-  const itemMap: Record<string, { name: string; category: string | null; units: number; value: number }> = {}
-  reps.forEach((r) => {
-    const s = (r.summary || {}) as unknown as Record<string, unknown>
-    for (const k in sum) sum[k] += Number(s[k]) || 0
-    food += Number(r.food) || 0
-    labor += Number(r.labor) || 0
-    ;(r.items || []).forEach((it) => {
-      const m = itemMap[it.name] || (itemMap[it.name] = { name: it.name, category: it.category, units: 0, value: 0 })
-      m.units += Number(it.units) || 0
-      m.value += Number(it.value) || 0
-    })
-  })
-  return {
-    summary: sum as unknown as DayReport['summary'],
-    food, labor,
-    items: Object.values(itemMap).sort((a, b) => b.units - a.units),
-    expenses: [],
-  }
+  const { data, error } = await pos().rpc('range_report', { p_from: from, p_to: to })
+  if (error) throw error
+  return data as DayReport
 }
 
-export function addExpense(date: string, kind: 'food' | 'labor', amount: number, note: string, by: string) {
-  return supabase.from('pos_expenses').insert({
-    business_date: date, kind, amount, note: note || null, created_by: by,
-  })
+// created_by is server-authored (pos.set_actor_from_jwt trigger) — no client value to send
+export function addExpense(date: string, kind: 'food' | 'labor', amount: number, note: string) {
+  return pos().from('pos_expenses').insert({ business_date: date, kind, amount, note: note || null })
 }
 
 export function deleteExpense(id: number) {
-  return supabase.from('pos_expenses').delete().eq('id', id)
+  return pos().from('pos_expenses').delete().eq('id', id)
 }
 
 // ── the business day posts to finance (docs/plans/pos-module.md §3) ──

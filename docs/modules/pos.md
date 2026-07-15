@@ -1,16 +1,13 @@
 # POS — module log
 
-Platform module live at `/app/pos` (parity trial alongside standalone `pos.html`, which
-stays the production POS until cut-over). Schema: `supabase/schema/10_pos.sql`,
-`42_pos_platform.sql`. UI: `app-src/src/modules/pos/`.
-Background: [plans/pos-module.md](../plans/pos-module.md).
+Platform module live at `/app/pos` — the sole production POS since cut-over
+(2026-07-15); `pos.html` now redirects there. Schema: `supabase/schema/10_pos.sql`,
+`42_pos_platform.sql`, `43_pos_cutover.sql` (tables live in the `pos` schema).
+UI: `app-src/src/modules/pos/`. Background: [plans/pos-module.md](../plans/pos-module.md),
+[plans/pos-cutover-hardening.md](../plans/pos-cutover-hardening.md).
 
 See [README.md](README.md) for how this file works — bugs/small features only; anything
 touching schema, permissions, or the events/finance spine graduates to a `docs/plans/` plan.
-
-**Note:** `pos.html` is the live production surface for real service days — don't touch it
-casually. Bugs/features specific to the standalone `pos.html` (pre-cut-over) also belong
-here for now, tagged `[pos.html]`, since it's the same eventual module.
 
 ## Open bugs
 
@@ -18,11 +15,22 @@ here for now, tagged `[pos.html]`, since it's the same eventual module.
 
 ## Open feature ideas
 
-- Parity trial: run `/app/pos` alongside `pos.html` on real service days (ROADMAP Phase 1)
-- Cut-over follow-ups once parity holds: drop anon policies, harden `created_by` from JWT,
-  consider `pos` schema move + menu-as-data + server-side bill recompute +
-  `pos.range_report` (see [plans/pos-module.md](../plans/pos-module.md) §8a)
+- Full menu-as-data (owner-editable menu table + admin UI) — deferred beyond the
+  cut-over initiative; only a server-side price-validation mirror (`pos.menu_price`)
+  shipped there.
+- A CI check diffing `app-src/src/modules/pos/menu.ts` prices against the SQL literals
+  in `pos.menu_price()` — the mirror has no automated sync guard yet; a price edited in
+  only one place fails closed (blocks table closes) rather than silently
+  under-charging, which is safe but is an availability bug waiting to happen.
 
 ## Done
 
-- (move closed items here with date + one-line note)
+- 2026-07-15: **cut-over & hardening** shipped — `pos.html` → redirect to `/app/pos`,
+  anon RLS/grants dropped, `created_by`/`closed_by` from JWT, tables moved into the
+  `pos` schema, server-side bill validation (item prices + open-house charge +
+  extras_total cross-check — the last one added during `/security-review` after the
+  first cut was found incomplete), `pos.range_report`. Full close-out:
+  [plans/pos-cutover-hardening.md](../plans/pos-cutover-hardening.md).
+- 2026-07-14: parity trial confirmed clean (full shifts matched `pos_day_report` to the
+  shekel); backfilled missing finance postings for 2026-07-03/07-04 via `pos.close_day`
+  (operational fix, unrelated to POS code).

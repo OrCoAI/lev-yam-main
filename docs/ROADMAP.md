@@ -95,10 +95,15 @@ bilingual is ever a retrofit.*
       (+ new: close-day button posting the business day into finance)
 - [x] Wire `pos.*` permissions per role (order/kitchen/analytics/costs/reports/manage;
       legacy create_bill/refund retired)
-- [ ] Parity trial: run `/app/pos` alongside `pos.html` on real service days
-- [ ] Cut over: `pos.html` redirects to `/app/pos` (+ drop anon policies, harden
-      `created_by` from JWT, consider `pos` schema move + menu-as-data +
-      server-side bill recompute + `pos.range_report` — see plan §8a)
+- [x] Parity trial: run `/app/pos` alongside `pos.html` on real service days
+      *(confirmed clean 2026-07-14: full shifts matched `pos_day_report` to the shekel;
+      one gap found — first week of July not posted to finance — backfilled separately,
+      not a POS-code issue)*
+- [x] Cut over: `pos.html` redirects to `/app/pos` (+ drop anon policies, harden
+      `created_by` from JWT, `pos` schema move + server-recompute validation +
+      `pos.range_report`) — **done 2026-07-15, full plan + close-out:
+      [plans/pos-cutover-hardening.md](plans/pos-cutover-hardening.md)** (full
+      menu-as-data admin UI deferred beyond this initiative)
 
 ## Phase 1.5 — Platform hardening (2026-07-10 audit)
 

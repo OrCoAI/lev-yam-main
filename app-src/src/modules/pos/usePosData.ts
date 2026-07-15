@@ -81,8 +81,8 @@ export function usePosData(activeId: string | null, onWriteError: (message: stri
 
     void reload()
     const ch = supabase.channel('pos-live')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'pos_tables' }, ping)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'pos_bills' }, ping)
+      .on('postgres_changes', { event: '*', schema: 'pos', table: 'pos_tables' }, ping)
+      .on('postgres_changes', { event: '*', schema: 'pos', table: 'pos_bills' }, ping)
       .subscribe((st) => { if (st === 'SUBSCRIBED') void resync() })
     window.addEventListener('online', resync)
     return () => {
