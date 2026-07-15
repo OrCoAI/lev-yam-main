@@ -173,13 +173,17 @@ signature — recorded as a standing constraint in [ARCHITECTURE.md](../ARCHITEC
 |---|---|---|---|
 | 1 | H2 migrations | ~1 day | needs Q2 answered at kickoff — lands the pipeline every schema package below rides |
 | 2 | H1 suite | ~1 day | DB-read-only (no drift risk); runs first instead if Q2 stalls |
-| 3 | H3 + H6 guards | ~1 day | **one branch/PR** — same guard-trigger pattern, gate paid once |
+| 3 | ~~H3 + H6 guards~~ | ~1 day | **as-executed: H3 shipped alone**, bundled with H5 + 3-of-9 H7 items instead — [users-hardening.md](users-hardening.md), done 2026-07-15. H6 stays separate, still open. |
 | 4 | H4 initplan sweep | ~½ day | after H1 (the suite proves behavior unchanged) |
-| 5 | H5 invite + reset | ~1–2 days | timing = Q3 |
-| 6 | H7 batch | ~1 day total | PITR item parked (20-signed-contracts rule above) |
+| 5 | ~~H5 invite + reset~~ | ~1–2 days | **done 2026-07-15** — see above |
+| 6 | H7 batch | ~1 day total | PITR item parked (20-signed-contracts rule above); 3 of 9 done with H3/H5 above, 6 remain |
 
-Each package = its own branch + PR through the pre-commit gate (H3+H6 ship together).
-H3/H4/H6 are schema-touching: land them as H2 migrations, then run the H1 suite.
+Each package = its own branch + PR through the pre-commit gate. **As-executed deviation
+(2026-07-15):** H3 and H6 did not ship together as planned — H3 bundled with H5 and
+three users-scoped H7 items instead (owner directive: "do everything hardening-plan
+regarding the users module"), landing before H1/H2/H4 rather than after. H6 remains
+open and unbundled. H3/H4/H6 are schema-touching: land them as H2 migrations, then run
+the H1 suite (H1 still needs to gain assertions for H3's new guard/audit surfaces).
 
 ## Roadmap alignment
 
@@ -211,14 +215,15 @@ The close-out checklist — standing docs each package must amend so its rule ou
 this plan (inline mentions above are the context; this list is what gets ticked):
 
 - [ ] CLAUDE.md pre-commit gate: RLS suite required for schema-touching diffs (H1).
-- [ ] [MODULE-TEMPLATE.md](../MODULE-TEMPLATE.md): initplan policy pattern (H4); §1
-  apply step gains "run the RLS suite after applying" + new-module assertions (H1);
-  migration flow replaces "re-run in the SQL editor" (H2). Also resolve with the owner:
-  §1 prescribes *Hebrew* user-facing trigger messages while ARCHITECTURE invariant 5
-  says HE+AR for anything user-facing — amend the template line (and the H3 guard
-  follows it) once decided.
-- [ ] [ARCHITECTURE.md](../ARCHITECTURE.md) §2: backups line → decided posture (H7);
-  §3: invite/reset as the login story (H5).
+- [x] [MODULE-TEMPLATE.md](../MODULE-TEMPLATE.md): §1 Hebrew-only → HE+AR for trigger
+  messages, resolved 2026-07-15 (HE+AR wins); §1 also gained the "narrow, function-scoped
+  service_role grant" exception (H5's `admin_assign_role`/`has_permission_for`, same
+  pattern `01_passkeys.sql` already established) — done as part of
+  [users-hardening.md](users-hardening.md). Still open: initplan policy pattern (H4);
+  "run the RLS suite after applying" + new-module assertions (H1); migration flow
+  replaces "re-run in the SQL editor" (H2).
+- [x] [ARCHITECTURE.md](../ARCHITECTURE.md) §3: invite/reset as the login story — done
+  2026-07-15 (H5). Still open: §2 backups line → decided posture (H7).
 - [ ] [supabase/README.md](../../supabase/README.md): migration + exposed-schemas +
   storage checklist (H2, H7).
 - [ ] [cross-module-foundation.md](cross-module-foundation.md) §3c: the expected-row
@@ -232,3 +237,11 @@ this plan (inline mentions above are the context; this list is what gets ticked)
   the gate — recommended), or keep SQL-editor applies with only a drift check?
 - **Q3 (H5):** land invite+reset now (Phase 1.5) or defer to the Phase 3 kickoff?
   **Recommended: now** — it also removes the owner's dashboard chore for staff accounts.
+  **Decided 2026-07-15: now.** H3 + H5 + users-scoped H7 items (users.view, HE/AR
+  retrofit, permission-refresh-on-focus) bundle into one initiative — plan:
+  [users-hardening.md](users-hardening.md) — landing **ahead of** H1/H2/H4 in the Order &
+  sizing table above (owner-acknowledged deviation; none of H1/H2/H4 are hard
+  prerequisites for H3/H5). The trigger-message language conflict flagged below (§ Doc
+  write-backs) is resolved in that plan: **HE+AR**, `MODULE-TEMPLATE.md` §1 already
+  amended. H1, when it lands, should still gain assertions for the new last-admin guard
+  and `audit_log` RLS.

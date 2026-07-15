@@ -60,6 +60,7 @@ const db: Record<string, Row[]> = {
   permissions: permissionRowsFixture.map((r) => ({ ...r })),
   role_permissions: rolePermissionsFixture.map((r) => ({ ...r })),
   user_roles: userRolesFixture.map((r) => ({ ...r })),
+  admin_users: adminUsersFixture.map((r) => ({ ...r })),
   pos_tables: posTablesFixture.map((r) => ({ ...r })),
   pos_bills: posBillsFixture.map((r) => ({ ...r })),
   pos_expenses: posExpensesFixture.map((r) => ({ ...r })),
@@ -215,7 +216,7 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise
     if (rpc[1] === 'my_permissions') return json(permissionsFixture)
     if (rpc[1] === 'admin_list_users')
       return json(
-        adminUsersFixture.map((u) => ({
+        db.admin_users.map((u) => ({
           ...u,
           roles: db.user_roles
             .filter((ur) => ur.user_id === u.user_id)
@@ -417,6 +418,17 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise
     }
     return json(null) // auto_expire and anything else: succeed quietly
   }
+  if (path === '/functions/v1/admin-invite') {
+    // mirrors supabase/functions/admin-invite: create the user, assign the role
+    const body = (await req.json()) as { email: string; role_id: string }
+    if (!body.email || !body.role_id) return json({ error: 'missing_fields' }, 400)
+    if (!db.roles.some((r) => r.id === body.role_id)) return json({ error: 'unknown_role' }, 400)
+    const newUser = { user_id: `00000000-0000-4000-8000-${String(++seq).padStart(12, '0')}`, email: body.email, created_at: new Date().toISOString() }
+    db.admin_users.push(newUser)
+    db.user_roles.push({ user_id: newUser.user_id, role_id: body.role_id })
+    return json({ invited: true, user_id: newUser.user_id })
+  }
+
   const rest = path.match(/^\/rest\/v1\/([^/]+)$/)
   if (rest) return handleRest(rest[1], req, url.searchParams)
   return json([], 200)

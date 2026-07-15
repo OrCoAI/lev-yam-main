@@ -41,15 +41,25 @@ destination. Everything else is the module's own UI.
   `drop policy if exists` before `create policy`, seeds with `on conflict do nothing`.
   The file is re-run in the Supabase SQL editor after every change; nothing may reset
   live state (e.g. quotes' number sequence survives re-runs via `if not exists`).
-- [ ] **Invariants live here as triggers**, with Hebrew user-facing `raise exception`
-  messages (they surface in the UI). UI enforcement is convenience only.
+- [ ] **Invariants live here as triggers**, with **HE+AR** user-facing `raise exception`
+  messages (they surface in the UI — same bilingual invariant as everything user-facing,
+  ARCHITECTURE.md §2 invariant 5). UI enforcement is convenience only.
 - [ ] **RLS on every table**, policies via `core.has_permission('<module>.<action>')`.
   Standard split: a `view` permission for `select`, finer actions for writes. Extra-
   sensitive data (quotes' owner signature) goes in its **own table** so RLS can gate it
   more strictly.
-- [ ] **Grants to `authenticated` only** (RLS still gates every statement). Note:
-  `service_role` deliberately gets nothing — admin/import work runs through the Supabase
-  management API instead (see §6).
+- [ ] **Grants to `authenticated` only** by default (RLS still gates every statement);
+  admin/import work runs through the Supabase management API instead (see §6).
+  **Exception:** an Edge Function that must write on its own (not a one-time import) gets
+  narrow, explicit, function-scoped grants — exactly the tables/functions it needs, never
+  a schema-wide grant — documented inline next to the grant (`01_passkeys.sql`'s
+  `passkeys`/`webauthn_challenges` grants for `passkey-verify`; `00_core.sql`'s
+  `admin_assign_role`/`has_permission_for` grants for `admin-invite` are the two
+  precedents). If the function is `security definer` and trusts an argument instead of
+  re-checking permissions itself (like `admin_assign_role` trusts its caller already
+  checked `users.manage`), explicitly `revoke execute ... from authenticated` right after
+  the schema's blanket `grant execute on all functions … to authenticated` — otherwise
+  any signed-in user can call it directly via RPC and bypass the check entirely.
 - [ ] `security definer` functions must `set search_path` and re-check permissions
   inside (see `quotes.auto_expire`).
 - [ ] **Seeds at the bottom of the same file:** a `core.modules` row (key, label, icon,

@@ -3,17 +3,12 @@ import {
   startAuthentication,
   browserSupportsWebAuthn,
 } from '@simplewebauthn/browser'
-import { supabase } from './supabase'
+import { supabase, invokeFunction } from './supabase'
 
 // All passkey crypto/verification happens in the `passkey-verify` Edge Function;
 // this module only drives the browser WebAuthn calls and exchanges the result.
 
-async function invoke<T>(body: Record<string, unknown>): Promise<T> {
-  const { data, error } = await supabase.functions.invoke('passkey-verify', { body })
-  if (error) throw new Error(error.message)
-  if (data?.error) throw new Error(data.detail ?? data.error)
-  return data as T
-}
+const invoke = <T>(body: Record<string, unknown>) => invokeFunction<T>('passkey-verify', body)
 
 /** True only when this device has a built-in biometric authenticator (Touch ID / Face ID). */
 export async function platformAuthenticatorAvailable(): Promise<boolean> {

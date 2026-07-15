@@ -60,7 +60,12 @@ create table if not exists core.user_roles (
 --  Permission helpers  (SECURITY DEFINER so they bypass RLS to read
 --  the current user's roles; search_path locked for safety)
 -- ---------------------------------------------------------------------
-create or replace function core.has_permission(perm_key text)
+-- The permission check, parameterized by user_id — the single source of truth
+-- for "does this user hold this permission." Server-side (service-role) callers
+-- with no auth.uid() session (e.g. the admin-invite Edge Function checking the
+-- *inviting* user) call this directly; has_permission() below is the auth.uid()
+-- convenience wrapper every RLS policy uses.
+create or replace function core.has_permission_for(target_user uuid, perm_key text)
 returns boolean
 language sql stable security definer
 set search_path = core, public
@@ -70,9 +75,17 @@ as $$
     from core.user_roles ur
     join core.role_permissions rp on rp.role_id = ur.role_id
     join core.permissions p       on p.id = rp.permission_id
-    where ur.user_id = auth.uid()
+    where ur.user_id = target_user
       and p.key = perm_key
   );
+$$;
+
+create or replace function core.has_permission(perm_key text)
+returns boolean
+language sql stable security definer
+set search_path = core, public
+as $$
+  select core.has_permission_for(auth.uid(), perm_key);
 $$;
 
 -- All permission keys the current user holds (UI loads this once, then gates locally).
@@ -103,7 +116,8 @@ $$;
 
 -- Admin: list all auth users with their assigned role keys.
 -- auth.users is not client-queryable, so this SECURITY DEFINER fn exposes a safe slice,
--- gated by 'users.manage' (non-admins receive an empty set).
+-- gated by 'users.manage' OR 'users.view' (view-only holders get the same read data;
+-- the UI's canManage flag already disables every mutating control for them).
 create or replace function core.admin_list_users()
 returns table (user_id uuid, email text, created_at timestamptz, roles text[])
 language sql stable security definer
@@ -114,9 +128,143 @@ as $$
   from auth.users u
   left join core.user_roles ur on ur.user_id = u.id
   left join core.roles r       on r.id = ur.role_id
-  where core.has_permission('users.manage')
+  where core.has_permission('users.manage') or core.has_permission('users.view')
   group by u.id, u.email, u.created_at
   order by u.created_at;
+$$;
+
+-- ---------------------------------------------------------------------
+--  Last-admin lockout guard
+--  Refuses any statement that would leave zero users holding 'users.manage' —
+--  fires AFTER the statement (sees the resulting state) so a bulk delete/update
+--  is checked once for its net effect; raising here rolls back the whole
+--  statement. HE+AR message (ARCHITECTURE.md invariant 5: bilingual, anything
+--  user-facing — this surfaces as a Postgres error in the UI).
+-- ---------------------------------------------------------------------
+create or replace function core.guard_users_manage_survives()
+returns trigger
+language plpgsql security definer
+set search_path = core, public
+as $$
+begin
+  if not exists (
+    select 1
+    from core.user_roles ur
+    join core.role_permissions rp on rp.role_id = ur.role_id
+    join core.permissions p       on p.id = rp.permission_id
+    where p.key = 'users.manage'
+  ) then
+    raise exception using message =
+      'לא ניתן לבצע פעולה זו — לפחות משתמש אחד חייב להחזיק בהרשאת ניהול משתמשים (users.manage)'
+      || ' / لا يمكن تنفيذ هذا الإجراء — يجب أن يحتفظ مستخدم واحد على الأقل بصلاحية إدارة المستخدمين (users.manage)';
+  end if;
+  return null; -- statement-level trigger: return value is ignored
+end;
+$$;
+
+drop trigger if exists trg_user_roles_guard_manage on core.user_roles;
+create trigger trg_user_roles_guard_manage
+  after delete or update on core.user_roles
+  for each statement execute function core.guard_users_manage_survives();
+
+drop trigger if exists trg_role_permissions_guard_manage on core.role_permissions;
+create trigger trg_role_permissions_guard_manage
+  after delete or update on core.role_permissions
+  for each statement execute function core.guard_users_manage_survives();
+
+-- Deleting a role/permission row cascades into role_permissions/user_roles
+-- (guarded above), but renaming a permission's key text (e.g. 'users.manage'
+-- -> something else) touches no other table — nothing would cascade-trigger
+-- the guard above without this direct one.
+drop trigger if exists trg_permissions_guard_manage on core.permissions;
+create trigger trg_permissions_guard_manage
+  after update or delete on core.permissions
+  for each statement execute function core.guard_users_manage_survives();
+
+-- ---------------------------------------------------------------------
+--  Audit log — who changed which role/permission grant, and when.
+--  Trigger-written only: 'authenticated' has no insert/update/delete grant on
+--  this table (see grants below), so the security-definer trigger function
+--  (running as the table owner) is the only writer. Read gated to users.manage —
+--  scoped to the identity tables audited today; a future module attaching this
+--  trigger to its own schema needs its own read policy (module-manage, not
+--  users.manage), since this table has no per-row module scoping.
+-- ---------------------------------------------------------------------
+create table if not exists core.audit_log (
+  id         uuid primary key default gen_random_uuid(),
+  at         timestamptz not null default now(),
+  actor      uuid default auth.uid(),
+  action     text not null,   -- 'insert' | 'update' | 'delete'
+  table_name text not null,
+  row_data   jsonb not null
+);
+
+alter table core.audit_log enable row level security;
+
+drop policy if exists core_audit_log_read on core.audit_log;
+create policy core_audit_log_read on core.audit_log for select to authenticated
+  using (core.has_permission('users.manage'));
+
+create or replace function core.write_audit_log()
+returns trigger
+language plpgsql security definer
+set search_path = core, public
+as $$
+begin
+  -- auth.uid() is null for service-role callers (Edge Functions) — they set
+  -- levyam.audit_actor (see core.admin_assign_role) so the real actor still
+  -- lands here instead of a blank actor on the one write path that most needs it.
+  insert into core.audit_log (actor, action, table_name, row_data)
+  values (
+    coalesce(nullif(current_setting('levyam.audit_actor', true), '')::uuid, auth.uid()),
+    lower(tg_op), tg_table_name,
+    case when tg_op = 'DELETE' then to_jsonb(old) else to_jsonb(new) end
+  );
+  return case when tg_op = 'DELETE' then old else new end;
+end;
+$$;
+
+drop trigger if exists trg_audit_user_roles on core.user_roles;
+create trigger trg_audit_user_roles
+  after insert or update or delete on core.user_roles
+  for each row execute function core.write_audit_log();
+
+drop trigger if exists trg_audit_role_permissions on core.role_permissions;
+create trigger trg_audit_role_permissions
+  after insert or update or delete on core.role_permissions
+  for each row execute function core.write_audit_log();
+
+drop trigger if exists trg_audit_roles on core.roles;
+create trigger trg_audit_roles
+  after insert or update or delete on core.roles
+  for each row execute function core.write_audit_log();
+
+drop trigger if exists trg_audit_permissions on core.permissions;
+create trigger trg_audit_permissions
+  after insert or update or delete on core.permissions
+  for each row execute function core.write_audit_log();
+
+drop trigger if exists trg_audit_modules on core.modules;
+create trigger trg_audit_modules
+  after insert or update or delete on core.modules
+  for each row execute function core.write_audit_log();
+
+-- Assign a role on behalf of a verified actor — for service-role callers
+-- (the admin-invite Edge Function) that have no auth.uid() session of their
+-- own. p_actor must already be verified by the caller (re-checking
+-- users.manage here would be redundant with the Edge Function's own check,
+-- which runs first); this function's only job is making sure that actor,
+-- not a blank one, lands in the audit log for the insert it performs.
+create or replace function core.admin_assign_role(p_user_id uuid, p_role_id uuid, p_actor uuid)
+returns void
+language plpgsql security definer
+set search_path = core, public
+as $$
+begin
+  perform set_config('levyam.audit_actor', p_actor::text, true);
+  insert into core.user_roles (user_id, role_id) values (p_user_id, p_role_id)
+  on conflict do nothing;
+end;
 $$;
 
 -- ---------------------------------------------------------------------
@@ -165,6 +313,29 @@ grant insert, update, delete on
   core.roles, core.modules, core.permissions, core.role_permissions, core.user_roles
   to authenticated;
 grant execute on all functions in schema core to authenticated;
+-- admin_assign_role trusts its p_actor argument completely (no internal
+-- permission check — see its comment) and is SECURITY DEFINER, so it must
+-- NOT be callable by authenticated (the blanket grant above would otherwise
+-- let anyone hand themselves the owner role); service_role only, and only
+-- the already-permission-checked admin-invite function calls it.
+revoke execute on function core.admin_assign_role(uuid, uuid, uuid) from authenticated;
+-- has_permission_for(target_user, ...) answers for ANY user, not just the
+-- caller (unlike has_permission(), which is auth.uid()-bound) — without this
+-- revoke, the blanket grant above would let any signed-in user probe a
+-- coworker's permissions (e.g. fingerprint who holds users.manage) via RPC,
+-- bypassing the RLS that otherwise restricts that to users.manage holders.
+-- Server-side (service-role) callers only, per its own comment.
+revoke execute on function core.has_permission_for(uuid, text) from authenticated;
+
+-- service_role has no default grants on core (see MODULE-TEMPLATE.md §1's
+-- "admin/import work runs through the management API" default) — narrow,
+-- explicit, function-scoped grants for what admin-invite genuinely needs are
+-- the established exception (same pattern as 01_passkeys.sql's passkeys/
+-- webauthn_challenges grants for passkey-verify).
+grant usage on schema core to service_role;
+grant select on core.roles to service_role;
+grant execute on function core.has_permission_for(uuid, text) to service_role;
+grant execute on function core.admin_assign_role(uuid, uuid, uuid) to service_role;
 
 -- =====================================================================
 --  SEED DATA  (idempotent — safe to re-run)

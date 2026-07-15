@@ -433,6 +433,9 @@ export const adminUsersFixture = [
   { user_id: '00000000-0000-4000-8000-00000000aa03', email: 'staff@levyam.com', created_at: '2026-03-15T08:00:00Z' },
 ]
 
+// mutable copy lives in mock-net's `db` (admin-invite pushes onto it, same
+// pattern as db.user_roles) — this export is only the seed shape.
+
 export const userRolesFixture = [
   { user_id: '00000000-0000-4000-8000-00000000aa01', role_id: 'role-owner' },
   { user_id: '00000000-0000-4000-8000-00000000aa02', role_id: 'role-manager' },
