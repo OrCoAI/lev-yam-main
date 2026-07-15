@@ -8,7 +8,7 @@ Backend for the Lev Yam platform (`/app`), the survey, and the POS. One Supabase
 | File | Schema | What |
 |---|---|---|
 | `schema/00_core.sql` | `core` | Identity & permissions: roles, modules, permissions, RLS helper `core.has_permission()` |
-| `schema/10_pos.sql`  | `public` (`pos_*`) | Live POS tables/RPCs/views. Stays as-is until POS is migrated into a `pos` schema. |
+| `schema/10_pos.sql` + `schema/43_pos_cutover.sql` | `pos` | POS tables/RPCs/views (moved from `public` at cut-over, 2026-07-14). |
 
 Module schemas added later (`crm`, `events`, `inventory`, …) follow the same pattern: their
 own schema, RLS policies that call `core.has_permission('<module>.<action>')`.

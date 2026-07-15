@@ -154,7 +154,8 @@ entry + brand icon.
 - **Realtime:** `/app` Supabase client must subscribe to `pos_tables` changes the same
   way (publication already includes it).
 
-## Close-out (2026-07-10 — parity-ready milestone; trial + cut-over remain open)
+## Close-out (2026-07-10 — parity-ready milestone; trial + cut-over now closed out
+separately: [plans/pos-cutover-hardening.md](pos-cutover-hardening.md), 2026-07-15)
 
 **Shipped (PR #3 finance UI pass → PR #4 POS module, both squash-merged to main and
 deployed; `42_pos_platform.sql` applied to prod, `pos` added to Exposed schemas):**

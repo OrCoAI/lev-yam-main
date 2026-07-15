@@ -4,7 +4,6 @@
 // replaced by the platform login + RBAC (useCan on pos.* keys).
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { useAuth } from '../../lib/auth'
 import { PERM, useCan } from '../../lib/permissions'
 import ChefView from './ChefView'
 import { usePosTr } from './i18n'
@@ -17,7 +16,6 @@ import { PosLangToggle, TotalCell } from './widgets'
 
 export default function PosModule() {
   const { tr } = usePosTr()
-  const { user } = useAuth()
   const canOrder = useCan(PERM.posOrder)
   const canKitchen = useCan(PERM.posKitchen)
   const canAnalytics = useCan(PERM.posAnalytics)
@@ -169,7 +167,6 @@ export default function PosModule() {
           canAddLabor={canAddLabor}
           canManage={canManage}
           closed={data.closed}
-          byName={user?.email ?? 'staff'}
           onReopen={reopen}
           onClear={pos.clearToday}
           onClose={() => setShowReport(false)}

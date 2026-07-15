@@ -317,6 +317,36 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise
         expenses: exps.map((e) => ({ id: e.id, kind: e.kind, amount: e.amount, note: e.note, by: e.created_by, at: e.created_at })),
       })
     }
+    if (rpc[1] === 'range_report') {
+      const body = (await req.json()) as { p_from: string; p_to: string }
+      const { p_from, p_to } = body
+      const inRange = (d: string) => d >= p_from && d <= p_to
+      const bills = db.pos_bills.filter((b) => b.status === 'paid' && inRange(String(b.paid_at).slice(0, 10)))
+      const exps = db.pos_expenses.filter((e) => inRange(String(e.business_date)))
+      const num = (v: unknown) => Number(v) || 0
+      const sum = (k: string) => bills.reduce((s, b) => s + num(b[k]), 0)
+      return json({
+        date: p_from === p_to ? p_from : null,
+        from: p_from, to: p_to,
+        summary: {
+          bills: bills.length,
+          covers: bills.reduce((s, b) => s + num(b.guests_adults) + num(b.guests_children), 0),
+          revenue: sum('grand_total'), cash: sum('cash_paid'), card: sum('card_paid'),
+          tips: sum('tip'), discounts: sum('discount'),
+          avg_bill: bills.length ? Math.round(sum('grand_total') / bills.length) : 0,
+          avg_minutes: 45,
+        },
+        food: exps.filter((e) => e.kind === 'food').reduce((s, e) => s + num(e.amount), 0),
+        labor: exps.filter((e) => e.kind === 'labor').reduce((s, e) => s + num(e.amount), 0),
+        items: [
+          { name: 'לבנה', category: 'פתיחים וסלטים', units: 3, value: 60 },
+          { name: 'מנת דג', category: 'תוספות', units: 2, value: 160 },
+        ],
+        expenses: p_from === p_to
+          ? exps.map((e) => ({ id: e.id, kind: e.kind, amount: e.amount, note: e.note, by: e.created_by, at: e.created_at }))
+          : [],
+      })
+    }
     if (rpc[1] === 'pos_close_table') {
       const body = (await req.json()) as { p_bill: Row; p_items: Row[] }
       const bill: Row = { ...body.p_bill, archived_at: null }

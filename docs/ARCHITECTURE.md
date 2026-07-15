@@ -138,10 +138,10 @@ Scale here means two different things, and the architecture answers both:
   - the module template (Phase 1 deliverable) → "new module in ~1 hour" stays true.
 - **Cost floor:** GitHub Pages is free, Supabase free tier carries the current load —
   the platform scales *down* gracefully too, which matters for a social business.
-- **Known consolidation debt** (tracked, not urgent): live POS tables still sit in
-  `public.pos_*` until the POS migration moves them into the `pos` schema; the survey
-  lives in a second Supabase project to be merged eventually. End state: one project,
-  schema-per-module throughout.
+- **Known consolidation debt** (tracked, not urgent): the survey lives in a second
+  Supabase project to be merged eventually (POS tables moved from `public` into their own
+  `pos` schema at cut-over, 2026-07-14). End state: one project, schema-per-module
+  throughout.
 
 ## 6. Flexibility — the architecture of the dream
 
