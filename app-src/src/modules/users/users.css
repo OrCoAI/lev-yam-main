@@ -6,6 +6,16 @@
 .u-card { display: grid; gap: 12px; padding: 16px; }
 .u-mail { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+/* invite-user form (collapses behind .form-open-btn on phones, shared shell rule) */
+.u-invite { display: grid; gap: 14px; margin-bottom: 18px; max-width: 420px; }
+.u-invite label { display: grid; gap: 6px; font-size: 0.9rem; color: var(--muted); }
+.u-invite input, .u-invite select {
+  font: inherit; width: 100%; max-width: 100%; min-height: 46px; padding: 12px 14px;
+  border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--ink);
+}
+.u-invite input:focus, .u-invite select:focus { outline: 2px solid var(--sea); border-color: var(--sea); }
+.u-invite-actions { display: flex; gap: 10px; }
+
 /* permission matrix: module group headers + key/label cell */
 .grid tr.u-permgroup td {
   background: var(--sand); color: var(--sea-dark);

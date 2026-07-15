@@ -16,4 +16,10 @@ touching schema, permissions, or the events/finance spine graduates to a `docs/p
 
 ## Done
 
-- (move closed items here with date + one-line note)
+- **2026-07-15** — Users & Permissions hardening initiative (full kickoff, not this
+  lighter log — see [plans/users-hardening.md](../plans/users-hardening.md)): invite-user
+  flow (`admin-invite` Edge Function + UI action, no more Supabase-dashboard user
+  creation); self-service "forgot password?" + `/app/reset-password`; last-admin
+  lockout guard + `core.audit_log` on role/permission changes; `users.view` now a real
+  read-only permission; full HE/AR retrofit of the module chrome; permission-mirror
+  refresh on window focus.

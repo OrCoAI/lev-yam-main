@@ -16,6 +16,14 @@ export const supabase = createClient(
 /** PostgREST client scoped to the shared `core` schema (roles, permissions, RPCs). */
 export const core = () => supabase.schema('core')
 
+/** Call an Edge Function and throw on either a transport error or a `{ error }` payload. */
+export async function invokeFunction<T>(name: string, body: Record<string, unknown>): Promise<T> {
+  const { data, error } = await supabase.functions.invoke(name, { body })
+  if (error) throw new Error(error.message)
+  if (data?.error) throw new Error(data.detail ?? data.error)
+  return data as T
+}
+
 /** PostgREST client scoped to the finance module's schema (entries, report RPC). */
 export const finance = () => supabase.schema('finance')
 

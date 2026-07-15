@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Login from './shell/Login'
+import ResetPassword from './shell/ResetPassword'
 import RequireAuth from './shell/RequireAuth'
 import RequirePermission from './shell/RequirePermission'
 import Layout from './shell/Layout'
@@ -16,6 +17,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
 
       {/* Everything below requires a session */}
       <Route element={<RequireAuth />}>

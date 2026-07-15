@@ -115,19 +115,30 @@ item — the anon `pos_*` surface — is the POS cut-over task above, not repeat
       matrix) + `PERM` ↔ `core.permissions` drift check as a `ci.yml` step
 - [ ] **H2** Schema migration pipeline (Supabase CLI, versioned migrations + drift
       check in the gate) — owner decision Q2
-- [ ] **H3** Permission governance: last-admin lockout guard + `core.audit_log` on
-      role/permission changes *(ships with H6 — one guards branch)*
+- [x] **H3** Permission governance: last-admin lockout guard + `core.audit_log` on
+      role/permission changes *(done 2026-07-15, bundled with H5 + users-scoped H7 —
+      plan: [plans/users-hardening.md](plans/users-hardening.md); landed **ahead of**
+      H1/H2/H4 in the table below, owner-acknowledged deviation. Not bundled with H6
+      after all — H6 stays separate, still open. Guard widened during code review to
+      also cover `core.permissions` updates/deletes and `role_permissions` updates, not
+      just the originally-scoped delete paths; a real pre-existing gap was found and
+      fixed along the way — the only account in prod held `manager`, not `owner`, so
+      nobody actually held `users.manage` until this landed*)
 - [ ] **H4** RLS initplan sweep: wrap `core.has_permission()` / `auth.uid()` in policies
       as `(select …)`; add the pattern to MODULE-TEMPLATE.md — gates Phase 2's
       public feed
-- [ ] **H5** Invite flow (`admin-invite` edge function + users-module action) +
-      self-service password reset on the login screen — gates Phase 3's member role;
-      timing = owner decision Q3
+- [x] **H5** Invite flow (`admin-invite` edge function + users-module action) +
+      self-service password reset on the login screen *(done 2026-07-15, plan:
+      [plans/users-hardening.md](plans/users-hardening.md); gates Phase 3's member role,
+      still to come)*
 - [ ] **H6** `finance.expected` module-row guard (status-only client transitions on
       module-sourced expectations)
-- [ ] **H7** Hygiene batch — nine small repo/UX/ops items (storage policies into
-      `supabase/schema/`, users-module HE/AR, error boundary, dependabot, …; PITR
-      deferred — trigger rule in the plan); full list in the plan
+- [ ] **H7** Hygiene batch — nine small repo/UX/ops items; **3 of 9 done 2026-07-15**
+      (users-scoped, landed with H3/H5 above): `users.view` now a real read-only
+      permission, users-module HE/AR retrofit, permission-mirror refresh on window
+      focus. **6 remain:** storage policies into `supabase/schema/`, error boundary,
+      dependabot, PITR (deferred — trigger rule in the plan), `passkey-verify` error
+      detail, `quotes.next_quote_number()` grant; full list in the plan
 - [x] **Mobile-UX foundation pass** (owner-directed 2026-07-11, not from the audit):
       progressive-disclosure rows (summary → tap → full detail + actions) shell-wide,
       ≥44px touch targets, ≥16px inputs (iOS zoom), launcher tile descriptions, users

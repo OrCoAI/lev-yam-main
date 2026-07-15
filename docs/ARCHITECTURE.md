@@ -81,9 +81,19 @@ file storage, and the only place privileged code runs.
 - **Email + password fallback** for first login, new devices, and recovery.
 - **Sessions persist** (Supabase refresh tokens) — staff aren't re-authenticating every
   shift; opening `/app` on your phone just works.
-- **Planned:** per-user quick-PIN for the shared POS tablet (fast user switching mid-
-  service), and team-invitation onboarding for community members (Phase 3 — invite-only
-  at first, request→approve later, per the vision).
+- **Onboarding without the Supabase dashboard** (H5, 2026-07): a `users.manage` holder
+  invites by email + role from the Users module; `admin-invite` (Edge Function, service
+  role) calls `auth.admin.inviteUserByEmail` and assigns the role server-side via
+  `core.admin_assign_role` — never a raw client insert, so the audit log still records
+  who invited whom (the service-role client has no `auth.uid()` of its own; the function
+  passes the verified caller's id through a `levyam.audit_actor` session GUC).
+  Self-service password reset ("forgot password?" on Login) and the invite-acceptance
+  link both land on the same `/app/reset-password` screen — both leave the browser with
+  a fresh session from the email link, and both just need "set a password."
+- **Planned:** per-user quick-PIN for the shared POS tablet (fast user switching
+  mid-service), and extending team-invitation onboarding to community members (Phase 3 —
+  invite-only at first, request→approve later, per the vision) once the `member` role
+  lands.
 
 **Permissions: role → module → action, one system for everything.**
 

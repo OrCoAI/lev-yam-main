@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase, core, isConfigured } from './supabase'
 
@@ -14,6 +14,7 @@ interface AuthState {
   signIn: (email: string, password: string) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
   refreshPermissions: () => Promise<void>
+  resetPasswordForEmail: (email: string) => Promise<{ error: string | null }>
 }
 
 const AuthContext = createContext<AuthState | undefined>(undefined)
@@ -22,6 +23,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [session, setSession] = useState<Session | null>(null)
   const [permissions, setPermissions] = useState<string[]>([])
+  // mirrors `session` for the focus listener below, which must not re-subscribe
+  // on every auth change just to see the latest value
+  const sessionRef = useRef<Session | null>(null)
 
   async function loadPermissions(active: Session | null) {
     if (!active) {
@@ -42,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     supabase.auth.getSession().then(async ({ data }) => {
       if (!mounted) return
+      sessionRef.current = data.session
       setSession(data.session)
       await loadPermissions(data.session)
       setLoading(false)
@@ -49,6 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
       if (!mounted) return
+      sessionRef.current = next
       setSession(next)
       // Defer the RPC out of the auth callback: supabase-js holds the GoTrue lock
       // while this runs, and calling .rpc() (which fetches the access token) inside
@@ -62,6 +68,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       mounted = false
       sub.subscription.unsubscribe()
     }
+  }, [])
+
+  useEffect(() => {
+    // A permission change (e.g. someone else edits your role) is enforced by the
+    // DB instantly, but the UI mirror only reloaded on page refresh — pick it up
+    // when the tab regains focus too. Reads the ref (not `session`) so this
+    // effect registers once instead of re-subscribing on every auth change.
+    function onFocus() {
+      void loadPermissions(sessionRef.current)
+    }
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
   }, [])
 
   const value: AuthState = {
@@ -79,6 +97,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await supabase.auth.signOut()
     },
     refreshPermissions: () => loadPermissions(session),
+    resetPasswordForEmail: async (email) => {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/app/reset-password`,
+      })
+      return { error: error?.message ?? null }
+    },
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
