@@ -125,6 +125,16 @@ contradicts VISION.md / ARCHITECTURE.md / the roadmap phase order.**
   locked matrix seeded `pos.view`. Owner confirmed prod is the intended state:
   viewer = "no access until granted." `42_pos_platform.sql` now deletes any pos
   grant from viewer; `rls_matrix.sql` asserts the role is empty.
+- **View-as preview = intersection semantics** (PR 3 gate, 2026-07-16): `has()`
+  answers with target ∩ admin's real set — requests still run under the real
+  session, so rendering a control only the target holds would invite
+  server-rejected clicks (custom admin roles mean target ⊆ admin isn't
+  guaranteed). For the typical owner-previews-staff case the intersection
+  equals the target's set. Also: **preview is not read-only** — actions you
+  take while previewing run with your real permissions and mutate real data;
+  the banner is the guard. And **preview ends at the shell boundary**: the
+  full-screen POS route exits it on entry (its 100dvh layout can't host the
+  banner; the by-user lens is the way to inspect a user's POS capabilities).
 - **Phone matrix = per-module accordion** (owner, 2026-07-16, PR 2 gate): the plan's
   prediction held — the wide grid doesn't survive phone width. ≤640px the by-role
   view renders per-module `<details>` accordions with role toggle-chips per
@@ -153,3 +163,45 @@ contradicts VISION.md / ARCHITECTURE.md / the roadmap phase order.**
 | 1 | PR 1 hardening (H1 + H4 + H7×5) | ~1.5 days |
 | 2 | PR 2 module features | ~1.5 days |
 | 3 | PR 3 view-as preview | ~0.5 day |
+
+## Close-out (2026-07-16)
+
+**Shipped** — three stacked PRs, each through the full gate
+(/simplify + /code-review high + /security-review + /verify):
+
+- **PR #11 (hardening):** `rls_matrix.sql` (~55 assertions, transaction-wrapped,
+  prod-safe) + `check-permission-drift.mjs` in ci.yml AND deploy.yml; the H4
+  initplan sweep across every schema file (+ `44_initplan_sweep.sql` for the
+  post-cutover pos policies); H7×5 (storage posture file, bilingual error
+  boundary, dependabot, passkey-verify detail removal, `next_quote_number`
+  gated via the new shared `core.require()`); pos seeds moved to the
+  always-runnable `45_pos_seeds.sql`; README re-run guidance fixed.
+- **PR #12 (features):** shell role badge (auth context now carries roles);
+  last sign-in in the users list; permission matrix with explicit batched Save
+  via the atomic `core.apply_role_permissions()` RPC; per-module accordion at
+  phone width; by-user effective-permissions lens; custom role create/delete —
+  protected by a new **cascade-aware last-admin guard on `core.roles`** (real
+  lockout hole found by the gate: statement triggers don't fire on FK cascades).
+- **PR #13 (view-as):** client-only permission preview from the by-user lens —
+  intersection semantics, banner + one-tap exit, POS = shell boundary.
+
+**Schema changes applied to prod** (management API, suite re-run green after
+each): all module files re-run for the sweep, `44`, `45`, `50_storage`,
+`core.require()`, `core.apply_role_permissions()`, `admin_list_users` +
+`last_sign_in_at`, the roles guard trigger; `passkey-verify` redeployed.
+
+**Deliberately left out / deferred:** H2 (owner decision Q2), H6
+(finance-scoped), PITR (20-signed-contracts rule), per-user permission
+overrides, true session impersonation, bilingual `core.roles` labels (existing
+tracked debt, shared with module labels), server-side audit of preview
+(nothing to audit — no privileged action occurs; supersedes the module log's
+early "needs audit logging" line, see Decisions).
+
+**Alignment verdict:** checked against `docs/VISION.md` and
+`docs/ARCHITECTURE.md` — aligned. Permissions stayed DB-first throughout (the
+UI matrix writes through existing RLS; the two new functions are
+SECURITY-INVOKER-gated or require()-gated; every guard is a Postgres trigger);
+the suite turns the security model from hand-verified to asserted-on-demand;
+everything shipped bilingual HE/AR and phone-first (accordion, 44px targets,
+sticky save bar); "new roles are rows" became a real UI capability, which is
+the operational prerequisite for Phase 3's member role. No drift found.

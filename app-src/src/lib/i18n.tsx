@@ -43,6 +43,8 @@ const dict = {
   'resetPassword.success': { he: 'הסיסמה נשמרה. מעבירים אתכם למערכת…', ar: 'تم حفظ كلمة المرور. جارٍ تحويلكم إلى النظام…' },
   'layout.system': { he: 'מערכת', ar: 'نظام' },
   'layout.signOut': { he: 'יציאה', ar: 'خروج' },
+  'preview.viewingAs': { he: 'תצוגה כמשתמש:', ar: 'عرض كمستخدم:' },
+  'preview.exit': { he: 'חזרה לתצוגה שלי', ar: 'العودة لعرضي' },
   'role.owner': { he: 'בעלים', ar: 'مالك' },
   'role.manager': { he: 'ניהול', ar: 'إدارة' },
   'role.staff': { he: 'צוות', ar: 'طاقم' },

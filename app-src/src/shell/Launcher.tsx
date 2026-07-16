@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useAuth } from '../lib/auth'
 import { useI18n, type TKey } from '../lib/i18n'
 import { core } from '../lib/supabase'
 import type { ModuleRow } from '../types'
@@ -27,6 +28,7 @@ const MODULE_META: Record<string, ModuleMeta> = {
 
 export default function Launcher() {
   const { t } = useI18n()
+  const { preview, has } = useAuth()
   const [modules, setModules] = useState<ModuleRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -46,9 +48,15 @@ export default function Launcher() {
     }
   }, [])
 
+  // Preview semantics are the INTERSECTION of target ∩ real (see auth.has),
+  // and my_modules() already returns the real session's set — so filtering it
+  // by the preview-aware has() yields exactly the intersection, no catalog
+  // fetch needed.
+  const visible = preview ? modules.filter((m) => has(`${m.key}.view`)) : modules
+
   if (loading) return <div className="muted">{t('launcher.loading')}</div>
   if (error) return <div className="error">{t('launcher.error')} {error}</div>
-  if (modules.length === 0)
+  if (visible.length === 0)
     return <div className="card notice">{t('launcher.empty')}</div>
 
   return (
@@ -60,7 +68,7 @@ export default function Launcher() {
       </header>
 
       <div className="launcher-grid">
-        {modules.map((m, i) => {
+        {visible.map((m, i) => {
           const meta = MODULE_META[m.key] ?? {}
           const hasDest = Boolean(meta.to || meta.href)
           const accent = i % 2 === 0 ? 'tile--blue' : 'tile--orange'

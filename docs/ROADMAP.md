@@ -111,9 +111,10 @@ bilingual is ever a retrofit.*
 questions: [plans/platform-hardening.md](plans/platform-hardening.md). The audit's #1
 item — the anon `pos_*` surface — is the POS cut-over task above, not repeated here.*
 
-- [ ] **H1** RLS regression suite (`supabase/tests/rls_matrix.sql`: per-role can/can't
-      matrix) + `PERM` ↔ `core.permissions` drift check as a `ci.yml` step
-      *(in progress 2026-07-15 — PR 1 of [plans/users-permissions-suite.md](plans/users-permissions-suite.md))*
+- [x] **H1** RLS regression suite (`supabase/tests/rls_matrix.sql`: per-role can/can't
+      matrix) + `PERM` ↔ `core.permissions` drift check in `ci.yml` AND `deploy.yml`
+      *(done 2026-07-16 — PR #11 of [plans/users-permissions-suite.md](plans/users-permissions-suite.md);
+      caught real drift on its first prod run: viewer role held zero permissions)*
 - [ ] **H2** Schema migration pipeline (Supabase CLI, versioned migrations + drift
       check in the gate) — owner decision Q2
 - [x] **H3** Permission governance: last-admin lockout guard + `core.audit_log` on
@@ -125,25 +126,23 @@ item — the anon `pos_*` surface — is the POS cut-over task above, not repeat
       just the originally-scoped delete paths; a real pre-existing gap was found and
       fixed along the way — the only account in prod held `manager`, not `owner`, so
       nobody actually held `users.manage` until this landed*)
-- [ ] **H4** RLS initplan sweep: wrap `core.has_permission()` / `auth.uid()` in policies
+- [x] **H4** RLS initplan sweep: wrap `core.has_permission()` / `auth.uid()` in policies
       as `(select …)`; add the pattern to MODULE-TEMPLATE.md — gates Phase 2's
-      public feed *(in progress 2026-07-15 — PR 1 of
-      [plans/users-permissions-suite.md](plans/users-permissions-suite.md))*
+      public feed *(done 2026-07-16 — PR #11 of
+      [plans/users-permissions-suite.md](plans/users-permissions-suite.md), applied to prod)*
 - [x] **H5** Invite flow (`admin-invite` edge function + users-module action) +
       self-service password reset on the login screen *(done 2026-07-15, plan:
       [plans/users-hardening.md](plans/users-hardening.md); gates Phase 3's member role,
       still to come)*
 - [ ] **H6** `finance.expected` module-row guard (status-only client transitions on
       module-sourced expectations)
-- [ ] **H7** Hygiene batch — nine small repo/UX/ops items; **3 of 9 done 2026-07-15**
-      (users-scoped, landed with H3/H5 above): `users.view` now a real read-only
-      permission, users-module HE/AR retrofit, permission-mirror refresh on window
-      focus. **6 remain:** storage policies into `supabase/schema/`, error boundary,
-      dependabot, PITR (deferred — trigger rule in the plan), `passkey-verify` error
-      detail, `quotes.next_quote_number()` grant; full list in the plan
-      *(the 5 non-PITR items in progress 2026-07-15 — PR 1 of
-      [plans/users-permissions-suite.md](plans/users-permissions-suite.md); PITR stays
-      parked by the 20-signed-contracts rule)*
+- [x] **H7** Hygiene batch — nine small repo/UX/ops items; **8 of 9 done** (3 with
+      H3/H5 on 2026-07-15, 5 more on 2026-07-16 via PR #11 of
+      [plans/users-permissions-suite.md](plans/users-permissions-suite.md): storage
+      posture into `supabase/schema/50_storage.sql`, shell error boundary, dependabot,
+      `passkey-verify` error detail, `quotes.next_quote_number()` gated via
+      `core.require()`). **PITR stays parked** by the 20-signed-contracts rule —
+      the one open item, tracked in the plan.
 - [x] **Mobile-UX foundation pass** (owner-directed 2026-07-11, not from the audit):
       progressive-disclosure rows (summary → tap → full detail + actions) shell-wide,
       ≥44px touch targets, ≥16px inputs (iOS zoom), launcher tile descriptions, users
@@ -153,16 +152,15 @@ item — the anon `pos_*` surface — is the POS cut-over task above, not repeat
       *(done 2026-07-12: PR #5 merged + deployed, smoke-checked; new bundle
       probe-verified on prod — rowline CSS + bilingual strings served; close-out +
       alignment verdict in the plan)*
-- [ ] **Users & permissions suite** (kickoff 2026-07-15 — plan:
-      [plans/users-permissions-suite.md](plans/users-permissions-suite.md)): bundles
-      H1 + H4 + the non-PITR H7 remainder with the users-module feature backlog
-      ([modules/users.md](modules/users.md)) — role badge in the shell header, login
-      activity in the users list, permission-matrix UI (by-role editable / by-user
-      read-only effective view, explicit Save), custom roles, and view-as
-      **permission preview** (UI mirror only, no impersonation). Three PRs:
-      hardening → module features → view-as. Out of scope by owner decision: H2
-      (deferred, Q2), H6 (finance-scoped), per-user permission overrides, true
-      session impersonation.
+- [x] **Users & permissions suite** (kickoff 2026-07-15 — plan + close-out:
+      [plans/users-permissions-suite.md](plans/users-permissions-suite.md)): bundled
+      H1 + H4 + the non-PITR H7 remainder with the users-module feature backlog —
+      role badge, login activity, permission-matrix explicit Save (atomic
+      `core.apply_role_permissions` RPC), phone accordion, by-user effective lens,
+      custom roles (+ cascade-aware last-admin guard on `core.roles` — real lockout
+      hole found and closed), view-as permission preview (intersection semantics).
+      *(done 2026-07-16: PRs #11/#12/#13 gated + prod-applied, awaiting merge; out of
+      scope by owner decision: H2, H6, per-user overrides, true impersonation)*
 
 ## Phase 2 — What's happening: bookings & events
 
