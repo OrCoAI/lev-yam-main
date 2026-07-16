@@ -314,6 +314,13 @@ select pg_temp.assert_denied('manager: cannot write core catalog (roles)',
   $q$ insert into core.roles (key, label) values ('rls-test-role', 'nope') $q$);
 select pg_temp.assert_noop('manager: role_permissions delete is a silent noop',
   $q$ delete from core.role_permissions where true $q$);
+-- removes-only payload on purpose: this is the path RLS would turn into a
+-- silent noop — core.require() must make it raise loudly instead
+select pg_temp.assert_raises('manager: atomic matrix-apply RPC raises (no users.manage, removes-only)',
+  $q$ select core.apply_role_permissions('[]'::jsonb,
+        (select jsonb_build_array(jsonb_build_object('role_id', r.id, 'permission_id', p.id))
+         from core.roles r, core.permissions p where r.key = 'staff' and p.key = 'pos.view')) $q$,
+  'users.manage');
 select pg_temp.assert_rows('manager: admin_list_users() works via users.view',
   $q$ select 1 from core.admin_list_users()
       where email = 'rls-test-owner@levyam.test' $q$, 1);
@@ -339,6 +346,25 @@ select pg_temp.assert_ok('owner: can delete the custom role (cascade)',
 select pg_temp.assert_raises('owner: LAST-ADMIN guard blocks deleting every users.manage grant',
   $q$ delete from core.role_permissions rp using core.permissions p
       where rp.permission_id = p.id and p.key = 'users.manage' $q$, 'users.manage');
+-- statement triggers do NOT fire on FK cascades — this asserts the direct
+-- cascade-aware trigger on core.roles catches a role delete that would
+-- otherwise silently strip the last users.manage grant
+select pg_temp.assert_raises('owner: deleting the owner ROLE trips the guard (cascade-aware)',
+  $q$ delete from core.roles where key = 'owner' $q$, 'users.manage');
+select pg_temp.assert_ok('owner: atomic matrix apply — grant via RPC',
+  $q$ select core.apply_role_permissions(
+        (select jsonb_build_array(jsonb_build_object('role_id', r.id, 'permission_id', p.id))
+         from core.roles r, core.permissions p where r.key = 'staff' and p.key = 'users.view'),
+        '[]'::jsonb) $q$);
+select pg_temp.assert_rows('owner: the RPC grant landed',
+  $q$ select 1 from core.role_permissions rp
+      join core.roles r on r.id = rp.role_id
+      join core.permissions p on p.id = rp.permission_id
+      where r.key = 'staff' and p.key = 'users.view' $q$, 1);
+select pg_temp.assert_ok('owner: atomic matrix apply — revoke via RPC',
+  $q$ select core.apply_role_permissions('[]'::jsonb,
+        (select jsonb_build_array(jsonb_build_object('role_id', r.id, 'permission_id', p.id))
+         from core.roles r, core.permissions p where r.key = 'staff' and p.key = 'users.view')) $q$);
 select pg_temp.assert_rows('owner: sees both events',
   $q$ select 1 from events.events where title like 'rls-test%' $q$, 2);
 select pg_temp.assert_rows('owner: sees the raw pos_expenses (pos.reports)',

@@ -1,6 +1,11 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase, core, isConfigured } from './supabase'
+import type { RoleRow } from '../types'
+
+// one source of truth for the core.roles row shape — this is just the slice
+// the roles!inner embed selects
+export type MyRole = Omit<RoleRow, 'id'>
 
 interface AuthState {
   loading: boolean
@@ -9,6 +14,9 @@ interface AuthState {
   user: User | null
   /** Permission keys the signed-in user holds (from core.my_permissions()). */
   permissions: string[]
+  /** The signed-in user's roles, lowest sort first (own core.user_roles rows).
+   *  Refreshed together with the permission mirror. */
+  roles: MyRole[]
   /** UI-side mirror of the RLS check — convenience only, the DB still enforces. */
   has: (perm: string) => boolean
   signIn: (email: string, password: string) => Promise<{ error: string | null }>
@@ -23,6 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [session, setSession] = useState<Session | null>(null)
   const [permissions, setPermissions] = useState<string[]>([])
+  const [roles, setRoles] = useState<MyRole[]>([])
   // mirrors `session` for the focus listener below, which must not re-subscribe
   // on every auth change just to see the latest value
   const sessionRef = useRef<Session | null>(null)
@@ -30,15 +39,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function loadPermissions(active: Session | null) {
     if (!active) {
       setPermissions([])
+      setRoles([])
       return
     }
-    const { data, error } = await core().rpc('my_permissions')
-    if (error) {
-      console.error('Failed to load permissions:', error.message)
+    const [permsRes, rolesRes] = await Promise.all([
+      core().rpc('my_permissions'),
+      // !inner: the FK guarantees a match, so `roles` comes back non-null
+      core().from('user_roles').select('roles!inner(key, label, sort)').eq('user_id', active.user.id),
+    ])
+    if (permsRes.error) {
+      console.error('Failed to load permissions:', permsRes.error.message)
       setPermissions([])
-      return
+    } else {
+      setPermissions((permsRes.data as string[] | null) ?? [])
     }
-    setPermissions((data as string[] | null) ?? [])
+    if (rolesRes.error) {
+      console.error('Failed to load roles:', rolesRes.error.message)
+      setRoles([])
+    } else {
+      const rs = ((rolesRes.data ?? []) as unknown as { roles: MyRole }[]).map((r) => r.roles)
+      setRoles(rs.sort((a, b) => a.sort - b.sort))
+    }
   }
 
   useEffect(() => {
@@ -88,6 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     session,
     user: session?.user ?? null,
     permissions,
+    roles,
     has: (perm) => permissions.includes(perm),
     signIn: async (email, password) => {
       const { error } = await supabase.auth.signInWithPassword({ email, password })

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 
 /**
  * Platform i18n — Hebrew + Levantine Arabic (both RTL, so `dir` never changes;
@@ -43,6 +43,10 @@ const dict = {
   'resetPassword.success': { he: 'הסיסמה נשמרה. מעבירים אתכם למערכת…', ar: 'تم حفظ كلمة المرور. جارٍ تحويلكم إلى النظام…' },
   'layout.system': { he: 'מערכת', ar: 'نظام' },
   'layout.signOut': { he: 'יציאה', ar: 'خروج' },
+  'role.owner': { he: 'בעלים', ar: 'مالك' },
+  'role.manager': { he: 'ניהול', ar: 'إدارة' },
+  'role.staff': { he: 'צוות', ar: 'طاقم' },
+  'role.viewer': { he: 'צפייה', ar: 'مشاهدة' },
   'errorBoundary.title': { he: 'משהו השתבש', ar: 'حدث خطأ ما' },
   'errorBoundary.body': { he: 'המודול נתקל בשגיאה. אפשר לרענן את הדף או לחזור למסך הראשי.', ar: 'واجهت الوحدة خطأ. يمكن تحديث الصفحة أو العودة إلى الشاشة الرئيسية.' },
   'errorBoundary.reload': { he: 'רענון', ar: 'تحديث' },
@@ -122,6 +126,24 @@ export function makeDictHook<T>(he: T, ar: T): () => T {
     const { lang } = useI18n()
     return lang === 'ar' ? ar : he
   }
+}
+
+/** Display name for a role, anywhere a role is shown (header badge, users-tab
+ *  chips, matrix headers, by-user lens…): built-ins translate through the
+ *  shell dict; custom roles show their DB label (single-language until
+ *  bilingual `core.roles` labels land — same tracked debt as module labels).
+ *  Stable per language, so it's safe in dependency arrays. */
+// eslint-disable-next-line react-refresh/only-export-components
+export function useRoleName(): (role: { key: string; label: string }) => string {
+  const { lang } = useI18n()
+  return useMemo(
+    () => (role) => {
+      // custom roles have no dict entry — the lookup is undefined at runtime
+      const names = dict[`role.${role.key}` as TKey] as { he: string; ar: string } | undefined
+      return names ? names[lang] : role.label
+    },
+    [lang],
+  )
 }
 
 /** The one-tap language switch, shown in the topbar and on the login card. */

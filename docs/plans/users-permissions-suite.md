@@ -125,6 +125,18 @@ contradicts VISION.md / ARCHITECTURE.md / the roadmap phase order.**
   locked matrix seeded `pos.view`. Owner confirmed prod is the intended state:
   viewer = "no access until granted." `42_pos_platform.sql` now deletes any pos
   grant from viewer; `rls_matrix.sql` asserts the role is empty.
+- **Phone matrix = per-module accordion** (owner, 2026-07-16, PR 2 gate): the plan's
+  prediction held — the wide grid doesn't survive phone width. ≤640px the by-role
+  view renders per-module `<details>` accordions with role toggle-chips per
+  permission (same chip pattern as the users tab); desktop keeps the grid. Both
+  share one pending-edits state and the sticky Save bar.
+- **Save is atomic in the DB** (PR 2 gate): `core.apply_role_permissions(adds,
+  removes)` applies the whole batch in one call — SECURITY INVOKER (RLS gates),
+  adds-before-removes inside so the last-admin guard never sees a false zero.
+- **Cascade lockout hole closed** (PR 2 gate find): statement-level triggers don't
+  fire on FK cascades, so deleting a role could silently strip the last
+  `users.manage` grant — a direct guard trigger on `core.roles` now covers it,
+  and the suite asserts it.
 - **`v_sales_*` non-hole**: the audit-flagged view-grant concern checked out benign
   on prod (no select grant for authenticated, only stray TRUNCATE/REFERENCES/TRIGGER
   default-privilege noise). `44_initplan_sweep.sql` revokes the noise and the suite

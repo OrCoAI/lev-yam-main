@@ -321,7 +321,8 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .finance-expense { color: var(--danger); font-weight: 700; }
 .finance-amount { font-weight: 700; white-space: nowrap; }
 .finance-load-more { display: flex; justify-content: center; margin-top: 14px; }
-.finance-badge {
+/* the one small-pill badge primitive (.finance-badge kept as an alias) */
+.badge, .finance-badge {
   display: inline-block; margin-inline-start: 6px; padding: 1px 8px;
   font-size: 0.72rem; font-weight: 600; border-radius: 999px;
   background: var(--sand-2); color: var(--sea-dark); vertical-align: 1px; white-space: nowrap;

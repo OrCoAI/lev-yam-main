@@ -33,6 +33,7 @@ export interface AdminUser {
   user_id: string
   email: string | null
   created_at: string
+  last_sign_in_at: string | null
   roles: string[]
 }
 

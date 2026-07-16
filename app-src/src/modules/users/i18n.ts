@@ -33,6 +33,32 @@ const he = {
   inviteCancel: 'ביטול',
   inviteErrorForbidden: 'אין לך הרשאה לבצע פעולה זו.',
   inviteErrorGeneric: 'שליחת ההזמנה נכשלה. נסו שוב.',
+
+  lastLogin: 'כניסה אחרונה:',
+  neverLoggedIn: 'טרם נכנס/ה',
+
+  viewByRole: 'לפי תפקיד',
+  viewByUser: 'לפי משתמש',
+  save: 'שמירה',
+  saving: 'שומר…',
+  discard: 'ביטול שינויים',
+  pendingChanges: 'שינויים שממתינים לשמירה:',
+
+  addRole: '+ תפקיד חדש',
+  retry: 'ניסיון חוזר',
+  rolesLocked: 'שמרו או בטלו את השינויים בטבלה לפני עריכת תפקידים.',
+  roleKeyHint: 'אותיות קטנות באנגלית, ספרות וקו תחתון',
+  roleKeyLabel: 'מזהה (אותיות באנגלית)',
+  roleLabelLabel: 'שם תצוגה',
+  roleCreate: 'יצירת תפקיד',
+  roleCreating: 'יוצר…',
+  roleDelete: 'מחיקת תפקיד',
+  roleDeleteConfirm: 'למחוק את התפקיד? כל ההרשאות והשיוכים שלו יימחקו.',
+
+  selectUser: 'בחר/י משתמש',
+  effectiveNote: 'הרשאות בפועל — נגזרות מהתפקידים. עריכה נעשית על התפקיד, בתצוגת "לפי תפקיד".',
+  noPerms: 'אין הרשאות למשתמש זה.',
+  viaRole: 'דרך תפקיד',
 }
 
 const ar: typeof he = {
@@ -64,6 +90,32 @@ const ar: typeof he = {
   inviteCancel: 'إلغاء',
   inviteErrorForbidden: 'ليس لديك صلاحية لتنفيذ هذا الإجراء.',
   inviteErrorGeneric: 'فشل إرسال الدعوة. حاولوا مجدداً.',
+
+  lastLogin: 'آخر دخول:',
+  neverLoggedIn: 'لم يدخل بعد',
+
+  viewByRole: 'حسب الدور',
+  viewByUser: 'حسب المستخدم',
+  save: 'حفظ',
+  saving: 'جارٍ الحفظ…',
+  discard: 'إلغاء التغييرات',
+  pendingChanges: 'تغييرات بانتظار الحفظ:',
+
+  addRole: '+ دور جديد',
+  retry: 'إعادة المحاولة',
+  rolesLocked: 'احفظوا التغييرات في الجدول أو ألغوها قبل تعديل الأدوار.',
+  roleKeyHint: 'أحرف إنجليزية صغيرة وأرقام وشرطة سفلية',
+  roleKeyLabel: 'المعرّف (أحرف إنجليزية)',
+  roleLabelLabel: 'اسم العرض',
+  roleCreate: 'إنشاء دور',
+  roleCreating: 'جارٍ الإنشاء…',
+  roleDelete: 'حذف الدور',
+  roleDeleteConfirm: 'حذف الدور؟ ستُحذف كل صلاحياته وارتباطاته.',
+
+  selectUser: 'اختر/ي مستخدماً',
+  effectiveNote: 'الصلاحيات الفعلية — مشتقة من الأدوار. التعديل يتم على الدور، في عرض "حسب الدور".',
+  noPerms: 'لا توجد صلاحيات لهذا المستخدم.',
+  viaRole: 'عبر دور',
 }
 
 export const useUT = makeDictHook(he, ar)
