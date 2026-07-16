@@ -67,9 +67,16 @@ function LastLogin({ at }: { at: string | null }) {
 
 /* ------------------------------------------------------------------ Users tab */
 
+/** A GoTrue ban is "deactivated" for us — any banned_until still in the future. */
+const isDeactivated = (u: AdminUser) => !!u.banned_until && new Date(u.banned_until) > new Date()
+
 function UsersTab({ canManage }: { canManage: boolean }) {
   const ut = useUT()
   const roleName = useRoleName()
+  const { user: me } = useAuth()
+  // owner-only lifecycle actions (delete / deactivate); UI mirror of users.delete —
+  // admin-user-ops re-checks server-side
+  const canDelete = useCan(PERM.usersDelete)
   const [users, setUsers] = useState<AdminUser[]>([])
   const [roles, setRoles] = useState<RoleRow[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -99,6 +106,30 @@ function UsersTab({ canManage }: { canManage: boolean }) {
   useEffect(() => {
     void load()
   }, [load])
+
+  async function userOp(action: 'delete' | 'deactivate' | 'reactivate', target: AdminUser) {
+    const confirmMsg =
+      action === 'delete' ? ut.userDeleteConfirm : action === 'deactivate' ? ut.userDeactivateConfirm : null
+    if (confirmMsg && !window.confirm(`${confirmMsg} (${target.email ?? target.user_id})`)) return
+    setBusy(target.user_id + action)
+    setActionError(null)
+    try {
+      await invokeFunction('admin-user-ops', { action, user_id: target.user_id })
+      await load()
+    } catch (e) {
+      // admin-user-ops returns a stable error code; map it to a bilingual
+      // string here (the server stays language-agnostic).
+      const byCode: Record<string, string> = {
+        forbidden: ut.inviteErrorForbidden,
+        self_forbidden: ut.opErrorSelf,
+        last_admin: ut.opErrorLastAdmin,
+        has_records: ut.opErrorHasRecords,
+      }
+      setActionError(byCode[(e as Error).message] ?? ut.opErrorGeneric)
+    } finally {
+      setBusy(null)
+    }
+  }
 
   async function toggleRole(user: AdminUser, role: RoleRow, assigned: boolean) {
     setBusy(user.user_id + role.id)
@@ -143,6 +174,7 @@ function UsersTab({ canManage }: { canManage: boolean }) {
           <div key={u.user_id} className="card u-card">
             <div className="u-mail" title={u.email ?? u.user_id}>
               {u.email ?? u.user_id}
+              {isDeactivated(u) && <span className="u-banned">{ut.userDeactivated}</span>}
             </div>
             <LastLogin at={u.last_sign_in_at} />
             <div className="chips">
@@ -162,6 +194,28 @@ function UsersTab({ canManage }: { canManage: boolean }) {
                 )
               })}
             </div>
+            {/* lifecycle actions — never on your own card (admin-user-ops refuses
+                self anyway; not rendering it is the honest UI) */}
+            {canDelete && u.user_id !== me?.id && (
+              <div className="u-userops">
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  disabled={busy !== null}
+                  onClick={() => userOp(isDeactivated(u) ? 'reactivate' : 'deactivate', u)}
+                >
+                  {isDeactivated(u) ? ut.userReactivate : ut.userDeactivate}
+                </button>
+                <button
+                  type="button"
+                  className="btn-ghost u-danger"
+                  disabled={busy !== null}
+                  onClick={() => userOp('delete', u)}
+                >
+                  {ut.userDelete}
+                </button>
+              </div>
+            )}
           </div>
         ))}
         {users.length === 0 && <div className="card notice">{ut.noUsers}</div>}

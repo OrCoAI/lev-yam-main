@@ -34,6 +34,7 @@ export interface AdminUser {
   email: string | null
   created_at: string
   last_sign_in_at: string | null
+  banned_until: string | null
   roles: string[]
 }
 

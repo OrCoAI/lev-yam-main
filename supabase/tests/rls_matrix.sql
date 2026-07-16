@@ -370,6 +370,83 @@ select pg_temp.assert_rows('owner: sees both events',
 select pg_temp.assert_rows('owner: sees the raw pos_expenses (pos.reports)',
   $q$ select 1 from pos.pos_expenses where note = 'rls-test' $q$, 2);
 
+-- =====================================================================
+--  USER LIFECYCLE — delete & deactivate (plans/users-delete-deactivate.md)
+--  Runs LAST on purpose: it strips every other users.manage grant in-tx
+--  to stage a true "last admin" state, which would poison earlier sections.
+-- =====================================================================
+reset role;
+select pg_temp.assert_rows('users.delete permission is seeded',
+  $q$ select 1 from core.permissions where key = 'users.delete' $q$, 1);
+select pg_temp.assert_rows('users.delete is granted to owner ONLY',
+  $q$ select 1 from core.role_permissions rp
+      join core.roles r on r.id = rp.role_id
+      join core.permissions p on p.id = rp.permission_id
+      where p.key = 'users.delete' and r.key <> 'owner' $q$, 0);
+
+-- the admin-user-ops helpers are service-side only — even an owner's client
+-- JWT must not be able to probe arbitrary users or forge audit rows
+select pg_temp.become('aaaaaaaa-0000-0000-0000-000000000001');
+select pg_temp.assert_denied('owner (client JWT) cannot call users_manage_survives_without',
+  $q$ select core.users_manage_survives_without('aaaaaaaa-0000-0000-0000-000000000004') $q$);
+select pg_temp.assert_denied('owner (client JWT) cannot call admin_audit_user_event',
+  $q$ select core.admin_audit_user_event('aaaaaaaa-0000-0000-0000-000000000001',
+        'user.delete', '{}'::jsonb) $q$);
+-- the self-grant-owner hole (found + closed 2026-07-16): the service-role-only
+-- definer functions must be unreachable from a client JWT — `revoke from
+-- authenticated` was a no-op while PUBLIC kept the default execute grant. Test
+-- as the no-role user (any authenticated user was the actual exposure).
+select pg_temp.become('aaaaaaaa-0000-0000-0000-000000000005');
+select pg_temp.assert_denied('no-role user cannot call admin_assign_role (no PUBLIC execute → no self-grant owner)',
+  $q$ select core.admin_assign_role('aaaaaaaa-0000-0000-0000-000000000005',
+        (select id from core.roles where key='owner'),
+        'aaaaaaaa-0000-0000-0000-000000000005') $q$);
+select pg_temp.assert_denied('no-role user cannot call has_permission_for (no PUBLIC execute)',
+  $q$ select core.has_permission_for('aaaaaaaa-0000-0000-0000-000000000001','users.manage') $q$);
+
+reset role;
+-- the lifecycle audit writer (as the Edge Function would call it, service-side)
+select pg_temp.assert_ok('admin_audit_user_event accepts a lifecycle event',
+  $q$ select core.admin_audit_user_event('aaaaaaaa-0000-0000-0000-000000000001',
+        'user.deactivate', '{"user_id":"rls-test"}'::jsonb) $q$);
+select pg_temp.assert_rows('the lifecycle audit row landed with the real actor',
+  $q$ select 1 from core.audit_log
+      where action = 'user.deactivate' and table_name = 'auth.users'
+        and actor = 'aaaaaaaa-0000-0000-0000-000000000001'
+        and row_data->>'user_id' = 'rls-test' $q$, 1);
+
+-- Stage "the no-role test user is the last ACTIVE admin": grant it owner,
+-- lift its ban (in-tx only; its random password + unconfirmed email keep it
+-- inert regardless), then strip every OTHER users.manage-granting assignment.
+-- The statement-level guard passes because one holder survives.
+insert into core.user_roles (user_id, role_id)
+select 'aaaaaaaa-0000-0000-0000-000000000005', r.id from core.roles r where r.key = 'owner';
+update auth.users set banned_until = null
+where id = 'aaaaaaaa-0000-0000-0000-000000000005';
+delete from core.user_roles ur
+using core.role_permissions rp, core.permissions p
+where rp.role_id = ur.role_id and p.id = rp.permission_id
+  and p.key = 'users.manage'
+  and ur.user_id <> 'aaaaaaaa-0000-0000-0000-000000000005';
+
+-- survives-check semantics: banned holders don't count as survivors (every
+-- other test user is banned-forever, real grants are stripped above)
+select pg_temp.assert_rows('users_manage_survives_without(a non-admin) is true',
+  $q$ select 1 where core.users_manage_survives_without('aaaaaaaa-0000-0000-0000-000000000004') $q$, 1);
+select pg_temp.assert_rows('users_manage_survives_without(the last active admin) is false',
+  $q$ select 1 where core.users_manage_survives_without('aaaaaaaa-0000-0000-0000-000000000005') $q$, 0);
+
+-- THE cascade hole (closed 2026-07-16): statement triggers don't fire on FK
+-- cascades, so only the row-level twin can catch a hard delete of the last
+-- admin's auth account — this is exactly the admin-user-ops delete path
+select pg_temp.assert_raises('deleting the last admin AUTH USER trips the row-level guard (cascade)',
+  $q$ delete from auth.users where id = 'aaaaaaaa-0000-0000-0000-000000000005' $q$,
+  'users.manage');
+-- ...while deleting a record-less NON-admin account (the invite-cleanup path)
+-- sails through the same trigger
+select pg_temp.assert_ok('deleting a record-less non-admin auth user succeeds',
+  $q$ delete from auth.users where id = 'aaaaaaaa-0000-0000-0000-000000000004' $q$);
+
 -- Done — discard everything (test users, seeds, edits).
 reset role;
 do $$ begin raise notice 'RLS MATRIX: ALL ASSERTIONS PASSED'; end $$;

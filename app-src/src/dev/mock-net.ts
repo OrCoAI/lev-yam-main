@@ -447,10 +447,40 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise
     const body = (await req.json()) as { email: string; role_id: string }
     if (!body.email || !body.role_id) return json({ error: 'missing_fields' }, 400)
     if (!db.roles.some((r) => r.id === body.role_id)) return json({ error: 'unknown_role' }, 400)
-    const newUser = { user_id: `00000000-0000-4000-8000-${String(++seq).padStart(12, '0')}`, email: body.email, created_at: new Date().toISOString() }
+    const newUser = { user_id: `00000000-0000-4000-8000-${String(++seq).padStart(12, '0')}`, email: body.email, created_at: new Date().toISOString(), banned_until: null }
     db.admin_users.push(newUser)
     db.user_roles.push({ user_id: newUser.user_id, role_id: body.role_id })
     return json({ invited: true, user_id: newUser.user_id })
+  }
+  if (path === '/functions/v1/admin-user-ops') {
+    // mirrors supabase/functions/admin-user-ops incl. its guard order, so the
+    // preview demos the error states too (has_records can't be simulated —
+    // the mock has no FK graph)
+    const body = (await req.json()) as { action: string; user_id: string }
+    const target = db.admin_users.find((u) => u.user_id === body.user_id)
+    if (!['delete', 'deactivate', 'reactivate'].includes(body.action) || !body.user_id)
+      return json({ error: 'missing_fields' }, 400)
+    if (body.user_id === user.id) return json({ error: 'self_forbidden' }, 400)
+    if (!target) return json({ error: 'user_not_found' }, 404)
+    if (body.action !== 'reactivate') {
+      const manageRoleIds = db.role_permissions
+        .filter((rp) => db.permissions.find((p) => p.id === rp.permission_id)?.key === 'users.manage')
+        .map((rp) => rp.role_id)
+      const survives = db.user_roles.some(
+        (ur) =>
+          ur.user_id !== body.user_id &&
+          manageRoleIds.includes(ur.role_id) &&
+          !(db.admin_users.find((u) => u.user_id === ur.user_id)?.banned_until),
+      )
+      if (!survives) return json({ error: 'last_admin' }, 400)
+    }
+    if (body.action === 'delete') {
+      db.admin_users = db.admin_users.filter((u) => u.user_id !== body.user_id)
+      db.user_roles = db.user_roles.filter((ur) => ur.user_id !== body.user_id)
+    } else {
+      target.banned_until = body.action === 'deactivate' ? '2126-01-01T00:00:00Z' : null
+    }
+    return json({ done: true, action: body.action, user_id: body.user_id })
   }
 
   const rest = path.match(/^\/rest\/v1\/([^/]+)$/)

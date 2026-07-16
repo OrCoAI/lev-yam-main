@@ -32,6 +32,16 @@
 /* last sign-in line on the user card */
 .u-lastlogin { font-size: 0.82rem; }
 
+/* lifecycle actions (users.delete holders) + deactivated badge */
+.u-userops { display: flex; gap: 10px; }
+.u-userops .btn-ghost { min-height: 44px; }
+.u-danger { color: var(--danger); }
+.u-banned {
+  display: inline-block; margin-inline-start: 8px; padding: 2px 10px;
+  border-radius: 999px; font-size: 0.75rem; font-weight: 800; vertical-align: middle;
+  background: #fae8e6; color: var(--danger);
+}
+
 /* by-role / by-user view switch (shell .seg segmented control does the styling;
    its default .on color is finance's danger red — neutralize it here) */
 .u-viewswitch { margin-bottom: 14px; }

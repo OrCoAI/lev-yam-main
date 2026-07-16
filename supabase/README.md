@@ -28,8 +28,21 @@ own schema, RLS policies that call `core.has_permission('<module>.<action>')`.
    (and each new module schema). Without this, the client can't query them. Current prod
    list (verified live 2026-07-16): `public, graphql_public, core, finance, quotes, pos` —
    `events` is deliberately NOT exposed until Phase 2 ships the public feed UI.
-3. **Create the first user** — Authentication → Users → *Add user* (email + password).
-4. **Bootstrap the owner** — run the snippet at the bottom of `00_core.sql` with that email to
+3. **Configure Auth URLs** — Authentication → URL Configuration: set **Site URL** to
+   `https://levyam.com/app` and add **Redirect URLs** `https://levyam.com/app/*`,
+   `https://www.levyam.com/app/*`, `http://localhost:5173/app/*`. Without this, invite
+   and password-recovery email links get their `redirectTo` rejected and fall back to
+   the default Site URL (`http://localhost:3000` — a dead end), consuming the one-time
+   token in the process (applied to prod 2026-07-16 via the management API).
+4. **Custom SMTP (Resend)** — Auth emails send via `smtp.resend.com` as
+   `Lev Yam <info@levyam.com>` (domain verified in Resend; API key lives in
+   `.secrets/resend-api-key`, never committed). Configured 2026-07-16 via the
+   management API. This also unlocks Auth email-template editing — the free
+   tier blocks it on the default mailer — and the invite template is customized
+   (bilingual HE/AR). If the Resend key rotates, re-apply `smtp_pass` via
+   Authentication → Emails → SMTP Settings or the management API.
+5. **Create the first user** — Authentication → Users → *Add user* (email + password).
+6. **Bootstrap the owner** — run the snippet at the bottom of `00_core.sql` with that email to
    grant the `owner` role. From then on, manage everyone from the in-app **Users & Permissions**
    module.
 
