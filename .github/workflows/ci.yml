@@ -24,6 +24,13 @@ jobs:
           cache: npm
           cache-dependency-path: app-src/package-lock.json
 
+      # H1 drift check: UI permission mirror (PERM) ↔ core.permissions seeds.
+      # The DB stays the real guard either way; this catches the silent UI drift.
+      # Runs first — it's sub-second and needs no npm install, so a drift
+      # failure doesn't burn a full build to be discovered.
+      - name: Permission mirror drift check
+        run: node supabase/tests/check-permission-drift.mjs
+
       - name: Typecheck + build platform
         working-directory: app-src
         env:

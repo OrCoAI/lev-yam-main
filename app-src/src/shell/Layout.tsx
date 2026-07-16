@@ -2,6 +2,7 @@ import { Link, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { LangToggle, useI18n } from '../lib/i18n'
 import EnablePasskey from './EnablePasskey'
+import RouteErrorBoundary from './ErrorBoundary'
 
 export default function Layout() {
   const { user, signOut } = useAuth()
@@ -33,7 +34,9 @@ export default function Layout() {
       </header>
 
       <main className="content">
-        <Outlet />
+        <RouteErrorBoundary>
+          <Outlet />
+        </RouteErrorBoundary>
       </main>
     </div>
   )

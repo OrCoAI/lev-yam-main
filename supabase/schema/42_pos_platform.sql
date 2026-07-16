@@ -39,23 +39,24 @@ create index if not exists pos_bills_event_idx on public.pos_bills (event_id)
 -- ---------------------------------------------------------------------
 drop policy if exists "pos_tables_select_auth" on public.pos_tables;
 drop policy if exists "pos_tables_write_auth"  on public.pos_tables;
+-- (select ...) wrapper = one InitPlan eval per statement, not per row (MODULE-TEMPLATE.md §1)
 create policy "pos_tables_select_auth" on public.pos_tables for select to authenticated
-  using (core.has_permission('pos.view'));
+  using ((select core.has_permission('pos.view')));
 create policy "pos_tables_write_auth" on public.pos_tables for all to authenticated
-  using (core.has_permission('pos.order'))
-  with check (core.has_permission('pos.order'));
+  using ((select core.has_permission('pos.order')))
+  with check ((select core.has_permission('pos.order')));
 
 drop policy if exists "pos_bills_select_auth" on public.pos_bills;
 drop policy if exists "pos_bills_write_auth"  on public.pos_bills;
 create policy "pos_bills_select_auth" on public.pos_bills for select to authenticated
-  using (core.has_permission('pos.view'));
+  using ((select core.has_permission('pos.view')));
 create policy "pos_bills_write_auth" on public.pos_bills for update to authenticated
-  using (core.has_permission('pos.manage'))
-  with check (core.has_permission('pos.manage'));
+  using ((select core.has_permission('pos.manage')))
+  with check ((select core.has_permission('pos.manage')));
 
 drop policy if exists "pos_bill_items_select_auth" on public.pos_bill_items;
 create policy "pos_bill_items_select_auth" on public.pos_bill_items for select to authenticated
-  using (core.has_permission('pos.view'));
+  using ((select core.has_permission('pos.view')));
 
 drop policy if exists "pos_expenses_select_auth" on public.pos_expenses;
 drop policy if exists "pos_expenses_insert_auth" on public.pos_expenses;
@@ -63,12 +64,13 @@ drop policy if exists "pos_expenses_write_auth"  on public.pos_expenses;
 -- raw expense rows carry labor (payroll) amounts — reports-level only; the
 -- ops view reads expenses through pos_day_report, which strips labor/money
 create policy "pos_expenses_select_auth" on public.pos_expenses for select to authenticated
-  using (core.has_permission('pos.reports'));
+  using ((select core.has_permission('pos.reports')));
 -- kind is 'food' | 'labor' → permission key 'pos.costs_food' / 'pos.costs_labor'
+-- (references the row's kind column, so it stays a per-row eval by design)
 create policy "pos_expenses_insert_auth" on public.pos_expenses for insert to authenticated
   with check (core.has_permission('pos.costs_' || kind));
 create policy "pos_expenses_write_auth" on public.pos_expenses for delete to authenticated
-  using (core.has_permission('pos.manage'));
+  using ((select core.has_permission('pos.manage')));
 
 grant select, insert, update, delete on public.pos_tables   to authenticated;
 grant select, update                 on public.pos_bills    to authenticated;
@@ -332,49 +334,8 @@ grant execute on function public.pos_mark_item(text, text, bool) to authenticate
 grant execute on function public.pos_day_report(date)          to authenticated;
 
 -- ---------------------------------------------------------------------
---  SEED DATA (idempotent). Replaces the Phase-0 placeholder keys
---  (pos.create_bill / pos.refund) with pos.html's real ROLE_PERMS set,
---  and re-grants pos.* per the locked matrix (docs/plans/pos-module.md §4):
---    owner+manager → all 8 · staff → chef-level · viewer → view
+--  SEED DATA — moved to 45_pos_seeds.sql (2026-07-15). This file targets
+--  pre-cutover public.pos_* tables and cannot run on a post-43 database,
+--  so the seeds (module row, permission keys, role grants) live in their
+--  own always-runnable file. On a FRESH replay, run 45 after this file.
 -- ---------------------------------------------------------------------
-update core.modules set label = 'קופה' where key = 'pos';
-
--- all 8 keys seeded HERE (self-sufficient on a fresh DB; 00_core.sql may have
--- already created view/reports with English labels — the updates rename them)
-insert into core.permissions (key, module, action, label) values
-  ('pos.view',        'pos', 'view',        'כניסה לקופה'),
-  ('pos.order',       'pos', 'order',       'פתיחת שולחנות, הזמנות ותשלום'),
-  ('pos.kitchen',     'pos', 'kitchen',     'מסך מטבח וסימון מנות מוכנות'),
-  ('pos.analytics',   'pos', 'analytics',   'דוח יום תפעולי (ללא כספים)'),
-  ('pos.costs_food',  'pos', 'costs_food',  'רישום הוצאות מזון וקבלות'),
-  ('pos.costs_labor', 'pos', 'costs_labor', 'רישום הוצאות עבודה'),
-  ('pos.reports',     'pos', 'reports',     'דוח יום מלא (כולל כספים)'),
-  ('pos.manage',      'pos', 'manage',      'סגירת יום, ביטולים והגדרות')
-on conflict (key) do nothing;
-update core.permissions set label = 'כניסה לקופה'            where key = 'pos.view';
-update core.permissions set label = 'דוח יום מלא (כולל כספים)' where key = 'pos.reports';
-
--- retire the Phase-0 placeholders (never used by any UI)
-delete from core.role_permissions rp using core.permissions p
-  where rp.permission_id = p.id and p.key in ('pos.create_bill','pos.refund');
-delete from core.permissions where key in ('pos.create_bill','pos.refund');
-
--- re-grant pos.* from scratch (delete + insert keeps re-runs deterministic)
-delete from core.role_permissions rp using core.permissions p
-  where rp.permission_id = p.id and p.module = 'pos';
-
-insert into core.role_permissions (role_id, permission_id)
-select r.id, p.id from core.roles r join core.permissions p on p.module = 'pos'
-where r.key in ('owner','manager')
-on conflict do nothing;
-
-insert into core.role_permissions (role_id, permission_id)
-select r.id, p.id from core.roles r join core.permissions p
-  on p.key in ('pos.view','pos.order','pos.kitchen','pos.analytics','pos.costs_food')
-where r.key = 'staff'
-on conflict do nothing;
-
-insert into core.role_permissions (role_id, permission_id)
-select r.id, p.id from core.roles r join core.permissions p on p.key in ('pos.view')
-where r.key = 'viewer'
-on conflict do nothing;

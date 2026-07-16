@@ -40,10 +40,14 @@ alter table core.webauthn_challenges enable row level security;
 
 -- passkeys: a user sees & removes only their own. Inserts/updates come from the
 -- Edge Function (service role) — no write policy is granted to clients.
+-- (select auth.uid()) rather than bare auth.uid(): the planner evaluates it once
+-- per statement (InitPlan) instead of per row — see MODULE-TEMPLATE.md §1.
+drop policy if exists passkeys_read_own   on core.passkeys;
+drop policy if exists passkeys_delete_own on core.passkeys;
 create policy passkeys_read_own   on core.passkeys for select to authenticated
-  using (user_id = auth.uid());
+  using (user_id = (select auth.uid()));
 create policy passkeys_delete_own on core.passkeys for delete to authenticated
-  using (user_id = auth.uid());
+  using (user_id = (select auth.uid()));
 
 -- challenges: RLS on, ZERO policies => no client (anon/authenticated) access at all.
 -- Only the service role (Edge Function) touches this table.

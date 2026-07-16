@@ -124,18 +124,20 @@ drop policy if exists "finance_entries_insert" on finance.entries;
 drop policy if exists "finance_entries_update" on finance.entries;
 drop policy if exists "finance_entries_delete" on finance.entries;
 
+-- (select core.has_permission(...)) rather than a bare call: the planner evaluates
+-- it once per statement (InitPlan) instead of per row — see MODULE-TEMPLATE.md §1.
 create policy "finance_entries_select" on finance.entries for select to authenticated
-  using (core.has_permission('finance.view'));
+  using ((select core.has_permission('finance.view')));
 
 create policy "finance_entries_insert" on finance.entries for insert to authenticated
-  with check (core.has_permission('finance.manage'));
+  with check ((select core.has_permission('finance.manage')));
 
 create policy "finance_entries_update" on finance.entries for update to authenticated
-  using (core.has_permission('finance.manage'))
-  with check (core.has_permission('finance.manage'));
+  using ((select core.has_permission('finance.manage')))
+  with check ((select core.has_permission('finance.manage')));
 
 create policy "finance_entries_delete" on finance.entries for delete to authenticated
-  using (core.has_permission('finance.manage'));
+  using ((select core.has_permission('finance.manage')));
 
 -- ---------------------------------------------------------------------
 --  Grants (RLS still gates every statement)

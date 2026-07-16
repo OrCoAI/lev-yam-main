@@ -15,10 +15,19 @@ own schema, RLS policies that call `core.has_permission('<module>.<action>')`.
 
 ## First-time setup
 
-1. **Apply the schema** — in the Supabase SQL editor, run `schema/00_core.sql`, then
-   `schema/10_pos.sql`. Both are idempotent (safe to re-run).
+1. **Apply the schema** — in the Supabase SQL editor, run the `schema/*.sql` files in
+   NN order (`00_core` → `01_passkeys` → `10_pos` → `20/21_finance*` → `30_quotes` →
+   `40_events` → `42`–`45` POS files → `50_storage`).
+   **On the live production DB, never re-run `10_pos.sql` or `42_pos_platform.sql`** —
+   they are pre-cut-over layers targeting `public.pos_*`: 42 errors harmlessly, but
+   10 would **recreate the retired anon-writable POS surface** in `public` (fresh
+   empty tables + anon policies/grants). Post-cut-over, POS policy/seed changes are
+   applied via `44_initplan_sweep.sql` / `45_pos_seeds.sql`; every other module file
+   is idempotent and safe to re-run anywhere.
 2. **Expose schemas to the API** — Project Settings → API → **Exposed schemas**: add `core`
-   (and each new module schema). Without this, the client can't query them.
+   (and each new module schema). Without this, the client can't query them. Current prod
+   list (verified live 2026-07-16): `public, graphql_public, core, finance, quotes, pos` —
+   `events` is deliberately NOT exposed until Phase 2 ships the public feed UI.
 3. **Create the first user** — Authentication → Users → *Add user* (email + password).
 4. **Bootstrap the owner** — run the snippet at the bottom of `00_core.sql` with that email to
    grant the `owner` role. From then on, manage everyone from the in-app **Users & Permissions**

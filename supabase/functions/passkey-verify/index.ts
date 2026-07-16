@@ -189,7 +189,9 @@ Deno.serve(async (req) => {
     if (e instanceof Response) {
       return new Response(e.body, { status: e.status, headers: { 'Content-Type': 'application/json', ...cors(origin) } })
     }
+    // Full detail stays in the function logs only — a raw String(e) can leak
+    // internals (stack fragments, dependency messages) to any caller.
     console.error('passkey-verify error:', e)
-    return json({ error: 'server_error', detail: String(e) }, 500, origin)
+    return json({ error: 'server_error' }, 500, origin)
   }
 })

@@ -113,6 +113,7 @@ item — the anon `pos_*` surface — is the POS cut-over task above, not repeat
 
 - [ ] **H1** RLS regression suite (`supabase/tests/rls_matrix.sql`: per-role can/can't
       matrix) + `PERM` ↔ `core.permissions` drift check as a `ci.yml` step
+      *(in progress 2026-07-15 — PR 1 of [plans/users-permissions-suite.md](plans/users-permissions-suite.md))*
 - [ ] **H2** Schema migration pipeline (Supabase CLI, versioned migrations + drift
       check in the gate) — owner decision Q2
 - [x] **H3** Permission governance: last-admin lockout guard + `core.audit_log` on
@@ -126,7 +127,8 @@ item — the anon `pos_*` surface — is the POS cut-over task above, not repeat
       nobody actually held `users.manage` until this landed*)
 - [ ] **H4** RLS initplan sweep: wrap `core.has_permission()` / `auth.uid()` in policies
       as `(select …)`; add the pattern to MODULE-TEMPLATE.md — gates Phase 2's
-      public feed
+      public feed *(in progress 2026-07-15 — PR 1 of
+      [plans/users-permissions-suite.md](plans/users-permissions-suite.md))*
 - [x] **H5** Invite flow (`admin-invite` edge function + users-module action) +
       self-service password reset on the login screen *(done 2026-07-15, plan:
       [plans/users-hardening.md](plans/users-hardening.md); gates Phase 3's member role,
@@ -139,6 +141,9 @@ item — the anon `pos_*` surface — is the POS cut-over task above, not repeat
       focus. **6 remain:** storage policies into `supabase/schema/`, error boundary,
       dependabot, PITR (deferred — trigger rule in the plan), `passkey-verify` error
       detail, `quotes.next_quote_number()` grant; full list in the plan
+      *(the 5 non-PITR items in progress 2026-07-15 — PR 1 of
+      [plans/users-permissions-suite.md](plans/users-permissions-suite.md); PITR stays
+      parked by the 20-signed-contracts rule)*
 - [x] **Mobile-UX foundation pass** (owner-directed 2026-07-11, not from the audit):
       progressive-disclosure rows (summary → tap → full detail + actions) shell-wide,
       ≥44px touch targets, ≥16px inputs (iOS zoom), launcher tile descriptions, users
@@ -148,6 +153,16 @@ item — the anon `pos_*` surface — is the POS cut-over task above, not repeat
       *(done 2026-07-12: PR #5 merged + deployed, smoke-checked; new bundle
       probe-verified on prod — rowline CSS + bilingual strings served; close-out +
       alignment verdict in the plan)*
+- [ ] **Users & permissions suite** (kickoff 2026-07-15 — plan:
+      [plans/users-permissions-suite.md](plans/users-permissions-suite.md)): bundles
+      H1 + H4 + the non-PITR H7 remainder with the users-module feature backlog
+      ([modules/users.md](modules/users.md)) — role badge in the shell header, login
+      activity in the users list, permission-matrix UI (by-role editable / by-user
+      read-only effective view, explicit Save), custom roles, and view-as
+      **permission preview** (UI mirror only, no impersonation). Three PRs:
+      hardening → module features → view-as. Out of scope by owner decision: H2
+      (deferred, Q2), H6 (finance-scoped), per-user permission overrides, true
+      session impersonation.
 
 ## Phase 2 — What's happening: bookings & events
 
