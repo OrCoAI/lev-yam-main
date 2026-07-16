@@ -116,6 +116,10 @@ end;
 $$;
 
 -- All permission keys the current user holds (UI loads this once, then gates locally).
+-- COUPLING NOTE: the users module derives this same roles→grants union
+-- client-side (by-user lens + view-as preview, modules/users/UsersAdmin.tsx).
+-- If this function ever gains logic beyond the plain role join (per-user
+-- overrides, deny rules), update those derivations too.
 create or replace function core.my_permissions()
 returns text[]
 language sql stable security definer
@@ -129,6 +133,9 @@ as $$
 $$;
 
 -- Modules the current user may open (has '<module>.view') — drives the launcher.
+-- COUPLING NOTE: the launcher's view-as preview narrows this function's result
+-- with the same '<key>.view' rule client-side (shell/Launcher.tsx). If the
+-- visibility rule here ever changes, update that filter too.
 create or replace function core.my_modules()
 returns setof core.modules
 language sql stable security definer

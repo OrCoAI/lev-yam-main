@@ -125,6 +125,16 @@ contradicts VISION.md / ARCHITECTURE.md / the roadmap phase order.**
   locked matrix seeded `pos.view`. Owner confirmed prod is the intended state:
   viewer = "no access until granted." `42_pos_platform.sql` now deletes any pos
   grant from viewer; `rls_matrix.sql` asserts the role is empty.
+- **View-as preview = intersection semantics** (PR 3 gate, 2026-07-16): `has()`
+  answers with target ∩ admin's real set — requests still run under the real
+  session, so rendering a control only the target holds would invite
+  server-rejected clicks (custom admin roles mean target ⊆ admin isn't
+  guaranteed). For the typical owner-previews-staff case the intersection
+  equals the target's set. Also: **preview is not read-only** — actions you
+  take while previewing run with your real permissions and mutate real data;
+  the banner is the guard. And **preview ends at the shell boundary**: the
+  full-screen POS route exits it on entry (its 100dvh layout can't host the
+  banner; the by-user lens is the way to inspect a user's POS capabilities).
 - **Phone matrix = per-module accordion** (owner, 2026-07-16, PR 2 gate): the plan's
   prediction held — the wide grid doesn't survive phone width. ≤640px the by-role
   view renders per-module `<details>` accordions with role toggle-chips per

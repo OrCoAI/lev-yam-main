@@ -5,6 +5,7 @@ import RequireAuth from './shell/RequireAuth'
 import RequirePermission from './shell/RequirePermission'
 import Layout from './shell/Layout'
 import Launcher from './shell/Launcher'
+import { ExitPreviewOnEntry } from './shell/PreviewBanner'
 import UsersAdmin from './modules/users/UsersAdmin'
 import FinanceModule from './modules/finance/FinanceModule'
 import PosModule from './modules/pos/PosModule'
@@ -21,13 +22,19 @@ export default function App() {
 
       {/* Everything below requires a session */}
       <Route element={<RequireAuth />}>
-        {/* POS is full-screen (its own headers/dock, phone-first floor UI) — no shell Layout */}
+        {/* POS is full-screen (its own headers/dock, phone-first floor UI) — no shell
+            Layout. A view-as preview ENDS here (see ExitPreviewOnEntry): its
+            100dvh layout can't host the banner, and POS must never render
+            under someone else's permission mirror unlabeled. */}
         <Route
           path="pos"
           element={
-            <RequirePermission perm={PERM.posView}>
-              <PosModule />
-            </RequirePermission>
+            <>
+              <ExitPreviewOnEntry />
+              <RequirePermission perm={PERM.posView}>
+                <PosModule />
+              </RequirePermission>
+            </>
           }
         />
         <Route element={<Layout />}>

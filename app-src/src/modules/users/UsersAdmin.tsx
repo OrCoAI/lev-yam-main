@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useState, useCallback, type FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { core, invokeFunction } from '../../lib/supabase'
 import { useAuth } from '../../lib/auth'
 import { useCan, PERM } from '../../lib/permissions'
@@ -506,7 +507,14 @@ function MatrixTab({ canManage }: { canManage: boolean }) {
       ) : (
         /* the lens shows the PENDING state — what the matrix will look like
            after Save — so an admin can preview a batch's effect per user */
-        <ByUserView users={users} roles={roles} perms={perms} grants={pending} />
+        <ByUserView
+          users={users}
+          roles={roles}
+          perms={perms}
+          grants={pending}
+          canManage={canManage}
+          dirty={dirtyCount > 0}
+        />
       )}
 
       {/* visible in BOTH views: unsaved edits must never be off-screen */}
@@ -661,14 +669,20 @@ function ByUserView({
   roles,
   perms,
   grants,
+  canManage,
+  dirty,
 }: {
   users: AdminUser[] | null
   roles: RoleRow[]
   perms: PermissionRow[]
   grants: Set<string>
+  canManage: boolean
+  dirty: boolean
 }) {
   const ut = useUT()
   const roleName = useRoleName()
+  const { startPreview } = useAuth()
+  const navigate = useNavigate()
   const [userId, setUserId] = useState('')
   const selected = users?.find((u) => u.user_id === userId) ?? null
 
@@ -710,6 +724,22 @@ function ByUserView({
 
       {selected && (
         <>
+          {canManage && (
+            /* preview must reflect the SAVED state — while edits are dirty the
+               derived keys would promise permissions the DB doesn't grant yet
+               (the sticky save bar right below explains what's pending) */
+            <button
+              type="button"
+              className="btn-primary u-viewas"
+              disabled={dirty}
+              onClick={() => {
+                if (startPreview(selected.email ?? selected.user_id, visible.map((p) => p.key)))
+                  navigate('/')
+              }}
+            >
+              {ut.viewAs}
+            </button>
+          )}
           <p className="muted u-effectivenote">{ut.effectiveNote}</p>
           {visible.length === 0 && <div className="notice">{ut.noPerms}</div>}
           {visible.map((p, i) => (

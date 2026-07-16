@@ -67,6 +67,7 @@
 /* by-user effective permissions (picker form reuses .u-invite) */
 .u-byuser { display: grid; gap: 10px; }
 .u-byuser .u-invite { margin-bottom: 0; }
+.u-viewas { justify-self: start; }
 .u-effectivenote { font-size: 0.85rem; }
 .u-effmodule { padding: 6px 10px; border-radius: 8px; }
 .u-effperm { display: grid; gap: 2px; padding: 6px 4px; border-bottom: 1px solid var(--line); }
