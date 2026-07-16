@@ -12,14 +12,22 @@ touching schema, permissions, or the events/finance spine graduates to a `docs/p
 
 ## Open feature ideas
 
-- Delete/deactivate users (owner-only) — **shipped 2026-07-16**, see plan
-  [plans/users-delete-deactivate.md](../plans/users-delete-deactivate.md); moved
-  to Done below once merged.
 - Bilingual HE/AR templates for the *other* auth emails (password recovery,
   magic link, email change) — still stock English; now editable since custom
   SMTP is configured (2026-07-16). Same pattern as the invite template.
 
 ## Done
+
+- **2026-07-16** — Delete & deactivate/reactivate users, owner-only (full
+  kickoff — plan + close-out:
+  [plans/users-delete-deactivate.md](../plans/users-delete-deactivate.md); PR
+  #24 merged + deployed, prod probe-verified): `users.delete` permission
+  (owner-only), `admin-user-ops` Edge Function, row-level last-admin guard twin
+  closing the FK-cascade hole, deactivated badge + bilingual HE/AR UI. **The
+  gate also found + closed a live PUBLIC-execute privilege-escalation**: every
+  `revoke execute … from authenticated` in `core` was a no-op (PUBLIC keeps the
+  default grant), leaving `core.admin_assign_role` self-grant-owner callable by
+  any signed-in user — fixed with a schema-wide `revoke … from public`.
 
 - **2026-07-16** — Invite email link landed on `http://localhost:3000` with
   `otp_expired`: the Supabase project's Auth URL config was still at defaults
