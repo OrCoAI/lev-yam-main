@@ -152,22 +152,23 @@ $$;
 -- auth.users is not client-queryable, so this SECURITY DEFINER fn exposes a safe slice,
 -- gated by 'users.manage' OR 'users.view' (view-only holders get the same read data;
 -- the UI's canManage flag already disables every mutating control for them).
--- drop-first: adding last_sign_in_at (2026-07-16) changed the return type, which
+-- drop-first: adding last_sign_in_at (2026-07-16) then banned_until (2026-07-16,
+-- delete/deactivate initiative) changed the return type, which
 -- `create or replace` refuses; the blanket grant below re-covers it on re-run.
 drop function if exists core.admin_list_users();
 create function core.admin_list_users()
 returns table (user_id uuid, email text, created_at timestamptz,
-               last_sign_in_at timestamptz, roles text[])
+               last_sign_in_at timestamptz, banned_until timestamptz, roles text[])
 language sql stable security definer
 set search_path = core, public, auth
 as $$
-  select u.id, u.email, u.created_at, u.last_sign_in_at,
+  select u.id, u.email, u.created_at, u.last_sign_in_at, u.banned_until,
          coalesce(array_agg(r.key order by r.sort) filter (where r.key is not null), '{}')
   from auth.users u
   left join core.user_roles ur on ur.user_id = u.id
   left join core.roles r       on r.id = ur.role_id
   where core.has_permission('users.manage') or core.has_permission('users.view')
-  group by u.id, u.email, u.created_at, u.last_sign_in_at
+  group by u.id, u.email, u.created_at, u.last_sign_in_at, u.banned_until
   order by u.created_at;
 $$;
 
@@ -196,7 +197,7 @@ begin
       'לא ניתן לבצע פעולה זו — לפחות משתמש אחד חייב להחזיק בהרשאת ניהול משתמשים (users.manage)'
       || ' / لا يمكن تنفيذ هذا الإجراء — يجب أن يحتفظ مستخدم واحد على الأقل بصلاحية إدارة المستخدمين (users.manage)';
   end if;
-  return null; -- statement-level trigger: return value is ignored
+  return null; -- AFTER trigger (statement- and row-level): return value is ignored
 end;
 $$;
 
@@ -204,6 +205,20 @@ drop trigger if exists trg_user_roles_guard_manage on core.user_roles;
 create trigger trg_user_roles_guard_manage
   after delete or update on core.user_roles
   for each statement execute function core.guard_users_manage_survives();
+
+-- Deleting an auth.users row cascades into user_roles, and (same Postgres rule
+-- as the roles/permissions note below) FK-cascaded child deletes never fire the
+-- child's STATEMENT-level trigger — so hard-deleting the last admin's account
+-- (admin-user-ops Edge Function) would bypass the guard above. This ROW-level
+-- twin closes that hole: AFTER ROW triggers are queued to the end of the
+-- outer statement, so it checks the same net state. Delete-only on purpose —
+-- a DELETE can only shrink the holder set, so per-row checks can't false-
+-- positive, and apply_role_permissions' adds-before-removes statement
+-- semantics (on role_permissions) are untouched.
+drop trigger if exists trg_user_roles_guard_manage_row on core.user_roles;
+create trigger trg_user_roles_guard_manage_row
+  after delete on core.user_roles
+  for each row execute function core.guard_users_manage_survives();
 
 drop trigger if exists trg_role_permissions_guard_manage on core.role_permissions;
 create trigger trg_role_permissions_guard_manage
@@ -341,6 +356,45 @@ begin
 end;
 $$;
 
+-- "Would users.manage still have an active holder if p_user were gone?"
+-- The admin-user-ops Edge Function's lockout check: the ONLY enforcement for
+-- deactivate (a GoTrue ban touches no core table, so no trigger can see it —
+-- banned holders are excluded here for the same reason), and a friendly
+-- pre-check for delete (the row-level guard trigger above stays the real
+-- guard there). service_role-only, like has_permission_for: it answers
+-- questions about arbitrary users.
+create or replace function core.users_manage_survives_without(p_user uuid)
+returns boolean
+language sql stable security definer
+set search_path = core, public, auth
+as $$
+  select exists (
+    select 1
+    from core.user_roles ur
+    join core.role_permissions rp on rp.role_id = ur.role_id
+    join core.permissions p       on p.id = rp.permission_id
+    join auth.users u             on u.id = ur.user_id
+    where p.key = 'users.manage'
+      and ur.user_id <> p_user
+      and (u.banned_until is null or u.banned_until <= now())
+  );
+$$;
+
+-- Audit writer for auth-level user lifecycle events (delete / deactivate /
+-- reactivate). Needed because those act through the GoTrue admin API on its
+-- own connection: `levyam.audit_actor` can't reach the cascade-fired audit
+-- rows of a delete, and a ban touches no audited table at all. Same trust
+-- model as admin_assign_role: p_actor is verified by the Edge Function first,
+-- so this must never be callable by authenticated (revoked below).
+create or replace function core.admin_audit_user_event(p_actor uuid, p_action text, p_data jsonb)
+returns void
+language sql security definer
+set search_path = core, public
+as $$
+  insert into core.audit_log (actor, action, table_name, row_data)
+  values (p_actor, p_action, 'auth.users', p_data);
+$$;
+
 -- ---------------------------------------------------------------------
 --  Row-Level Security
 --    Catalog (roles/modules/permissions/role_permissions): any signed-in
@@ -400,19 +454,36 @@ grant insert, update, delete on
   core.roles, core.modules, core.permissions, core.role_permissions, core.user_roles
   to authenticated;
 grant execute on all functions in schema core to authenticated;
+-- Close the PUBLIC-execute bug CLASS, not just today's instances: Postgres
+-- grants EXECUTE to PUBLIC by default on every function create, so a
+-- per-function `revoke ... from authenticated` is a silent no-op while PUBLIC
+-- stands — that is exactly how the admin_assign_role self-grant-owner hole
+-- reached prod (found + closed 2026-07-16, delete/deactivate initiative).
+-- Stripping PUBLIC once here means any future service-role-only definer
+-- function is locked down by default; the explicit `to authenticated` grant
+-- above is what keeps the legitimately-callable functions reachable, and no
+-- core function is meant to be anon-callable (core is login-gated).
+revoke execute on all functions in schema core from public;
 -- admin_assign_role trusts its p_actor argument completely (no internal
 -- permission check — see its comment) and is SECURITY DEFINER, so it must
 -- NOT be callable by authenticated (the blanket grant above would otherwise
 -- let anyone hand themselves the owner role); service_role only, and only
--- the already-permission-checked admin-invite function calls it.
-revoke execute on function core.admin_assign_role(uuid, uuid, uuid) from authenticated;
+-- the already-permission-checked admin-invite function calls it. The explicit
+-- per-function revokes below are defense-in-depth + documentation on top of
+-- the blanket revoke — they also strip authenticated's explicit grant.
+revoke execute on function core.admin_assign_role(uuid, uuid, uuid) from public, authenticated;
 -- has_permission_for(target_user, ...) answers for ANY user, not just the
 -- caller (unlike has_permission(), which is auth.uid()-bound) — without this
 -- revoke, the blanket grant above would let any signed-in user probe a
 -- coworker's permissions (e.g. fingerprint who holds users.manage) via RPC,
 -- bypassing the RLS that otherwise restricts that to users.manage holders.
--- Server-side (service-role) callers only, per its own comment.
-revoke execute on function core.has_permission_for(uuid, text) from authenticated;
+-- Server-side (service-role) callers only, per its own comment. (from public:
+-- see the admin_assign_role revoke note — `from authenticated` alone is a no-op.)
+revoke execute on function core.has_permission_for(uuid, text) from public, authenticated;
+-- Same reasoning for the admin-user-ops helpers: one probes an arbitrary
+-- user's permissions, the other writes audit rows with a caller-supplied actor.
+revoke execute on function core.users_manage_survives_without(uuid) from public, authenticated;
+revoke execute on function core.admin_audit_user_event(uuid, text, jsonb) from public, authenticated;
 
 -- service_role has no default grants on core (see MODULE-TEMPLATE.md §1's
 -- "admin/import work runs through the management API" default) — narrow,
@@ -423,6 +494,9 @@ grant usage on schema core to service_role;
 grant select on core.roles to service_role;
 grant execute on function core.has_permission_for(uuid, text) to service_role;
 grant execute on function core.admin_assign_role(uuid, uuid, uuid) to service_role;
+-- admin-user-ops (delete / deactivate / reactivate users)
+grant execute on function core.users_manage_survives_without(uuid) to service_role;
+grant execute on function core.admin_audit_user_event(uuid, text, jsonb) to service_role;
 
 -- =====================================================================
 --  SEED DATA  (idempotent — safe to re-run)
@@ -446,7 +520,8 @@ on conflict (key) do nothing;
 
 insert into core.permissions (key, module, action, label) values
   ('users.view',        'users', 'view',        'View users & roles'),
-  ('users.manage',      'users', 'manage',      'Manage users, roles & permissions')
+  ('users.manage',      'users', 'manage',      'Manage users, roles & permissions'),
+  ('users.delete',      'users', 'delete',      'Delete or deactivate users')
 on conflict (key) do nothing;
 
 -- role -> permission grants

@@ -37,6 +37,17 @@ const he = {
   lastLogin: 'כניסה אחרונה:',
   neverLoggedIn: 'טרם נכנס/ה',
 
+  userDelete: 'מחיקה',
+  userDeactivate: 'השבתה',
+  userReactivate: 'הפעלה מחדש',
+  userDeactivated: 'מושבת/ת',
+  userDeleteConfirm: 'למחוק את המשתמש לצמיתות? מחיקה אפשרית רק למשתמש ללא היסטוריית פעילות.',
+  userDeactivateConfirm: 'להשבית את המשתמש? הכניסה שלו/ה תיחסם עד הפעלה מחדש.',
+  opErrorSelf: 'לא ניתן לבצע פעולה זו על החשבון של עצמך.',
+  opErrorLastAdmin: 'לא ניתן — זהו המשתמש הפעיל האחרון עם הרשאת ניהול משתמשים.',
+  opErrorHasRecords: 'לא ניתן למחוק — למשתמש יש היסטוריית פעילות במערכת. השביתו אותו במקום.',
+  opErrorGeneric: 'הפעולה נכשלה. נסו שוב.',
+
   viewByRole: 'לפי תפקיד',
   viewByUser: 'לפי משתמש',
   save: 'שמירה',
@@ -94,6 +105,17 @@ const ar: typeof he = {
 
   lastLogin: 'آخر دخول:',
   neverLoggedIn: 'لم يدخل بعد',
+
+  userDelete: 'حذف',
+  userDeactivate: 'تعطيل',
+  userReactivate: 'إعادة تفعيل',
+  userDeactivated: 'معطّل/ة',
+  userDeleteConfirm: 'حذف المستخدم نهائياً؟ الحذف ممكن فقط لمستخدم بلا سجلّ نشاط.',
+  userDeactivateConfirm: 'تعطيل المستخدم؟ رح ينحظر دخوله لحد ما ينرجع يتفعّل.',
+  opErrorSelf: 'ما بصير تنفّذ هالإجراء على حسابك.',
+  opErrorLastAdmin: 'ما بصير — هاد آخر مستخدم فعّال عندو صلاحية إدارة المستخدمين.',
+  opErrorHasRecords: 'ما بينحذف — عند المستخدم سجلّ نشاط بالنظام. عطّلوه بدال الحذف.',
+  opErrorGeneric: 'فشل الإجراء. حاولوا مجدداً.',
 
   viewByRole: 'حسب الدور',
   viewByUser: 'حسب المستخدم',

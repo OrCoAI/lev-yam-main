@@ -12,9 +12,29 @@ touching schema, permissions, or the events/finance spine graduates to a `docs/p
 
 ## Open feature ideas
 
-- (none logged)
+- Delete/deactivate users (owner-only) — **shipped 2026-07-16**, see plan
+  [plans/users-delete-deactivate.md](../plans/users-delete-deactivate.md); moved
+  to Done below once merged.
+- Bilingual HE/AR templates for the *other* auth emails (password recovery,
+  magic link, email change) — still stock English; now editable since custom
+  SMTP is configured (2026-07-16). Same pattern as the invite template.
 
 ## Done
+
+- **2026-07-16** — Invite email link landed on `http://localhost:3000` with
+  `otp_expired`: the Supabase project's Auth URL config was still at defaults
+  (Site URL `localhost:3000`, empty redirect allow-list), so the
+  `redirectTo` sent by `admin-invite` was rejected and the fallback consumed
+  the one-time token. Fixed in prod config via the management API (Site URL →
+  `https://levyam.com/app`, allow-list → `levyam.com/app/*`, `www` variant,
+  `localhost:5173/app/*`); also silently affected the forgot-password flow.
+  Setup step documented in `supabase/README.md`. No code change needed.
+- **2026-07-16** — Custom invite email: Supabase Auth now sends via **Resend
+  SMTP** (`smtp.resend.com`, sender `Lev Yam <info@levyam.com>`, levyam.com
+  verified, API key in `.secrets/resend-api-key`), which also unlocked
+  template editing (free tier blocks it on the default mailer). Invite
+  subject + body replaced with bilingual HE/AR content, styled accept
+  button. Applied to prod via the management API; no repo code change.
 
 - **2026-07-16** — Users & permissions suite (full kickoff — plan + close-out:
   [plans/users-permissions-suite.md](../plans/users-permissions-suite.md); PRs

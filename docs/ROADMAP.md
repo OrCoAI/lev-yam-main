@@ -134,6 +134,10 @@ item — the anon `pos_*` surface — is the POS cut-over task above, not repeat
       self-service password reset on the login screen *(done 2026-07-15, plan:
       [plans/users-hardening.md](plans/users-hardening.md); gates Phase 3's member role,
       still to come)*
+- [ ] **H5b** User lifecycle: delete & deactivate/reactivate users (owner-only
+      `users.delete` permission, `admin-user-ops` edge function, last-admin-guard
+      cascade-hole fix) — plan:
+      [plans/users-delete-deactivate.md](plans/users-delete-deactivate.md)
 - [ ] **H6** `finance.expected` module-row guard (status-only client transitions on
       module-sourced expectations)
 - [x] **H7** Hygiene batch — nine small repo/UX/ops items; **8 of 9 done** (3 with

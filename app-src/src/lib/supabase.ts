@@ -19,8 +19,19 @@ export const core = () => supabase.schema('core')
 /** Call an Edge Function and throw on either a transport error or a `{ error }` payload. */
 export async function invokeFunction<T>(name: string, body: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase.functions.invoke(name, { body })
-  if (error) throw new Error(error.message)
-  if (data?.error) throw new Error(data.detail ?? data.error)
+  if (error) {
+    // Non-2xx: supabase-js hides the function's response behind a generic
+    // FunctionsHttpError message, keeping the raw Response in error.context —
+    // recover the function's own { error: <code> } body so callers can map
+    // codes ('forbidden', 'last_admin', …) to bilingual strings.
+    const ctx = (error as { context?: unknown }).context
+    if (ctx instanceof Response) {
+      const payload = await ctx.clone().json().catch(() => null)
+      if (payload?.error) throw new Error(payload.error)
+    }
+    throw new Error(error.message)
+  }
+  if (data?.error) throw new Error(data.error)
   return data as T
 }
 
