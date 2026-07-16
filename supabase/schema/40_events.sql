@@ -192,23 +192,24 @@ drop policy if exists "events_events_write"  on events.events;
 drop policy if exists "events_tasks_select"  on events.tasks;
 drop policy if exists "events_tasks_write"   on events.tasks;
 
+-- (select ...) wrapper = one InitPlan eval per statement, not per row (MODULE-TEMPLATE.md §1)
 -- staff view everything
 create policy "events_events_select" on events.events for select to authenticated
-  using (core.has_permission('events.view'));
+  using ((select core.has_permission('events.view')));
 -- anyone (incl. anon) reads published rows — the feed is public by default
 create policy "events_events_public" on events.events for select to anon, authenticated
   using (visibility = 'public' and status in ('confirmed','in_progress'));
 -- direct create/edit (bookings UI, Phase 2); module projections are
 -- SECURITY DEFINER triggers and bypass this
 create policy "events_events_write" on events.events for all to authenticated
-  using (core.has_permission('events.manage'))
-  with check (core.has_permission('events.manage'));
+  using ((select core.has_permission('events.manage')))
+  with check ((select core.has_permission('events.manage')));
 
 create policy "events_tasks_select" on events.tasks for select to authenticated
-  using (core.has_permission('events.view'));
+  using ((select core.has_permission('events.view')));
 create policy "events_tasks_write" on events.tasks for all to authenticated
-  using (core.has_permission('events.tasks'))
-  with check (core.has_permission('events.tasks'));
+  using ((select core.has_permission('events.tasks')))
+  with check ((select core.has_permission('events.tasks')));
 
 -- ---------------------------------------------------------------------
 --  Grants (RLS still gates every statement). Anon gets COLUMN-level select

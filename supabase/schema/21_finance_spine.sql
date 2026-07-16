@@ -246,11 +246,12 @@ alter table finance.expected enable row level security;
 drop policy if exists "finance_expected_select" on finance.expected;
 drop policy if exists "finance_expected_write"  on finance.expected;
 
+-- (select ...) wrapper = one InitPlan eval per statement, not per row (MODULE-TEMPLATE.md §1)
 create policy "finance_expected_select" on finance.expected for select to authenticated
-  using (core.has_permission('finance.view'));
+  using ((select core.has_permission('finance.view')));
 create policy "finance_expected_write" on finance.expected for all to authenticated
-  using (core.has_permission('finance.manage'))
-  with check (core.has_permission('finance.manage'));
+  using ((select core.has_permission('finance.manage')))
+  with check ((select core.has_permission('finance.manage')));
 
 -- ---------------------------------------------------------------------
 --  Grants (RLS still gates every statement)

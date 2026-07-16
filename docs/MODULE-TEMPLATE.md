@@ -48,6 +48,14 @@ destination. Everything else is the module's own UI.
   Standard split: a `view` permission for `select`, finer actions for writes. Extra-
   sensitive data (quotes' owner signature) goes in its **own table** so RLS can gate it
   more strictly.
+- [ ] **Wrap policy calls as `(select …)`** — always
+  `using ((select core.has_permission('x')))` and `user_id = (select auth.uid())`,
+  never the bare call: the wrapper makes Postgres evaluate it **once per statement**
+  (InitPlan) instead of once per row (H4 sweep, 2026-07-15 — all existing policies use
+  this form; `explain` should show an InitPlan node, not a per-row Filter re-eval).
+  The one legitimate exception is a predicate that genuinely depends on the row, like
+  `pos_expenses`' `core.has_permission('pos.costs_' || kind)` — leave those bare and
+  comment why.
 - [ ] **Grants to `authenticated` only** by default (RLS still gates every statement);
   admin/import work runs through the Supabase management API instead (see §6).
   **Exception:** an Edge Function that must write on its own (not a one-time import) gets
@@ -68,6 +76,11 @@ destination. Everything else is the module's own UI.
 - [ ] Apply: run the file in the SQL editor, then add the schema under
   **Supabase → Settings → API → Exposed schemas**. Verify from outside: an anon REST call
   should return `42501` (denied) — not `PGRST106` (not exposed).
+- [ ] **Extend + run the RLS suite:** add the new tables' can/can't assertions to
+  `supabase/tests/rls_matrix.sql` (every role that must NOT see/write them, plus anon),
+  then paste-run the whole suite in the SQL editor — it must end
+  `RLS MATRIX: ALL ASSERTIONS PASSED` (it rolls itself back; prod-safe). A schema apply
+  without a green suite run is an unfinished apply.
 
 ## 2. Platform registration (four small edits)
 

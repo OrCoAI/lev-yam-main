@@ -82,6 +82,9 @@ button, [role='button'] { touch-action: manipulation; }
   box-shadow: var(--shadow);
   padding: 20px;
 }
+.module-error { max-width: 480px; margin: 48px auto; text-align: center; }
+.module-error-detail { direction: ltr; font-size: 13px; word-break: break-word; }
+.module-error-actions { display: flex; gap: 12px; justify-content: center; margin-top: 16px; }
 .notice {
   background: #fff8ec;
   border: 1px solid #f0e2c0;

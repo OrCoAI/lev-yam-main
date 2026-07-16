@@ -33,6 +33,12 @@ jobs:
           cache: npm
           cache-dependency-path: app-src/package-lock.json
 
+      # H1 drift check on the deploy path too — direct pushes to main skip
+      # ci.yml (its push trigger ignores main), and this is the push that
+      # actually reaches production. Sub-second, no npm install needed.
+      - name: Permission mirror drift check
+        run: node supabase/tests/check-permission-drift.mjs
+
       - name: Build platform (/app)
         working-directory: app-src
         env:

@@ -1,0 +1,25 @@
+# H7 (2026-07-15): weekly npm bumps for the platform — @simplewebauthn and
+# supabase-js sit in the auth path, so security releases must not linger.
+# PRs run ci.yml (typecheck + build + permission drift check) before merge.
+#
+# KNOWN GAP: the security-critical SERVER half of the auth path —
+# npm:@simplewebauthn/server@^10 imported by supabase/functions/passkey-verify
+# (Deno) — is NOT watched here (no ecosystem covers Deno npm: specifiers in
+# this config). The caret picks up v10 patches on each function redeploy, but
+# a fix shipped only in a new major would linger silently. Manual cadence:
+# check @simplewebauthn/server releases when touching supabase/functions/,
+# and at least once a quarter.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /app-src
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

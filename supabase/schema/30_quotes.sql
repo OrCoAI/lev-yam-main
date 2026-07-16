@@ -24,12 +24,23 @@ create schema if not exists quotes;
 -- and `if not exists` keeps re-runs from ever resetting it.
 create sequence if not exists quotes.quote_number_seq start with 17;
 
+-- SECURITY DEFINER + core.require gate (H7 hardening, 2026-07-15): the
+-- function stays executable by authenticated because it runs as the
+-- quote_number column DEFAULT (defaults evaluate as the inserting user), but
+-- a client JWT must hold quotes.manage to actually draw a number — an anon or
+-- under-privileged RPC call raises instead of silently burning sequence
+-- numbers. No-JWT callers (SQL editor, service_role) pass, so server-side
+-- inserts relying on the DEFAULT keep working. Sequence access itself is
+-- definer-side only (grant revoked below).
 create or replace function quotes.next_quote_number()
-returns text language sql volatile
+returns text language plpgsql volatile security definer
 set search_path = quotes, public
 as $$
-  select 'LY-' || to_char(current_date, 'YYMMDD') || '-'
+begin
+  perform core.require('quotes.manage');
+  return 'LY-' || to_char(current_date, 'YYMMDD') || '-'
        || lpad(nextval('quotes.quote_number_seq')::text, 3, '0');
+end;
 $$;
 
 -- ---------------------------------------------------------------------
@@ -276,36 +287,37 @@ alter table quotes.owner_secrets enable row level security;
 
 drop policy if exists "quotes_quotes_select" on quotes.quotes;
 drop policy if exists "quotes_quotes_write"  on quotes.quotes;
+-- (select ...) wrapper = one InitPlan eval per statement, not per row (MODULE-TEMPLATE.md §1)
 create policy "quotes_quotes_select" on quotes.quotes for select to authenticated
-  using (core.has_permission('quotes.view'));
+  using ((select core.has_permission('quotes.view')));
 create policy "quotes_quotes_write" on quotes.quotes for all to authenticated
-  using (core.has_permission('quotes.manage'))
-  with check (core.has_permission('quotes.manage'));
+  using ((select core.has_permission('quotes.manage')))
+  with check ((select core.has_permission('quotes.manage')));
 
 drop policy if exists "quotes_contracts_select" on quotes.contracts;
 drop policy if exists "quotes_contracts_write"  on quotes.contracts;
 create policy "quotes_contracts_select" on quotes.contracts for select to authenticated
-  using (core.has_permission('quotes.view'));
+  using ((select core.has_permission('quotes.view')));
 create policy "quotes_contracts_write" on quotes.contracts for all to authenticated
-  using (core.has_permission('quotes.contracts'))
-  with check (core.has_permission('quotes.contracts'));
+  using ((select core.has_permission('quotes.contracts')))
+  with check ((select core.has_permission('quotes.contracts')));
 
 drop policy if exists "quotes_settings_select" on quotes.settings;
 drop policy if exists "quotes_settings_write"  on quotes.settings;
 create policy "quotes_settings_select" on quotes.settings for select to authenticated
-  using (core.has_permission('quotes.view'));
+  using ((select core.has_permission('quotes.view')));
 create policy "quotes_settings_write" on quotes.settings for update to authenticated
-  using (core.has_permission('quotes.settings'))
-  with check (core.has_permission('quotes.settings'));
+  using ((select core.has_permission('quotes.settings')))
+  with check ((select core.has_permission('quotes.settings')));
 
 -- signature: strictly 'quotes.settings' holders, read AND write
 drop policy if exists "quotes_secrets_select" on quotes.owner_secrets;
 drop policy if exists "quotes_secrets_write"  on quotes.owner_secrets;
 create policy "quotes_secrets_select" on quotes.owner_secrets for select to authenticated
-  using (core.has_permission('quotes.settings'));
+  using ((select core.has_permission('quotes.settings')));
 create policy "quotes_secrets_write" on quotes.owner_secrets for update to authenticated
-  using (core.has_permission('quotes.settings'))
-  with check (core.has_permission('quotes.settings'));
+  using ((select core.has_permission('quotes.settings')))
+  with check ((select core.has_permission('quotes.settings')));
 
 -- ---------------------------------------------------------------------
 --  Grants (RLS still gates every statement)
@@ -315,7 +327,9 @@ grant select, insert, update, delete on quotes.quotes    to authenticated;
 grant select, insert, update, delete on quotes.contracts to authenticated;
 grant select, update on quotes.settings      to authenticated;
 grant select, update on quotes.owner_secrets to authenticated;
-grant usage on sequence quotes.quote_number_seq to authenticated;
+-- The sequence is reachable only through next_quote_number()'s definer rights;
+-- a direct client nextval() would burn numbers past the permission check.
+revoke usage on sequence quotes.quote_number_seq from authenticated;
 grant execute on function quotes.next_quote_number() to authenticated;
 grant execute on function quotes.auto_expire() to authenticated;
 

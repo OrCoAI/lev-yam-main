@@ -150,6 +150,10 @@ user's explicit sign-off to skip one) and re-run the step until it comes back cl
 3. **`/security-review`** — security review of the pending changes; all findings resolved.
 4. **`/verify`** — drive the affected flow end-to-end in the real app (localhost browser),
    not just typecheck/build. Skip only for diffs with no runtime surface (docs-only).
+   For any diff touching `supabase/`, `/verify` also includes running
+   `supabase/tests/rls_matrix.sql` to a green `RLS MATRIX: ALL ASSERTIONS PASSED`
+   (transaction-wrapped, rolls itself back — prod-safe), extended first with
+   assertions for whatever the diff added or changed.
 
 **Diff-class scaling (decided 2026-07-11):** for diffs with **no runtime or schema
 surface** (docs-only), run steps 1–3 **inline** — the reviewing model does each pass

@@ -88,6 +88,33 @@ as $$
   select core.has_permission_for(auth.uid(), perm_key);
 $$;
 
+-- Permission gate for SECURITY DEFINER functions — the ONE denial format
+-- (added 2026-07-15; use this instead of minting per-module inline checks).
+-- Client JWTs (anon / authenticated) are checked: anon's auth.uid() is null,
+-- so has_permission() is false and it raises. Callers with no client JWT —
+-- the SQL editor, management-API scripts, service_role (Edge Functions) —
+-- pass: they already run with elevated trust, and permission-checking them
+-- against core.user_roles is meaningless (no uid). Bilingual message per
+-- ARCHITECTURE.md invariant 5 (these surface in the UI).
+create or replace function core.require(perm_key text)
+returns void
+language plpgsql security definer
+set search_path = core, public
+as $$
+declare
+  jwt_role text := coalesce(
+    nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role', '');
+begin
+  if jwt_role not in ('anon', 'authenticated') then
+    return;
+  end if;
+  if not core.has_permission(perm_key) then
+    raise exception using message =
+      'אין הרשאה (' || perm_key || ') / لا توجد صلاحية (' || perm_key || ')';
+  end if;
+end;
+$$;
+
 -- All permission keys the current user holds (UI loads this once, then gates locally).
 create or replace function core.my_permissions()
 returns text[]
@@ -203,7 +230,7 @@ alter table core.audit_log enable row level security;
 
 drop policy if exists core_audit_log_read on core.audit_log;
 create policy core_audit_log_read on core.audit_log for select to authenticated
-  using (core.has_permission('users.manage'));
+  using ((select core.has_permission('users.manage')));
 
 create or replace function core.write_audit_log()
 returns trigger
@@ -279,6 +306,19 @@ alter table core.permissions      enable row level security;
 alter table core.role_permissions enable row level security;
 alter table core.user_roles       enable row level security;
 
+-- (select ...) wrapper on has_permission()/auth.uid() = one InitPlan eval per
+-- statement, not per row — see MODULE-TEMPLATE.md §1.
+drop policy if exists core_roles_read       on core.roles;
+drop policy if exists core_modules_read     on core.modules;
+drop policy if exists core_perms_read       on core.permissions;
+drop policy if exists core_role_perms_read  on core.role_permissions;
+drop policy if exists core_roles_write      on core.roles;
+drop policy if exists core_modules_write    on core.modules;
+drop policy if exists core_perms_write      on core.permissions;
+drop policy if exists core_role_perms_write on core.role_permissions;
+drop policy if exists core_user_roles_read  on core.user_roles;
+drop policy if exists core_user_roles_write on core.user_roles;
+
 -- catalog: read for all authenticated
 create policy core_roles_read       on core.roles            for select to authenticated using (true);
 create policy core_modules_read     on core.modules          for select to authenticated using (true);
@@ -287,20 +327,20 @@ create policy core_role_perms_read  on core.role_permissions for select to authe
 
 -- catalog: write only for users.manage
 create policy core_roles_write      on core.roles            for all to authenticated
-  using (core.has_permission('users.manage')) with check (core.has_permission('users.manage'));
+  using ((select core.has_permission('users.manage'))) with check ((select core.has_permission('users.manage')));
 create policy core_modules_write    on core.modules          for all to authenticated
-  using (core.has_permission('users.manage')) with check (core.has_permission('users.manage'));
+  using ((select core.has_permission('users.manage'))) with check ((select core.has_permission('users.manage')));
 create policy core_perms_write      on core.permissions      for all to authenticated
-  using (core.has_permission('users.manage')) with check (core.has_permission('users.manage'));
+  using ((select core.has_permission('users.manage'))) with check ((select core.has_permission('users.manage')));
 create policy core_role_perms_write on core.role_permissions for all to authenticated
-  using (core.has_permission('users.manage')) with check (core.has_permission('users.manage'));
+  using ((select core.has_permission('users.manage'))) with check ((select core.has_permission('users.manage')));
 
 -- user_roles: read own OR if you manage users
 create policy core_user_roles_read  on core.user_roles for select to authenticated
-  using (user_id = auth.uid() or core.has_permission('users.manage'));
+  using (user_id = (select auth.uid()) or (select core.has_permission('users.manage')));
 -- user_roles: only users.manage may assign/revoke
 create policy core_user_roles_write on core.user_roles for all to authenticated
-  using (core.has_permission('users.manage')) with check (core.has_permission('users.manage'));
+  using ((select core.has_permission('users.manage'))) with check ((select core.has_permission('users.manage')));
 
 -- ---------------------------------------------------------------------
 --  Grants  (RLS still applies on top of these)
@@ -347,25 +387,24 @@ insert into core.roles (key, label, sort) values
   ('viewer',  'Viewer',  40)
 on conflict (key) do nothing;
 
+-- Each module seeds its own core.modules row, permission keys, and role grants
+-- in its own schema file (20_finance / 30_quotes / 40_events / 42_pos_platform) —
+-- this file seeds only what the core identity module itself owns. The Phase-0
+-- placeholder pos.* seeds that used to live here were retired by
+-- 42_pos_platform.sql (pos.create_bill / pos.refund deleted from prod); keeping
+-- them out of this file keeps a re-run from resurrecting them.
 insert into core.modules (key, label, icon, sort) values
-  ('users', 'Users & Permissions', '🔐', 10),
-  ('pos',   'POS / Billing',        '🧾', 20)
+  ('users', 'Users & Permissions', '🔐', 10)
 on conflict (key) do nothing;
 
 insert into core.permissions (key, module, action, label) values
   ('users.view',        'users', 'view',        'View users & roles'),
-  ('users.manage',      'users', 'manage',      'Manage users, roles & permissions'),
-  ('pos.view',          'pos',   'view',         'Open POS'),
-  ('pos.create_bill',   'pos',   'create_bill',  'Create / edit bills'),
-  ('pos.refund',        'pos',   'refund',       'Refund / reopen bills'),
-  ('pos.reports',       'pos',   'reports',      'View POS reports')
+  ('users.manage',      'users', 'manage',      'Manage users, roles & permissions')
 on conflict (key) do nothing;
 
 -- role -> permission grants
---   owner:   everything
---   manager: see users + full POS
---   staff:   open POS + create bills
---   viewer:  open POS + reports (read-only)
+--   owner:   everything seeded so far (module files re-grant for their own keys)
+--   manager: see users (module files grant the rest)
 insert into core.role_permissions (role_id, permission_id)
 select r.id, p.id from core.roles r, core.permissions p
 where r.key = 'owner'
@@ -373,20 +412,8 @@ on conflict do nothing;
 
 insert into core.role_permissions (role_id, permission_id)
 select r.id, p.id from core.roles r join core.permissions p on p.key in
-  ('users.view','pos.view','pos.create_bill','pos.refund','pos.reports')
+  ('users.view')
 where r.key = 'manager'
-on conflict do nothing;
-
-insert into core.role_permissions (role_id, permission_id)
-select r.id, p.id from core.roles r join core.permissions p on p.key in
-  ('pos.view','pos.create_bill')
-where r.key = 'staff'
-on conflict do nothing;
-
-insert into core.role_permissions (role_id, permission_id)
-select r.id, p.id from core.roles r join core.permissions p on p.key in
-  ('pos.view','pos.reports')
-where r.key = 'viewer'
 on conflict do nothing;
 
 -- ---------------------------------------------------------------------
