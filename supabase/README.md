@@ -41,6 +41,11 @@ own schema, RLS policies that call `core.has_permission('<module>.<action>')`.
    tier blocks it on the default mailer — and the invite template is customized
    (bilingual HE/AR). If the Resend key rotates, re-apply `smtp_pass` via
    Authentication → Emails → SMTP Settings or the management API.
+   **Gotcha:** configuring custom SMTP does NOT auto-raise the Auth email rate
+   limit — `rate_limit_email_sent` stays at the built-in default of **2/hour**,
+   so real invite usage fails with `over_email_send_rate_limit` (surfaced in-app
+   as the generic "invite failed / שליחת ההזמנה נכשלה"). Raise it once Resend is
+   the sender (set to **30** on 2026-07-16 via the management API `config/auth`).
 5. **Create the first user** — Authentication → Users → *Add user* (email + password).
 6. **Bootstrap the owner** — run the snippet at the bottom of `00_core.sql` with that email to
    grant the `owner` role. From then on, manage everyone from the in-app **Users & Permissions**
