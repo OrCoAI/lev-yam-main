@@ -31,3 +31,4 @@ img/hero/hero.webm
 
 # Logs
 *.log
+app-src/tsconfig.tsbuildinfo

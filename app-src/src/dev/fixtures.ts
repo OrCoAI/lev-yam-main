@@ -428,15 +428,19 @@ export const rolesFixture = [
 ]
 
 export const adminUsersFixture = [
-  { user_id: '00000000-0000-4000-8000-00000000aa01', email: 'or@levyam.com', created_at: '2026-01-01T08:00:00Z' },
-  { user_id: '00000000-0000-4000-8000-00000000aa02', email: 'manager@levyam.com', created_at: '2026-02-10T08:00:00Z' },
-  { user_id: '00000000-0000-4000-8000-00000000aa03', email: 'staff@levyam.com', created_at: '2026-03-15T08:00:00Z' },
+  // staff's null last_sign_in_at deliberately exercises the "never logged in" state
+  { user_id: '00000000-0000-4000-8000-00000000aa01', email: 'or@levyam.com', created_at: '2026-01-01T08:00:00Z', last_sign_in_at: `${iso(0)}T07:45:00Z` },
+  { user_id: '00000000-0000-4000-8000-00000000aa02', email: 'manager@levyam.com', created_at: '2026-02-10T08:00:00Z', last_sign_in_at: `${iso(-3)}T18:20:00Z` },
+  { user_id: '00000000-0000-4000-8000-00000000aa03', email: 'staff@levyam.com', created_at: '2026-03-15T08:00:00Z', last_sign_in_at: null },
 ]
 
 // mutable copy lives in mock-net's `db` (admin-invite pushes onto it, same
 // pattern as db.user_roles) — this export is only the seed shape.
 
 export const userRolesFixture = [
+  // the mock session user (…dead) needs a row too — the shell RoleBadge reads
+  // own roles via the auth context's roles!inner embed
+  { user_id: '00000000-0000-4000-8000-00000000dead', role_id: 'role-owner' },
   { user_id: '00000000-0000-4000-8000-00000000aa01', role_id: 'role-owner' },
   { user_id: '00000000-0000-4000-8000-00000000aa02', role_id: 'role-manager' },
   { user_id: '00000000-0000-4000-8000-00000000aa03', role_id: 'role-staff' },

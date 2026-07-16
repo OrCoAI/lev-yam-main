@@ -14,10 +14,10 @@
   border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--ink);
 }
 .u-invite input:focus, .u-invite select:focus { outline: 2px solid var(--sea); border-color: var(--sea); }
-.u-invite-actions { display: flex; gap: 10px; }
+.u-actions { display: flex; gap: 10px; }
 
-/* permission matrix: module group headers + key/label cell */
-.grid tr.u-permgroup td {
+/* per-module group band — shared by the by-role grid rows and the by-user lens */
+.u-moduleband {
   background: var(--sand); color: var(--sea-dark);
   font-weight: 800; font-size: 0.8rem;
 }
@@ -28,3 +28,46 @@
 .u-permgroup td > span { position: sticky; inset-inline-start: 14px; display: inline-block; }
 .u-permkey { display: block; color: var(--sea-dark); }
 .u-permlabel { display: block; font-size: 0.8rem; color: var(--muted); }
+
+/* last sign-in line on the user card */
+.u-lastlogin { font-size: 0.82rem; }
+
+/* by-role / by-user view switch (shell .seg segmented control does the styling;
+   its default .on color is finance's danger red — neutralize it here) */
+.u-viewswitch { margin-bottom: 14px; }
+.u-viewswitch .seg-btn.on { color: var(--sea-dark); }
+
+/* pending-edit highlight + sticky save bar (thumb-reachable on phones) */
+.u-cell-dirty { background: var(--sand); }
+.u-chip-dirty { outline: 2px dashed var(--sea); outline-offset: 1px; }
+
+/* the phone accordion (rendered instead of the grid via useMediaQuery(PHONE_MQ)) */
+.u-matrix-phone { display: grid; gap: 10px; }
+.u-permacc summary {
+  cursor: pointer; min-height: 44px; display: flex; align-items: center; gap: 8px;
+  font-weight: 800; color: var(--sea-dark);
+}
+.u-permacc[open] summary { margin-bottom: 4px; }
+.u-accperm { display: grid; gap: 8px; padding: 10px 0; border-top: 1px solid var(--line); }
+.u-savebar {
+  position: sticky; bottom: 12px; margin-top: 14px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  font-weight: 700;
+}
+
+/* roles manager: role chips with delete, inline add form (reuses .u-invite) */
+.u-rolesmgr { margin-bottom: 14px; display: grid; gap: 12px; }
+.u-rolesmgr-locked { font-size: 0.82rem; margin: 0; }
+.u-rolechip { display: inline-flex; align-items: center; gap: 8px; }
+.u-roledel {
+  border: 0; background: none; color: inherit; font-size: 1.05rem; line-height: 1;
+  cursor: pointer; padding: 2px 4px; min-width: 24px; min-height: 24px;
+}
+
+/* by-user effective permissions (picker form reuses .u-invite) */
+.u-byuser { display: grid; gap: 10px; }
+.u-byuser .u-invite { margin-bottom: 0; }
+.u-effectivenote { font-size: 0.85rem; }
+.u-effmodule { padding: 6px 10px; border-radius: 8px; }
+.u-effperm { display: grid; gap: 2px; padding: 6px 4px; border-bottom: 1px solid var(--line); }
+.u-effvia { font-size: 0.78rem; }

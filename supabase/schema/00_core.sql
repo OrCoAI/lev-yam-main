@@ -141,22 +141,26 @@ as $$
   order by m.sort, m.label;
 $$;
 
--- Admin: list all auth users with their assigned role keys.
+-- Admin: list all auth users with their assigned role keys + last sign-in.
 -- auth.users is not client-queryable, so this SECURITY DEFINER fn exposes a safe slice,
 -- gated by 'users.manage' OR 'users.view' (view-only holders get the same read data;
 -- the UI's canManage flag already disables every mutating control for them).
-create or replace function core.admin_list_users()
-returns table (user_id uuid, email text, created_at timestamptz, roles text[])
+-- drop-first: adding last_sign_in_at (2026-07-16) changed the return type, which
+-- `create or replace` refuses; the blanket grant below re-covers it on re-run.
+drop function if exists core.admin_list_users();
+create function core.admin_list_users()
+returns table (user_id uuid, email text, created_at timestamptz,
+               last_sign_in_at timestamptz, roles text[])
 language sql stable security definer
 set search_path = core, public, auth
 as $$
-  select u.id, u.email, u.created_at,
+  select u.id, u.email, u.created_at, u.last_sign_in_at,
          coalesce(array_agg(r.key order by r.sort) filter (where r.key is not null), '{}')
   from auth.users u
   left join core.user_roles ur on ur.user_id = u.id
   left join core.roles r       on r.id = ur.role_id
   where core.has_permission('users.manage') or core.has_permission('users.view')
-  group by u.id, u.email, u.created_at
+  group by u.id, u.email, u.created_at, u.last_sign_in_at
   order by u.created_at;
 $$;
 
@@ -199,13 +203,21 @@ create trigger trg_role_permissions_guard_manage
   after delete or update on core.role_permissions
   for each statement execute function core.guard_users_manage_survives();
 
--- Deleting a role/permission row cascades into role_permissions/user_roles
--- (guarded above), but renaming a permission's key text (e.g. 'users.manage'
--- -> something else) touches no other table — nothing would cascade-trigger
--- the guard above without this direct one.
+-- Deleting a role/permission row cascades into role_permissions/user_roles,
+-- but Postgres does NOT fire statement-level triggers for FK-cascaded deletes
+-- on the child tables — so the role_permissions guard above never sees a
+-- cascade. These direct triggers on the parent tables close that hole: they
+-- run AFTER the user's own statement, when the cascade has already landed,
+-- so the guard checks the true net state. (For permissions, a key rename
+-- also touches no other table — same trigger covers it.)
 drop trigger if exists trg_permissions_guard_manage on core.permissions;
 create trigger trg_permissions_guard_manage
   after update or delete on core.permissions
+  for each statement execute function core.guard_users_manage_survives();
+
+drop trigger if exists trg_roles_guard_manage on core.roles;
+create trigger trg_roles_guard_manage
+  after update or delete on core.roles
   for each statement execute function core.guard_users_manage_survives();
 
 -- ---------------------------------------------------------------------
@@ -275,6 +287,34 @@ drop trigger if exists trg_audit_modules on core.modules;
 create trigger trg_audit_modules
   after insert or update or delete on core.modules
   for each row execute function core.write_audit_log();
+
+-- Apply a batch of permission-matrix edits atomically — the users module's
+-- explicit Save calls this once instead of sequencing REST writes, so a
+-- half-applied matrix is impossible (any failure rolls the whole batch back).
+-- SECURITY INVOKER on purpose: RLS still gates every row (users.manage), and
+-- the last-admin guard fires per statement. Adds run before removes so moving
+-- users.manage between roles never passes through a zero-holders state.
+create or replace function core.apply_role_permissions(p_adds jsonb default '[]', p_removes jsonb default '[]')
+returns void
+language plpgsql
+set search_path = core, public
+as $$
+begin
+  -- loud up-front check: without it, a caller whose users.manage was revoked
+  -- mid-session gets a silent success on a removes-only batch (RLS turns the
+  -- deletes into 0-row noops while inserts would at least raise 42501)
+  perform core.require('users.manage');
+  insert into core.role_permissions (role_id, permission_id)
+  select (e->>'role_id')::uuid, (e->>'permission_id')::uuid
+  from jsonb_array_elements(p_adds) e
+  on conflict do nothing;
+
+  delete from core.role_permissions rp
+  using jsonb_array_elements(p_removes) e
+  where rp.role_id       = (e->>'role_id')::uuid
+    and rp.permission_id = (e->>'permission_id')::uuid;
+end;
+$$;
 
 -- Assign a role on behalf of a verified actor — for service-role callers
 -- (the admin-invite Edge Function) that have no auth.uid() session of their

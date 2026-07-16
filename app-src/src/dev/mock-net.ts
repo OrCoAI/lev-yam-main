@@ -134,6 +134,9 @@ async function handleRest(table: string, req: Request, params: URLSearchParams):
     // the UI relies on server ordering here (role columns by sort; the matrix
     // emits a group header on every module change) — don't trust fixture order
     if (table === 'roles') out = [...out].sort((a, b) => Number(a.sort) - Number(b.sort))
+    // auth's `select('roles!inner(...)')` embed on user_roles: attach the role row
+    if (table === 'user_roles' && (params.get('select') ?? '').includes('roles'))
+      out = out.map((ur) => ({ ...ur, roles: db.roles.find((r) => r.id === ur.role_id) ?? null }))
     if (table === 'permissions')
       out = [...out].sort(
         (a, b) =>
@@ -214,6 +217,27 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise
   const rpc = path.match(/^\/rest\/v1\/rpc\/(.+)$/)
   if (rpc) {
     if (rpc[1] === 'my_permissions') return json(permissionsFixture)
+    if (rpc[1] === 'apply_role_permissions') {
+      const body = (await req.json()) as {
+        p_adds?: { role_id: string; permission_id: string }[]
+        p_removes?: { role_id: string; permission_id: string }[]
+      }
+      for (const a of body.p_adds ?? []) {
+        if (
+          !db.role_permissions.some(
+            (rp) => rp.role_id === a.role_id && rp.permission_id === a.permission_id,
+          )
+        )
+          db.role_permissions.push({ ...a })
+      }
+      db.role_permissions = db.role_permissions.filter(
+        (rp) =>
+          !(body.p_removes ?? []).some(
+            (x) => x.role_id === rp.role_id && x.permission_id === rp.permission_id,
+          ),
+      )
+      return json(null)
+    }
     if (rpc[1] === 'admin_list_users')
       return json(
         db.admin_users.map((u) => ({
