@@ -12,37 +12,24 @@ touching schema, permissions, or the events/finance spine graduates to a `docs/p
 
 ## Open feature ideas
 
-*All items below graduated 2026-07-15 into the **users & permissions suite** initiative —
-scope, decisions, and PR split tracked in
-[plans/users-permissions-suite.md](../plans/users-permissions-suite.md). They move to
-Done here as the initiative's PRs land.*
-
-- **Role badge in shell header** — show the signed-in user's role as a small chip next to
-  their name in the platform header (every module, phone-friendly), so it's always clear
-  e.g. "you are owner".
-- **Owner visibility: login activity** — show each user's last login / sign-in history in
-  the users list (read-only, for `users.view`/`users.manage` holders).
-- **Owner visibility: view-as (impersonation)** — owner can open the platform as another
-  user sees it (their launcher, modules, dashboards). Security-sensitive — needs audit
-  logging and a clear "viewing as X" banner; *initiative-sized, graduate to a
-  `docs/plans/` plan when picked up*.
-- **Generic permission-matrix editing UI** — edit the full role → module → action grid
-  from the UI (grant/revoke any permission on any role), instead of SQL-editor changes.
-  Needs RLS write-policies on `core.role_permissions`; *initiative-sized — schema/RLS
-  surface, graduate to a plan when picked up* (likely bundled with the two items below).
-- **Explicit save for permission edits** — matrix changes accumulate locally and apply
-  only on "Save" (batched), never live-on-click.
-- **Permissions viewable by user or by role** — two views of the same matrix: per-role
-  (editable) and per-user (read-only *effective* permissions derived from the user's
-  roles — decided 2026-07-15: no direct per-user overrides, editing stays via roles only,
-  keeping the role→module→action model intact).
-- **Custom roles** — create a new role (custom user type) with a hand-picked permission
-  set, alongside the built-in owner/manager/staff/viewer. `core.roles` is already a
-  table so this fits the model; needs insert RLS + last-admin-guard interaction review;
-  *part of the permission-matrix initiative above*.
+- (none logged)
 
 ## Done
 
+- **2026-07-16** — Users & permissions suite (full kickoff — plan + close-out:
+  [plans/users-permissions-suite.md](../plans/users-permissions-suite.md); PRs
+  #11/#12/#13): shell role badge; last sign-in in the users list;
+  permission-matrix explicit Save (atomic `core.apply_role_permissions` RPC,
+  dirty-cell highlighting, sticky save bar); per-module accordion at phone
+  width; by-user read-only effective-permissions lens; custom role
+  create/delete (cascade-aware last-admin guard on `core.roles` added — real
+  lockout hole found by the gate); view-as **permission preview** with
+  intersection semantics, banner + one-tap exit. *Note: the original idea line
+  said view-as "needs audit logging" — deliberately dropped (owner decision
+  2026-07-15): preview is a client-side permission-mirror swap, no server-side
+  privileged action occurs, so there is nothing to audit.* Also bundled the
+  Phase 1.5 H1/H4/H7-remainder hardening (RLS regression suite + drift check,
+  initplan sweep, hygiene batch).
 - **2026-07-15** — Users & Permissions hardening initiative (full kickoff, not this
   lighter log — see [plans/users-hardening.md](../plans/users-hardening.md)): invite-user
   flow (`admin-invite` Edge Function + UI action, no more Supabase-dashboard user
