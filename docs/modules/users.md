@@ -15,8 +15,26 @@ touching schema, permissions, or the events/finance spine graduates to a `docs/p
 - Bilingual HE/AR templates for the *other* auth emails (password recovery,
   magic link, email change) — still stock English; now editable since custom
   SMTP is configured (2026-07-16). Same pattern as the invite template.
+- Unify catalog-label i18n: `core.roles` now carries bilingual `label_he`/`label_ar`
+  (2026-07-20), but `core.modules.label` is single-language (shown via a
+  compile-time client dict) and `core.permissions.label` is raw English. Give
+  modules (and maybe permissions) the same `label_he`/`label_ar` DB shape so all
+  three sibling catalog tables share one mechanism. (Surfaced by the
+  users-ux-admin-caps `/simplify` altitude pass.)
 
 ## Done
+
+- **2026-07-20** — UX pass + admin capabilities (full kickoff — plan + close-out:
+  [plans/users-ux-admin-caps.md](../plans/users-ux-admin-caps.md)): users list →
+  per-user **accordion** (all per-user data + actions in one place; by-user
+  effective lens moved out of the matrix tab, which is now purely the
+  role×permission grid); compact action buttons; **owner-only password
+  set/override** (`users.password` perm + `admin-user-ops` `set_password` /
+  `send_reset`); **bilingual role rename** (added `core.roles.label_he/label_ar`,
+  **dropped the legacy `label` column**, `useRoleName` reads DB labels). Gate run
+  in full; schema + permission applied to prod, `admin-user-ops` redeployed,
+  `rls_matrix` green. Follow-up logged below. Per-user permission overrides
+  considered and dropped (stays role-based).
 
 - **2026-07-16** — Delete & deactivate/reactivate users, owner-only (full
   kickoff — plan + close-out:

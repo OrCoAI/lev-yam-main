@@ -63,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [permsRes, rolesRes] = await Promise.all([
       core().rpc('my_permissions'),
       // !inner: the FK guarantees a match, so `roles` comes back non-null
-      core().from('user_roles').select('roles!inner(key, label, sort)').eq('user_id', active.user.id),
+      core().from('user_roles').select('roles!inner(key, label_he, label_ar, sort)').eq('user_id', active.user.id),
     ])
     if (permsRes.error) {
       console.error('Failed to load permissions:', permsRes.error.message)

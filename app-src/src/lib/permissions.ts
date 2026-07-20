@@ -6,6 +6,7 @@ export const PERM = {
   usersView: 'users.view',
   usersManage: 'users.manage',
   usersDelete: 'users.delete',    // delete / deactivate accounts — owner-only seed
+  usersPassword: 'users.password', // set/reset another user's password — owner-only seed
   posView: 'pos.view',
   posOrder: 'pos.order',          // add/edit items, take payment, close — staff+
   posKitchen: 'pos.kitchen',      // kitchen queue, mark dishes done — staff+

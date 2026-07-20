@@ -1,10 +1,65 @@
 /* Users module styles — every class u- prefixed (MODULE-TEMPLATE §3: module CSS
    never collides with the shell sheet or other modules). */
 
-/* card per user, roles as toggle chips */
-.u-list { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); align-items: start; }
-.u-card { display: grid; gap: 12px; padding: 16px; }
+/* ---- users list: a clean single-column stack of accordion rows ---- */
+.u-list { display: grid; gap: 8px; max-width: 760px; }
+.u-card { padding: 0; overflow: visible; }
+
+/* summary row = the collapsed user: email + status + roles at a glance.
+   The whole row is the toggle (native <details>), so nothing inside is a
+   separate control. */
+.u-summary {
+  cursor: pointer; list-style: none; display: flex; align-items: center;
+  gap: 12px; flex-wrap: wrap; padding: 12px 16px; min-height: 52px;
+}
+.u-summary::-webkit-details-marker { display: none; }
+.u-summary::after {
+  content: '⌄'; margin-inline-start: auto; color: var(--muted);
+  font-size: 1.1rem; line-height: 1; transition: transform 0.15s;
+}
+.u-card[open] > .u-summary::after { transform: rotate(180deg); }
 .u-mail { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.u-summaryroles { display: flex; flex-wrap: wrap; gap: 6px; }
+.u-rolepill {
+  font-size: 0.75rem; font-weight: 700; padding: 2px 10px; border-radius: 999px;
+  background: var(--sand); color: var(--sea-dark);
+}
+
+/* expanded detail: sections stacked with a light divider from the summary */
+.u-detail { display: grid; gap: 14px; padding: 4px 16px 16px; border-top: 1px solid var(--line); }
+.u-detailsec { display: grid; gap: 8px; }
+.u-seclabel { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.03em; color: var(--muted); text-transform: uppercase; }
+.u-lastlogin { font-size: 0.82rem; padding-top: 10px; }
+
+/* compact action buttons — the "small, clean" controls (was full-size .btn-ghost).
+   Stays ≥44px touch target on phones via the breakpoint rule below. */
+.u-userops { display: flex; flex-wrap: wrap; gap: 8px; }
+.u-opbtn {
+  font: inherit; font-weight: 600; font-size: 0.85rem; min-height: 34px; padding: 5px 12px;
+  border: 1px solid var(--line); border-radius: 9px; background: #fff; color: var(--sea-dark);
+  cursor: pointer;
+}
+.u-opbtn:hover:not(:disabled) { border-color: var(--sea); }
+.u-danger { color: var(--danger); }
+.u-danger:hover:not(:disabled) { border-color: var(--danger); }
+
+.u-banned {
+  display: inline-block; margin-inline-start: 8px; padding: 2px 10px;
+  border-radius: 999px; font-size: 0.75rem; font-weight: 800; vertical-align: middle;
+  background: #fae8e6; color: var(--danger);
+}
+
+/* owner-only password panel (inside the actions section) */
+.u-pwtoggle { margin-top: 2px; }
+.u-pwpanel { display: grid; gap: 8px; margin-top: 8px; padding-top: 10px; border-top: 1px dashed var(--line); }
+.u-pwset { display: grid; gap: 10px; max-width: 340px; }
+.u-pwset label { display: grid; gap: 6px; font-size: 0.85rem; color: var(--muted); }
+.u-pwset input {
+  font: inherit; width: 100%; min-height: 42px; padding: 10px 12px;
+  border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink);
+}
+.u-pwset input:focus { outline: 2px solid var(--sea); border-color: var(--sea); }
+.u-pwmsg { margin: 0; }
 
 /* invite-user form (collapses behind .form-open-btn on phones, shared shell rule) */
 .u-invite { display: grid; gap: 14px; margin-bottom: 18px; max-width: 420px; }
@@ -14,9 +69,9 @@
   border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--ink);
 }
 .u-invite input:focus, .u-invite select:focus { outline: 2px solid var(--sea); border-color: var(--sea); }
-.u-actions { display: flex; gap: 10px; }
+.u-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 
-/* per-module group band — shared by the by-role grid rows and the by-user lens */
+/* per-module group band — shared by the by-role grid rows and the effective lens */
 .u-moduleband {
   background: var(--sand); color: var(--sea-dark);
   font-weight: 800; font-size: 0.8rem;
@@ -29,25 +84,7 @@
 .u-permkey { display: block; color: var(--sea-dark); }
 .u-permlabel { display: block; font-size: 0.8rem; color: var(--muted); }
 
-/* last sign-in line on the user card */
-.u-lastlogin { font-size: 0.82rem; }
-
-/* lifecycle actions (users.delete holders) + deactivated badge */
-.u-userops { display: flex; gap: 10px; }
-.u-userops .btn-ghost { min-height: 44px; }
-.u-danger { color: var(--danger); }
-.u-banned {
-  display: inline-block; margin-inline-start: 8px; padding: 2px 10px;
-  border-radius: 999px; font-size: 0.75rem; font-weight: 800; vertical-align: middle;
-  background: #fae8e6; color: var(--danger);
-}
-
-/* by-role / by-user view switch (shell .seg segmented control does the styling;
-   its default .on color is finance's danger red — neutralize it here) */
-.u-viewswitch { margin-bottom: 14px; }
-.u-viewswitch .seg-btn.on { color: var(--sea-dark); }
-
-/* pending-edit highlight + sticky save bar (thumb-reachable on phones) */
+/* pending-edit highlight (matrix tab) */
 .u-cell-dirty { background: var(--sand); }
 .u-chip-dirty { outline: 2px dashed var(--sea); outline-offset: 1px; }
 
@@ -65,20 +102,26 @@
   font-weight: 700;
 }
 
-/* roles manager: role chips with delete, inline add form (reuses .u-invite) */
+/* roles manager: role chips with rename + delete, inline add/rename form */
 .u-rolesmgr { margin-bottom: 14px; display: grid; gap: 12px; }
 .u-rolesmgr-locked { font-size: 0.82rem; margin: 0; }
-.u-rolechip { display: inline-flex; align-items: center; gap: 8px; }
-.u-roledel {
-  border: 0; background: none; color: inherit; font-size: 1.05rem; line-height: 1;
+.u-rolechip { display: inline-flex; align-items: center; gap: 6px; }
+.u-roleedit, .u-roledel {
+  border: 0; background: none; color: inherit; line-height: 1;
   cursor: pointer; padding: 2px 4px; min-width: 24px; min-height: 24px;
 }
+.u-roleedit { font-size: 0.85rem; }
+.u-roledel { font-size: 1.05rem; }
 
-/* by-user effective permissions (picker form reuses .u-invite) */
-.u-byuser { display: grid; gap: 10px; }
-.u-byuser .u-invite { margin-bottom: 0; }
-.u-viewas { justify-self: start; }
-.u-effectivenote { font-size: 0.85rem; }
+/* by-user effective permissions (now inside each user's accordion) */
+.u-effectivenote { font-size: 0.85rem; margin: 0; }
 .u-effmodule { padding: 6px 10px; border-radius: 8px; }
 .u-effperm { display: grid; gap: 2px; padding: 6px 4px; border-bottom: 1px solid var(--line); }
 .u-effvia { font-size: 0.78rem; }
+
+/* phone: keep every tap target ≥44px even as desktop density tightens */
+@media (max-width: 640px) {
+  .u-list { max-width: none; }
+  .u-opbtn { min-height: 44px; padding: 8px 14px; font-size: 0.9rem; }
+  .u-roleedit, .u-roledel { min-width: 32px; min-height: 32px; }
+}
