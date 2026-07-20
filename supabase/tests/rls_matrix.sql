@@ -281,7 +281,7 @@ select pg_temp.assert_rows('staff: sees both events (events.view)',
 select pg_temp.assert_denied('staff: cannot read v_sales_daily (grant revoked)',
   $q$ select 1 from pos.v_sales_daily limit 1 $q$);
 select pg_temp.assert_denied('staff: cannot write core catalog (roles)',
-  $q$ insert into core.roles (key, label) values ('rls-test-role', 'nope') $q$);
+  $q$ insert into core.roles (key, label_he) values ('rls-test-role', 'nope') $q$);
 select pg_temp.assert_raises('staff: cannot draw a quote number (quotes.manage check)',
   $q$ select quotes.next_quote_number() $q$, 'quotes.manage');
 select pg_temp.assert_rows('staff: quotes-docs storage objects unreachable (zero policies)',
@@ -311,9 +311,11 @@ select pg_temp.assert_raises('manager: SIGNED contract rejects DELETE (immutable
   $q$ delete from quotes.contracts
       where id = 'cccccccc-0000-0000-0000-000000000002' $q$, 'לא ניתן למחוק');
 select pg_temp.assert_denied('manager: cannot write core catalog (roles)',
-  $q$ insert into core.roles (key, label) values ('rls-test-role', 'nope') $q$);
+  $q$ insert into core.roles (key, label_he) values ('rls-test-role', 'nope') $q$);
 select pg_temp.assert_noop('manager: role_permissions delete is a silent noop',
   $q$ delete from core.role_permissions where true $q$);
+select pg_temp.assert_noop('manager: role rename is a silent noop (no users.manage)',
+  $q$ update core.roles set label_he = 'nope' where key = 'staff' $q$);
 -- removes-only payload on purpose: this is the path RLS would turn into a
 -- silent noop — core.require() must make it raise loudly instead
 select pg_temp.assert_raises('manager: atomic matrix-apply RPC raises (no users.manage, removes-only)',
@@ -330,7 +332,7 @@ select pg_temp.assert_rows('manager: admin_list_users() works via users.view',
 -- =====================================================================
 select pg_temp.become('aaaaaaaa-0000-0000-0000-000000000001');
 select pg_temp.assert_ok('owner: can create a custom role',
-  $q$ insert into core.roles (key, label, sort)
+  $q$ insert into core.roles (key, label_he, sort)
       values ('rls-test-role', 'rls test', 900) $q$);
 select pg_temp.assert_ok('owner: can grant a permission to it',
   $q$ insert into core.role_permissions (role_id, permission_id)
@@ -343,14 +345,22 @@ select pg_temp.assert_rows('owner: audit_log recorded the role create (with acto
         and row_data->>'key' = 'rls-test-role' $q$, 1);
 select pg_temp.assert_ok('owner: can delete the custom role (cascade)',
   $q$ delete from core.roles where key = 'rls-test-role' $q$);
+-- role RENAME (bilingual labels): a label-only UPDATE fires the roles guard
+-- trigger but leaves every users.manage grant intact, so it must PASS.
+select pg_temp.assert_ok('owner: can rename a role — bilingual label UPDATE passes the guard',
+  $q$ update core.roles set label_he = 'שם בדיקה', label_ar = 'اسم اختبار'
+      where key = 'manager' $q$);
+select pg_temp.assert_rows('owner: the rename persisted in both languages',
+  $q$ select 1 from core.roles where key = 'manager'
+        and label_he = 'שם בדיקה' and label_ar = 'اسم اختبار' $q$, 1);
 select pg_temp.assert_raises('owner: LAST-ADMIN guard blocks deleting every users.manage grant',
   $q$ delete from core.role_permissions rp using core.permissions p
       where rp.permission_id = p.id and p.key = 'users.manage' $q$, 'users.manage');
--- statement triggers do NOT fire on FK cascades — this asserts the direct
--- cascade-aware trigger on core.roles catches a role delete that would
--- otherwise silently strip the last users.manage grant
-select pg_temp.assert_raises('owner: deleting the owner ROLE trips the guard (cascade-aware)',
-  $q$ delete from core.roles where key = 'owner' $q$, 'users.manage');
+-- a role assigned to users can't be deleted out from under them: the BEFORE
+-- DELETE in-use guard fires first (the owner role is held by the test owner),
+-- ahead of any cascade or the cascade-aware last-admin guard behind it
+select pg_temp.assert_raises('owner: cannot delete a role assigned to users (in-use guard)',
+  $q$ delete from core.roles where key = 'owner' $q$, 'role_in_use');
 select pg_temp.assert_ok('owner: atomic matrix apply — grant via RPC',
   $q$ select core.apply_role_permissions(
         (select jsonb_build_array(jsonb_build_object('role_id', r.id, 'permission_id', p.id))
@@ -383,6 +393,14 @@ select pg_temp.assert_rows('users.delete is granted to owner ONLY',
       join core.roles r on r.id = rp.role_id
       join core.permissions p on p.id = rp.permission_id
       where p.key = 'users.delete' and r.key <> 'owner' $q$, 0);
+-- users.password (set/reset another user's password) — same owner-only posture
+select pg_temp.assert_rows('users.password permission is seeded',
+  $q$ select 1 from core.permissions where key = 'users.password' $q$, 1);
+select pg_temp.assert_rows('users.password is granted to owner ONLY',
+  $q$ select 1 from core.role_permissions rp
+      join core.roles r on r.id = rp.role_id
+      join core.permissions p on p.id = rp.permission_id
+      where p.key = 'users.password' and r.key <> 'owner' $q$, 0);
 
 -- the admin-user-ops helpers are service-side only — even an owner's client
 -- JWT must not be able to probe arbitrary users or forge audit rows

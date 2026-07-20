@@ -12,7 +12,11 @@ export interface ModuleRow {
 export interface RoleRow {
   id: string
   key: string
-  label: string
+  // bilingual display names — the single source of a role's label (HE default +
+  // Levantine AR). Nullable only in the transitional window before the migration
+  // backfill runs; useRoleName falls back to the key.
+  label_he: string | null
+  label_ar: string | null
   sort: number
 }
 

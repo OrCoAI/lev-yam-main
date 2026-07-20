@@ -167,6 +167,18 @@ item — the anon `pos_*` surface — is the POS cut-over task above, not repeat
       hole found and closed), view-as permission preview (intersection semantics).
       *(done 2026-07-16: PRs #11/#12/#13 gated + prod-applied, awaiting merge; out of
       scope by owner decision: H2, H6, per-user overrides, true impersonation)*
+- [x] **Users module — UX pass + admin capabilities** (kickoff 2026-07-20, owner-directed —
+      plan + close-out: [plans/users-ux-admin-caps.md](plans/users-ux-admin-caps.md)):
+      cleaner/denser users list with small buttons; per-user **accordion** consolidating all
+      per-user data + actions (by-user effective lens moved out of the matrix tab);
+      **owner-only admin password set/override** (direct-set or send reset link — new
+      `users.password` perm + `admin-user-ops` actions); **bilingual role rename** (adds HE/AR
+      labels to `core.roles`, **dropped the legacy `label` column** — paid off the tracked
+      bilingual-role-label debt). Per-user permission overrides considered and **dropped** —
+      stays role-based. *(done 2026-07-20: full gate run; schema + `users.password` applied to
+      prod + `admin-user-ops` redeployed, `rls_matrix` green, awaiting merge. Newly-tracked
+      follow-up: unify `core.modules`/`core.permissions` labels onto the same bilingual DB
+      shape.)*
 
 ## Phase 2 — What's happening: bookings & events
 

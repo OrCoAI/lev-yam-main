@@ -1,11 +1,14 @@
-// admin-user-ops — user lifecycle actions: delete / deactivate / reactivate.
-// Lev Yam platform (docs/plans/users-delete-deactivate.md).
+// admin-user-ops — user lifecycle + password actions.
+// Lev Yam platform (docs/plans/users-delete-deactivate.md, users-ux-admin-caps.md).
 //
-// One action per call: POST { action: 'delete' | 'deactivate' | 'reactivate',
-// user_id }. Caller must be signed in and hold 'users.delete' — re-checked
-// here server-side via core.has_permission_for(), never trusted from the client.
+// One action per call: POST { action, user_id, password? }. Caller must be
+// signed in; the required permission is re-checked here server-side via
+// core.has_permission_for(), never trusted from the client — and it differs by
+// action group:
+//   lifecycle (delete/deactivate/reactivate) → 'users.delete'   (owner-only seed)
+//   password  (set_password/send_reset)       → 'users.password' (owner-only seed)
 //
-// Semantics (owner-aligned 2026-07-16):
+// Semantics (owner-aligned 2026-07-16, extended 2026-07-20):
 //  - delete       hard-deletes the auth account. The DB blocks it for users
 //                 with work history (finance/quotes/events FKs have no
 //                 cascade) → mapped to 'has_records'; and the row-level
@@ -15,7 +18,13 @@
 //                 attributed. No table trigger can see a ban, so the lockout
 //                 check runs here via core.users_manage_survives_without().
 //  - reactivate   lifts the ban.
-// Acting on your own account is always refused ('self_forbidden').
+//  - set_password sets a new password directly (owner types it). No force-change
+//                 on next login (owner decision 2026-07-20). The value is never
+//                 logged or audited — only that a set happened.
+//  - send_reset   sends the standard recovery email (same flow as self-service
+//                 reset) so the user sets their own; the owner never sees it.
+// Lifecycle actions refuse acting on your own account ('self_forbidden');
+// password actions ALLOW self (resetting your own password is legitimate).
 //
 // Deploy with JWT verification OFF (does its own auth, same as admin-invite):
 //   supabase functions deploy admin-user-ops --no-verify-jwt
@@ -39,12 +48,25 @@ const admin = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   { auth: { persistSession: false } },
 )
+// anon client only for send_reset: resetPasswordForEmail is a GoTrue *public*
+// call that triggers the recovery email via the configured SMTP — the same path
+// the login screen's self-service reset uses. The service-role client can't send
+// it; generateLink would only return a link we'd have to mail ourselves.
+const anon = createClient(
+  Deno.env.get('SUPABASE_URL')!,
+  Deno.env.get('SUPABASE_ANON_KEY')!,
+  { auth: { persistSession: false } },
+)
 const db = admin.schema('core')
 
 // ~100 years — GoTrue has no "indefinite", this is the established stand-in.
 const BAN_FOREVER = '876000h'
 
-const ACTIONS = new Set(['delete', 'deactivate', 'reactivate'])
+const LIFECYCLE = new Set(['delete', 'deactivate', 'reactivate'])
+const PASSWORD_OPS = new Set(['set_password', 'send_reset'])
+const ACTIONS = new Set([...LIFECYCLE, ...PASSWORD_OPS])
+// GoTrue's own minimum is 6; we require a little more for an admin-set password.
+const MIN_PASSWORD_LEN = 8
 
 Deno.serve(async (req) => {
   const origin = req.headers.get('origin')
@@ -58,18 +80,31 @@ Deno.serve(async (req) => {
     const action: string = body.action
     const userId: string = body.user_id
     if (!ACTIONS.has(action) || !userId) return json({ error: 'missing_fields' }, 400, origin)
+    const isPassword = PASSWORD_OPS.has(action)
 
     const caller = await requireUser(admin, req, origin)
 
     // authorization verdict first — nothing about the target is revealed below
-    // to a caller who isn't allowed to act at all.
+    // to a caller who isn't allowed to act at all. Password ops need the distinct
+    // 'users.password' permission (both owner-only seeds, but kept separate so
+    // password rights don't ride on delete rights or vice-versa).
     const { data: allowed, error: permErr } = await db.rpc('has_permission_for', {
       target_user: caller.id,
-      perm_key: 'users.delete',
+      perm_key: isPassword ? 'users.password' : 'users.delete',
     })
     if (permErr || !allowed) return json({ error: 'forbidden' }, 403, origin)
 
-    if (userId === caller.id) return json({ error: 'self_forbidden' }, 400, origin)
+    // lifecycle ops refuse self; password ops allow it (own reset is legitimate).
+    if (!isPassword && userId === caller.id) return json({ error: 'self_forbidden' }, 400, origin)
+    // validate the new password before any lookup — cheap reject, no target probe.
+    // typeof guard so a non-string JSON value can't slip past the length floor.
+    const newPassword: unknown = body.password
+    if (
+      action === 'set_password' &&
+      (typeof newPassword !== 'string' || newPassword.length < MIN_PASSWORD_LEN)
+    ) {
+      return json({ error: 'weak_password' }, 400, origin)
+    }
 
     // target lookup and the lockout check both concern the target user and
     // neither depends on the other — run them together (same shape as
@@ -107,11 +142,25 @@ Deno.serve(async (req) => {
             : 'server_error'
         return json({ error: code, detail: msg }, code === 'server_error' ? 500 : 409, origin)
       }
-    } else {
+    } else if (action === 'deactivate' || action === 'reactivate') {
       const { error: banErr } = await admin.auth.admin.updateUserById(userId, {
         ban_duration: action === 'deactivate' ? BAN_FOREVER : 'none',
       })
       if (banErr) return json({ error: 'update_failed', detail: banErr.message }, 500, origin)
+    } else if (action === 'set_password') {
+      // validated a string ≥ MIN_PASSWORD_LEN above
+      const { error: pwErr } = await admin.auth.admin.updateUserById(userId, {
+        password: newPassword as string,
+      })
+      if (pwErr) return json({ error: 'update_failed', detail: pwErr.message }, 500, origin)
+    } else {
+      // send_reset — mail the standard recovery link to the target's own address.
+      const email = target.user.email
+      if (!email) return json({ error: 'no_email' }, 400, origin)
+      const { error: resetErr } = await anon.auth.resetPasswordForEmail(email, {
+        redirectTo: `${origin}/app/reset-password`,
+      })
+      if (resetErr) return json({ error: 'update_failed', detail: resetErr.message }, 500, origin)
     }
 
     // audit with the real actor — the GoTrue admin API acts on its own

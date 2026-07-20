@@ -21,11 +21,28 @@ create schema if not exists core;
 --  Catalog tables
 -- ---------------------------------------------------------------------
 create table if not exists core.roles (
-  id    uuid primary key default gen_random_uuid(),
-  key   text not null unique,          -- 'owner', 'manager', ...
-  label text not null,
-  sort  int  not null default 100
+  id       uuid primary key default gen_random_uuid(),
+  key      text not null unique,          -- 'owner', 'manager', ... (stable id, never renamed)
+  label_he text,                          -- bilingual display labels (HE default + Levantine AR),
+  label_ar text,                          --   the single source of a role's name (editable in the users module)
+  sort     int  not null default 100
 );
+-- existing installs: create-if-not-exists is a no-op above, so add the bilingual
+-- columns explicitly (idempotent). The legacy single-language `label` column is
+-- migrated into these and dropped in the seed section below.
+alter table core.roles add column if not exists label_he text;
+alter table core.roles add column if not exists label_ar text;
+-- ...and relax the legacy `label` NOT NULL first, so the label-less seed insert
+-- below succeeds on a pre-bilingual DB (ON CONFLICT DO NOTHING does not suppress
+-- a NOT NULL violation — it's checked before the conflict resolves). Guarded so
+-- it's a no-op once `label` has been dropped / on fresh installs.
+do $$
+begin
+  if exists (select 1 from information_schema.columns
+             where table_schema = 'core' and table_name = 'roles' and column_name = 'label') then
+    alter table core.roles alter column label drop not null;
+  end if;
+end $$;
 
 create table if not exists core.modules (
   id      uuid primary key default gen_random_uuid(),
@@ -241,6 +258,30 @@ drop trigger if exists trg_roles_guard_manage on core.roles;
 create trigger trg_roles_guard_manage
   after update or delete on core.roles
   for each statement execute function core.guard_users_manage_survives();
+
+-- A role still assigned to any user must not be deleted out from under them:
+-- the FK cascade would strip it from those users, leaving anyone whose only
+-- role it was with zero roles and zero permissions. Block the delete (BEFORE,
+-- so it fires ahead of the cascade) and make the owner un-assign it first.
+-- NOTE: this BEFORE guard now *shadows* the trg_roles_guard_manage DELETE
+-- branch above — any role whose deletion could strip the last users.manage
+-- holder must be assigned to someone, so this raises 'role_in_use' first. The
+-- last-admin trigger's role-DELETE path is therefore defense-in-depth only
+-- (it still guards role UPDATEs and permission/role_permission changes); if
+-- this in-use guard is ever relaxed, that path becomes load-bearing again.
+create or replace function core.guard_role_not_in_use()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if exists (select 1 from core.user_roles where role_id = old.id) then
+    raise exception 'role_in_use' using errcode = 'P0001';
+  end if;
+  return old;
+end $$;
+
+drop trigger if exists trg_roles_guard_in_use on core.roles;
+create trigger trg_roles_guard_in_use
+  before delete on core.roles
+  for each row execute function core.guard_role_not_in_use();
 
 -- ---------------------------------------------------------------------
 --  Audit log — who changed which role/permission grant, and when.
@@ -501,12 +542,39 @@ grant execute on function core.admin_audit_user_event(uuid, text, jsonb) to serv
 -- =====================================================================
 --  SEED DATA  (idempotent — safe to re-run)
 -- =====================================================================
-insert into core.roles (key, label, sort) values
-  ('owner',   'Owner',   10),
-  ('manager', 'Manager', 20),
-  ('staff',   'Staff',   30),
-  ('viewer',  'Viewer',  40)
+insert into core.roles (key, label_he, label_ar, sort) values
+  ('owner',   'בעלים', 'مالك',   10),
+  ('manager', 'ניהול', 'إدارة',  20),
+  ('staff',   'צוות',  'طاقم',   30),
+  ('viewer',  'צפייה', 'مشاهدة', 40)
 on conflict (key) do nothing;
+-- Backfill bilingual labels for built-ins ONLY where not already set — a re-run
+-- must never clobber an owner's rename (built-ins are renameable). New installs
+-- already have them from the insert above; this fills pre-bilingual prod rows.
+update core.roles r set label_he = d.he, label_ar = d.ar
+from (values
+  ('owner',   'בעלים', 'مالك'),
+  ('manager', 'ניהול', 'إدارة'),
+  ('staff',   'צוות',  'طاقم'),
+  ('viewer',  'צפייה', 'مشاهدة')
+) as d(key, he, ar)
+where r.key = d.key and (r.label_he is null or r.label_ar is null);
+-- Retire the legacy single-language `label` column: bilingual label_he/label_ar
+-- are now the one source of a role's name. Guarded so it's a no-op on fresh
+-- installs (no `label` column) and idempotent on re-run (already dropped).
+-- Custom roles created before the bilingual columns land carry their old name
+-- forward via coalesce. plpgsql defers planning the guarded statements, so the
+-- reference to `label` never errors when the column is already gone.
+do $$
+begin
+  if exists (select 1 from information_schema.columns
+             where table_schema = 'core' and table_name = 'roles' and column_name = 'label') then
+    update core.roles set label_he = coalesce(label_he, label),
+                          label_ar = coalesce(label_ar, label)
+      where label_he is null or label_ar is null;
+    alter table core.roles drop column label;
+  end if;
+end $$;
 
 -- Each module seeds its own core.modules row, permission keys, and role grants
 -- in its own schema file (20_finance / 30_quotes / 40_events / 42_pos_platform) —
@@ -521,7 +589,8 @@ on conflict (key) do nothing;
 insert into core.permissions (key, module, action, label) values
   ('users.view',        'users', 'view',        'View users & roles'),
   ('users.manage',      'users', 'manage',      'Manage users, roles & permissions'),
-  ('users.delete',      'users', 'delete',      'Delete or deactivate users')
+  ('users.delete',      'users', 'delete',      'Delete or deactivate users'),
+  ('users.password',    'users', 'password',    'Set or reset user passwords')
 on conflict (key) do nothing;
 
 -- role -> permission grants

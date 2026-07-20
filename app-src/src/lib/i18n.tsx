@@ -45,10 +45,8 @@ const dict = {
   'layout.signOut': { he: 'יציאה', ar: 'خروج' },
   'preview.viewingAs': { he: 'תצוגה כמשתמש:', ar: 'عرض كمستخدم:' },
   'preview.exit': { he: 'חזרה לתצוגה שלי', ar: 'العودة لعرضي' },
-  'role.owner': { he: 'בעלים', ar: 'مالك' },
-  'role.manager': { he: 'ניהול', ar: 'إدارة' },
-  'role.staff': { he: 'צוות', ar: 'طاقم' },
-  'role.viewer': { he: 'צפייה', ar: 'مشاهدة' },
+  // role display names now live in core.roles.label_he/label_ar (the single
+  // source, editable per role) — see useRoleName; no compile-time dict entries.
   'errorBoundary.title': { he: 'משהו השתבש', ar: 'حدث خطأ ما' },
   'errorBoundary.body': { he: 'המודול נתקל בשגיאה. אפשר לרענן את הדף או לחזור למסך הראשי.', ar: 'واجهت الوحدة خطأ. يمكن تحديث الصفحة أو العودة إلى الشاشة الرئيسية.' },
   'errorBoundary.reload': { he: 'רענון', ar: 'تحديث' },
@@ -131,19 +129,18 @@ export function makeDictHook<T>(he: T, ar: T): () => T {
 }
 
 /** Display name for a role, anywhere a role is shown (header badge, users-tab
- *  chips, matrix headers, by-user lens…): built-ins translate through the
- *  shell dict; custom roles show their DB label (single-language until
- *  bilingual `core.roles` labels land — same tracked debt as module labels).
- *  Stable per language, so it's safe in dependency arrays. */
+ *  chips, matrix headers, per-user lens…). The role's own bilingual DB label
+ *  (`label_he`/`label_ar`) is the single source of truth for every role —
+ *  built-in and custom alike — so an owner rename shows immediately in both
+ *  languages; the key is the last-resort fallback. Stable per language, so it's
+ *  safe in dependency arrays. */
 // eslint-disable-next-line react-refresh/only-export-components
-export function useRoleName(): (role: { key: string; label: string }) => string {
+export function useRoleName(): (
+  role: { key: string; label_he?: string | null; label_ar?: string | null },
+) => string {
   const { lang } = useI18n()
   return useMemo(
-    () => (role) => {
-      // custom roles have no dict entry — the lookup is undefined at runtime
-      const names = dict[`role.${role.key}` as TKey] as { he: string; ar: string } | undefined
-      return names ? names[lang] : role.label
-    },
+    () => (role) => (lang === 'he' ? role.label_he : role.label_ar) || role.key,
     [lang],
   )
 }
