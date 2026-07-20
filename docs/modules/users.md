@@ -10,6 +10,31 @@ touching schema, permissions, or the events/finance spine graduates to a `docs/p
 
 - (none logged)
 
+## Done (cont.)
+
+- **2026-07-20** — UX iteration + role-delete guard (same PR #25, second commit;
+  gate re-run in full on the combined diff):
+  - **Refined "calm" redesign** of the whole module — one shared container width
+    so every edge aligns (tabs, invite, rows, accordions, save bar); avatar
+    initials + quiet status line on user rows; divided detail sections with an
+    orange accent tick; colour-coded action pills (password = orange, delete =
+    red, pushed to the row end); brand **orange for create actions** (invite in
+    the tab bar, "+ add role" dashed). Invite button moved up into the tab bar.
+  - Permissions matrix **folds per-module at all widths** (desktop grid dropped);
+    accordions **closed by default**.
+  - Users-tab detail now shows a **concise module-access summary** (tags with
+    per-module counts) instead of the full permission list.
+  - New **By-role tab**: pick a role → editable per-module permission accordions
+    (granted/total counts) **plus a searchable "users with this role"
+    accordion**. Shares the matrix's atomic edit/Save engine.
+  - **Role-delete integrity guard** (`core.guard_role_not_in_use`, BEFORE DELETE
+    on `core.roles`): a role still assigned to any user can't be deleted
+    (`role_in_use`) — closes the "delete role → users left with no
+    role/permissions" hole. Applied to prod; `rls_matrix` extended + green.
+    *Prod note:* the `staff` role had been deleted during live testing (removing
+    it from 2 real users); recovered via the management API (defaults re-seeded,
+    both users re-assigned).
+
 ## Open feature ideas
 
 - Bilingual HE/AR templates for the *other* auth emails (password recovery,

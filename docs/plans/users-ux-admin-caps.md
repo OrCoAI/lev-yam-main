@@ -193,3 +193,33 @@ accordion). No drift.
 **Not done autonomously:** interactive browser click-through of the four flows — no browser
 tool in the session + it needs a login. Backend verified end-to-end against prod; app boots
 clean; UI confirmation is on merge.
+
+## Close-out addendum (2026-07-20, second commit)
+
+Owner-directed UX iteration + a data-integrity fix, landed on the same branch/PR
+after the initial close-out; the full gate was re-run on the combined diff.
+
+- **Module-wide "calm" redesign**: single container width (`--u-w` on `.u-module`)
+  so tabs/invite/rows/accordions/save-bar share edges; avatar initials + status
+  line; divided detail sections with an orange accent; colour-coded action pills;
+  brand **orange for create actions**; invite moved into the tab bar.
+- **Permissions matrix folds per-module at all widths** (desktop grid removed);
+  accordions closed by default. Users-tab detail replaced the full permission
+  list with a **concise module-access summary** (per-module counts).
+- **By-role tab**: editable per-module permission accordions (granted/total) +
+  a **searchable "users with this role" accordion**; shares the matrix engine.
+- **Role-delete integrity guard** (`core.guard_role_not_in_use`, BEFORE DELETE on
+  `core.roles` → `role_in_use`): a role assigned to any user can't be deleted,
+  closing the orphaned-user hole the owner flagged. It shadows the last-admin
+  guard's role-DELETE branch (now defense-in-depth — documented in `00_core.sql`).
+  Applied to prod; `rls_matrix` assertion repointed to `role_in_use`, run green.
+
+**Prod incident + recovery:** during live testing (no staging — owner accepted
+this), the `staff` role was deleted, cascading its permissions and unassigning 2
+real users (mssmy29@, wedad.jorban11@). Recovered via the management API: staff's
+default grants re-seeded (POS + events) and both users re-assigned; `rls_matrix`
+green afterward. The new guard prevents a recurrence.
+
+**Alignment verdict (still holds):** consistent with `docs/VISION.md` and
+`docs/ARCHITECTURE.md` — permissions DB-first and server-enforced, schema is
+source of truth, bilingual + mobile-first preserved, integrity guard added.

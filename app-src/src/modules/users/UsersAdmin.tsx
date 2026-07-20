@@ -1,15 +1,14 @@
-import { Fragment, useEffect, useMemo, useState, useCallback, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, useCallback, type FormEvent, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { core, invokeFunction } from '../../lib/supabase'
 import { useAuth } from '../../lib/auth'
 import { useCan, PERM } from '../../lib/permissions'
 import { useI18n, useRoleName } from '../../lib/i18n'
-import { useMediaQuery, PHONE_MQ } from '../../lib/useMediaQuery'
 import type { AdminUser, RoleRow, PermissionRow, RolePermissionRow } from '../../types'
 import { useUT } from './i18n'
 import './users.css'
 
-type Tab = 'users' | 'matrix'
+type Tab = 'users' | 'matrix' | 'byrole'
 type UT = ReturnType<typeof useUT>
 
 function ErrorNotice({ error }: { error: string }) {
@@ -64,9 +63,11 @@ export default function UsersAdmin() {
   const ut = useUT()
   const canManage = useCan(PERM.usersManage)
   const [tab, setTab] = useState<Tab>('users')
+  // invite lives at this level so its trigger can sit up in the tab bar
+  const [inviteOpen, setInviteOpen] = useState(false)
 
   return (
-    <section>
+    <section className="u-module">
       <h1 className="page-title">{ut.title}</h1>
       {!canManage && (
         <p className="notice">
@@ -74,16 +75,32 @@ export default function UsersAdmin() {
         </p>
       )}
 
-      <div className="tabs">
-        <button className={tab === 'users' ? 'tab on' : 'tab'} onClick={() => setTab('users')}>
-          {ut.tabUsers}
-        </button>
-        <button className={tab === 'matrix' ? 'tab on' : 'tab'} onClick={() => setTab('matrix')}>
-          {ut.tabMatrix}
-        </button>
+      <div className="u-tabbar">
+        <div className="tabs">
+          <button className={tab === 'users' ? 'tab on' : 'tab'} onClick={() => setTab('users')}>
+            {ut.tabUsers}
+          </button>
+          <button className={tab === 'matrix' ? 'tab on' : 'tab'} onClick={() => setTab('matrix')}>
+            {ut.tabMatrix}
+          </button>
+          <button className={tab === 'byrole' ? 'tab on' : 'tab'} onClick={() => setTab('byrole')}>
+            {ut.tabByRole}
+          </button>
+        </div>
+        {tab === 'users' && canManage && !inviteOpen && (
+          <button className="btn-primary u-invite-btn" onClick={() => setInviteOpen(true)}>
+            {ut.inviteUser}
+          </button>
+        )}
       </div>
 
-      {tab === 'users' ? <UsersTab canManage={canManage} /> : <MatrixTab canManage={canManage} />}
+      {tab === 'users' ? (
+        <UsersTab canManage={canManage} inviteOpen={inviteOpen} setInviteOpen={setInviteOpen} />
+      ) : tab === 'matrix' ? (
+        <MatrixTab canManage={canManage} />
+      ) : (
+        <ByRoleTab canManage={canManage} />
+      )}
     </section>
   )
 }
@@ -105,12 +122,29 @@ function LastLogin({ at }: { at: string | null }) {
   )
 }
 
+/** Up-to-two-letter avatar initials from the email's local part (Latin, so safe
+ *  to uppercase). Falls back to the user id's first chars for email-less rows. */
+function initials(email: string | null, fallback: string): string {
+  const local = (email ?? fallback).split('@')[0]
+  const parts = local.split(/[.\-_]+/).filter(Boolean)
+  const chars = parts.length >= 2 ? parts[0][0] + parts[1][0] : local.slice(0, 2)
+  return chars.toUpperCase()
+}
+
 /* ------------------------------------------------------------------ Users tab */
 
 /** A GoTrue ban is "deactivated" for us — any banned_until still in the future. */
 const isDeactivated = (u: AdminUser) => !!u.banned_until && new Date(u.banned_until) > new Date()
 
-function UsersTab({ canManage }: { canManage: boolean }) {
+function UsersTab({
+  canManage,
+  inviteOpen,
+  setInviteOpen,
+}: {
+  canManage: boolean
+  inviteOpen: boolean
+  setInviteOpen: (open: boolean) => void
+}) {
   const ut = useUT()
   const { user: me, startPreview, refreshPermissions } = useAuth()
   // owner-only lifecycle + password actions; UI mirror of the DB seeds —
@@ -130,7 +164,6 @@ function UsersTab({ canManage }: { canManage: boolean }) {
   const [actionError, setActionError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState<string | null>(null)
-  const [inviteOpen, setInviteOpen] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -199,11 +232,6 @@ function UsersTab({ canManage }: { canManage: boolean }) {
 
   return (
     <div>
-      {canManage && !inviteOpen && (
-        <button className="btn-primary form-open-btn" onClick={() => setInviteOpen(true)}>
-          {ut.inviteUser}
-        </button>
-      )}
       {canManage && inviteOpen && (
         <InviteForm
           roles={roles}
@@ -282,31 +310,41 @@ function UserRow({
   const roleName = useRoleName()
   const deactivated = isDeactivated(u)
   const assignedRoles = roles.filter((r) => u.roles.includes(r.key))
+  const [pwOpen, setPwOpen] = useState(false)
 
-  // permission_id -> names of the roles granting it (for the "via" line + view-as)
-  const { visible, via } = useMemo(() => {
-    const viaMap = new Map<string, string[]>()
+  // effective access derived from the user's roles ∩ role grants. `permKeys`
+  // feeds view-as; `access` is the concise per-module summary shown on the card
+  // (the full permission list lives in the permissions tabs, not here).
+  const { permKeys, access } = useMemo(() => {
+    const grantedIds = new Set<string>()
     for (const r of assignedRoles) {
       const grantSet = grantsByRole.get(r.id)
-      if (!grantSet) continue
-      const name = roleName(r) // once per role, not once per granted permission
-      for (const p of perms) {
-        if (!grantSet.has(p.id)) continue
-        const list = viaMap.get(p.id)
-        if (list) list.push(name)
-        else viaMap.set(p.id, [name])
-      }
+      if (grantSet) for (const id of grantSet) grantedIds.add(id)
     }
-    return { visible: perms.filter((p) => viaMap.has(p.id)), via: viaMap }
+    const granted = perms.filter((p) => grantedIds.has(p.id))
+    const counts = new Map<string, number>()
+    for (const p of granted) counts.set(p.module, (counts.get(p.module) ?? 0) + 1)
+    return {
+      permKeys: granted.map((p) => p.key),
+      access: [...counts.entries()].map(([module, count]) => ({ module, count })),
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [u.roles, roles, perms, grantsByRole, roleName])
+  }, [u.roles, roles, perms, grantsByRole])
 
   return (
-    <details className="card u-card">
+    <details className={deactivated ? 'card u-card u-card-off' : 'card u-card'}>
       <summary className="u-summary">
-        <span className="u-mail" title={u.email ?? u.user_id}>
-          {u.email ?? u.user_id}
-          {deactivated && <span className="u-banned">{ut.userDeactivated}</span>}
+        <span className={deactivated ? 'u-avatar u-avatar-off' : 'u-avatar'} aria-hidden="true">
+          {initials(u.email, u.user_id)}
+        </span>
+        <span className="u-idcol">
+          <span className="u-mail" title={u.email ?? u.user_id}>
+            {u.email ?? u.user_id}
+          </span>
+          <span className="u-substatus">
+            <span className={deactivated ? 'u-dot u-dot-off' : 'u-dot'} aria-hidden="true" />
+            {deactivated ? ut.userDeactivated : ut.statusActive}
+          </span>
         </span>
         <span className="u-summaryroles">
           {assignedRoles.length > 0 ? (
@@ -322,8 +360,6 @@ function UserRow({
       </summary>
 
       <div className="u-detail">
-        <LastLogin at={u.last_sign_in_at} />
-
         {/* roles — editable toggle chips */}
         <div className="u-detailsec">
           <div className="u-seclabel">{ut.secRoles}</div>
@@ -346,32 +382,26 @@ function UserRow({
           </div>
         </div>
 
-        {/* effective permissions — read-only lens (moved out of the matrix tab) */}
+        {/* module access — a concise summary of what the user can reach; the
+            full permission list lives in the Roles/By-role tabs, not here */}
         <div className="u-detailsec">
-          <div className="u-seclabel">{ut.secPerms}</div>
-          <p className="muted u-effectivenote">{ut.effectiveNote}</p>
-          {visible.length === 0 ? (
-            <div className="notice">{ut.noPerms}</div>
+          <div className="u-seclabel">{ut.secAccess}</div>
+          {access.length === 0 ? (
+            <p className="muted u-emptyline">{ut.noPerms}</p>
           ) : (
-            visible.map((p, i) => (
-              <Fragment key={p.id}>
-                {(i === 0 || visible[i - 1].module !== p.module) && (
-                  <div className="u-moduleband u-effmodule">{ut.moduleNames[p.module] ?? p.module}</div>
-                )}
-                <div className="u-effperm">
-                  <code className="u-permkey">{p.key}</code>
-                  <span className="u-permlabel">{p.label}</span>
-                  <span className="u-effvia muted">
-                    {ut.viaRole}: {via.get(p.id)!.join(', ')}
-                  </span>
-                </div>
-              </Fragment>
-            ))
+            <div className="u-access">
+              {access.map(({ module, count }) => (
+                <span key={module} className="u-accesstag">
+                  {ut.moduleNames[module] ?? module}
+                  <span className="u-accesscount">{count}</span>
+                </span>
+              ))}
+            </div>
           )}
         </div>
 
-        {/* actions — view-as (manage), password (owner), lifecycle (owner).
-            Lifecycle never targets your own account; password may. */}
+        {/* actions — view-as (manage), password (owner, orange accent),
+            lifecycle (owner). Lifecycle never targets your own account. */}
         {(canManage || canDelete || canPassword) && (
           <div className="u-detailsec">
             <div className="u-seclabel">{ut.secActions}</div>
@@ -380,9 +410,19 @@ function UserRow({
                 <button
                   type="button"
                   className="u-opbtn"
-                  onClick={() => onViewAs(u.email ?? u.user_id, visible.map((p) => p.key))}
+                  onClick={() => onViewAs(u.email ?? u.user_id, permKeys)}
                 >
                   {ut.viewAs}
+                </button>
+              )}
+              {canPassword && (
+                <button
+                  type="button"
+                  className={pwOpen ? 'u-opbtn u-op-accent u-op-on' : 'u-opbtn u-op-accent'}
+                  aria-expanded={pwOpen}
+                  onClick={() => setPwOpen((o) => !o)}
+                >
+                  {ut.setPassword}
                 </button>
               )}
               {canDelete && !isSelf && (
@@ -398,7 +438,7 @@ function UserRow({
               {canDelete && !isSelf && (
                 <button
                   type="button"
-                  className="u-opbtn u-danger"
+                  className="u-opbtn u-danger u-op-end"
                   disabled={busy !== null}
                   onClick={() => onUserOp('delete', u)}
                 >
@@ -406,20 +446,25 @@ function UserRow({
                 </button>
               )}
             </div>
-            {canPassword && <PasswordPanel user={u} />}
+            {canPassword && pwOpen && <PasswordForm user={u} onDone={() => setPwOpen(false)} />}
           </div>
         )}
+
+        {/* quiet footer meta */}
+        <div className="u-detailfoot">
+          <LastLogin at={u.last_sign_in_at} />
+        </div>
       </div>
     </details>
   )
 }
 
 /** Owner-only: set a user's password directly, or send them a reset link.
- *  Both actions re-check users.password server-side in admin-user-ops; the
- *  typed password never leaves this component except in the one privileged call. */
-function PasswordPanel({ user }: { user: AdminUser }) {
+ *  Rendered below the actions row when its toggle (in UserRow) is open. Both
+ *  actions re-check users.password server-side in admin-user-ops; the typed
+ *  password never leaves this component except in the one privileged call. */
+function PasswordForm({ user, onDone }: { user: AdminUser; onDone: () => void }) {
   const ut = useUT()
-  const [open, setOpen] = useState(false)
   const [pw, setPw] = useState('')
   const [busy, setBusy] = useState<'set' | 'reset' | null>(null)
   // one banner: success xor error — the two are mutually exclusive
@@ -457,14 +502,6 @@ function PasswordPanel({ user }: { user: AdminUser }) {
     }
   }
 
-  if (!open) {
-    return (
-      <button type="button" className="u-opbtn u-pwtoggle" onClick={() => setOpen(true)}>
-        {ut.setPassword}
-      </button>
-    )
-  }
-
   return (
     <div className="u-pwpanel">
       <form className="u-pwset" onSubmit={setPassword}>
@@ -480,22 +517,13 @@ function PasswordPanel({ user }: { user: AdminUser }) {
           />
         </label>
         <div className="u-actions">
-          <button type="submit" className="u-opbtn" disabled={busy !== null}>
+          <button type="submit" className="btn-primary btn-sm u-btn-accent" disabled={busy !== null}>
             {busy === 'set' ? ut.pwApplying : ut.pwApply}
           </button>
           <button type="button" className="u-opbtn" disabled={busy !== null} onClick={sendReset}>
             {busy === 'reset' ? ut.pwSending : ut.pwSendResetOption}
           </button>
-          <button
-            type="button"
-            className="u-opbtn"
-            disabled={busy !== null}
-            onClick={() => {
-              setOpen(false)
-              setPw('')
-              setResult(null)
-            }}
-          >
+          <button type="button" className="u-opbtn" disabled={busy !== null} onClick={onDone}>
             {ut.inviteCancel}
           </button>
         </div>
@@ -576,15 +604,16 @@ function InviteForm({
 
 /* ------------------------------------------------- Roles × Permissions matrix */
 
-function MatrixTab({ canManage }: { canManage: boolean }) {
-  const ut = useUT()
-  const roleName = useRoleName()
+/** Shared editing engine for both permission views (all-roles matrix + by-role):
+ *  loads the catalog, tracks saved-vs-pending grants, and commits the whole batch
+ *  atomically via core.apply_role_permissions. Grants are keyed `${roleId}:${permId}`.
+ *  Each view mounts its own instance (fresh load); switching top-level tabs discards
+ *  in-flight edits, same as before. */
+function usePermissionMatrix() {
   const { refreshPermissions } = useAuth()
-  const isPhone = useMediaQuery(PHONE_MQ)
   const [roles, setRoles] = useState<RoleRow[]>([])
   const [perms, setPerms] = useState<PermissionRow[]>([])
-  // saved DB state vs. local edits — nothing is written until Save
-  const [baseline, setBaseline] = useState<Set<string>>(new Set()) // `${role_id}:${permission_id}`
+  const [baseline, setBaseline] = useState<Set<string>>(new Set())
   const [pending, setPending] = useState<Set<string>>(new Set())
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -610,21 +639,19 @@ function MatrixTab({ canManage }: { canManage: boolean }) {
     void load()
   }, [load])
 
-  const toPair = (k: string) => {
-    const [role_id, permission_id] = k.split(':')
-    return { role_id, permission_id }
-  }
-  const { adds, removes } = useMemo(
-    () => ({
+  const { adds, removes } = useMemo(() => {
+    const toPair = (k: string) => {
+      const [role_id, permission_id] = k.split(':')
+      return { role_id, permission_id }
+    }
+    return {
       adds: [...pending].filter((k) => !baseline.has(k)).map(toPair),
       removes: [...baseline].filter((k) => !pending.has(k)).map(toPair),
-    }),
-    [pending, baseline],
-  )
+    }
+  }, [pending, baseline])
   const dirtyCount = adds.length + removes.length
 
-  // perms arrive module-ordered — one grouping drives the desktop grid's header
-  // rows AND the phone accordion sections
+  // perms arrive module-ordered — one grouping drives every accordion
   const moduleGroups = useMemo(() => {
     const groups: { module: string; perms: PermissionRow[] }[] = []
     for (const p of perms) {
@@ -635,8 +662,11 @@ function MatrixTab({ canManage }: { canManage: boolean }) {
     return groups
   }, [perms])
 
-  function toggle(role: RoleRow, perm: PermissionRow) {
-    const key = `${role.id}:${perm.id}`
+  const has = (roleId: string, permId: string) => pending.has(`${roleId}:${permId}`)
+  const isChanged = (roleId: string, permId: string) =>
+    pending.has(`${roleId}:${permId}`) !== baseline.has(`${roleId}:${permId}`)
+  const toggle = (roleId: string, permId: string) => {
+    const key = `${roleId}:${permId}`
     setPending((prev) => {
       const next = new Set(prev)
       if (next.has(key)) next.delete(key)
@@ -644,20 +674,20 @@ function MatrixTab({ canManage }: { canManage: boolean }) {
       return next
     })
   }
+  const discard = () => {
+    setPending(new Set(baseline))
+    setError(null)
+  }
 
   async function save() {
     setSaving(true)
     setError(null)
-    // one atomic RPC (core.apply_role_permissions): the whole batch commits or
-    // rolls back together — a half-applied matrix is impossible, and the DB's
-    // last-admin guard sees the true net state (adds run before removes there)
-    const res = await core().rpc('apply_role_permissions', {
-      p_adds: adds,
-      p_removes: removes,
-    })
+    // one atomic RPC: the whole batch commits or rolls back together — a
+    // half-applied matrix is impossible, and the DB's last-admin guard sees the
+    // true net state (adds run before removes there)
+    const res = await core().rpc('apply_role_permissions', { p_adds: adds, p_removes: removes })
     if (res.error) {
-      // nothing persisted (atomic) — keep the pending edits so a retry is one tap
-      setError(res.error.message)
+      setError(res.error.message) // nothing persisted (atomic) — keep edits for a one-tap retry
       setSaving(false)
       return
     }
@@ -666,136 +696,285 @@ function MatrixTab({ canManage }: { canManage: boolean }) {
     setSaving(false)
   }
 
-  // full-screen loading only before the first paint — a reload after Save keeps
-  // the matrix mounted (otherwise every save collapses the phone accordions
-  // and throws the scroll position away)
-  if (loading && roles.length === 0) return <div className="muted">{ut.loadingPermissions}</div>
-  if (error && roles.length === 0) return <ErrorNotice error={error} />
+  return {
+    roles, perms, moduleGroups, loading, error, saving, dirtyCount,
+    has, isChanged, toggle, discard, save, load,
+  }
+}
+
+/** Per-module accordion shell shared by both permission views. Each module folds
+ *  by itself at every width; `renderControls` fills each permission row's control
+ *  area (role chips for the matrix, a single toggle for the by-role view).
+ *  `renderBadge` sets the count shown on the module header — total permissions
+ *  for the matrix, or granted/total for the by-role view. */
+function PermAccordion({
+  groups,
+  renderControls,
+  renderBadge,
+}: {
+  groups: { module: string; perms: PermissionRow[] }[]
+  renderControls: (p: PermissionRow) => ReactNode
+  renderBadge?: (g: { module: string; perms: PermissionRow[] }) => ReactNode
+}) {
+  const ut = useUT()
+  return (
+    <div className="u-matrix-acc">
+      {groups.map((g) => (
+        <details key={g.module} className="card u-permacc">
+          <summary className="u-permacc-sum">
+            <span className="u-permacc-title">{ut.moduleNames[g.module] ?? g.module}</span>
+            <span className="badge">{renderBadge ? renderBadge(g) : g.perms.length}</span>
+          </summary>
+          <div className="u-permacc-body">
+            {g.perms.map((p) => (
+              <div key={p.id} className="u-accperm">
+                <div className="u-accperm-info">
+                  <code className="u-permkey">{p.key}</code>
+                  <span className="u-permlabel">{p.label}</span>
+                </div>
+                <div className="u-accperm-ctrl">{renderControls(p)}</div>
+              </div>
+            ))}
+          </div>
+        </details>
+      ))}
+    </div>
+  )
+}
+
+/** Sticky Save/Discard bar — shared, thumb-reachable, shown only when dirty. */
+function SaveBar({
+  dirtyCount,
+  saving,
+  onSave,
+  onDiscard,
+}: {
+  dirtyCount: number
+  saving: boolean
+  onSave: () => void
+  onDiscard: () => void
+}) {
+  const ut = useUT()
+  if (dirtyCount === 0) return null
+  return (
+    <div className="u-savebar card">
+      <span>
+        {ut.pendingChanges} {dirtyCount}
+      </span>
+      <div className="u-actions">
+        <button type="button" className="btn-primary" disabled={saving} onClick={onSave}>
+          {saving ? ut.saving : ut.save}
+        </button>
+        <button type="button" className="btn-ghost" disabled={saving} onClick={onDiscard}>
+          {ut.discard}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+/** All-roles matrix: every module folds by itself (at all widths); each permission
+ *  row carries a toggle chip per role. */
+function MatrixTab({ canManage }: { canManage: boolean }) {
+  const ut = useUT()
+  const roleName = useRoleName()
+  const m = usePermissionMatrix()
+
+  if (m.loading && m.roles.length === 0) return <div className="muted">{ut.loadingPermissions}</div>
+  if (m.error && m.roles.length === 0) return <ErrorNotice error={m.error} />
 
   return (
     <div>
-      {error && <ErrorNotice error={error} />}
+      {m.error && <ErrorNotice error={m.error} />}
+      {canManage && <RolesManager roles={m.roles} onChanged={m.load} locked={m.dirtyCount > 0} />}
 
-      {canManage && <RolesManager roles={roles} onChanged={load} locked={dirtyCount > 0} />}
-
-      {isPhone ? (
-        /* phone: per-module accordion, roles as toggle chips (plan §UI —
-           a wide checkbox grid doesn't survive phone width; chips are the
-           same touch pattern the users tab already established) */
-        <div className="u-matrix-phone">
-          {moduleGroups.map((g) => (
-            <details key={g.module} className="card u-permacc">
-              <summary>
-                {ut.moduleNames[g.module] ?? g.module}
-                <span className="badge">{g.perms.length}</span>
-              </summary>
-              {g.perms.map((p) => (
-                <div key={p.id} className="u-accperm">
-                  <div>
-                    <code className="u-permkey">{p.key}</code>
-                    <span className="u-permlabel">{p.label}</span>
-                  </div>
-                  <div className="chips">
-                    {roles.map((r) => {
-                      const key = `${r.id}:${p.id}`
-                      const checked = pending.has(key)
-                      const changed = checked !== baseline.has(key)
-                      return (
-                        <button
-                          key={r.id}
-                          type="button"
-                          className={
-                            (checked ? 'chip on' : 'chip') + (changed ? ' u-chip-dirty' : '')
-                          }
-                          aria-pressed={checked}
-                          disabled={!canManage || saving}
-                          onClick={() => toggle(r, p)}
-                        >
-                          {roleName(r)}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              ))}
-            </details>
-          ))}
-        </div>
-      ) : (
-        <div className="card">
-          <table className="grid grid-sticky-first">
-            <thead>
-              <tr>
-                <th>{ut.permHeader}</th>
-                {roles.map((r) => (
-                  <th key={r.id} className="center">
-                    {roleName(r)}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {moduleGroups.map((g) => (
-                <Fragment key={g.module}>
-                  <tr className="u-permgroup">
-                    <td className="u-moduleband" colSpan={roles.length + 1}>
-                      <span>{ut.moduleNames[g.module] ?? g.module}</span>
-                    </td>
-                  </tr>
-                  {g.perms.map((p) => (
-                    <tr key={p.id}>
-                      <td>
-                        <code className="u-permkey">{p.key}</code>
-                        <span className="u-permlabel">{p.label}</span>
-                      </td>
-                      {roles.map((r) => {
-                        const key = `${r.id}:${p.id}`
-                        const checked = pending.has(key)
-                        const changed = checked !== baseline.has(key)
-                        return (
-                          <td key={r.id} className={changed ? 'center u-cell-dirty' : 'center'}>
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              disabled={!canManage || saving}
-                              onChange={() => toggle(r, p)}
-                            />
-                          </td>
-                        )
-                      })}
-                    </tr>
-                  ))}
-                </Fragment>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {canManage && dirtyCount > 0 && (
-        <div className="u-savebar card">
-          <span>
-            {ut.pendingChanges} {dirtyCount}
-          </span>
-          <div className="u-actions">
-            <button type="button" className="btn-primary" disabled={saving} onClick={save}>
-              {saving ? ut.saving : ut.save}
-            </button>
-            <button
-              type="button"
-              className="btn-ghost"
-              disabled={saving}
-              onClick={() => {
-                setPending(new Set(baseline))
-                setError(null)
-              }}
-            >
-              {ut.discard}
-            </button>
+      <PermAccordion
+        groups={m.moduleGroups}
+        renderControls={(p) => (
+          <div className="chips">
+            {m.roles.map((r) => {
+              const checked = m.has(r.id, p.id)
+              return (
+                <button
+                  key={r.id}
+                  type="button"
+                  className={(checked ? 'chip on' : 'chip') + (m.isChanged(r.id, p.id) ? ' u-chip-dirty' : '')}
+                  aria-pressed={checked}
+                  disabled={!canManage || m.saving}
+                  onClick={() => m.toggle(r.id, p.id)}
+                >
+                  {roleName(r)}
+                </button>
+              )
+            })}
           </div>
-        </div>
+        )}
+      />
+
+      {canManage && (
+        <SaveBar dirtyCount={m.dirtyCount} saving={m.saving} onSave={m.save} onDiscard={m.discard} />
       )}
     </div>
+  )
+}
+
+/** By-role view: pick a role, then view AND edit its permissions as per-module
+ *  accordions. Shares the matrix's edit/Save engine, so edits here and in the
+ *  all-roles tab commit through the same atomic RPC. */
+function ByRoleTab({ canManage }: { canManage: boolean }) {
+  const ut = useUT()
+  const roleName = useRoleName()
+  const m = usePermissionMatrix()
+  const [roleId, setRoleId] = useState('')
+  // the members list needs the user roster (permission catalog doesn't carry it)
+  const [users, setUsers] = useState<AdminUser[] | null>(null)
+  useEffect(() => {
+    let live = true
+    void core()
+      .rpc('admin_list_users')
+      .then(({ data, error }) => {
+        if (!live) return
+        // degrade to an empty roster on error rather than spinning forever;
+        // this RPC needs users.view, which the tab already required to render
+        if (error) console.error('by-role: admin_list_users failed:', error.message)
+        setUsers((data as AdminUser[] | null) ?? [])
+      })
+    return () => {
+      live = false
+    }
+  }, [])
+  // default to the first role once loaded; keep the user's pick otherwise
+  useEffect(() => {
+    if (!roleId && m.roles.length > 0) setRoleId(m.roles[0].id)
+  }, [m.roles, roleId])
+  const selected = m.roles.find((r) => r.id === roleId) ?? null
+
+  if (m.loading && m.roles.length === 0) return <div className="muted">{ut.loadingPermissions}</div>
+  if (m.error && m.roles.length === 0) return <ErrorNotice error={m.error} />
+
+  return (
+    <div>
+      {m.error && <ErrorNotice error={m.error} />}
+
+      <div className="u-rolepick">
+        <span className="u-seclabel">{ut.selectRole}</span>
+        <div className="chips">
+          {m.roles.map((r) => (
+            <button
+              key={r.id}
+              type="button"
+              className={r.id === roleId ? 'chip on' : 'chip'}
+              aria-pressed={r.id === roleId}
+              onClick={() => setRoleId(r.id)}
+            >
+              {roleName(r)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {selected && (
+        <>
+          <div className="u-rolesection">
+            <div className="u-seclabel">{ut.secMembers}</div>
+            <RoleMembers role={selected} users={users} />
+          </div>
+
+          <div className="u-rolesection">
+            <div className="u-seclabel">{ut.secPerms}</div>
+            <PermAccordion
+              groups={m.moduleGroups}
+              renderBadge={(g) => {
+                const granted = g.perms.filter((p) => m.has(selected.id, p.id)).length
+                return (
+                  <span className={granted > 0 ? 'u-count u-count-on' : 'u-count'}>
+                    {granted}/{g.perms.length}
+                  </span>
+                )
+              }}
+              renderControls={(p) => {
+                const checked = m.has(selected.id, p.id)
+                return (
+                  <button
+                    type="button"
+                    className={
+                      (checked ? 'chip on' : 'chip') +
+                      ' u-permtoggle' +
+                      (m.isChanged(selected.id, p.id) ? ' u-chip-dirty' : '')
+                    }
+                    aria-pressed={checked}
+                    disabled={!canManage || m.saving}
+                    onClick={() => m.toggle(selected.id, p.id)}
+                  >
+                    {checked ? ut.permAllowed : ut.permBlocked}
+                  </button>
+                )
+              }}
+            />
+          </div>
+        </>
+      )}
+
+      {canManage && (
+        <SaveBar dirtyCount={m.dirtyCount} saving={m.saving} onSave={m.save} onDiscard={m.discard} />
+      )}
+    </div>
+  )
+}
+
+/** Users holding the selected role, with a search box — a searchable accordion
+ *  in the by-role tab (who's in this role right now). */
+function RoleMembers({ role, users }: { role: RoleRow; users: AdminUser[] | null }) {
+  const ut = useUT()
+  const [q, setQ] = useState('')
+  const members = useMemo(
+    () => (users ?? []).filter((u) => u.roles.includes(role.key)),
+    [users, role.key],
+  )
+  const needle = q.trim().toLowerCase()
+  const shown = needle
+    ? members.filter((u) => (u.email ?? u.user_id).toLowerCase().includes(needle))
+    : members
+
+  return (
+    <details className="card u-permacc">
+      <summary className="u-permacc-sum">
+        <span className="u-permacc-title">{ut.usersWithRole}</span>
+        <span className="badge">{members.length}</span>
+      </summary>
+      <div className="u-permacc-body">
+        {users === null ? (
+          <p className="muted u-emptyline">{ut.loadingUsers}</p>
+        ) : members.length === 0 ? (
+          <p className="muted u-emptyline">{ut.noMembers}</p>
+        ) : (
+          <>
+            <input
+              className="u-search"
+              type="search"
+              placeholder={ut.searchUser}
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+            />
+            {shown.length === 0 ? (
+              <p className="muted u-emptyline">{ut.noMatch}</p>
+            ) : (
+              <div className="u-memberlist">
+                {shown.map((u) => (
+                  <div key={u.user_id} className="u-member">
+                    <span className="u-avatar u-avatar-sm" aria-hidden="true">
+                      {initials(u.email, u.user_id)}
+                    </span>
+                    <span className="u-member-mail">{u.email ?? u.user_id}</span>
+                    {isDeactivated(u) && <span className="u-membertag">{ut.userDeactivated}</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </details>
   )
 }
 
@@ -869,7 +1048,8 @@ function RolesManager({
     const res = await core().from('roles').delete().eq('id', role.id)
     setBusy(false)
     if (res.error) {
-      setError(res.error.message)
+      // the DB blocks deleting a role that's still assigned to users
+      setError(res.error.message.includes('role_in_use') ? ut.roleInUse : res.error.message)
       return
     }
     await onChanged()
@@ -877,10 +1057,11 @@ function RolesManager({
 
   return (
     <div className="u-rolesmgr">
-      <div className="chips">
+      <div className="u-seclabel">{ut.secRoles}</div>
+      <div className="u-rolelist">
         {roles.map((r) => (
-          <span key={r.id} className="chip on u-rolechip">
-            {roleName(r)}
+          <span key={r.id} className="u-rolechip">
+            <span className="u-rolechip-name">{roleName(r)}</span>
             <button
               type="button"
               className="u-roleedit"
@@ -902,7 +1083,7 @@ function RolesManager({
           </span>
         ))}
         {editing === null && (
-          <button type="button" className="chip" disabled={busy || locked} onClick={openNew}>
+          <button type="button" className="u-roleadd" disabled={busy || locked} onClick={openNew}>
             {ut.addRole}
           </button>
         )}

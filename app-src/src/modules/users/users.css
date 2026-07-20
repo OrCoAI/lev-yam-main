@@ -1,69 +1,114 @@
 /* Users module styles — every class u- prefixed (MODULE-TEMPLATE §3: module CSS
-   never collides with the shell sheet or other modules). */
+   never collides with the shell sheet or other modules).
+   Design language: refined & calm — brand palette (sea structural, ORANGE for
+   "create" actions, sand accents), one shared content width so every edge lines
+   up, soft avatars, quiet status, phone-first.
 
-/* ---- users list: a clean single-column stack of accordion rows ---- */
-.u-list { display: grid; gap: 8px; max-width: 760px; }
-.u-card { padding: 0; overflow: visible; }
+   Colour system:
+     sea   → navigation, toggles, selected state
+     orange→ primary "create new" actions (invite user, add role)
+     danger→ destructive (delete)                                             */
 
-/* summary row = the collapsed user: email + status + roles at a glance.
-   The whole row is the toggle (native <details>), so nothing inside is a
-   separate control. */
+/* one container width for the whole module → tabs, list, accordions and the
+   save bar all share the same left/right edges (nothing floats out of line) */
+.u-module { --u-w: 820px; }
+.u-tabbar, .u-list, .u-matrix-acc, .u-rolesmgr, .u-rolepick, .u-savebar { max-width: var(--u-w); }
+
+/* ===== tab bar: tabs on the start, orange invite up on the same line ===== */
+.u-tabbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+.u-tabbar .tabs { margin-bottom: 0; flex: 1 1 auto; }
+.u-invite-btn {
+  width: auto; min-height: 40px; flex: 0 0 auto; margin-inline-start: auto;
+  background: var(--orange); border-color: var(--orange-dark);
+}
+.u-invite-btn:hover:not(:disabled) { background: var(--orange-dark); box-shadow: var(--shadow); }
+
+/* ===== users list ===== */
+.u-list { display: grid; gap: 10px; }
+
+.u-card { padding: 0; overflow: hidden; transition: box-shadow 0.15s ease, border-color 0.15s ease; }
+.u-card[open] { border-color: rgba(44, 146, 191, 0.35); box-shadow: var(--shadow-md); }
+.u-card-off { opacity: 0.85; }
+
 .u-summary {
   cursor: pointer; list-style: none; display: flex; align-items: center;
-  gap: 12px; flex-wrap: wrap; padding: 12px 16px; min-height: 52px;
+  gap: 12px; padding: 12px 16px; min-height: 62px;
 }
 .u-summary::-webkit-details-marker { display: none; }
 .u-summary::after {
-  content: '⌄'; margin-inline-start: auto; color: var(--muted);
-  font-size: 1.1rem; line-height: 1; transition: transform 0.15s;
+  content: '⌄'; flex: 0 0 auto; margin-inline-start: 2px;
+  color: var(--muted); font-size: 1.05rem; line-height: 1; transition: transform 0.15s ease;
 }
 .u-card[open] > .u-summary::after { transform: rotate(180deg); }
-.u-mail { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.u-summaryroles { display: flex; flex-wrap: wrap; gap: 6px; }
+.u-card[open] > .u-summary { background: linear-gradient(0deg, #fbfdfe, #fff); }
+
+.u-avatar {
+  flex: 0 0 auto; width: 42px; height: 42px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: linear-gradient(135deg, #e8f3f8, #d8ebf3);
+  color: var(--sea-dark); font-family: var(--font-display); font-weight: 800; font-size: 0.95rem;
+  box-shadow: inset 0 0 0 1px rgba(44, 146, 191, 0.16);
+}
+.u-avatar-off { background: #f1efe9; color: var(--muted); box-shadow: inset 0 0 0 1px var(--line); }
+
+.u-idcol { display: grid; gap: 3px; min-width: 0; flex: 1; }
+.u-mail { font-weight: 700; font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.u-substatus { display: inline-flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--muted); }
+.u-dot { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
+.u-dot-off { background: var(--danger); }
+
+.u-summaryroles { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
 .u-rolepill {
-  font-size: 0.75rem; font-weight: 700; padding: 2px 10px; border-radius: 999px;
-  background: var(--sand); color: var(--sea-dark);
+  font-size: 0.72rem; font-weight: 700; padding: 3px 11px; border-radius: 999px;
+  background: #eaf4f8; color: var(--sea-dark); white-space: nowrap;
 }
 
-/* expanded detail: sections stacked with a light divider from the summary */
-.u-detail { display: grid; gap: 14px; padding: 4px 16px 16px; border-top: 1px solid var(--line); }
-.u-detailsec { display: grid; gap: 8px; }
-.u-seclabel { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.03em; color: var(--muted); text-transform: uppercase; }
-.u-lastlogin { font-size: 0.82rem; padding-top: 10px; }
+/* expanded detail: sections as tidy bands separated by hairlines */
+.u-detail { border-top: 1px solid var(--line); }
+.u-detailsec { display: grid; gap: 12px; padding: 16px; border-bottom: 1px solid var(--line); }
+.u-detailfoot { padding: 11px 16px; }
+/* section label with a small brand-orange tick — quiet, consistent accent */
+.u-seclabel {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 0.68rem; font-weight: 800; letter-spacing: 0.06em; color: var(--muted); text-transform: uppercase;
+}
+.u-seclabel::before { content: ''; width: 3px; height: 13px; border-radius: 2px; background: var(--orange); }
+.u-lastlogin { font-size: 0.78rem; margin: 0; }
+.u-emptyline { font-size: 0.85rem; margin: 0; }
 
-/* compact action buttons — the "small, clean" controls (was full-size .btn-ghost).
-   Stays ≥44px touch target on phones via the breakpoint rule below. */
-.u-userops { display: flex; flex-wrap: wrap; gap: 8px; }
+/* ===== action buttons: one pill system, colour-coded by intent ===== */
+.u-userops { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .u-opbtn {
-  font: inherit; font-weight: 600; font-size: 0.85rem; min-height: 34px; padding: 5px 12px;
-  border: 1px solid var(--line); border-radius: 9px; background: #fff; color: var(--sea-dark);
-  cursor: pointer;
+  font: inherit; font-weight: 600; font-size: 0.85rem; min-height: 38px; padding: 7px 16px;
+  border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--sea-dark);
+  cursor: pointer; transition: border-color 0.12s ease, background 0.12s ease, color 0.12s ease;
 }
-.u-opbtn:hover:not(:disabled) { border-color: var(--sea); }
+.u-opbtn:hover:not(:disabled) { border-color: var(--sea); background: #fbfdfe; }
+/* password = orange accent (owner's key management action); toggles filled when open */
+.u-op-accent { color: var(--orange-dark); border-color: #f0d3a8; }
+.u-op-accent:hover:not(:disabled) { border-color: var(--orange); background: #fdf3e6; }
+.u-op-on, .u-op-on:hover:not(:disabled) { background: var(--orange); color: #fff; border-color: var(--orange-dark); }
+/* delete pushed to the row end, away from the safe actions */
+.u-op-end { margin-inline-start: auto; }
 .u-danger { color: var(--danger); }
-.u-danger:hover:not(:disabled) { border-color: var(--danger); }
+.u-danger:hover:not(:disabled) { border-color: var(--danger); background: #fdf6f5; }
 
-.u-banned {
-  display: inline-block; margin-inline-start: 8px; padding: 2px 10px;
-  border-radius: 999px; font-size: 0.75rem; font-weight: 800; vertical-align: middle;
-  background: #fae8e6; color: var(--danger);
-}
-
-/* owner-only password panel (inside the actions section) */
-.u-pwtoggle { margin-top: 2px; }
-.u-pwpanel { display: grid; gap: 8px; margin-top: 8px; padding-top: 10px; border-top: 1px dashed var(--line); }
-.u-pwset { display: grid; gap: 10px; max-width: 340px; }
-.u-pwset label { display: grid; gap: 6px; font-size: 0.85rem; color: var(--muted); }
+/* owner-only password panel (revealed under the actions row) */
+.u-pwpanel { display: grid; gap: 10px; margin-top: 4px; padding-top: 12px; border-top: 1px dashed var(--line); }
+.u-pwset { display: grid; gap: 12px; max-width: 340px; }
+.u-pwset label { display: grid; gap: 6px; font-size: 0.82rem; font-weight: 600; color: var(--muted); }
 .u-pwset input {
-  font: inherit; width: 100%; min-height: 42px; padding: 10px 12px;
-  border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink);
+  font: inherit; width: 100%; min-height: 44px; padding: 11px 13px;
+  border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--ink);
 }
 .u-pwset input:focus { outline: 2px solid var(--sea); border-color: var(--sea); }
+.u-btn-accent { background: var(--orange); border-color: var(--orange-dark); }
+.u-btn-accent:hover:not(:disabled) { background: var(--orange-dark); }
 .u-pwmsg { margin: 0; }
 
-/* invite-user form (collapses behind .form-open-btn on phones, shared shell rule) */
-.u-invite { display: grid; gap: 14px; margin-bottom: 18px; max-width: 420px; }
-.u-invite label { display: grid; gap: 6px; font-size: 0.9rem; color: var(--muted); }
+/* invite / role forms */
+.u-invite { display: grid; gap: 14px; margin-bottom: 16px; max-width: 440px; }
+.u-invite label { display: grid; gap: 6px; font-size: 0.85rem; font-weight: 600; color: var(--muted); }
 .u-invite input, .u-invite select {
   font: inherit; width: 100%; max-width: 100%; min-height: 46px; padding: 12px 14px;
   border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--ink);
@@ -71,57 +116,117 @@
 .u-invite input:focus, .u-invite select:focus { outline: 2px solid var(--sea); border-color: var(--sea); }
 .u-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 
-/* per-module group band — shared by the by-role grid rows and the effective lens */
-.u-moduleband {
-  background: var(--sand); color: var(--sea-dark);
-  font-weight: 800; font-size: 0.8rem;
+/* ===== module-access summary (inside a user card) ===== */
+.u-access { display: flex; flex-wrap: wrap; gap: 8px; }
+.u-accesstag {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 34px; padding: 4px 6px 4px 13px;
+  padding-inline: 13px 6px; border-radius: 999px; background: var(--sand); border: 1px solid var(--line);
+  font-size: 0.83rem; font-weight: 700; color: var(--sea-dark);
 }
-/* the shell pins td:first-child for row context on phones — a full-width
-   colSpan header cell must not inherit that (it can't pin; it only gains a
-   stray shadow). Instead its label span pins itself while the band scrolls. */
-.grid-sticky-first tr.u-permgroup td { position: static; box-shadow: none; }
-.u-permgroup td > span { position: sticky; inset-inline-start: 14px; display: inline-block; }
-.u-permkey { display: block; color: var(--sea-dark); }
+.u-accesscount {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px;
+  background: var(--sea); color: #fff; font-size: 0.72rem; font-weight: 800; font-variant-numeric: tabular-nums;
+}
+.u-permkey {
+  display: inline-block; font-size: 0.82rem; color: var(--sea-dark);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
 .u-permlabel { display: block; font-size: 0.8rem; color: var(--muted); }
+.u-chip-dirty { outline: 2px dashed var(--orange); outline-offset: 1px; }
 
-/* pending-edit highlight (matrix tab) */
-.u-cell-dirty { background: var(--sand); }
-.u-chip-dirty { outline: 2px dashed var(--sea); outline-offset: 1px; }
-
-/* the phone accordion (rendered instead of the grid via useMediaQuery(PHONE_MQ)) */
-.u-matrix-phone { display: grid; gap: 10px; }
-.u-permacc summary {
-  cursor: pointer; min-height: 44px; display: flex; align-items: center; gap: 8px;
-  font-weight: 800; color: var(--sea-dark);
+/* ===== permissions matrix + by-role: per-module accordions (all widths) ===== */
+.u-matrix-acc { display: grid; gap: 10px; }
+.u-permacc { padding: 0; overflow: hidden; }
+.u-permacc-sum {
+  cursor: pointer; list-style: none; display: flex; align-items: center; gap: 10px;
+  min-height: 52px; padding: 13px 16px; font-family: var(--font-display); font-weight: 800;
+  font-size: 1rem; color: var(--ink);
 }
-.u-permacc[open] summary { margin-bottom: 4px; }
-.u-accperm { display: grid; gap: 8px; padding: 10px 0; border-top: 1px solid var(--line); }
+.u-permacc-sum::-webkit-details-marker { display: none; }
+.u-permacc-title { flex: 1; }
+.u-permacc-sum::after {
+  content: '⌄'; color: var(--muted); font-size: 1.05rem; line-height: 1; transition: transform 0.15s ease;
+}
+.u-permacc[open] > .u-permacc-sum { color: var(--sea-dark); border-bottom: 1px solid var(--line); }
+.u-permacc[open] > .u-permacc-sum::after { transform: rotate(180deg); }
+.u-permacc-body { padding: 4px 16px 8px; }
+/* granted/total count on the by-role header — emphasise when the role has any */
+.u-count { font-variant-numeric: tabular-nums; color: var(--muted); }
+.u-count-on { color: var(--sea-dark); font-weight: 800; }
+
+/* one permission row: info on the start, controls on the end */
+.u-accperm {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  flex-wrap: wrap; padding: 11px 0; border-bottom: 1px solid var(--line);
+}
+.u-accperm:last-child { border-bottom: 0; }
+.u-accperm-info { min-width: 0; flex: 1 1 200px; display: grid; gap: 1px; }
+.u-accperm-ctrl { flex: 0 0 auto; }
+.u-accperm-ctrl .chips { justify-content: flex-end; }
+.u-permtoggle { min-width: 92px; text-align: center; }
+
+/* role picker + labelled sections (by-role tab) */
+.u-rolepick { display: grid; gap: 10px; margin-bottom: 18px; }
+.u-rolesection { display: grid; gap: 10px; margin-bottom: 18px; max-width: var(--u-w); }
+
+/* members list (users holding the selected role) + search */
+.u-search {
+  font: inherit; width: 100%; max-width: 320px; min-height: 42px; padding: 10px 14px; margin-bottom: 10px;
+  border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--ink);
+}
+.u-search:focus { outline: 2px solid var(--sea); border-color: var(--sea); }
+.u-memberlist { display: grid; gap: 1px; }
+.u-member { display: flex; align-items: center; gap: 11px; padding: 9px 2px; border-bottom: 1px solid var(--line); }
+.u-member:last-child { border-bottom: 0; }
+.u-avatar-sm { width: 32px; height: 32px; font-size: 0.78rem; }
+.u-member-mail { flex: 1; min-width: 0; font-size: 0.9rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.u-membertag {
+  flex: 0 0 auto; font-size: 0.7rem; font-weight: 800; padding: 2px 10px; border-radius: 999px;
+  background: #fae8e6; color: var(--danger);
+}
+
+/* sticky Save/Discard bar */
 .u-savebar {
-  position: sticky; bottom: 12px; margin-top: 14px;
+  position: sticky; bottom: 12px; margin-top: 16px;
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  font-weight: 700;
+  font-weight: 700; box-shadow: var(--shadow-md);
 }
 
-/* roles manager: role chips with rename + delete, inline add/rename form */
-.u-rolesmgr { margin-bottom: 14px; display: grid; gap: 12px; }
+/* ===== roles manager: calm role tags; orange "+ add" (a create action) ===== */
+.u-rolesmgr { display: grid; gap: 10px; margin-bottom: 18px; }
 .u-rolesmgr-locked { font-size: 0.82rem; margin: 0; }
-.u-rolechip { display: inline-flex; align-items: center; gap: 6px; }
-.u-roleedit, .u-roledel {
-  border: 0; background: none; color: inherit; line-height: 1;
-  cursor: pointer; padding: 2px 4px; min-width: 24px; min-height: 24px;
+.u-rolelist { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.u-rolechip {
+  display: inline-flex; align-items: center; gap: 2px; min-height: 38px;
+  padding: 4px; padding-inline-start: 14px;
+  border: 1px solid var(--line); border-radius: 999px; background: #fff;
 }
+.u-rolechip-name { font-weight: 700; font-size: 0.88rem; color: var(--sea-dark); }
+.u-roleedit, .u-roledel {
+  border: 0; background: none; color: var(--muted); line-height: 1;
+  cursor: pointer; padding: 2px; min-width: 26px; min-height: 26px; border-radius: 50%;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.u-roleedit:hover:not(:disabled) { color: var(--sea-dark); background: var(--sand); }
+.u-roledel:hover:not(:disabled) { color: var(--danger); background: #fdf1f0; }
 .u-roleedit { font-size: 0.85rem; }
-.u-roledel { font-size: 1.05rem; }
+.u-roledel { font-size: 1.1rem; }
+.u-roleadd {
+  font: inherit; font-weight: 700; font-size: 0.85rem; min-height: 38px; padding: 4px 16px;
+  border: 1px dashed var(--orange); border-radius: 999px; background: transparent; color: var(--orange-dark);
+  cursor: pointer; transition: background 0.12s ease;
+}
+.u-roleadd:hover:not(:disabled) { background: #fdf3e6; }
 
-/* by-user effective permissions (now inside each user's accordion) */
-.u-effectivenote { font-size: 0.85rem; margin: 0; }
-.u-effmodule { padding: 6px 10px; border-radius: 8px; }
-.u-effperm { display: grid; gap: 2px; padding: 6px 4px; border-bottom: 1px solid var(--line); }
-.u-effvia { font-size: 0.78rem; }
-
-/* phone: keep every tap target ≥44px even as desktop density tightens */
+/* ===== phone: keep every tap target ≥44px; keep the collapsed row calm ===== */
 @media (max-width: 640px) {
-  .u-list { max-width: none; }
-  .u-opbtn { min-height: 44px; padding: 8px 14px; font-size: 0.9rem; }
+  .u-opbtn { min-height: 44px; padding: 9px 16px; font-size: 0.9rem; }
   .u-roleedit, .u-roledel { min-width: 32px; min-height: 32px; }
+  /* roles are one tap away inside the card — don't crowd the collapsed row */
+  .u-summaryroles { display: none; }
+  /* perm controls drop to their own full line under the label on narrow screens */
+  .u-accperm-ctrl { flex-basis: 100%; }
+  .u-accperm-ctrl .chips { justify-content: flex-start; }
+  .u-permtoggle { min-width: 108px; }
 }

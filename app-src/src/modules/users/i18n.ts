@@ -18,11 +18,13 @@ const he = {
   viewOnly: 'תצוגה בלבד — אין לך הרשאת ניהול',
   tabUsers: 'משתמשים',
   tabMatrix: 'תפקידים והרשאות',
+  tabByRole: 'לפי תפקיד',
   loadingUsers: 'טוען משתמשים…',
   loadingPermissions: 'טוען הרשאות…',
   errorPrefix: 'שגיאה:',
   noUsers: 'אין משתמשים עדיין. הזמינו משתמש כדי להתחיל.',
-  permHeader: 'הרשאה',
+  permAllowed: 'מותר',
+  permBlocked: 'חסום',
 
   inviteUser: '+ הזמנת משתמש',
   inviteEmail: 'אימייל',
@@ -36,6 +38,7 @@ const he = {
 
   lastLogin: 'כניסה אחרונה:',
   neverLoggedIn: 'טרם נכנס/ה',
+  statusActive: 'פעיל/ה',
 
   userDelete: 'מחיקה',
   userDeactivate: 'השבתה',
@@ -62,15 +65,24 @@ const he = {
   roleCreate: 'יצירת תפקיד',
   roleCreating: 'יוצר…',
   roleDelete: 'מחיקת תפקיד',
-  roleDeleteConfirm: 'למחוק את התפקיד? כל ההרשאות והשיוכים שלו יימחקו.',
+  roleDeleteConfirm: 'למחוק את התפקיד? ההרשאות שלו יימחקו.',
+  roleInUse: 'לא ניתן למחוק תפקיד המשויך למשתמשים. הסירו אותו מהמשתמשים תחילה.',
   roleRename: 'שינוי שם',
   roleSave: 'שמירה',
   roleSaving: 'שומר…',
 
-  // per-user accordion
+  // per-user accordion + by-role sections
   secRoles: 'תפקידים',
-  secPerms: 'הרשאות בפועל',
+  secAccess: 'גישה למודולים',
   secActions: 'פעולות',
+  secMembers: 'משתמשים',
+  secPerms: 'הרשאות',
+
+  // by-role: members list
+  usersWithRole: 'משתמשים עם תפקיד זה',
+  searchUser: 'חיפוש לפי אימייל…',
+  noMembers: 'אין משתמשים עם תפקיד זה.',
+  noMatch: 'לא נמצאו משתמשים.',
 
   // admin password set/reset (owner-only)
   setPassword: 'סיסמה',
@@ -86,9 +98,7 @@ const he = {
   pwErrorGeneric: 'הפעולה נכשלה. נסו שוב.',
 
   viewAs: 'תצוגה כמשתמש זה',
-  effectiveNote: 'הרשאות בפועל — נגזרות מהתפקידים. עריכה נעשית על התפקיד, בלשונית "תפקידים והרשאות".',
   noPerms: 'אין הרשאות למשתמש זה.',
-  viaRole: 'דרך תפקיד',
 }
 
 const ar: typeof he = {
@@ -105,11 +115,13 @@ const ar: typeof he = {
   viewOnly: 'عرض فقط — لا تملك صلاحية إدارة',
   tabUsers: 'المستخدمون',
   tabMatrix: 'الأدوار والصلاحيات',
+  tabByRole: 'حسب الدور',
   loadingUsers: 'جارٍ تحميل المستخدمين…',
   loadingPermissions: 'جارٍ تحميل الصلاحيات…',
   errorPrefix: 'خطأ:',
   noUsers: 'لا يوجد مستخدمون بعد. ادعوا مستخدماً للبدء.',
-  permHeader: 'صلاحية',
+  permAllowed: 'مسموح',
+  permBlocked: 'محجوب',
 
   inviteUser: '+ دعوة مستخدم',
   inviteEmail: 'البريد الإلكتروني',
@@ -123,6 +135,7 @@ const ar: typeof he = {
 
   lastLogin: 'آخر دخول:',
   neverLoggedIn: 'لم يدخل بعد',
+  statusActive: 'نشِط/ة',
 
   userDelete: 'حذف',
   userDeactivate: 'تعطيل',
@@ -149,15 +162,24 @@ const ar: typeof he = {
   roleCreate: 'إنشاء دور',
   roleCreating: 'جارٍ الإنشاء…',
   roleDelete: 'حذف الدور',
-  roleDeleteConfirm: 'حذف الدور؟ ستُحذف كل صلاحياته وارتباطاته.',
+  roleDeleteConfirm: 'حذف الدور؟ ستُحذف صلاحياته.',
+  roleInUse: 'لا يمكن حذف دور مُسنَد لمستخدمين. أزيلوه عن المستخدمين أولاً.',
   roleRename: 'تعديل الاسم',
   roleSave: 'حفظ',
   roleSaving: 'جارٍ الحفظ…',
 
-  // per-user accordion
+  // per-user accordion + by-role sections
   secRoles: 'الأدوار',
-  secPerms: 'الصلاحيات الفعلية',
+  secAccess: 'الوصول للوحدات',
   secActions: 'الإجراءات',
+  secMembers: 'المستخدمون',
+  secPerms: 'الصلاحيات',
+
+  // by-role: members list
+  usersWithRole: 'المستخدمون بهذا الدور',
+  searchUser: 'بحث بالبريد الإلكتروني…',
+  noMembers: 'لا مستخدمين بهذا الدور.',
+  noMatch: 'لا نتائج.',
 
   // admin password set/reset (owner-only)
   setPassword: 'كلمة السر',
@@ -173,9 +195,7 @@ const ar: typeof he = {
   pwErrorGeneric: 'فشل الإجراء. حاولوا مجدداً.',
 
   viewAs: 'عرض كهذا المستخدم',
-  effectiveNote: 'الصلاحيات الفعلية — مشتقة من الأدوار. التعديل يتم على الدور، في تبويب "الأدوار والصلاحيات".',
   noPerms: 'لا توجد صلاحيات لهذا المستخدم.',
-  viaRole: 'عبر دور',
 }
 
 export const useUT = makeDictHook(he, ar)

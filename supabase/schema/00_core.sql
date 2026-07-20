@@ -259,6 +259,30 @@ create trigger trg_roles_guard_manage
   after update or delete on core.roles
   for each statement execute function core.guard_users_manage_survives();
 
+-- A role still assigned to any user must not be deleted out from under them:
+-- the FK cascade would strip it from those users, leaving anyone whose only
+-- role it was with zero roles and zero permissions. Block the delete (BEFORE,
+-- so it fires ahead of the cascade) and make the owner un-assign it first.
+-- NOTE: this BEFORE guard now *shadows* the trg_roles_guard_manage DELETE
+-- branch above — any role whose deletion could strip the last users.manage
+-- holder must be assigned to someone, so this raises 'role_in_use' first. The
+-- last-admin trigger's role-DELETE path is therefore defense-in-depth only
+-- (it still guards role UPDATEs and permission/role_permission changes); if
+-- this in-use guard is ever relaxed, that path becomes load-bearing again.
+create or replace function core.guard_role_not_in_use()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if exists (select 1 from core.user_roles where role_id = old.id) then
+    raise exception 'role_in_use' using errcode = 'P0001';
+  end if;
+  return old;
+end $$;
+
+drop trigger if exists trg_roles_guard_in_use on core.roles;
+create trigger trg_roles_guard_in_use
+  before delete on core.roles
+  for each row execute function core.guard_role_not_in_use();
+
 -- ---------------------------------------------------------------------
 --  Audit log — who changed which role/permission grant, and when.
 --  Trigger-written only: 'authenticated' has no insert/update/delete grant on
