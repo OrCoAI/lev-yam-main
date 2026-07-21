@@ -7,7 +7,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { PERM, useCan } from '../../lib/permissions'
 import ChefView from './ChefView'
 import { usePosTr } from './i18n'
-import { fmtDate, REPORT_DATE_RE, tableTotals, todayKey } from './logic'
+import { fmtDate, kitchenCounts, REPORT_DATE_RE, tableTotals, todayKey } from './logic'
 import ReportView from './ReportView'
 import S, { INK, SEA, SUN } from './styles'
 import TableView from './TableView'
@@ -117,8 +117,7 @@ export default function PosModule() {
             <div style={S.tablesGrid}>
               {data.tables.map((t) => {
                 const tt = tableTotals(t)
-                const ready = t.items.reduce((s, it) => s + Math.max(0, (it.done || 0) - (it.served || 0)), 0)
-                const cooking = t.items.reduce((s, it) => s + Math.max(0, (it.sent || 0) - (it.done || 0)), 0)
+                const k = kitchenCounts(t.items)
                 return (
                   <button
                     key={t.id}
@@ -129,13 +128,17 @@ export default function PosModule() {
                     <div style={S.tableCardHead}>
                       <span style={{ ...S.tableNumBadge, background: t.useOH ? SEA : SUN }}>{t.num}</span>
                       <span style={S.tableName}>{t.name || tr('שולחן', 'طاولة') + ' ' + t.num}</span>
+                      {/* Kitchen state beside the title — compact icon+count, not a new row */}
+                      {(k.ready > 0 || k.cooking > 0) ? (
+                        <span style={S.kitchenHead}>
+                          {k.ready > 0 && <span style={S.stReady} title={tr('מוכן', 'جاهز')}>{'🔔 ' + k.ready}</span>}
+                          {k.cooking > 0 && <span style={S.stFired} title={tr('במטבח', 'في المطبخ')}>{'🍳 ' + k.cooking}</span>}
+                        </span>
+                      ) : k.served > 0 && k.unsent === 0 ? (
+                        <span style={S.stServed} title={tr('הכל הוגש', 'تم التقديم')}>✓</span>
+                      ) : null}
                     </div>
                     <span style={S.tableMeta}>{tt.headcount + ' ' + tr('סועדים', 'ضيوف') + ' · ' + tt.itemsCount + ' ' + tr('פריטים', 'أصناف')}</span>
-                    {ready > 0 ? (
-                      <span style={S.kitchenReady}>{'🔔 ' + ready + ' ' + tr('מוכן להגשה', 'جاهز للتقديم')}</span>
-                    ) : cooking > 0 ? (
-                      <span style={S.kitchenBadge}>{'🍳 ' + cooking + ' ' + tr('במטבח', 'في المطبخ')}</span>
-                    ) : null}
                     <div style={S.tableCardTotal}>
                       <span style={S.tableCardNum}>{tt.grand}</span>
                       <span style={S.tableCardCur}>₪</span>

@@ -13,15 +13,27 @@ touching schema, permissions, or the events/finance spine graduates to a `docs/p
 
 - (none logged)
 
+## In progress — POS operations v2 (kickoff 2026-07-20)
+
+Six owner-requested capabilities → five PRs. Umbrella plan + locked decisions:
+[../plans/pos-operations-v2.md](../plans/pos-operations-v2.md).
+
+- **PR A** — Kitchen in/out visibility (floor + table view). *(active)*
+- **PR B** — Summary redesign + expenses upgrade (who/when, receipt, paid date, period list).
+- **PR C** — Split/partial payments (partial-while-open) + checkout item-delete.
+- **PR D** — Menu-as-data (flat items first; combos deferred) — folds in the two ideas below.
+- **PR E** — Day lifecycle: open → booked, drift-flag, re-post/override.
+
 ## Open feature ideas
 
 - Full menu-as-data (owner-editable menu table + admin UI) — deferred beyond the
   cut-over initiative; only a server-side price-validation mirror (`pos.menu_price`)
-  shipped there.
+  shipped there. **→ now PR D above.**
 - A CI check diffing `app-src/src/modules/pos/menu.ts` prices against the SQL literals
   in `pos.menu_price()` — the mirror has no automated sync guard yet; a price edited in
   only one place fails closed (blocks table closes) rather than silently
   under-charging, which is safe but is an availability bug waiting to happen.
+  **→ obsoleted by PR D** (single source of truth in the DB retires the mirror).
 
 ## Done
 

@@ -2,7 +2,7 @@
 // first. One big tap = done. Ported from pos.html.
 import { useState } from 'react'
 import { itemName, usePosTr } from './i18n'
-import { fmtTime } from './logic'
+import { fmtTime, kitchenCounts } from './logic'
 import S from './styles'
 import type { PosTable } from './types'
 import { PosLangToggle } from './widgets'
@@ -24,8 +24,7 @@ export default function ChefView({ tables, onMarkDone, onBack }: {
   }).filter((x) => (showDone ? x.ready.length : x.cooking.length) > 0)
     .sort((a, b) => a.firstFire - b.firstFire)
 
-  const pendingCount = tables.reduce((s, t) =>
-    s + t.items.reduce((n, it) => n + Math.max(0, (it.sent || 0) - (it.done || 0)), 0), 0)
+  const pendingCount = tables.reduce((s, t) => s + kitchenCounts(t.items).cooking, 0)
 
   return (
     <div style={S.app}>

@@ -56,6 +56,20 @@ export function tableTotals(t: PosTable) {
   return { extras, menuAll, headcount, ohByAge, ohCharge, grand, itemsCount }
 }
 
+// Kitchen pipeline snapshot for a set of lines (qty → sent → done → served):
+// cooking = in the kitchen now, ready = cooked but not yet carried out,
+// served = delivered ("out"), unsent = ordered but not yet fired.
+export function kitchenCounts(items: PosLine[]) {
+  let cooking = 0, ready = 0, served = 0, unsent = 0
+  for (const it of items) {
+    cooking += Math.max(0, (it.sent || 0) - (it.done || 0))
+    ready += Math.max(0, (it.done || 0) - (it.served || 0))
+    served += it.served || 0
+    unsent += Math.max(0, (it.qty || 0) - (it.sent || 0))
+  }
+  return { cooking, ready, served, unsent }
+}
+
 export function nextTableNum(tables: PosTable[]): number {
   const used: Record<number, boolean> = {}
   tables.forEach((t) => { used[t.num] = true })

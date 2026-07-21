@@ -105,6 +105,21 @@ bilingual is ever a retrofit.*
       [plans/pos-cutover-hardening.md](plans/pos-cutover-hardening.md)** (full
       menu-as-data admin UI deferred beyond this initiative)
 
+## POS operations v2 — post-cut-over hardening (kickoff 2026-07-20)
+
+*Owner-directed batch of six operational capabilities on the live POS, sequenced into five
+PRs. Not a numbered phase — hardening of the Phase 1 POS that feeds Phase 4 (QR menu sourced
+from POS items) and Phase 5 (inventory ↔ menu, shifts ↔ labor). Umbrella plan + locked scope
+decisions: [plans/pos-operations-v2.md](plans/pos-operations-v2.md).*
+
+- [ ] **PR A** — Kitchen in/out visibility (floor + table view: cooking / ready / served)
+- [ ] **PR B** — Summary tab redesign (week/month presets, accordions) + expenses upgrade
+      (who/when, receipt flag, paid date, full-period list)
+- [ ] **PR C** — Split/partial payments (partial-while-open, balance-due) + checkout item-delete
+- [ ] **PR D** — Menu-as-data (owner-editable items/prices/categories; combos deferred);
+      retires the `pos.menu_price()` literal mirror
+- [ ] **PR E** — Day lifecycle: open → booked, drift detection, explicit re-post/override
+
 ## Phase 1.5 — Platform hardening (2026-07-10 audit)
 
 *Follow-ups from the full-project best-practices audit — details, sizing, and owner
