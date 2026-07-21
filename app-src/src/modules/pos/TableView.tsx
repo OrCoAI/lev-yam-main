@@ -4,12 +4,12 @@ import { useState } from 'react'
 import BillSummary from './BillSummary'
 import ComboPicker from './ComboPicker'
 import { itemName, usePosTr } from './i18n'
-import { tableTotals } from './logic'
+import { kitchenCounts, tableTotals } from './logic'
 import { COMBO_DEFS, MENU, type FlatComboDef } from './menu'
 import PaymentModal from './PaymentModal'
 import S, { LINE, SEA, SEA_DEEP, SUN } from './styles'
 import type { ComboComponent, Payment, PosLine, PosTable } from './types'
-import { Line, PosLangToggle, StatusChip, Stepper } from './widgets'
+import { KitchenChips, Line, PosLangToggle, StatusChip, Stepper } from './widgets'
 
 export default function TableView({ table, onUpdate, onBack, onPaid, onCancelTable, onFire }: {
   table: PosTable
@@ -63,7 +63,7 @@ export default function TableView({ table, onUpdate, onBack, onPaid, onCancelTab
   const customItems = items.filter((it) => it.custom)
   const comboItems = items.filter((it) => it.combo)
   const groups = customItems.length ? [...baseGroups, { cat: 'פריטים שהוספתי', catAr: 'أصناف أضفتها', oh: false, custom: true, items: customItems }] : baseGroups
-  const unsent = items.reduce((s, it) => s + Math.max(0, (it.qty || 0) - (it.sent || 0)), 0) // portions not yet sent
+  const k = kitchenCounts(items) // cooking / ready / served / unsent snapshot for this table
 
   return (
     <div style={S.app}>
@@ -104,6 +104,13 @@ export default function TableView({ table, onUpdate, onBack, onPaid, onCancelTab
             <span style={S.headTotalLbl}>{tr('סועדים', 'ضيوف')}</span>
           </div>
         </div>
+
+        {/* Kitchen state for the whole table: what's cooking, out and waiting, and served */}
+        {(k.cooking > 0 || k.ready > 0 || k.served > 0) && (
+          <div style={S.kitchenStrip}>
+            <KitchenChips cooking={k.cooking} ready={k.ready} served={k.served} emoji />
+          </div>
+        )}
 
         {/* Combos / meals — configured lines + add cards */}
         <section style={S.section}>
@@ -162,15 +169,15 @@ export default function TableView({ table, onUpdate, onBack, onPaid, onCancelTab
                   }}
                 >
                   <div style={S.cardTop}>
-                    <span style={S.cardName}>{itemName(it, lang)}</span>
+                    <span style={S.cardNameWrap}>
+                      <span style={S.cardName}>{itemName(it, lang)}</span>
+                      {it.qty > 0 && <StatusChip it={it} />}
+                    </span>
                     {it.custom
                       ? <button className="pos-tap" style={S.delBtn} onClick={() => removeItem(it.id)}>✕</button>
                       : <span style={{ ...S.cardPrice, color: it.oh ? SEA_DEEP : SUN }}>{it.price}</span>}
                   </div>
                   {it.custom && <div style={{ ...S.cardPrice, color: SUN, fontSize: 13, marginTop: -6, marginBottom: 8 }}>{it.price} ₪</div>}
-                  {it.qty > 0 && (it.sent || 0) - (it.served || 0) > 0 && (
-                    <div style={S.cardStatus}><StatusChip it={it} /></div>
-                  )}
                   <div style={S.cardCtl}>
                     <button className="pos-tap" style={{ ...S.qBtn, opacity: it.qty === 0 ? 0.35 : 1 }} onClick={() => setQty(it.id, -1)}>–</button>
                     <span style={{ ...S.qNum, color: it.qty > 0 ? (it.oh ? SEA : SUN) : '#cfc6b6' }}>{it.qty}</span>
@@ -231,11 +238,11 @@ export default function TableView({ table, onUpdate, onBack, onPaid, onCancelTab
         </div>
         <button
           className="pos-tap"
-          style={{ ...S.fireBtn, ...(unsent ? {} : S.fireBtnDone) }}
-          disabled={!unsent}
-          onClick={() => unsent && onFire()}
+          style={{ ...S.fireBtn, ...(k.unsent ? {} : S.fireBtnDone) }}
+          disabled={!k.unsent}
+          onClick={() => k.unsent && onFire()}
         >
-          {unsent ? tr('שלח למטבח', 'أرسل للمطبخ') + ' · ' + unsent : tr('נשלח למטבח', 'أُرسل للمطبخ') + ' ✓'}
+          {k.unsent ? tr('שלח למטבח', 'أرسل للمطبخ') + ' · ' + k.unsent : tr('נשלח למטבח', 'أُرسل للمطبخ') + ' ✓'}
         </button>
         <div style={S.dockBtns}>
           <button className="pos-tap" style={S.resetBtn} onClick={() => setShowSummary(true)}>{tr('חשבון', 'الحساب')}</button>
