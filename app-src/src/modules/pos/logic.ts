@@ -132,6 +132,18 @@ export function shiftDate(ymd: string, n: number): string {
   return dt.toISOString().slice(0, 10)
 }
 
+// Start of the week containing `ymd` — Sunday, the Israeli week start.
+export function startOfWeek(ymd: string): string {
+  const [y, m, d] = ymd.split('-').map(Number)
+  const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay() // 0 = Sunday
+  return shiftDate(ymd, -dow)
+}
+
+// Start of the calendar month containing `ymd` (the 1st).
+export function startOfMonth(ymd: string): string {
+  return ymd.slice(0, 8) + '01'
+}
+
 export function dateRange(from: string, to: string): string[] {
   const out: string[] = []
   let c = from
@@ -140,6 +152,9 @@ export function dateRange(from: string, to: string): string[] {
 }
 
 export const todayKey = () => new Date().toDateString()
+
+// YYYY-MM-DD → DD.MM (compact day label for report rows)
+export const dm = (ymd: string) => ymd.slice(8, 10) + '.' + ymd.slice(5, 7)
 
 export function fmtTime(ts: number | string) {
   const d = new Date(ts)

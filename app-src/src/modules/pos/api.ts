@@ -126,6 +126,21 @@ export function deleteExpense(id: number) {
   return pos().from('pos_expenses').delete().eq('id', id)
 }
 
+// Receipt flag — gated in the DB to the expense kind's cost permission (or manage).
+export function setExpenseReceipt(id: number, hasReceipt: boolean) {
+  return pos().rpc('set_expense_receipt', { p_id: id, p_has_receipt: hasReceipt })
+}
+
+// Mark paid — gated in the DB to pos.manage. paidOn = null clears it (back to unpaid).
+export function setExpensePaid(id: number, paidOn: string | null) {
+  return pos().rpc('set_expense_paid', { p_id: id, p_paid_on: paidOn })
+}
+
+// Edit an expense's name + amount — gated in the DB to pos.manage.
+export function updateExpense(id: number, note: string, amount: number) {
+  return pos().rpc('set_expense', { p_id: id, p_note: note, p_amount: amount })
+}
+
 // ── the business day posts to finance (docs/plans/pos-module.md §3) ──
 export async function closeDay(date?: string): Promise<CloseDayResult> {
   const { data, error } = await pos().rpc('close_day', { p_date: date ?? jerusalemDate() })
