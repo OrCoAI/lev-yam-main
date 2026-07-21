@@ -84,6 +84,9 @@ export interface DayReportExpense {
   note: string | null
   by: string | null
   at: string
+  business_date: string
+  has_receipt: boolean
+  paid_on: string | null // null = unpaid
 }
 
 export interface DayReport {

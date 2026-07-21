@@ -199,8 +199,10 @@ insert into pos.pos_tables (id, num, name) values ('rls-test-t1', 999, 'rls-test
 insert into pos.pos_bills (id, table_num, name) values ('rls-test-b1', 999, 'rls-test');
 insert into pos.pos_bill_items (bill_id, item_name, unit_price, qty)
 values ('rls-test-b1', 'rls-test item', 10, 1);
-insert into pos.pos_expenses (business_date, kind, amount, note)
-values (current_date, 'food', 10, 'rls-test'), (current_date, 'labor', 20, 'rls-test');
+-- explicit ids (overriding the identity seq, harmless — the whole tx rolls back)
+-- so the set_expense_* RPC assertions can reference a row a caller can't SELECT.
+insert into pos.pos_expenses (id, business_date, kind, amount, note) overriding system value
+values (900001, current_date, 'food', 10, 'rls-test'), (900002, current_date, 'labor', 20, 'rls-test');
 
 -- storage: one object in the private bucket, so the denial assertion below is
 -- proven against an existing row (not vacuously true on an empty bucket)
@@ -268,6 +270,16 @@ select pg_temp.assert_ok('staff: can log a FOOD expense (pos.costs_food)',
 select pg_temp.assert_denied('staff: cannot log a LABOR expense (no pos.costs_labor)',
   $q$ insert into pos.pos_expenses (business_date, kind, amount, note)
       values (current_date, 'labor', 5, 'rls-test staff') $q$);
+-- receipt/paid RPCs (46_pos_expenses_tracking): receipt gated to the kind's cost
+-- perm, paid gated to pos.manage
+select pg_temp.assert_ok('staff: can flag receipt on a FOOD expense (pos.costs_food)',
+  $q$ select pos.set_expense_receipt(900001, true) $q$);
+select pg_temp.assert_raises('staff: cannot flag receipt on a LABOR expense (no pos.costs_labor)',
+  $q$ select pos.set_expense_receipt(900002, true) $q$, 'אין הרשאה');
+select pg_temp.assert_raises('staff: cannot mark an expense paid (no pos.manage)',
+  $q$ select pos.set_expense_paid(900001, current_date) $q$, 'pos.manage');
+select pg_temp.assert_raises('staff: cannot edit an expense (no pos.manage)',
+  $q$ select pos.set_expense(900001, 'x', 9) $q$, 'pos.manage');
 select pg_temp.assert_rows('staff: finance.entries hidden',
   $q$ select 1 from finance.entries where note like 'rls-test%' $q$, 0);
 select pg_temp.assert_rows('staff: finance.expected hidden',
@@ -304,6 +316,20 @@ select pg_temp.assert_raises('manager: DERIVED finance entry rejects DELETE (gua
       where id = 'bbbbbbbb-0000-0000-0000-000000000001' $q$, 'אינו ניתן לעריכה או מחיקה');
 select pg_temp.assert_rows('manager: sees raw pos_expenses (pos.reports)',
   $q$ select 1 from pos.pos_expenses where note = 'rls-test' $q$, 2);
+-- receipt/paid RPCs: manage may flag either kind and mark/clear paid
+select pg_temp.assert_ok('manager: can flag receipt on a LABOR expense (pos.manage)',
+  $q$ select pos.set_expense_receipt(900002, true) $q$);
+select pg_temp.assert_ok('manager: can mark an expense paid (pos.manage)',
+  $q$ select pos.set_expense_paid(900001, current_date) $q$);
+select pg_temp.assert_ok('manager: can clear the paid date (pos.manage)',
+  $q$ select pos.set_expense_paid(900001, null) $q$);
+-- note kept as 'rls-test' so the later owner row-count assertion still sees 2
+select pg_temp.assert_ok('manager: can edit an expense name + amount (pos.manage)',
+  $q$ select pos.set_expense(900001, 'rls-test', 12) $q$);
+select pg_temp.assert_raises('manager: expense edit rejects a non-positive amount',
+  $q$ select pos.set_expense(900001, 'x', 0) $q$, 'סכום לא תקין');
+select pg_temp.assert_denied('manager: direct pos_expenses UPDATE denied (no UPDATE grant — RPC-only path)',
+  $q$ update pos.pos_expenses set has_receipt = true where id = 900002 $q$);
 select pg_temp.assert_raises('manager: SIGNED contract rejects UPDATE (immutable)',
   $q$ update quotes.contracts set signed_name = 'tampered'
       where id = 'cccccccc-0000-0000-0000-000000000002' $q$, 'כבר נחתם');
