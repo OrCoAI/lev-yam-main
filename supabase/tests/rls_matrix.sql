@@ -117,6 +117,16 @@ begin
   raise notice 'ok: %', label;
 end $$;
 
+-- A numeric expression must equal `expected` (functional assertions).
+create function pg_temp.assert_num(label text, got numeric, expected numeric)
+returns void language plpgsql as $$
+begin
+  if got is distinct from expected then
+    raise exception 'FAIL: % — expected %, got %', label, expected, got;
+  end if;
+  raise notice 'ok: %', label;
+end $$;
+
 -- The shared "locked-out" baseline — what an identity with ZERO module grants
 -- must (not) see. Runs under whatever identity become()/become_anon() set last.
 create function pg_temp.assert_locked_out(prefix text)
@@ -313,6 +323,10 @@ select pg_temp.assert_raises('staff: cannot post the day to finance (no pos.mana
   $q$ select pos.close_day(current_date) $q$, 'pos.manage');
 select pg_temp.assert_denied('staff: pos.post_day is internal — not callable by any role',
   $q$ select pos.post_day(current_date) $q$);
+select pg_temp.assert_raises('staff: cannot read day posting status (needs pos.reports)',
+  $q$ select pos.day_status(current_date) $q$, 'pos.reports');
+select pg_temp.assert_denied('staff: pos.day_is_posted is internal — not callable',
+  $q$ select pos.day_is_posted(current_date) $q$);
 select pg_temp.assert_rows('staff: finance.entries hidden',
   $q$ select 1 from finance.entries where note like 'rls-test%' $q$, 0);
 select pg_temp.assert_rows('staff: finance.expected hidden',
@@ -381,6 +395,8 @@ select pg_temp.assert_ok('manager: can void an already-fired item (pos.manage)',
   $q$ select pos.void_item('rls-test-tbl', 'rls-test item', 1, 10, true, 'burnt') $q$);
 select pg_temp.assert_ok('manager: can void a payment on an OPEN bill (pos.manage)',
   $q$ select pos.void_payment(990001) $q$);
+select pg_temp.assert_ok('manager: can read day posting status (pos.reports)',
+  $q$ select pos.day_status(current_date) $q$);
 -- backward compat: a legacy 2-arg close (no recorded payments) must still work,
 -- falling back to the payload's cash_paid/card_paid — the deployed client path
 select pg_temp.assert_ok('legacy 2-arg close (no payments → payload cash/card) still works',
@@ -565,5 +581,24 @@ select pg_temp.assert_ok('deleting a record-less non-admin auth user succeeds',
 
 -- Done — discard everything (test users, seeds, edits).
 reset role;
+-- ---------------------------------------------------------------------
+--  Auto re-post (48_pos_day_lifecycle) — functional, as postgres. A booked
+--  day whose money changes afterward must self-correct in finance, including
+--  a REDUCING change (the negative-delta path that a leftover finance
+--  constraint used to block — see 21_finance_spine.sql). Uses a far-future
+--  date so it can't collide with real postings; the whole tx rolls back.
+-- ---------------------------------------------------------------------
+reset role;
+insert into pos.pos_expenses (business_date, kind, amount, note) values ('2099-01-01', 'food', 100, 'ar-test');
+select pos.post_day('2099-01-01'::date);  -- manual first post (as postgres)
+select pg_temp.assert_num('auto-repost: books hold the food total after the first post',
+  (select coalesce(sum(amount), 0) from finance.entries where source_ref like 'pos:2099-01-01:food%'), 100);
+insert into pos.pos_expenses (business_date, kind, amount, note) values ('2099-01-01', 'food', 50, 'ar-test2');
+select pg_temp.assert_num('auto-repost: ADDING an expense to a booked day auto-corrects the books',
+  (select coalesce(sum(amount), 0) from finance.entries where source_ref like 'pos:2099-01-01:food%'), 150);
+delete from pos.pos_expenses where note = 'ar-test' and business_date = '2099-01-01';
+select pg_temp.assert_num('auto-repost: DELETING an expense posts a negative correction (was constraint-blocked)',
+  (select coalesce(sum(amount), 0) from finance.entries where source_ref like 'pos:2099-01-01:food%'), 50);
+
 do $$ begin raise notice 'RLS MATRIX: ALL ASSERTIONS PASSED'; end $$;
 rollback;

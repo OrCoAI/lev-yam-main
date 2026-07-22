@@ -206,6 +206,10 @@ declare
   r          record;
 begin
   perform pos.require('pos.order');
+  -- this close writes several payment rows + tip_part updates; suppress the
+  -- per-row auto re-post (48) so they don't each fire — we re-post once at the
+  -- end instead. No-op until 48 is applied.
+  perform set_config('levyam.suppress_repost', 'on', true);
 
   -- every discount is attributed — enforced here, not just in the UI, because
   -- "nothing from the side" is only true if the database refuses the alternative
@@ -331,6 +335,18 @@ begin
   from jsonb_array_elements(coalesce(p_items,'[]'::jsonb)) as it;
 
   delete from pos.pos_tables where id = v_id;
+
+  -- Re-post every already-booked day this bill's payments touch. Usually that's
+  -- just today (a no-op — today isn't booked yet). But a reopened past bill can
+  -- carry payments on a past, booked day, and the tip_part reallocation above
+  -- (suppressed, so it didn't fire the row trigger) changed their revenue — so
+  -- each distinct payment day must be re-posted. repost_if_posted is defined in
+  -- 48; the reference resolves at call time. Then lift the suppress.
+  for r in select distinct (taken_at at time zone 'Asia/Jerusalem')::date as d
+           from pos.pos_payments where bill_id = v_id loop
+    perform pos.repost_if_posted(r.d);
+  end loop;
+  perform set_config('levyam.suppress_repost', '', true);
 end; $$;
 
 -- ---------------------------------------------------------------------

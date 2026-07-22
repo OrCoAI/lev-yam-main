@@ -16,7 +16,12 @@ create table if not exists finance.entries (
   id             uuid primary key default gen_random_uuid(),
   kind           text not null,                 -- 'income' | 'expense'
   category       text not null,                 -- fixed enum, kind-specific (checked below)
-  amount         numeric(12,2) not null check (amount > 0),
+  amount         numeric(12,2) not null,        -- sign policy lives in 21_finance_spine.sql
+                                                 -- (manual rows > 0; derived module rows may
+                                                 -- be negative — a reversal). NO inline
+                                                 -- `check (amount > 0)` here: it auto-names
+                                                 -- `entries_amount_check` and would override
+                                                 -- the spine's module-aware rule.
   payment_method text,                          -- 'cash' | 'private' | 'grow' | 'bank' (nullable)
   entry_date     date not null default current_date,
   note           text,

@@ -170,6 +170,14 @@ export function updateExpense(id: number, note: string, amount: number) {
   return pos().rpc('set_expense', { p_id: id, p_note: note, p_amount: amount })
 }
 
+// Whether a day has been written to the books, and whether it has been
+// auto-corrected since (48_pos_day_lifecycle). Reports-permission only.
+export async function fetchDayStatus(date: string): Promise<{ posted: boolean; corrected: boolean }> {
+  const { data, error } = await pos().rpc('day_status', { p_date: date })
+  if (error) throw error
+  return data as { posted: boolean; corrected: boolean }
+}
+
 // ── the business day posts to finance (docs/plans/pos-module.md §3) ──
 export async function closeDay(date?: string): Promise<CloseDayResult> {
   const { data, error } = await pos().rpc('close_day', { p_date: date ?? jerusalemDate() })
