@@ -4,10 +4,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import {
-  archiveBills, closeTableRpc, deleteTable, fetchAll, markItemRpc, reopenBillRpc, upsertTable,
+  addPaymentRpc, archiveBills, closeTableRpc, deleteTable, editPaymentRpc, fetchAll,
+  fetchOpenPayments, markItemRpc, reopenBillRpc, upsertTable, voidItemRpc, voidPaymentRpc,
 } from './api'
 import { buildBillPayload, makeTable, mergeKitchen, nextTableNum, reconcileItems, todayKey } from './logic'
-import type { ClosedBill, Payment, PosTable } from './types'
+import type { ClosedBill, Payment, PosPayment, PosTable } from './types'
 
 // Separate cache key from pos.html's (same origin, different app state).
 const STORE_KEY = 'levyam_app_pos_v1'
@@ -32,9 +33,12 @@ function saveCache(d: PosData) {
 
 export function usePosData(activeId: string | null, onWriteError: (message: string) => void) {
   const [data, setData] = useState<PosData>(loadCache)
+  const [payments, setPayments] = useState<Record<string, PosPayment[]>>({})
   const [online, setOnline] = useState(true)
   const dataRef = useRef(data)
   dataRef.current = data
+  const paymentsRef = useRef(payments)
+  paymentsRef.current = payments
   const activeRef = useRef(activeId)
   activeRef.current = activeId
   const pushers = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
@@ -48,9 +52,10 @@ export function usePosData(activeId: string | null, onWriteError: (message: stri
     let timer: ReturnType<typeof setTimeout> | undefined
     const reload = async () => {
       try {
-        const fresh = await fetchAll()
+        const [fresh, pmts] = await Promise.all([fetchAll(), fetchOpenPayments().catch(() => ({}))])
         if (!alive) return
         setOnline(true)
+        setPayments(pmts)
         setData((prev) => {
           const id = activeRef.current
           const localActive = id ? prev.tables.find((t) => t.id === id) : null
@@ -83,6 +88,7 @@ export function usePosData(activeId: string | null, onWriteError: (message: stri
     const ch = supabase.channel('pos-live')
       .on('postgres_changes', { event: '*', schema: 'pos', table: 'pos_tables' }, ping)
       .on('postgres_changes', { event: '*', schema: 'pos', table: 'pos_bills' }, ping)
+      .on('postgres_changes', { event: '*', schema: 'pos', table: 'pos_payments' }, ping)
       .subscribe((st) => { if (st === 'SUBSCRIBED') void resync() })
     window.addEventListener('online', resync)
     return () => {
@@ -127,25 +133,54 @@ export function usePosData(activeId: string | null, onWriteError: (message: stri
     pushTable(next, false)
   }
 
+  // Sum a bill's payments by method across prior (recorded) + the closing array,
+  // so the optimistic ClosedBill mirrors what the server derives.
+  const sumPaid = (id: string, closing: { method: 'cash' | 'card'; amount: number }[], m: 'cash' | 'card') =>
+    (paymentsRef.current[id] || []).filter((p) => p.method === m).reduce((s, p) => s + p.amount, 0)
+    + closing.filter((p) => p.method === m).reduce((s, p) => s + p.amount, 0)
+
   const payAndClose = (id: string, payment: Payment) => {
     const t = dataRef.current.tables.find((x) => x.id === id)
     if (!t) return
     clearTimeout(pushers.current[id])
+    const closing = payment.payments || []
     const { bill, items } = buildBillPayload(t, payment)
     const rec: ClosedBill = {
       id: t.id, num: t.num, name: t.name || '', items: t.items, guests: t.guests,
       useOH: t.useOH, openedAt: t.openedAt, paidAt: Date.now(),
-      cash: payment.cash, card: payment.card,
+      cash: sumPaid(id, closing, 'cash'), card: sumPaid(id, closing, 'card'),
       discount: payment.discount || 0, tip: payment.tip || 0, total: payment.total,
     }
     setData((d) => ({ ...d, tables: d.tables.filter((x) => x.id !== id), closed: [rec, ...d.closed] }))
-    void closeTableRpc(bill, items).then(({ error }) => {
+    void closeTableRpc(bill, items, closing).then(({ error }) => {
       setOnline(!error)
-      if (error) {
-        console.error(error)
-        onWriteError(error.message)
-      }
+      if (error) { console.error(error); onWriteError(error.message) }
     })
+  }
+
+  const refreshPayments = () =>
+    void fetchOpenPayments().then(setPayments).catch(() => { /* realtime ping will refresh */ })
+  // Payment writes share one tail: surface the error, else pull the fresh list.
+  const afterWrite = (p: PromiseLike<{ error: { message: string } | null }>) =>
+    p.then(({ error }) => { if (error) onWriteError(error.message); else refreshPayments() })
+
+  // Record one or more payments on an open table (deposit / split / one guest pays),
+  // then refresh once for the whole batch.
+  const recordPayments = (id: string, pmts: { method: 'cash' | 'card'; amount: number }[]) =>
+    Promise.all(pmts.map((p) => addPaymentRpc(id, p.method, p.amount))).then((rs) => {
+      const failed = rs.find((r) => r.error)
+      if (failed?.error) onWriteError(failed.error.message)
+      refreshPayments()
+    })
+  const voidPayment = (paymentId: number) => afterWrite(voidPaymentRpc(paymentId))
+  const editPayment = (paymentId: number, method: 'cash' | 'card', amount: number, note?: string) =>
+    afterWrite(editPaymentRpc(paymentId, method, amount, note))
+  // Audit an item removed at checkout; returns whether it was accepted, so the
+  // caller removes it locally only on success.
+  const voidItem = async (id: string, name: string, qty: number, unitPrice: number, wasFired: boolean, reason?: string) => {
+    const { error } = await voidItemRpc(id, name, qty, unitPrice, wasFired, reason)
+    if (error) { onWriteError(error.message); return false }
+    return true
   }
 
   const cancelTable = (id: string) => {
@@ -164,7 +199,11 @@ export function usePosData(activeId: string | null, onWriteError: (message: stri
       useOH: rec.useOH, openedAt: rec.openedAt || Date.now(),
     }
     setData((d) => ({ ...d, closed: d.closed.filter((x) => x.id !== id), tables: [...d.tables, t] }))
-    void reopenBillRpc(id, num).then(({ error }) => { setOnline(!error); if (isDenial(error)) onWriteError(error!.message) })
+    void reopenBillRpc(id, num).then(({ error }) => {
+      setOnline(!error)
+      if (isDenial(error)) onWriteError(error!.message)
+      else refreshPayments() // surface the reopened bill's recorded payments right away
+    })
   }
 
   // Waiter "send to kitchen": send the delta (sent = qty) on any line with more ordered
@@ -207,5 +246,8 @@ export function usePosData(activeId: string | null, onWriteError: (message: stri
     if (ids.length) void archiveBills(ids).then(({ error }) => { setOnline(!error); if (isDenial(error)) onWriteError(error!.message) })
   }
 
-  return { data, online, openNew, updateTable, payAndClose, cancelTable, reopen, clearToday, fireTable, markDone, serveReady }
+  return {
+    data, payments, online, openNew, updateTable, payAndClose, cancelTable, reopen, clearToday,
+    fireTable, markDone, serveReady, recordPayments, voidPayment, editPayment, voidItem,
+  }
 }

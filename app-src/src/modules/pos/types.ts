@@ -55,12 +55,29 @@ export interface ClosedBill {
   total: number
 }
 
+// A recorded payment against a bill (open or closed).
+export interface PosPayment {
+  id: number
+  method: 'cash' | 'card'
+  amount: number
+  note: string | null
+  by: string | null
+  at: string
+}
+
+// Attributed discount — every discount must say who it was for.
+export type DiscountKind = 'family_friends' | 'staff' | 'service' | 'other'
+
 export interface Payment {
   cash: number
   card: number
   discount: number
   tip: number
   total: number
+  // the payment(s) collected at close, recorded server-side (derives cash/card)
+  payments?: { method: 'cash' | 'card'; amount: number }[]
+  discountKind?: DiscountKind | null
+  discountReason?: string | null
 }
 
 // pos_day_report payload. Money fields are ABSENT for callers without
@@ -94,6 +111,7 @@ export interface DayReport {
   summary: DayReportSummary
   food?: number
   labor?: number
+  discounts_by_kind?: Partial<Record<DiscountKind | 'unattributed', number>>
   items: { name: string; category: string | null; units: number; value: number }[]
   expenses: DayReportExpense[]
 }

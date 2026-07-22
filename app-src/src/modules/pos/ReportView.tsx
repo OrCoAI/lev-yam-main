@@ -16,6 +16,14 @@ import S, { INK, SEA, SEA_DEEP, SUN } from './styles'
 import type { ClosedBill, DayReport, DayReportExpense } from './types'
 import { TotalCell } from './widgets'
 
+// Discount attribution label (family & friends / staff / service / other / legacy).
+const discLabel = (k: string, tr: (he: string, ar: string) => string) =>
+  k === 'family_friends' ? tr('משפחה וחברים', 'العائلة والأصدقاء')
+  : k === 'staff' ? tr('צוות', 'الطاقم')
+  : k === 'service' ? tr('פיצוי', 'تعويض')
+  : k === 'other' ? tr('אחר', 'أخرى')
+  : tr('ללא שיוך', 'غير مُصنّف')
+
 // Collapsible section with a title, optional right-side summary, and a chevron.
 function Section({ title, right, open, onToggle, children }: {
   title: string
@@ -338,6 +346,8 @@ export default function ReportView({ initialDate, full, canAddFood, canAddLabor,
                   {!isRange && detail(tr('זמן ישיבה ממוצע', 'متوسط مدة الجلوس'), (s.avg_minutes || 0) + ' ' + tr('דק׳', 'د'))}
                   {detail(tr('שיעור טיפ', 'نسبة البقشيش'), tipRate + '%')}
                   {(s.discounts || 0) > 0 && detail(tr('סה״כ הנחות', 'مجموع الخصومات'), (s.discounts || 0) + ' ₪')}
+                  {Object.entries(rep.discounts_by_kind || {}).map(([k, v]) =>
+                    <Fragment key={k}>{detail('· ' + discLabel(k, tr), (v || 0) + ' ₪')}</Fragment>)}
                   {detail(tr('עלות מזון', 'تكلفة الطعام'), foodTotal + ' ₪' + (rev ? ' · ' + foodPct + '%' : ''))}
                   {detail(tr('עלות עובדים', 'تكلفة العمال'), laborTotal + ' ₪' + (rev ? ' · ' + laborPct + '%' : ''))}
                   {detail(tr('שיעור רווח', 'هامش الربح'), netMargin + '%')}

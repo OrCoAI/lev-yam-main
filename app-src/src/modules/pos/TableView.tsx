@@ -7,15 +7,22 @@ import { itemName, usePosTr } from './i18n'
 import { kitchenCounts, tableTotals } from './logic'
 import { COMBO_DEFS, MENU, type FlatComboDef } from './menu'
 import PaymentModal from './PaymentModal'
+import VoidReasonModal from './VoidReasonModal'
 import S, { LINE, SEA, SEA_DEEP, SUN } from './styles'
-import type { ComboComponent, Payment, PosLine, PosTable } from './types'
+import type { ComboComponent, Payment, PosLine, PosPayment, PosTable } from './types'
 import { KitchenChips, Line, PosLangToggle, StatusChip, Stepper } from './widgets'
 
-export default function TableView({ table, onUpdate, onBack, onPaid, onCancelTable, onFire }: {
+export default function TableView({ table, payments, canManage, onUpdate, onBack, onPaid, onRecordPayment, onVoidPayment, onEditPayment, onVoidItem, onCancelTable, onFire }: {
   table: PosTable
+  payments: PosPayment[]
+  canManage: boolean
   onUpdate: (updater: (t: PosTable) => PosTable) => void
   onBack: () => void
   onPaid: (payment: Payment) => void
+  onRecordPayment: (payments: { method: 'cash' | 'card'; amount: number }[]) => void
+  onVoidPayment: (paymentId: number) => void
+  onEditPayment: (paymentId: number, method: 'cash' | 'card', amount: number) => void
+  onVoidItem: (name: string, qty: number, unitPrice: number, wasFired: boolean, reason: string) => Promise<boolean>
   onCancelTable: () => void
   onFire: () => void
 }) {
@@ -26,6 +33,9 @@ export default function TableView({ table, onUpdate, onBack, onPaid, onCancelTab
   const [showPay, setShowPay] = useState(false)
   const [draft, setDraft] = useState(() => ({ name: defName(), price: '', oh: false }))
   const [comboPick, setComboPick] = useState<FlatComboDef | null>(null)
+  const [pendingVoid, setPendingVoid] = useState<{ it: PosLine; mode: 'line' | 'portion' } | null>(null)
+
+  const paidSoFar = payments.reduce((s, p) => s + p.amount, 0)
 
   const items = table.items
   const guests = table.guests
@@ -35,8 +45,14 @@ export default function TableView({ table, onUpdate, onBack, onPaid, onCancelTab
   const setGuests = (fn: (g: { a: number; c: number }) => { a: number; c: number }) => onUpdate((t) => ({ ...t, guests: fn(t.guests) }))
   const setUseOH = (v: boolean) => onUpdate((t) => ({ ...t, useOH: v }))
 
-  const setQty = (id: string, d: number) =>
-    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, qty: Math.max(0, it.qty + d) } : it)))
+  // Decrementing below what's already been sent to the kitchen removes a cooked
+  // portion → goes through the void flow; un-fired portions decrement freely.
+  const setQty = (id: string, d: number) => {
+    const it = items.find((x) => x.id === id)
+    if (!it) return
+    if (d < 0 && it.qty - 1 < (it.sent || 0)) { requestVoid(it, 'portion'); return }
+    setItems((prev) => prev.map((x) => (x.id === id ? { ...x, qty: Math.max(0, x.qty + d) } : x)))
+  }
 
   const addCustom = () => {
     const price = parseInt(draft.price, 10)
@@ -46,7 +62,40 @@ export default function TableView({ table, onUpdate, onBack, onPaid, onCancelTab
     setAdding(false)
   }
 
-  const removeItem = (id: string) => setItems((prev) => prev.filter((it) => it.id !== id))
+  // Voiding a fired item is a written-off cost: managers only, with a structured
+  // reason (VoidReasonModal). requestVoid opens the picker; confirmVoid runs the
+  // audited void and applies the local change only if it's accepted server-side.
+  const requestVoid = (it: PosLine, mode: 'line' | 'portion') => {
+    if (!canManage) {
+      alert(tr('פריט שנשלח למטבח — נדרש מנהל להסרה', 'صنف أُرسل للمطبخ — يلزم مدير للحذف'))
+      return
+    }
+    setPendingVoid({ it, mode })
+  }
+  const confirmVoid = async (reason: string) => {
+    if (!pendingVoid) return
+    const { it, mode } = pendingVoid
+    setPendingVoid(null)
+    const ok = await onVoidItem(it.name, mode === 'line' ? it.qty || 1 : 1, it.price, true, reason)
+    if (!ok) return
+    if (mode === 'line') {
+      setItems((prev) => prev.filter((x) => x.id !== it.id))
+    } else {
+      setItems((prev) => prev.map((x) => {
+        if (x.id !== it.id) return x
+        const sent = Math.max(0, (x.sent || 0) - 1)
+        return { ...x, qty: x.qty - 1, sent, done: Math.min(x.done || 0, sent), served: Math.min(x.served || 0, sent) }
+      }))
+    }
+  }
+
+  // Remove a whole line. An un-fired line never reached the kitchen (no cost) —
+  // drop it locally with no round-trip (venue Wi-Fi is flaky). A fired line goes
+  // through the void reason picker and is dropped only if the void is accepted.
+  const removeItem = (it: PosLine) => {
+    if ((it.sent || 0) <= 0) { setItems((prev) => prev.filter((x) => x.id !== it.id)); return }
+    requestVoid(it, 'line')
+  }
 
   const addCombo = (def: FlatComboDef, components: ComboComponent[]) => {
     setItems((prev) => [...prev, {
@@ -112,6 +161,49 @@ export default function TableView({ table, onUpdate, onBack, onPaid, onCancelTab
           </div>
         )}
 
+        {/* Balance due — shown once any partial payment has been taken */}
+        {paidSoFar > 0 && (
+          <div style={S.balanceBox}>
+            <div style={S.balanceRow}>
+              <span style={S.balanceLbl}>{tr('סה״כ', 'المجموع')}</span>
+              <span style={S.balanceVal}>{grand} ₪</span>
+            </div>
+            <div style={S.balanceRow}>
+              <span style={S.balanceLbl}>{tr('שולם', 'مدفوع')}</span>
+              <span style={S.balanceVal}>{paidSoFar} ₪</span>
+            </div>
+            <div style={S.balanceRow}>
+              <span style={S.balanceLbl}>{tr('נותר לתשלום', 'المتبقي للدفع')}</span>
+              <span style={S.balanceDue}>{Math.max(0, grand - paidSoFar)} ₪</span>
+            </div>
+            {payments.map((p) => (
+              <div key={p.id} style={S.payHistRow}>
+                <span style={S.payHistMethod}>{p.method === 'cash' ? tr('מזומן', 'نقداً') : tr('אשראי', 'بطاقة')}</span>
+                {p.note && <span style={S.balanceLbl}>· {p.note}</span>}
+                {canManage ? (
+                  <button className="pos-tap" style={{ ...S.payHistAmt, ...S.payHistEdit }}
+                    title={tr('עריכת סכום', 'تعديل المبلغ')}
+                    onClick={() => {
+                      const v = window.prompt(tr('סכום התשלום', 'مبلغ الدفعة'), String(p.amount))
+                      const n = v == null ? NaN : parseInt(v, 10)
+                      if (n > 0) onEditPayment(p.id, p.method, n)
+                    }}>{p.amount} ₪ ✎</button>
+                ) : (
+                  <span style={S.payHistAmt}>{p.amount} ₪</span>
+                )}
+                {canManage && (
+                  <button className="pos-tap" style={S.payHistVoid}
+                    title={tr('ביטול תשלום', 'إلغاء الدفعة')}
+                    onClick={() => { if (window.confirm(tr('לבטל את התשלום?', 'إلغاء الدفعة؟'))) onVoidPayment(p.id) }}>✕</button>
+                )}
+              </div>
+            ))}
+            <button className="pos-tap" style={S.addPayBtn} onClick={() => setShowPay(true)}>
+              {'+ ' + tr('תשלום נוסף', 'دفعة إضافية')}
+            </button>
+          </div>
+        )}
+
         {/* Combos / meals — configured lines + add cards */}
         <section style={S.section}>
           <header style={S.catHead}>
@@ -125,7 +217,7 @@ export default function TableView({ table, onUpdate, onBack, onPaid, onCancelTab
                 <span style={S.comboLineName}>{itemName(it, lang)}</span>
                 <StatusChip it={it} />
                 <span style={S.comboLinePrice}>{it.qty * it.price} ₪</span>
-                <button className="pos-tap" style={S.delBtn} onClick={() => removeItem(it.id)}>✕</button>
+                <button className="pos-tap" style={S.delBtn} onClick={() => removeItem(it)}>✕</button>
               </div>
               {it.components && it.components.length > 0 && (
                 <div style={S.comboLineParts}>
@@ -174,7 +266,7 @@ export default function TableView({ table, onUpdate, onBack, onPaid, onCancelTab
                       {it.qty > 0 && <StatusChip it={it} />}
                     </span>
                     {it.custom
-                      ? <button className="pos-tap" style={S.delBtn} onClick={() => removeItem(it.id)}>✕</button>
+                      ? <button className="pos-tap" style={S.delBtn} onClick={() => removeItem(it)}>✕</button>
                       : <span style={{ ...S.cardPrice, color: it.oh ? SEA_DEEP : SUN }}>{it.price}</span>}
                   </div>
                   {it.custom && <div style={{ ...S.cardPrice, color: SUN, fontSize: 13, marginTop: -6, marginBottom: 8 }}>{it.price} ₪</div>}
@@ -262,9 +354,10 @@ export default function TableView({ table, onUpdate, onBack, onPaid, onCancelTab
       )}
       {showPay && (
         <PaymentModal
-          total={grand} tableLabel={tableLabel}
+          total={grand} alreadyPaid={paidSoFar} tableLabel={tableLabel}
           onCancel={() => setShowPay(false)}
-          onConfirm={(payment) => { setShowPay(false); onPaid(payment) }}
+          onRecord={(pmts) => { setShowPay(false); onRecordPayment(pmts) }}
+          onPaid={(payment) => { setShowPay(false); onPaid(payment) }}
         />
       )}
       {comboPick && (
@@ -272,6 +365,13 @@ export default function TableView({ table, onUpdate, onBack, onPaid, onCancelTab
           def={comboPick}
           onCancel={() => setComboPick(null)}
           onConfirm={(components) => addCombo(comboPick, components)}
+        />
+      )}
+      {pendingVoid && (
+        <VoidReasonModal
+          label={itemName(pendingVoid.it, lang)}
+          onCancel={() => setPendingVoid(null)}
+          onConfirm={confirmVoid}
         />
       )}
     </div>

@@ -6,6 +6,7 @@ import type { CSSProperties } from 'react'
 export const SEA = '#2c92bf'
 export const SEA_DEEP = '#1f6f93'
 export const SUN = '#e8833a'
+export const CLAY = '#c2553f' // terracotta — discounts, voids, alerts
 export const SAND = '#faf6ee'
 export const CARD = '#ffffff'
 export const INK = '#2c2620'
@@ -109,6 +110,7 @@ const styles = {
   tableNumBadge: { width: 36, height: 36, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 900, color: '#fff', lineHeight: 1, flexShrink: 0 },
   tableName: { fontSize: 14, fontWeight: 800, color: INK, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 },
   tableMeta: { fontSize: 12, fontWeight: 600, color: MUTE },
+  tablePartPaid: { fontSize: 11, fontWeight: 800, color: SEA_DEEP, background: '#eef6fb', borderRadius: 8, padding: '3px 8px', alignSelf: 'flex-start' },
   tableCardTotal: { marginTop: 'auto', paddingTop: 9, borderTop: '1px solid ' + LINE, display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: 3 },
   tableCardNum: { fontSize: 25, fontWeight: 900, color: INK, lineHeight: 1 },
   tableCardCur: { fontSize: 14, fontWeight: 800, color: MUTE },
@@ -134,6 +136,23 @@ const styles = {
   payChip: { flex: 1, padding: '10px 0', borderRadius: 12, border: '1.5px solid ' + LINE, background: SAND, color: INK, fontSize: 13, fontWeight: 700, cursor: 'pointer' },
   payChipOn: { background: SEA, color: '#fff', borderColor: 'transparent' },
   tipCalcHead: { fontSize: 13, fontWeight: 800, color: MUTE, textAlign: 'center', marginBottom: -4 },
+  // discount attribution picker
+  discGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 },
+  discChip: { padding: '12px 8px', borderRadius: 12, border: '1.5px solid ' + LINE, background: SAND, color: INK, fontSize: 14, fontWeight: 800, cursor: 'pointer' },
+  discChipOn: { background: CLAY, color: '#fff', borderColor: 'transparent' },
+  discNoteInput: { width: '100%', boxSizing: 'border-box', padding: '11px 12px', borderRadius: 12, border: '1.5px solid ' + LINE, background: SAND, fontSize: 15, fontWeight: 600, color: INK, outline: 'none', textAlign: 'right' },
+  // open-table balance-due + payment history
+  balanceBox: { background: CARD, border: '1.5px solid ' + LINE, borderRadius: 14, padding: '10px 12px', marginBottom: 12 },
+  balanceRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 },
+  balanceLbl: { fontSize: 12, fontWeight: 700, color: MUTE },
+  balanceVal: { fontSize: 14, fontWeight: 800, color: INK },
+  balanceDue: { fontSize: 18, fontWeight: 900, color: SEA_DEEP },
+  payHistRow: { display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderTop: '1px dotted ' + LINE, fontSize: 12, fontWeight: 700 },
+  payHistMethod: { color: INK },
+  payHistAmt: { marginInlineStart: 'auto', fontWeight: 800, color: INK },
+  payHistVoid: { background: 'transparent', border: 'none', color: CLAY, fontSize: 13, fontWeight: 800, cursor: 'pointer', padding: '0 4px' },
+  payHistEdit: { background: 'transparent', border: 'none', cursor: 'pointer', color: SEA_DEEP },
+  addPayBtn: { width: '100%', padding: 11, marginTop: 6, borderRadius: 12, border: '1.5px dashed ' + SEA, background: 'transparent', color: SEA_DEEP, fontSize: 14, fontWeight: 800, cursor: 'pointer' },
 
   comboLine: { background: CARD, border: '1.5px solid ' + SUN, borderRadius: 16, padding: '12px', marginBottom: 8, boxShadow: '0 2px 10px rgba(232,131,58,.1)' },
   comboLineTop: { display: 'flex', alignItems: 'center', gap: 8 },

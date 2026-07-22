@@ -112,9 +112,16 @@ PRs. Not a numbered phase — hardening of the Phase 1 POS that feeds Phase 4 (Q
 from POS items) and Phase 5 (inventory ↔ menu, shifts ↔ labor). Umbrella plan + locked scope
 decisions: [plans/pos-operations-v2.md](plans/pos-operations-v2.md).*
 
-- [ ] **PR A** — Kitchen in/out visibility (floor + table view: cooking / ready / served)
-- [ ] **PR B** — Summary tab redesign (week/month presets, accordions) + expenses upgrade
-      (who/when, receipt flag, paid date, full-period list)
+- [x] **PR A** — Kitchen in/out visibility (floor + table view: cooking / ready / served)
+      *(done 2026-07-21, PR #26 merged + deployed; prod bundle probe-verified HE+AR.
+      Shared `kitchenCounts()` helper + `KitchenChips`; status sits inline beside the
+      table/item title per owner direction, not on its own row)*
+- [x] **PR B** — Summary tab redesign (week/month presets, accordions) + expenses upgrade
+      (who/when, receipt flag, paid date, full-period list) *(done 2026-07-21, PR #27
+      merged + deployed; `46_pos_expenses_tracking.sql` on prod, `rls_matrix` green.
+      Also added manager-only inline **edit** of an expense's name+amount and a delete
+      confirm — stronger when the expense is paid. Gate closed a PUBLIC-execute default
+      on the three new RPCs — revoked from `public, anon`)*
 - [ ] **PR C** — Split/partial payments (partial-while-open, balance-due) + checkout item-delete
 - [ ] **PR D** — Menu-as-data (owner-editable items/prices/categories; combos deferred);
       retires the `pos.menu_price()` literal mirror

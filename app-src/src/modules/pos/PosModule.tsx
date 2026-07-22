@@ -53,9 +53,15 @@ export default function PosModule() {
     return (
       <TableView
         table={active}
+        payments={pos.payments[active.id] || []}
+        canManage={canManage}
         onUpdate={(updater) => pos.updateTable(active.id, updater)}
         onBack={() => setActiveId(null)}
         onPaid={(payment) => payAndClose(active.id, payment)}
+        onRecordPayment={(pmts) => void pos.recordPayments(active.id, pmts)}
+        onVoidPayment={(pid) => void pos.voidPayment(pid)}
+        onEditPayment={(pid, method, amount) => void pos.editPayment(pid, method, amount)}
+        onVoidItem={(name, qty, price, fired, reason) => pos.voidItem(active.id, name, qty, price, fired, reason)}
         onCancelTable={() => cancelTable(active.id)}
         onFire={() => pos.fireTable(active.id)}
       />
@@ -118,6 +124,7 @@ export default function PosModule() {
               {data.tables.map((t) => {
                 const tt = tableTotals(t)
                 const k = kitchenCounts(t.items)
+                const paid = (pos.payments[t.id] || []).reduce((s, p) => s + p.amount, 0)
                 return (
                   <button
                     key={t.id}
@@ -139,6 +146,9 @@ export default function PosModule() {
                       ) : null}
                     </div>
                     <span style={S.tableMeta}>{tt.headcount + ' ' + tr('סועדים', 'ضيوف') + ' · ' + tt.itemsCount + ' ' + tr('פריטים', 'أصناف')}</span>
+                    {paid > 0 && (
+                      <span style={S.tablePartPaid}>{tr('נותר', 'المتبقي') + ' ' + Math.max(0, tt.grand - paid) + ' ₪ · ' + tr('שולם', 'مدفوع') + ' ' + paid}</span>
+                    )}
                     <div style={S.tableCardTotal}>
                       <span style={S.tableCardNum}>{tt.grand}</span>
                       <span style={S.tableCardCur}>₪</span>
