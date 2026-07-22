@@ -204,6 +204,18 @@ values ('rls-test-b1', 'rls-test item', 10, 1);
 insert into pos.pos_expenses (id, business_date, kind, amount, note) overriding system value
 values (900001, current_date, 'food', 10, 'rls-test'), (900002, current_date, 'labor', 20, 'rls-test');
 
+-- 47_pos_payments: one OPEN table with a payment, plus a payment whose bill is
+-- already closed — so the "reopen before editing money" rule can be asserted
+-- from both sides.
+insert into pos.pos_tables (id, num, name, guests_adults, guests_children, pricing_mode, items)
+values ('rls-test-tbl', 991, 'rls-test', 2, 0, 'a_la_carte', '[]'::jsonb);
+insert into pos.pos_payments (id, bill_id, method, amount, taken_by) overriding system value
+values (990001, 'rls-test-tbl',   'cash', 50, 'rls@test'),   -- bill still open
+       (990002, 'rls-test-b1',    'cash', 30, 'rls@test');   -- bill already closed
+-- an open table for the legacy (pre-split-payments) 2-arg close-path assertion
+insert into pos.pos_tables (id, num, name, pricing_mode, guests_adults, items)
+values ('rls-legacy-tbl', 995, 'rls-legacy', 'a_la_carte', 1, '[]'::jsonb);
+
 -- storage: one object in the private bucket, so the denial assertion below is
 -- proven against an existing row (not vacuously true on an empty bucket)
 insert into storage.buckets (id, name, public) values ('quotes-docs', 'quotes-docs', false)
@@ -280,6 +292,27 @@ select pg_temp.assert_raises('staff: cannot mark an expense paid (no pos.manage)
   $q$ select pos.set_expense_paid(900001, current_date) $q$, 'pos.manage');
 select pg_temp.assert_raises('staff: cannot edit an expense (no pos.manage)',
   $q$ select pos.set_expense(900001, 'x', 9) $q$, 'pos.manage');
+
+-- payments + item voids (47_pos_payments): taking money is floor work,
+-- correcting recorded money is not.
+select pg_temp.assert_ok('staff: can record a payment on an OPEN bill (pos.order)',
+  $q$ select pos.add_payment('rls-test-tbl', 'cash', 25, 'rls-test') $q$);
+select pg_temp.assert_raises('staff: cannot add a payment to a CLOSED bill (off-books guard)',
+  $q$ select pos.add_payment('rls-test-b1', 'cash', 25, null) $q$, 'החשבון סגור');
+select pg_temp.assert_raises('staff: cannot edit a recorded payment (no pos.manage)',
+  $q$ select pos.edit_payment(990001, 'cash', 60, null) $q$, 'pos.manage');
+select pg_temp.assert_raises('staff: cannot void a recorded payment (no pos.manage)',
+  $q$ select pos.void_payment(990001) $q$, 'pos.manage');
+select pg_temp.assert_ok('staff: can void an item never sent to the kitchen (pos.order)',
+  $q$ select pos.void_item('rls-test-tbl', 'rls-test item', 1, 10, false, 'mistake') $q$);
+select pg_temp.assert_raises('staff: cannot void an item the kitchen already fired (needs pos.manage)',
+  $q$ select pos.void_item('rls-test-tbl', 'rls-test item', 1, 10, true, 'burnt') $q$, 'pos.manage');
+select pg_temp.assert_denied('staff: direct pos_payments SELECT denied (RPC-only path)',
+  $q$ select 1 from pos.pos_payments where bill_id = 'rls-test-tbl' $q$);
+select pg_temp.assert_raises('staff: cannot post the day to finance (no pos.manage)',
+  $q$ select pos.close_day(current_date) $q$, 'pos.manage');
+select pg_temp.assert_denied('staff: pos.post_day is internal — not callable by any role',
+  $q$ select pos.post_day(current_date) $q$);
 select pg_temp.assert_rows('staff: finance.entries hidden',
   $q$ select 1 from finance.entries where note like 'rls-test%' $q$, 0);
 select pg_temp.assert_rows('staff: finance.expected hidden',
@@ -330,6 +363,45 @@ select pg_temp.assert_raises('manager: expense edit rejects a non-positive amoun
   $q$ select pos.set_expense(900001, 'x', 0) $q$, 'סכום לא תקין');
 select pg_temp.assert_denied('manager: direct pos_expenses UPDATE denied (no UPDATE grant — RPC-only path)',
   $q$ update pos.pos_expenses set has_receipt = true where id = 900002 $q$);
+
+-- payments (47_pos_payments): a manager may correct recorded money, but only
+-- while the bill is open — a closed bill must be re-opened first, so booked
+-- money never changes without a visible re-open.
+select pg_temp.assert_ok('manager: can edit a payment on an OPEN bill (pos.manage)',
+  $q$ select pos.edit_payment(990001, 'card', 60, 'rls-test') $q$);
+select pg_temp.assert_raises('manager: cannot edit a payment on a CLOSED bill (must reopen)',
+  $q$ select pos.edit_payment(990002, 'cash', 10, null) $q$, 'לפתוח אותו מחדש');
+select pg_temp.assert_raises('manager: cannot void a payment on a CLOSED bill (must reopen)',
+  $q$ select pos.void_payment(990002) $q$, 'לפתוח אותו מחדש');
+select pg_temp.assert_raises('manager: payment edit rejects a non-positive amount',
+  $q$ select pos.edit_payment(990001, 'cash', 0, null) $q$, 'סכום לא תקין');
+select pg_temp.assert_raises('manager: payment edit rejects an unknown method',
+  $q$ select pos.edit_payment(990001, 'bitcoin', 10, null) $q$, 'אמצעי תשלום');
+select pg_temp.assert_ok('manager: can void an already-fired item (pos.manage)',
+  $q$ select pos.void_item('rls-test-tbl', 'rls-test item', 1, 10, true, 'burnt') $q$);
+select pg_temp.assert_ok('manager: can void a payment on an OPEN bill (pos.manage)',
+  $q$ select pos.void_payment(990001) $q$);
+-- backward compat: a legacy 2-arg close (no recorded payments) must still work,
+-- falling back to the payload's cash_paid/card_paid — the deployed client path
+select pg_temp.assert_ok('legacy 2-arg close (no payments → payload cash/card) still works',
+  $q$ select pos.pos_close_table(
+        jsonb_build_object('id','rls-legacy-tbl','table_num',995,'pricing_mode','a_la_carte',
+          'oh_charge',0,'extras_total',50,'menu_value',50,'discount',0,'grand_total',50,'tip',0,
+          'cash_paid',50,'card_paid',0),
+        '[{"item_name":"x","is_custom":true,"unit_price":50,"qty":1,"is_open_house":false}]'::jsonb) $q$);
+
+-- every discount must be attributed — enforced in the DB, not just the UI
+select pg_temp.assert_raises('manager: cannot close a discounted bill with no discount reason',
+  $q$ select pos.pos_close_table(
+        jsonb_build_object('id','rls-test-tbl','table_num',991,'pricing_mode','a_la_carte',
+          'oh_charge',0,'extras_total',0,'discount',20,'grand_total',-20,'tip',0),
+        '[]'::jsonb) $q$, 'סיבת ההנחה');
+select pg_temp.assert_raises('manager: discount kind "other" still requires a written reason',
+  $q$ select pos.pos_close_table(
+        jsonb_build_object('id','rls-test-tbl','table_num',991,'pricing_mode','a_la_carte',
+          'oh_charge',0,'extras_total',0,'discount',20,'grand_total',-20,'tip',0,
+          'discount_kind','other'),
+        '[]'::jsonb) $q$, 'לפרט את סיבת ההנחה');
 select pg_temp.assert_raises('manager: SIGNED contract rejects UPDATE (immutable)',
   $q$ update quotes.contracts set signed_name = 'tampered'
       where id = 'cccccccc-0000-0000-0000-000000000002' $q$, 'כבר נחתם');

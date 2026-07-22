@@ -18,9 +18,9 @@ touching schema, permissions, or the events/finance spine graduates to a `docs/p
 Six owner-requested capabilities → five PRs. Umbrella plan + locked decisions:
 [../plans/pos-operations-v2.md](../plans/pos-operations-v2.md).
 
-- **PR A** — Kitchen in/out visibility (floor + table view). *(active)*
-- **PR B** — Summary redesign + expenses upgrade (who/when, receipt, paid date, period list).
-- **PR C** — Split/partial payments (partial-while-open) + checkout item-delete.
+- ~~**PR A** — Kitchen in/out visibility~~ **done 2026-07-21 (#26, live).**
+- ~~**PR B** — Summary redesign + expenses upgrade~~ **done 2026-07-21 (#27, live).**
+- **PR C** — Split/partial payments (partial-while-open) + checkout item-delete. *(active)*
 - **PR D** — Menu-as-data (flat items first; combos deferred) — folds in the two ideas below.
 - **PR E** — Day lifecycle: open → booked, drift-flag, re-post/override.
 

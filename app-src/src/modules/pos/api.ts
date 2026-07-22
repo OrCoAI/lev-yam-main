@@ -2,7 +2,7 @@
 // (moved out of `public` at cut-over, docs/plans/pos-cutover-hardening.md).
 import { pos } from '../../lib/supabase'
 import { jerusalemDate, reconcileItems } from './logic'
-import type { CloseDayResult, ClosedBill, DayReport, PosTable } from './types'
+import type { CloseDayResult, ClosedBill, DayReport, PosPayment, PosTable } from './types'
 
 // ── row mappers (wire format frozen — shared with pos.html) ──
 interface TableRow {
@@ -87,8 +87,37 @@ export function deleteTable(id: string) {
   return pos().from('pos_tables').delete().eq('id', id)
 }
 
-export function closeTableRpc(bill: unknown, items: unknown) {
-  return pos().rpc('pos_close_table', { p_bill: bill, p_items: items })
+export function closeTableRpc(bill: unknown, items: unknown, payments: unknown[] = []) {
+  return pos().rpc('pos_close_table', { p_bill: bill, p_items: items, p_payments: payments })
+}
+
+// ── split / partial payments (47_pos_payments) ──
+// Payments for every currently-open table, keyed by bill id.
+export async function fetchOpenPayments(): Promise<Record<string, PosPayment[]>> {
+  const { data, error } = await pos().rpc('open_payments')
+  if (error) throw error
+  return (data as Record<string, PosPayment[]>) || {}
+}
+
+// Record a payment on an open bill — pos.order.
+export function addPaymentRpc(billId: string, method: 'cash' | 'card', amount: number, note?: string) {
+  return pos().rpc('add_payment', { p_bill_id: billId, p_method: method, p_amount: amount, p_note: note ?? null })
+}
+
+// Edit / void a recorded payment — pos.manage, and only while the bill is open.
+export function editPaymentRpc(id: number, method: 'cash' | 'card', amount: number, note?: string) {
+  return pos().rpc('edit_payment', { p_id: id, p_method: method, p_amount: amount, p_note: note ?? null })
+}
+export function voidPaymentRpc(id: number) {
+  return pos().rpc('void_payment', { p_id: id })
+}
+
+// Record an item removed at checkout — pos.order when never fired, pos.manage once fired.
+export function voidItemRpc(billId: string, name: string, qty: number, unitPrice: number, wasFired: boolean, reason?: string) {
+  return pos().rpc('void_item', {
+    p_bill_id: billId, p_name: name, p_qty: qty, p_unit_price: unitPrice,
+    p_was_fired: wasFired, p_reason: reason ?? null,
+  })
 }
 
 export function reopenBillRpc(id: string, num: number) {

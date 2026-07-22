@@ -106,9 +106,12 @@ export function buildBillPayload(t: PosTable, payment: Payment) {
       extras_total: t.useOH ? tt.extras : tt.menuAll,
       menu_value: tt.menuAll,
       discount: payment.discount || 0, // taken off the gross bill
+      discount_kind: payment.discountKind ?? null, // every discount is attributed
+      discount_reason: payment.discountReason ?? null,
       tip: payment.tip || 0, // overpayment kept as tip
       grand_total: payment.total, // net charged (gross − discount)
-      cash_paid: payment.cash, card_paid: payment.card,
+      // cash_paid/card_paid are intentionally NOT sent — pos_close_table derives
+      // them from the recorded payments; a client copy would only invite drift.
       items: ordered,
     },
     items: ordered.map((it) => ({

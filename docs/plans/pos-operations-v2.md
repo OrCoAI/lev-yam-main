@@ -26,12 +26,14 @@ so it lands last.
 
 ## Locked decisions (owner, 2026-07-20)
 
-- **#5 day lifecycle = middle ground.** Explicit day state (open → booked). Booking is
-  deliberate. After booking, edits to that day's bills/expenses stay allowed but the day
-  is flagged **drifted — books no longer match**, requiring an explicit **re-post
-  (override)**. Preserves today's safe idempotent-correction posting in `pos.close_day`
-  (`43_pos_cutover.sql`); adds intent + visibility; **no hard lock** that could block staff
-  mid-service.
+- **#5 day lifecycle = auto re-post + notify.** *(Revised 2026-07-21, superseding the
+  original "flag + explicit re-post" middle ground — owner: "if I am changing a bill from a
+  day that already been added to the books the update should take in place".)* When a booked
+  day's money changes, the posting re-runs **automatically** and writes the correcting delta,
+  and the correction is **recorded and surfaced** so nothing moves in the books silently.
+  Still no hard lock. Builds on the existing idempotent delta posting in `pos.close_day`
+  (`43_pos_cutover.sql`); the permission check moves to a thin manual wrapper so the
+  automatic path can post without requiring the editing staff member to hold `pos.manage`.
 - **#1 payments = partial-while-open.** A table can take payments over time while still
   open (deposit / one guest pays and leaves), closing only when fully paid → needs an
   open-bill **balance-due** concept, not just a checkout-time split.
