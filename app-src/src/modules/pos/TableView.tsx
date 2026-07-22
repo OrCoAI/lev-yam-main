@@ -7,6 +7,7 @@ import { itemName, usePosTr } from './i18n'
 import { kitchenCounts, tableTotals } from './logic'
 import { COMBO_DEFS, MENU, type FlatComboDef } from './menu'
 import PaymentModal from './PaymentModal'
+import VoidReasonModal from './VoidReasonModal'
 import S, { LINE, SEA, SEA_DEEP, SUN } from './styles'
 import type { ComboComponent, Payment, PosLine, PosPayment, PosTable } from './types'
 import { KitchenChips, Line, PosLangToggle, StatusChip, Stepper } from './widgets'
@@ -32,6 +33,7 @@ export default function TableView({ table, payments, canManage, onUpdate, onBack
   const [showPay, setShowPay] = useState(false)
   const [draft, setDraft] = useState(() => ({ name: defName(), price: '', oh: false }))
   const [comboPick, setComboPick] = useState<FlatComboDef | null>(null)
+  const [pendingVoid, setPendingVoid] = useState<{ it: PosLine; mode: 'line' | 'portion' } | null>(null)
 
   const paidSoFar = payments.reduce((s, p) => s + p.amount, 0)
 
@@ -43,8 +45,14 @@ export default function TableView({ table, payments, canManage, onUpdate, onBack
   const setGuests = (fn: (g: { a: number; c: number }) => { a: number; c: number }) => onUpdate((t) => ({ ...t, guests: fn(t.guests) }))
   const setUseOH = (v: boolean) => onUpdate((t) => ({ ...t, useOH: v }))
 
-  const setQty = (id: string, d: number) =>
-    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, qty: Math.max(0, it.qty + d) } : it)))
+  // Decrementing below what's already been sent to the kitchen removes a cooked
+  // portion → goes through the void flow; un-fired portions decrement freely.
+  const setQty = (id: string, d: number) => {
+    const it = items.find((x) => x.id === id)
+    if (!it) return
+    if (d < 0 && it.qty - 1 < (it.sent || 0)) { requestVoid(it, 'portion'); return }
+    setItems((prev) => prev.map((x) => (x.id === id ? { ...x, qty: Math.max(0, x.qty + d) } : x)))
+  }
 
   const addCustom = () => {
     const price = parseInt(draft.price, 10)
@@ -54,21 +62,39 @@ export default function TableView({ table, payments, canManage, onUpdate, onBack
     setAdding(false)
   }
 
-  // An un-fired line never reached the kitchen and carries no cost — remove it
-  // locally, no round-trip (venue Wi-Fi is flaky). A line already sent to the
-  // kitchen is a written-off cost → managers only, recorded in the void trail
-  // with a reason, and dropped locally only if the void is accepted server-side.
-  const removeItem = async (it: PosLine) => {
-    const fired = (it.sent || 0) > 0
-    if (!fired) { setItems((prev) => prev.filter((x) => x.id !== it.id)); return }
+  // Voiding a fired item is a written-off cost: managers only, with a structured
+  // reason (VoidReasonModal). requestVoid opens the picker; confirmVoid runs the
+  // audited void and applies the local change only if it's accepted server-side.
+  const requestVoid = (it: PosLine, mode: 'line' | 'portion') => {
     if (!canManage) {
       alert(tr('פריט שנשלח למטבח — נדרש מנהל להסרה', 'صنف أُرسل للمطبخ — يلزم مدير للحذف'))
       return
     }
-    const reason = window.prompt(tr('סיבת הסרת פריט שכבר הוכן?', 'سبب حذف صنف تم تحضيره؟')) ?? ''
-    if (!reason.trim()) return
-    const ok = await onVoidItem(it.name, it.qty || 1, it.price, true, reason.trim())
-    if (ok) setItems((prev) => prev.filter((x) => x.id !== it.id))
+    setPendingVoid({ it, mode })
+  }
+  const confirmVoid = async (reason: string) => {
+    if (!pendingVoid) return
+    const { it, mode } = pendingVoid
+    setPendingVoid(null)
+    const ok = await onVoidItem(it.name, mode === 'line' ? it.qty || 1 : 1, it.price, true, reason)
+    if (!ok) return
+    if (mode === 'line') {
+      setItems((prev) => prev.filter((x) => x.id !== it.id))
+    } else {
+      setItems((prev) => prev.map((x) => {
+        if (x.id !== it.id) return x
+        const sent = Math.max(0, (x.sent || 0) - 1)
+        return { ...x, qty: x.qty - 1, sent, done: Math.min(x.done || 0, sent), served: Math.min(x.served || 0, sent) }
+      }))
+    }
+  }
+
+  // Remove a whole line. An un-fired line never reached the kitchen (no cost) —
+  // drop it locally with no round-trip (venue Wi-Fi is flaky). A fired line goes
+  // through the void reason picker and is dropped only if the void is accepted.
+  const removeItem = (it: PosLine) => {
+    if ((it.sent || 0) <= 0) { setItems((prev) => prev.filter((x) => x.id !== it.id)); return }
+    requestVoid(it, 'line')
   }
 
   const addCombo = (def: FlatComboDef, components: ComboComponent[]) => {
@@ -339,6 +365,13 @@ export default function TableView({ table, payments, canManage, onUpdate, onBack
           def={comboPick}
           onCancel={() => setComboPick(null)}
           onConfirm={(components) => addCombo(comboPick, components)}
+        />
+      )}
+      {pendingVoid && (
+        <VoidReasonModal
+          label={itemName(pendingVoid.it, lang)}
+          onCancel={() => setPendingVoid(null)}
+          onConfirm={confirmVoid}
         />
       )}
     </div>

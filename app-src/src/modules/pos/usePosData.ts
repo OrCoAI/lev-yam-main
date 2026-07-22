@@ -199,7 +199,11 @@ export function usePosData(activeId: string | null, onWriteError: (message: stri
       useOH: rec.useOH, openedAt: rec.openedAt || Date.now(),
     }
     setData((d) => ({ ...d, closed: d.closed.filter((x) => x.id !== id), tables: [...d.tables, t] }))
-    void reopenBillRpc(id, num).then(({ error }) => { setOnline(!error); if (isDenial(error)) onWriteError(error!.message) })
+    void reopenBillRpc(id, num).then(({ error }) => {
+      setOnline(!error)
+      if (isDenial(error)) onWriteError(error!.message)
+      else refreshPayments() // surface the reopened bill's recorded payments right away
+    })
   }
 
   // Waiter "send to kitchen": send the delta (sent = qty) on any line with more ordered
