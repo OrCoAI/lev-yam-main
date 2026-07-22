@@ -122,10 +122,20 @@ decisions: [plans/pos-operations-v2.md](plans/pos-operations-v2.md).*
       Also added manager-only inline **edit** of an expense's name+amount and a delete
       confirm — stronger when the expense is paid. Gate closed a PUBLIC-execute default
       on the three new RPCs — revoked from `public, anon`)*
-- [ ] **PR C** — Split/partial payments (partial-while-open, balance-due) + checkout item-delete
+- [x] **PR C** — Split/partial payments (partial-while-open, balance-due) + checkout item-delete
+      *(done 2026-07-22, PR #28 merged + deployed; `47_pos_payments.sql` on prod. Money now
+      flows through `pos_payments`; cash/card DERIVED from payments; every discount attributed;
+      fired-item removal → manager + structured reason. Backward-compat fallback kept the
+      deployed 2-arg client closing tables during the transition)*
 - [ ] **PR D** — Menu-as-data (owner-editable items/prices/categories; combos deferred);
       retires the `pos.menu_price()` literal mirror
-- [ ] **PR E** — Day lifecycle: open → booked, drift detection, explicit re-post/override
+- [x] **PR E** — Day lifecycle: open → booked, drift detection, explicit re-post/override
+      *(done 2026-07-22, PR #29 merged + deployed; `48_pos_day_lifecycle.sql` on prod. Manual
+      first post, then auto re-post on any change to a booked day; report badge (✓ booked / ⟳
+      updated). Included the finance-spine negative-reversal fix (20/21). **Hotfix same day
+      (4aab7dd):** `post_day` was wiping legacy-day revenue on re-post — every pre-split-payments
+      bill has money only on `pos_bills`, so it now reads revenue from both sources; added
+      `pos_bills` auto-repost triggers; reconciled two stale food-cost days. Full gate green)*
 
 ## Phase 1.5 — Platform hardening (2026-07-10 audit)
 

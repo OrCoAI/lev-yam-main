@@ -56,3 +56,30 @@ from expenses, never from bills. Recursion is impossible — `post_day` writes o
 
 Full gate + `rls_matrix` (`day_status` reports-gated) + a functional test: post a day, then
 change an expense/payment on it and assert finance auto-corrects to the new total.
+
+## Close-out — shipped 2026-07-22 (PR #29, merged + deployed)
+
+Delivered as designed: manual first post, then automatic delta re-post on any change to a
+booked day; report badge (✓ booked / ⟳ updated). Finance-spine negative-reversal fix landed
+in 20/21.
+
+**Same-day hotfix (commit 4aab7dd)** — owner hit "added an expense on a closed date, not able
+to add to the books." Root cause: PR C's `post_day` derived revenue only from `pos_payments`,
+but every pre-split-payments bill (and every bill the then-deployed 2-arg client closed) has
+money only on `pos_bills` with no payment rows — so re-posting such a day recomputed revenue
+as ~0 and auto re-post booked a giant negative correction, wiping the day's income. Fix:
+`post_day` sums revenue from **both** sources (payments + payment-less bills via the pre-PR-C
+grammar), so re-posting an untouched legacy day is a true no-op. `/code-review` follow-on:
+`post_day` now reads `pos_bills`, so added `pos_bills` auto-repost triggers (INSERT/DELETE;
+UPDATE only on revenue columns) + extended the close re-post loop to the bill's `paid_at` day.
+No prod data was corrupted (caught pre-commit); two stale food-cost days (07-17, 07-18)
+reconciled. Full multi-agent gate green.
+
+**Follow-up logged** (`docs/modules/pos.md`): fold the two revenue sources behind a single
+`pos.day_revenue(p_date)` view so `post_day` stays source-agnostic — deferred, not weekend
+work; do **not** backfill `pos_payments` for history (irreversible live-money risk).
+
+**Alignment:** serves VISION (money integrity, "everything through the system") and holds the
+ARCHITECTURE invariants — DB-first RLS, finance posted only via the module posting fn through
+the `levyam.finance_posting` gate, corrections as reversals (never edits), bilingual UI. No
+drift.
