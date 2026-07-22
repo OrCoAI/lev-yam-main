@@ -7,7 +7,7 @@
 // whole selected range. "Post day to finance" (pos.close_day) for pos.manage.
 import { Fragment, useEffect, useState, type ReactNode } from 'react'
 import {
-  addExpense, closeDay, deleteExpense, fetchDayReport, fetchRangeReport,
+  addExpense, closeDay, deleteExpense, fetchDayReport, fetchDayStatus, fetchRangeReport,
   setExpensePaid, setExpenseReceipt, updateExpense,
 } from './api'
 import { itemName, usePosTr } from './i18n'
@@ -71,6 +71,7 @@ export default function ReportView({ initialDate, full, canAddFood, canAddLabor,
   const [open, setOpen] = useState<Record<string, boolean>>({ food: true, labor: false, items: false, details: false, closed: false })
   const [closing, setClosing] = useState(false)
   const [closeMsg, setCloseMsg] = useState<string | null>(null)
+  const [dayStat, setDayStat] = useState<{ posted: boolean; corrected: boolean } | null>(null)
   const isRange = from !== to
   const rangeDays = isRange ? dateRange(from, to).length : 1
   const toggle = (k: string) => setOpen((o) => ({ ...o, [k]: !o[k] }))
@@ -113,6 +114,15 @@ export default function ReportView({ initialDate, full, canAddFood, canAddLabor,
   // Drop an in-progress inline edit when the date scope changes — the row may
   // not exist in the new range, and its draft must not resurface later.
   useEffect(() => { setEditId(null) }, [from, to])
+
+  // Whether the day in view has been written to the books (and auto-corrected
+  // since). Single-day + money-visible only; refetched on any change (tick).
+  useEffect(() => {
+    if (isRange || !full) { setDayStat(null); return }
+    let alive = true
+    fetchDayStatus(from).then((st) => { if (alive) setDayStat(st) }).catch(() => { if (alive) setDayStat(null) })
+    return () => { alive = false }
+  }, [from, isRange, full, tick])
 
   const s = rep?.summary ?? { bills: 0, covers: 0, avg_minutes: 0 }
   const isToday = !isRange && from === today
@@ -198,7 +208,7 @@ export default function ReportView({ initialDate, full, canAddFood, canAddLabor,
           : tr('נרשם לכספים', 'سُجل في المالية') + ': ' + r.posted.map((p) => p.leg + ' ' + p.amount + ' ₪').join(' · '))
       })
       .catch((e: Error) => setCloseMsg(tr('שגיאה', 'خطأ') + ': ' + e.message))
-      .finally(() => setClosing(false))
+      .finally(() => { setClosing(false); setTick((t) => t + 1) }) // refresh the posted badge
   }
 
   const detail = (label: string, val: string) => (
@@ -329,12 +339,22 @@ export default function ReportView({ initialDate, full, canAddFood, canAddLabor,
               )}
               {full && <div style={S.reportHint}>{tr('הכנסה − מזון − עובדים · טיפים לא נכללים', 'الدخل − الطعام − العمال · البقشيش غير محتسب')}</div>}
 
-              {/* NEW: business day → finance spine */}
+              {/* business day → finance spine. First write is manual (this
+                  button); once posted, corrections are automatic and we show a
+                  status badge instead — ⟳ when the books changed since posting. */}
               {canManage && !isRange && (
                 <Fragment>
-                  <button className="pos-tap" style={{ ...S.reportExpand, borderColor: SEA, color: SEA_DEEP, opacity: closing ? 0.6 : 1 }} disabled={closing} onClick={postDay}>
-                    {closing ? tr('רושם…', 'جار التسجيل…') : tr('רישום היום לכספים', 'تسجيل اليوم في المالية')}
-                  </button>
+                  {dayStat?.posted ? (
+                    <div style={{ ...S.dayBookedBadge, ...(dayStat.corrected ? S.dayBookedCorrected : {}) }}>
+                      {dayStat.corrected
+                        ? '⟳ ' + tr('הכספים עודכנו מאז הרישום', 'حُدّثت المالية منذ التسجيل')
+                        : '✓ ' + tr('היום רשום בכספים', 'اليوم مسجّل في المالية')}
+                    </div>
+                  ) : (
+                    <button className="pos-tap" style={{ ...S.reportExpand, borderColor: SEA, color: SEA_DEEP, opacity: closing ? 0.6 : 1 }} disabled={closing} onClick={postDay}>
+                      {closing ? tr('רושם…', 'جار التسجيل…') : tr('רישום היום לכספים', 'تسجيل اليوم في المالية')}
+                    </button>
+                  )}
                   {closeMsg && <div style={S.reportHint}>{closeMsg}</div>}
                 </Fragment>
               )}

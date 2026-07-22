@@ -206,6 +206,10 @@ declare
   r          record;
 begin
   perform pos.require('pos.order');
+  -- this close writes several payment rows + tip_part updates; suppress the
+  -- per-row auto re-post (48) so they don't each fire — we re-post once at the
+  -- end instead. No-op until 48 is applied.
+  perform set_config('levyam.suppress_repost', 'on', true);
 
   -- every discount is attributed — enforced here, not just in the UI, because
   -- "nothing from the side" is only true if the database refuses the alternative
@@ -331,6 +335,26 @@ begin
   from jsonb_array_elements(coalesce(p_items,'[]'::jsonb)) as it;
 
   delete from pos.pos_tables where id = v_id;
+
+  -- Re-post every already-booked day this bill touches. Usually that's just
+  -- today (a no-op — today isn't booked yet). But a reopened past bill can carry
+  -- payments on a past, booked day, and the tip_part reallocation above
+  -- (suppressed, so it didn't fire the row trigger) changed their revenue. The
+  -- bill's own paid_at day is included too: a legacy/fallback close records NO
+  -- payment rows (post_day reads its revenue straight off the bill, 47), and the
+  -- pos_bills insert was suppressed with everything else — so without paid_at
+  -- here a fallback close onto a booked day would never re-post. repost_if_posted
+  -- is defined in 48; the reference resolves at call time. Then lift the suppress.
+  for r in
+    select distinct d from (
+      select (taken_at at time zone 'Asia/Jerusalem')::date as d
+      from pos.pos_payments where bill_id = v_id
+      union
+      select (coalesce((p_bill->>'paid_at')::timestamptz, now()) at time zone 'Asia/Jerusalem')::date
+    ) days loop
+    perform pos.repost_if_posted(r.d);
+  end loop;
+  perform set_config('levyam.suppress_repost', '', true);
 end; $$;
 
 -- ---------------------------------------------------------------------
@@ -350,11 +374,29 @@ declare
   posted jsonb := '[]'::jsonb;
   v_current numeric; v_n int; v_delta numeric; v_ref text; v_entry uuid;
 begin
+  -- Revenue for the day, net of tips, from BOTH payment sources:
+  --   * new bills record pos_payments rows — sum (amount − tip_part) by method,
+  --     attributed to the day the payment was TAKEN (a deposit counts when taken).
+  --   * LEGACY bills (closed before split-payments shipped) have NO payment rows;
+  --     their money lives only on the bill. Fall back to the pre-PR-C grammar:
+  --     card = least(card_paid, grand_total), cash = the rest of grand_total —
+  --     which nets tips out at the grand-total level and reproduces the numbers
+  --     those days were originally posted with. Without this second source,
+  --     re-posting any historical day recomputes its revenue as ~0 and the
+  --     auto re-post (48) wipes it from the books on the next expense edit.
   select coalesce(sum(amount - tip_part) filter (where method = 'cash'), 0),
          coalesce(sum(amount - tip_part) filter (where method = 'card'), 0)
     into v_cash, v_card
   from pos.pos_payments
   where (taken_at at time zone 'Asia/Jerusalem')::date = p_date;
+
+  select v_cash + coalesce(sum(grand_total - least(card_paid, grand_total)), 0),
+         v_card + coalesce(sum(least(card_paid, grand_total)), 0)
+    into v_cash, v_card
+  from pos.pos_bills b
+  where b.status = 'paid'
+    and (b.paid_at at time zone 'Asia/Jerusalem')::date = p_date
+    and not exists (select 1 from pos.pos_payments p where p.bill_id = b.id);
 
   select coalesce(sum(amount) filter (where kind = 'food'), 0),
          coalesce(sum(amount) filter (where kind = 'labor'), 0)

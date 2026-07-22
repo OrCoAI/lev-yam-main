@@ -39,6 +39,12 @@ exception when duplicate_object then null; end $$;
 
 -- Manual rows stay strictly positive; derived rows may be negative (a reversal
 -- posted by the source module nets out in every sum the report already does).
+-- NOTE: the column definition in 20_finance.sql carries an inline `check
+-- (amount > 0)` that Postgres auto-named `entries_amount_check` — it must be
+-- dropped here too, or it silently overrides the rule below and blocks every
+-- negative reversal (it did: POS day-lifecycle auto re-post hit it on the first
+-- reducing correction). Dropping it lets the module-aware check govern.
+alter table finance.entries drop constraint if exists entries_amount_check;
 alter table finance.entries drop constraint if exists finance_entries_amount_check;
 alter table finance.entries add constraint finance_entries_amount_check
   check (amount <> 0 and (source_module is not null or amount > 0));
