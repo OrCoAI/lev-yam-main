@@ -90,7 +90,7 @@ function StatusMenu({
 }: {
   open: boolean
   title: string
-  anchorRef: React.RefObject<HTMLElement>
+  anchorRef: React.RefObject<HTMLElement | null>
   options: MenuOption[]
   onPick: (key: string) => void
   onClose: () => void
