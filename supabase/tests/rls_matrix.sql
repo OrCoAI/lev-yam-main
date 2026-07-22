@@ -39,6 +39,16 @@ begin
   set local role anon;
 end $$;
 
+-- Set a resolvable auth.uid() WITHOUT switching role — for the as-postgres phases
+-- (seed + functional auto-repost) where a finance row's created_by defaults to
+-- auth.uid() but we must stay postgres (bypass RLS / call internal post_day).
+-- Unlike become(), this leaves `role` untouched. Uses the test owner.
+create function pg_temp.seed_actor() returns void language plpgsql as $$
+begin
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', 'aaaaaaaa-0000-0000-0000-000000000001', 'role', 'authenticated')::text, true);
+end $$;
+
 -- SELECT must return exactly `expected` rows.
 create function pg_temp.assert_rows(label text, q text, expected bigint)
 returns void language plpgsql as $$
@@ -178,6 +188,14 @@ join core.roles r on r.key = v.rkey;
 --  Seed rows (as postgres; RLS bypassed). Tagged so assertions count
 --  only their own rows, never live data.
 -- ---------------------------------------------------------------------
+-- Seeds run as postgres, but give them a resolvable auth.uid() (the test owner)
+-- so any finance row whose created_by defaults to auth.uid() gets a valid actor —
+-- exactly like a real authenticated request. Without this, seeding a pos_expense
+-- on an already-booked day fires the auto re-post (48), whose correction entry
+-- would take created_by = auth.uid() = NULL and violate NOT NULL. (become()/
+-- become_anon() override this per role test; reset role leaves the claim intact.)
+select pg_temp.seed_actor();
+
 -- finance: one manual entry + one module-derived entry (guard-protected)
 select set_config('levyam.finance_posting', 'on', true);
 insert into finance.entries (id, kind, category, amount, entry_date, note, created_by,
@@ -589,6 +607,9 @@ reset role;
 --  date so it can't collide with real postings; the whole tx rolls back.
 -- ---------------------------------------------------------------------
 reset role;
+-- re-assert a valid actor: intervening become()/user-delete tests changed the
+-- claim, and these postings' corrections need a non-null, still-existing created_by.
+select pg_temp.seed_actor();
 insert into pos.pos_expenses (business_date, kind, amount, note) values ('2099-01-01', 'food', 100, 'ar-test');
 select pos.post_day('2099-01-01'::date);  -- manual first post (as postgres)
 select pg_temp.assert_num('auto-repost: books hold the food total after the first post',
@@ -599,6 +620,56 @@ select pg_temp.assert_num('auto-repost: ADDING an expense to a booked day auto-c
 delete from pos.pos_expenses where note = 'ar-test' and business_date = '2099-01-01';
 select pg_temp.assert_num('auto-repost: DELETING an expense posts a negative correction (was constraint-blocked)',
   (select coalesce(sum(amount), 0) from finance.entries where source_ref like 'pos:2099-01-01:food%'), 50);
+
+-- ---------------------------------------------------------------------
+--  Legacy-day revenue preservation (47 post_day two-source fix). A bill
+--  closed BEFORE split-payments shipped has no pos_payments rows — its
+--  money lives only on the bill. post_day must still book that revenue
+--  (net of tip) from the bill, and re-posting after an expense change must
+--  NOT wipe it (the bug: revenue recomputed from empty pos_payments → 0,
+--  a giant negative correction). grand 200, cash 120 + card 130 = 250 =
+--  grand + tip(50). Old grammar: card=least(130,200)=130, cash=200-130=70.
+-- ---------------------------------------------------------------------
+insert into pos.pos_bills (id, table_num, status, paid_at, grand_total, cash_paid, card_paid, tip)
+values ('rls-legacy-day', 993, 'paid', '2099-03-03 12:00+02', 200, 120, 130, 50);
+select pos.post_day('2099-03-03'::date);
+select pg_temp.assert_num('legacy-day: revenue booked from the bill (cash leg, net of tip)',
+  (select coalesce(sum(amount), 0) from finance.entries where source_ref like 'pos:2099-03-03:cash%'), 70);
+select pg_temp.assert_num('legacy-day: revenue booked from the bill (card leg, net of tip)',
+  (select coalesce(sum(amount), 0) from finance.entries where source_ref like 'pos:2099-03-03:card%'), 130);
+-- an expense edit fires auto-repost; revenue must survive it, not zero out
+insert into pos.pos_expenses (business_date, kind, amount, note) values ('2099-03-03', 'food', 40, 'legacy-day-exp');
+select pg_temp.assert_num('legacy-day: revenue PRESERVED after auto-repost (was wiped to 0)',
+  (select coalesce(sum(amount), 0) from finance.entries where source_ref like 'pos:2099-03-03:cash%'), 70);
+select pg_temp.assert_num('legacy-day: card revenue PRESERVED after auto-repost',
+  (select coalesce(sum(amount), 0) from finance.entries where source_ref like 'pos:2099-03-03:card%'), 130);
+select pg_temp.assert_num('legacy-day: the new expense DID post to food',
+  (select coalesce(sum(amount), 0) from finance.entries where source_ref like 'pos:2099-03-03:food%'), 40);
+
+-- ---------------------------------------------------------------------
+--  pos_bills auto-repost (48). Because post_day now reads revenue from
+--  payment-less bills, mutating such a bill on a BOOKED day must re-post it:
+--  a fallback/legacy close (INSERT) and a re-open (DELETE) both flow through
+--  the new pos_bills triggers — no manual re-post, no silent drift.
+-- ---------------------------------------------------------------------
+insert into pos.pos_bills (id, table_num, status, paid_at, grand_total, cash_paid, card_paid)
+values ('rls-arb-1', 991, 'paid', '2099-04-04 12:00+02', 100, 100, 0);
+select pos.post_day('2099-04-04'::date);  -- book the day (cash 100)
+select pg_temp.assert_num('pos_bills repost: first payment-less bill booked',
+  (select coalesce(sum(amount), 0) from finance.entries where source_ref like 'pos:2099-04-04:cash%'), 100);
+-- a SECOND payment-less bill lands on the already-booked day (fallback-close shape)
+insert into pos.pos_bills (id, table_num, status, paid_at, grand_total, cash_paid, card_paid)
+values ('rls-arb-2', 992, 'paid', '2099-04-04 12:00+02', 60, 0, 60);
+select pg_temp.assert_num('pos_bills INSERT auto-reposts a booked day (card leg picked up)',
+  (select coalesce(sum(amount), 0) from finance.entries where source_ref like 'pos:2099-04-04:card%'), 60);
+select pg_temp.assert_num('pos_bills INSERT auto-repost: cash leg unchanged',
+  (select coalesce(sum(amount), 0) from finance.entries where source_ref like 'pos:2099-04-04:cash%'), 100);
+-- re-open = delete the bill row; the day must re-post and shed its revenue
+delete from pos.pos_bills where id = 'rls-arb-1';
+select pg_temp.assert_num('pos_bills DELETE (re-open) auto-reposts: cash leg shed',
+  (select coalesce(sum(amount), 0) from finance.entries where source_ref like 'pos:2099-04-04:cash%'), 0);
+select pg_temp.assert_num('pos_bills DELETE auto-repost: other bill''s card leg preserved',
+  (select coalesce(sum(amount), 0) from finance.entries where source_ref like 'pos:2099-04-04:card%'), 60);
 
 do $$ begin raise notice 'RLS MATRIX: ALL ASSERTIONS PASSED'; end $$;
 rollback;

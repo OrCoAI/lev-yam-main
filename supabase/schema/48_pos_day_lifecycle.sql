@@ -40,11 +40,14 @@ begin
 end; $$;
 
 -- ---------------------------------------------------------------------
---  2) Auto re-post trigger — fires on the tables post_day reads
---     (payments + expenses). pos_bills needs none: post_day derives
---     cash/card from payments and food/labor from expenses, never bills.
---     Suppressed inside pos_close_table (which does its own single
---     re-post at the end) so a multi-row close doesn't fan out.
+--  2) Auto re-post trigger — fires on every table post_day reads:
+--     payments (revenue, new bills), expenses (food/labor), AND pos_bills
+--     (revenue for LEGACY / fallback-close bills that have no payment rows —
+--     see the two-source revenue read in pos.post_day, 47). Keyed by the
+--     table's own date column (business_date / taken_at / paid_at).
+--     Suppressed inside pos_close_table (which does its own single re-post
+--     at the end, covering the bill's paid_at day too) so a multi-row close
+--     doesn't fan out.
 -- ---------------------------------------------------------------------
 create or replace function pos.autorepost()
 returns trigger language plpgsql security definer set search_path = pos, finance, core as $$
@@ -57,6 +60,9 @@ begin
   if TG_TABLE_NAME = 'pos_expenses' then
     if TG_OP <> 'INSERT' then d_old := OLD.business_date; end if;
     if TG_OP <> 'DELETE' then d_new := NEW.business_date; end if;
+  elsif TG_TABLE_NAME = 'pos_bills' then
+    if TG_OP <> 'INSERT' then d_old := (OLD.paid_at at time zone 'Asia/Jerusalem')::date; end if;
+    if TG_OP <> 'DELETE' then d_new := (NEW.paid_at at time zone 'Asia/Jerusalem')::date; end if;
   else -- pos_payments
     if TG_OP <> 'INSERT' then d_old := (OLD.taken_at at time zone 'Asia/Jerusalem')::date; end if;
     if TG_OP <> 'DELETE' then d_new := (NEW.taken_at at time zone 'Asia/Jerusalem')::date; end if;
@@ -74,6 +80,25 @@ for each row execute function pos.autorepost();
 drop trigger if exists pos_expenses_autorepost on pos.pos_expenses;
 create trigger pos_expenses_autorepost after insert or update or delete on pos.pos_expenses
 for each row execute function pos.autorepost();
+
+-- pos_bills: a payment-less bill's money lives on the bill, so a close (insert),
+-- reopen (delete), or money-changing edit must re-post its paid_at day. INSERT/
+-- DELETE always fire; UPDATE fires only when a revenue-relevant column moves —
+-- so the bulk archived_at "clear day" sweep (which post_day ignores) doesn't
+-- trigger a storm of no-op re-posts.
+drop trigger if exists pos_bills_autorepost_id on pos.pos_bills;
+create trigger pos_bills_autorepost_id after insert or delete on pos.pos_bills
+for each row execute function pos.autorepost();
+
+drop trigger if exists pos_bills_autorepost_upd on pos.pos_bills;
+create trigger pos_bills_autorepost_upd after update on pos.pos_bills
+for each row when (
+  old.status      is distinct from new.status      or
+  old.grand_total is distinct from new.grand_total or
+  old.cash_paid   is distinct from new.cash_paid    or
+  old.card_paid   is distinct from new.card_paid    or
+  old.paid_at     is distinct from new.paid_at
+) execute function pos.autorepost();
 
 -- ---------------------------------------------------------------------
 --  3) Day posting status for the report badge.
