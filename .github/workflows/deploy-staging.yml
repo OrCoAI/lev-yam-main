@@ -1,0 +1,46 @@
+name: Deploy staging site (Cloudflare Pages)
+
+# Builds the site against the STAGING Supabase project and deploys it to
+# staging.levyam.com (Cloudflare Pages) on every push to the `staging` branch.
+# Production (levyam.com / GitHub Pages) is deploy.yml on `main` — untouched here.
+#
+# Trigger is push-to-staging only (no pull_request), so secrets never run in an
+# untrusted fork context. The VITE_* values below are the anon/PUBLISHABLE key +
+# URL — safe to expose (RLS is the guard); they are deliberately hard-coded, NOT
+# read from the repo's VITE_* secrets (those hold PRODUCTION values and would
+# point staging at prod). Only the Cloudflare token/account come from secrets.
+
+on:
+  push:
+    branches: [staging]
+  workflow_dispatch:
+
+# One staging deploy at a time; a newer push supersedes an in-flight one.
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app-src/package-lock.json
+
+      - name: Build staging site
+        env:
+          VITE_SUPABASE_URL: https://vhvghcehkcbtygomixmu.supabase.co
+          VITE_SUPABASE_ANON_KEY: sb_publishable_hlGll9g8Af7X8smeNmtsdA_lq6FYvt8
+        run: bash scripts/build-site.sh
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy _site --project-name=lev-yam-staging --branch=staging

@@ -235,14 +235,22 @@ bundle talks to the staging Supabase project (no localhost); owner login + RLS r
 - Secrets (staging DB password, Cloudflare API token, account id) live only in gitignored
   `.secrets/`.
 
-**Deliberately deferred (follow-ups, not blockers)**
-- **Supabase edge functions on staging** (`passkey-verify`, `admin-invite`, `admin-user-ops`) —
-  `supabase functions deploy` fails from the dev box (bundler/upload `Effect.tryPromise`, twice).
-  Deploy from a normal machine: `supabase functions deploy <name> --project-ref vhvghcehkcbtygomixmu`
-  (add `--no-verify-jwt` for `passkey-verify`). Password login + RLS work without them.
-- **Auto-deploy on `staging` push** — currently a manual `wrangler pages deploy _site`. Add a
-  GitHub Action (build + `cloudflare/wrangler-action`) with the CF token as a repo secret.
-- **Staging auth email** (Resend vs default) — untouched; default sender works for testing.
+**Completed after the first close-out pass (2026-07-28, same day)**
+- **Supabase edge functions on staging** — DONE. `passkey-verify` (verify_jwt off),
+  `admin-invite`, `admin-user-ops` all ACTIVE. The local Docker bundler kept failing
+  (`Effect.tryPromise`); **`supabase functions deploy <name> --project-ref vhvghcehkcbtygomixmu
+  --use-api`** (server-side bundling, no Docker) worked.
+- **Auto-deploy on `staging` push** — DONE. `.github/workflows/deploy-staging.yml` builds against
+  the staging Supabase project and `wrangler pages deploy`s to `staging.levyam.com` on every push
+  to `staging` (push-only trigger, so secrets never run in a fork context; CF token/account are
+  repo secrets; staging VITE_* values hard-coded — NOT the prod VITE_* secrets). Staging is no
+  longer a manual upload.
+
+**Still deferred (not blockers)**
+- **Staging auth email** (Resend vs default) — untouched; Supabase's default sender works for
+  testing invite/reset flows.
+- **Merging `feat/staging-environment` → `main`** — owner decision (PR opened); safe (app
+  functionally unchanged; schema guard fix not auto-applied to prod's DB).
 
 **Alignment verdict**
 - **VISION.md — aligned.** Serves Principle 7 (evolution, not revolution): a safe, prod-like
