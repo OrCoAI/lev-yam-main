@@ -16,6 +16,10 @@ app-src/dist/
 .env.local
 .env.*.local
 
+# Assembled site (scripts/build-site.sh) + Cloudflare local state — build output
+_site/
+.wrangler/
+
 # Local secrets — NEVER commit. Kept at repo root (outside app-src/ and the
 # deploy allowlist in .github/workflows/deploy.yml), so it is not published.
 .secrets/

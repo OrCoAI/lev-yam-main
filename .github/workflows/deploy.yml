@@ -39,6 +39,11 @@ jobs:
       - name: Permission mirror drift check
         run: node supabase/tests/check-permission-drift.mjs
 
+      # The baseline migration (local/staging `db reset`/`db push` artifact) must
+      # stay in sync with supabase/schema/*.sql. Sub-second, no npm install.
+      - name: Migration baseline drift check
+        run: node supabase/tests/build-baseline.mjs
+
       - name: Build platform (/app)
         working-directory: app-src
         env:

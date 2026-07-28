@@ -49,8 +49,11 @@ finishing, tick completed tasks and add discovered ones.
   email `info@levyam.com`. There are ~12 WhatsApp CTAs on the marketing page.
 
 ### Platform (`app-src/`, served at `/app`)
-- **Stack:** Vite + React 18 + TypeScript + react-router. Dev: `cd app-src && npm run dev`
-  (runs at `localhost:5173/app`). Build/typecheck: `npm run build`.
+- **Stack:** Vite + React 18 + TypeScript + react-router. Dev points at the **local Supabase
+  stack** (Colima/Docker): `supabase start && supabase db reset` first, then
+  `cd app-src && npm run dev` (runs at `localhost:5173/app`; seed logins in `supabase/seed.sql`).
+  Build/typecheck: `npm run build`. Local dev never touches prod — see
+  [supabase/README.md](supabase/README.md) and the staging plan.
 - **Vite `base` is `/app/`** and the router `basename` is `/app` — keep them in sync if the
   hosting path ever changes.
 - **Permissions are role → module → action.** The DB enforces them via RLS calling
@@ -161,8 +164,8 @@ itself, no agent fan-out — the same carve-out step 4 already has. The full mul
 gate at high effort stays mandatory for any diff touching `app-src/`, `supabase/`, any
 file in `deploy.yml`'s site allowlist, or `.github/workflows/`.
 
-This gate applies to **every** commit — there is no staging, so `main` deploys straight to
-production. A commit with an unrun or failing gate step is a process violation.
+This gate applies to **every** commit — `main` deploys straight to production, so the gate is
+the last check before prod. A commit with an unrun or failing gate step is a process violation.
 
 ## Roadmap item close-out (MANDATORY)
 
@@ -184,7 +187,11 @@ When a roadmap item is finished, it is not done until it is closed out:
 
 Push to `main`. The GitHub Action `.github/workflows/deploy.yml` builds the platform
 (`app-src` → `/app`), bundles it with the static marketing site, and publishes to GitHub Pages
-(levyam.com). There is no staging — verify locally before pushing.
+(levyam.com). `main` deploys **straight to production** — verify first against the **local
+Supabase stack** (`supabase start && supabase db reset`, then `cd app-src && npm run dev`) or the
+**staging tier** (`lev-yam-staging` / `staging.levyam.com`, Cloudflare Pages). Local dev and the
+`/verify` gate must **never** run against prod. Full setup:
+[docs/plans/platform-staging-environment.md](docs/plans/platform-staging-environment.md).
 
 - **The site is assembled from an explicit allowlist** in `deploy.yml` (specific root files +
   `css/js/img/fonts` + built `/app`). A new public page or asset folder **must be added

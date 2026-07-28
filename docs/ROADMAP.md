@@ -4,11 +4,14 @@ The path from today's platform to the [vision](VISION.md). Ordered by **value an
 dependency** (steady pace, no external deadline). Tick tasks as they complete; each work
 session should start by reading this file and end by updating it.
 
-**How we work:** one phase = one or more feature branches off `main`; verify locally
-(`cd app-src && npm run dev`, static pages via `python3 -m http.server 8080`) before pushing —
-there is no staging. DB changes go through `supabase/schema/*.sql` (re-run in the Supabase SQL
-editor). `pos.html` and the marketing site stay untouched until their replacement earns
-cut-over on real service days.
+**How we work:** one phase = one or more feature branches off `main`; verify against the
+**local Supabase stack** (`supabase start && supabase db reset`, then `cd app-src && npm run dev`;
+static pages via `python3 -m http.server 8080`) — and, for prod-like checks, the **staging tier**
+(`lev-yam-staging` / staging.levyam.com) — before pushing. `main` still deploys straight to prod.
+DB changes go through `supabase/schema/*.sql` (source of truth) plus the generated baseline the
+migration pipeline applies (`supabase/tests/build-baseline.mjs`; see
+[plans/platform-staging-environment.md](plans/platform-staging-environment.md)). `pos.html` and the
+marketing site stay untouched until their replacement earns cut-over on real service days.
 
 ---
 
@@ -148,7 +151,9 @@ item — the anon `pos_*` surface — is the POS cut-over task above, not repeat
       *(done 2026-07-16 — PR #11 of [plans/users-permissions-suite.md](plans/users-permissions-suite.md);
       caught real drift on its first prod run: viewer role held zero permissions)*
 - [ ] **H2** Schema migration pipeline (Supabase CLI, versioned migrations + drift
-      check in the gate) — owner decision Q2
+      check in the gate) — **folded into the Staging environment initiative** (kickoff
+      2026-07-28): you can't keep prod + a staging project schema-synced without it. See
+      [plans/platform-staging-environment.md](plans/platform-staging-environment.md).
 - [x] **H3** Permission governance: last-admin lockout guard + `core.audit_log` on
       role/permission changes *(done 2026-07-15, bundled with H5 + users-scoped H7 —
       plan: [plans/users-hardening.md](plans/users-hardening.md); landed **ahead of**
@@ -211,6 +216,17 @@ item — the anon `pos_*` surface — is the POS cut-over task above, not repeat
       prod + `admin-user-ops` redeployed, `rls_matrix` green, awaiting merge. Newly-tracked
       follow-up: unify `core.modules`/`core.permissions` labels onto the same bilingual DB
       shape.)*
+
+- [x] **Staging environment** (kickoff + delivered 2026-07-28, owner-directed — plan +
+      close-out: [plans/platform-staging-environment.md](plans/platform-staging-environment.md)):
+      three tiers now live — local Colima/Docker Supabase stack (daily dev) + cloud
+      `lev-yam-staging` project + **`staging.levyam.com`** (Cloudflare Pages, noindex) — so dev
+      and the `/verify` gate no longer run against production. Synthetic seed only (no prod data).
+      **Absorbed H2** (versioned migration pipeline). Resolved the "one project / no staging"
+      wording in ARCHITECTURE/ROADMAP/CLAUDE.md. Free-tier cap turned out moot (survey + b2b
+      already inactive). Fixed a fresh-install last-admin-guard lockout along the way. **Deferred
+      follow-ups:** deploy Supabase edge functions to staging (from a normal machine), and a
+      GitHub Action for auto-deploy on `staging` push (currently manual `wrangler pages deploy`).
 
 ## Phase 2 — What's happening: bookings & events
 

@@ -1,0 +1,13 @@
+{
+  // Cloudflare config for the STAGING site (staging.levyam.com) only.
+  // Prod stays on GitHub Pages (deploy.yml); this file is not used there.
+  // Static-assets-only Worker: serves the assembled _site/ directory.
+  // `not_found_handling: 404-page` serves _site/404.html for unknown paths,
+  // which routes /app/* deep links into the SPA — same behaviour as GitHub Pages.
+  "name": "lev-yam-staging",
+  "compatibility_date": "2026-07-28",
+  "assets": {
+    "directory": "./_site",
+    "not_found_handling": "404-page"
+  }
+}
