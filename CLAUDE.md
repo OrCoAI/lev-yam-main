@@ -82,7 +82,11 @@ finishing, tick completed tasks and add discovered ones.
   service-role lives only in Supabase Edge Functions (`supabase/functions/`).
 - **Database schemas** live in `supabase/schema/` — `00_core.sql` (identity & permissions) is
   the source of truth for the `core` schema; `10_pos.sql` for the live POS. Change the model
-  there and re-run it in the Supabase SQL editor. Add new module schemas in the same folder.
+  there, then **regenerate the baseline migration** the local/staging stacks apply:
+  `node supabase/tests/build-baseline.mjs --write` (CI's drift check fails if you forget), and
+  commit it. Apply the change with `supabase db reset` (local) / `supabase db push` (staging),
+  or re-run the file in the Supabase SQL editor (prod, until prod joins the pipeline). Add new
+  module schemas in the same folder. Full local/staging workflow: [supabase/README.md](supabase/README.md).
 
 ## Module work kickoff (MANDATORY)
 
@@ -198,6 +202,13 @@ Supabase stack** (`supabase start && supabase db reset`, then `cd app-src && npm
   there**, or it 404s in production while working locally. `docs/`, `tests/`, and `supabase/`
   are deliberately not deployed (the repo is public; the *site* only serves what's listed).
 - After deploying, the workflow **smoke-checks** `/`, `/app/`, and `/pos.html` (expects 200).
+- **Staging tier:** pushing the **`staging`** branch triggers `.github/workflows/deploy-staging.yml`,
+  which builds against the `lev-yam-staging` Supabase project and deploys to **`staging.levyam.com`**
+  (Cloudflare Pages, whole-site noindex). Intended flow: feature branch → `staging` (test on
+  staging.levyam.com) → `main` (prod); keep `staging` in sync with `main`. Only `main`+`staging`
+  are long-lived branches. Cloudflare token/account are repo Actions secrets; the staging
+  `VITE_*` values are hard-coded in that workflow (they're the anon/publishable pair — not the
+  prod `VITE_*` secrets).
 - Branch pushes and PRs run **`ci.yml`** (typecheck + build) so breakage is caught before
   anything reaches `main`, which deploys straight to production.
 
