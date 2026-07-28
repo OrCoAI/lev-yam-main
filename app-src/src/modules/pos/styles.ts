@@ -104,11 +104,16 @@ const styles = {
   totalCellCur: { fontSize: 12, fontWeight: 800 },
   totalCellLbl: { fontSize: 11, fontWeight: 700, color: MUTE, marginTop: 3, display: 'block' },
   sectionLabel: { fontSize: 13, fontWeight: 800, color: MUTE, margin: '2px 2px 10px' },
-  tablesGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 },
-  tableCard: { textAlign: 'start', background: CARD, border: '1.5px solid ' + LINE, borderRadius: 16, padding: 13, cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 9, minHeight: 120, boxShadow: '0 1px 3px rgba(44,38,32,.05)' },
+  // Responsive columns (auto-fill) so the floor scales from 2-up on a phone to more on a
+  // tablet instead of two ever-wider cards; align-items:stretch (grid default) + a min-height
+  // tall enough for the optional partial-paid row keeps every card the same height, so the
+  // grid stays tidy however many tables are open (no ragged rows).
+  tablesGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 10 },
+  tableCard: { textAlign: 'start', background: CARD, border: '1.5px solid ' + LINE, borderRadius: 16, padding: 13, cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 9, minHeight: 156, boxShadow: '0 1px 3px rgba(44,38,32,.05)' },
   tableCardHead: { display: 'flex', alignItems: 'center', gap: 9, minWidth: 0 },
+  tableMetaRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, flexWrap: 'wrap' },
   tableNumBadge: { width: 36, height: 36, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 900, color: '#fff', lineHeight: 1, flexShrink: 0 },
-  tableName: { fontSize: 14, fontWeight: 800, color: INK, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 },
+  tableName: { fontSize: 14, fontWeight: 800, color: INK, flex: 1, minWidth: 0, lineHeight: 1.25, overflowWrap: 'break-word' },
   tableMeta: { fontSize: 12, fontWeight: 600, color: MUTE },
   tablePartPaid: { fontSize: 11, fontWeight: 800, color: SEA_DEEP, background: '#eef6fb', borderRadius: 8, padding: '3px 8px', alignSelf: 'flex-start' },
   tableCardTotal: { marginTop: 'auto', paddingTop: 9, borderTop: '1px solid ' + LINE, display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: 3 },

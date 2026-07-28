@@ -76,8 +76,11 @@ plan file at kickoff, linked here as it starts:
 - **PR C — Split/partial payments** — `plans/pos-split-payments.md` (TBD): `pos.pos_payments`
   child table; open-bill balance-due; checkout item-delete void trail; `close_day`
   cash/card derivation moves onto recorded payments.
-- **PR D — Menu-as-data** — `plans/pos-menu-as-data.md` (TBD): menu tables + RLS +
-  `pos.menu` permission; admin UI; retires the `pos.menu_price()` literal mirror.
+- **PR D — Menu-as-data** — **expanded 2026-07-28 into its own initiative**,
+  [plans/pos-menu-kitchen.md](pos-menu-kitchen.md): menu tables + RLS + `pos.menu`
+  permission + admin UI (retires the `pos.menu_price()` mirror), plus open-house retirement
+  (forward-only, history kept), first-class meals with components, and three added
+  kitchen/floor fixes (realtime reliability, per-unit "done", floor grid).
 - **PR E — Day lifecycle** — `plans/pos-day-lifecycle.md` (TBD): day-state table, drift
   detection against booked finance entries, explicit re-post/override UI.
 

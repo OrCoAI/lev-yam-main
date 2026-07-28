@@ -243,6 +243,12 @@ values (990001, 'rls-test-tbl',   'cash', 50, 'rls@test'),   -- bill still open
 -- an open table for the legacy (pre-split-payments) 2-arg close-path assertion
 insert into pos.pos_tables (id, num, name, pricing_mode, guests_adults, items)
 values ('rls-legacy-tbl', 995, 'rls-legacy', 'a_la_carte', 1, '[]'::jsonb);
+-- a kitchen line already fired (49_pos_kitchen): sent 2, none done/served — used to
+-- assert pos_mark_item now advances `done` ONE unit per tap and clamps to [served, sent].
+insert into pos.pos_tables (id, num, name, pricing_mode, guests_adults, items)
+values ('rls-kite-tbl', 996, 'rls-kite', 'a_la_carte', 1,
+        jsonb_build_array(jsonb_build_object('id','k1','name','rls-test dish',
+          'price',10,'qty',2,'sent',2,'done',0,'served',0)));
 
 -- storage: one object in the private bucket, so the denial assertion below is
 -- proven against an existing row (not vacuously true on an empty bucket)
@@ -291,6 +297,8 @@ select pg_temp.assert_denied('viewer: cannot insert a pos table',
   $q$ insert into pos.pos_tables (id, num) values ('rls-test-nope', 998) $q$);
 select pg_temp.assert_noop('viewer: pos table update is a silent noop',
   $q$ update pos.pos_tables set name = 'x' where id = 'rls-test-t1' $q$);
+select pg_temp.assert_raises('viewer: cannot mark a kitchen item (no pos.kitchen)',
+  $q$ select pos.pos_mark_item('rls-kite-tbl', 'k1', true) $q$, 'pos.kitchen');
 select pg_temp.assert_rows('viewer: raw pos_expenses hidden (needs pos.reports)',
   $q$ select 1 from pos.pos_expenses where note like 'rls-test%' $q$, 0);
 select pg_temp.assert_rows('viewer: finance.expected hidden',
@@ -337,6 +345,31 @@ select pg_temp.assert_raises('staff: cannot void an item the kitchen already fir
   $q$ select pos.void_item('rls-test-tbl', 'rls-test item', 1, 10, true, 'burnt') $q$, 'pos.manage');
 select pg_temp.assert_denied('staff: direct pos_payments SELECT denied (RPC-only path)',
   $q$ select 1 from pos.pos_payments where bill_id = 'rls-test-tbl' $q$);
+-- 49_pos_kitchen: "mark ready" now moves ONE unit per tap and clamps to [served, sent]
+select pg_temp.assert_ok('staff: can mark a kitchen item ready (pos.kitchen)',
+  $q$ select pos.pos_mark_item('rls-kite-tbl', 'k1', true) $q$);
+select pg_temp.assert_num('staff: one ready tap advances done by exactly one',
+  (select (i->>'done')::int from pos.pos_tables t, jsonb_array_elements(t.items) i
+   where t.id = 'rls-kite-tbl' and i->>'id' = 'k1'), 1);
+select pg_temp.assert_ok('staff: second ready tap advances to sent',
+  $q$ select pos.pos_mark_item('rls-kite-tbl', 'k1', true) $q$);
+select pg_temp.assert_ok('staff: third ready tap is a clamped no-op',
+  $q$ select pos.pos_mark_item('rls-kite-tbl', 'k1', true) $q$);
+select pg_temp.assert_num('staff: done clamps at sent (2), never past it',
+  (select (i->>'done')::int from pos.pos_tables t, jsonb_array_elements(t.items) i
+   where t.id = 'rls-kite-tbl' and i->>'id' = 'k1'), 2);
+select pg_temp.assert_ok('staff: undo steps one unit back',
+  $q$ select pos.pos_mark_item('rls-kite-tbl', 'k1', false) $q$);
+select pg_temp.assert_num('staff: one undo tap steps done back by exactly one',
+  (select (i->>'done')::int from pos.pos_tables t, jsonb_array_elements(t.items) i
+   where t.id = 'rls-kite-tbl' and i->>'id' = 'k1'), 1);
+select pg_temp.assert_ok('staff: undo again toward served',
+  $q$ select pos.pos_mark_item('rls-kite-tbl', 'k1', false) $q$);
+select pg_temp.assert_ok('staff: undo below served is a clamped no-op',
+  $q$ select pos.pos_mark_item('rls-kite-tbl', 'k1', false) $q$);
+select pg_temp.assert_num('staff: done clamps at served (0), never negative',
+  (select (i->>'done')::int from pos.pos_tables t, jsonb_array_elements(t.items) i
+   where t.id = 'rls-kite-tbl' and i->>'id' = 'k1'), 0);
 select pg_temp.assert_raises('staff: cannot post the day to finance (no pos.manage)',
   $q$ select pos.close_day(current_date) $q$, 'pos.manage');
 select pg_temp.assert_denied('staff: pos.post_day is internal — not callable by any role',

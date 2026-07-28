@@ -13,16 +13,30 @@ touching schema, permissions, or the events/finance spine graduates to a `docs/p
 
 - (none logged)
 
-## In progress — POS operations v2 (kickoff 2026-07-20)
+## In progress — POS menu-as-data + kitchen reliability (kickoff 2026-07-28)
 
-Six owner-requested capabilities → five PRs. Umbrella plan + locked decisions:
-[../plans/pos-operations-v2.md](../plans/pos-operations-v2.md).
+Owner-directed batch that **completes and expands PR D** of POS ops v2. Plan + locked
+decisions: [../plans/pos-menu-kitchen.md](../plans/pos-menu-kitchen.md). Six workstreams:
+retire open house (forward-only, history kept); editable menu (menu-as-data, meals
+first-class with components); kitchen dish filters (incl. meal components); realtime
+reliability (kitchen was getting stuck); per-unit kitchen "done" (one tap = one item);
+floor grid equal-height/responsive cards. Seed = the August 2026 printed menu.
+
+- ~~**PR 1** — kitchen realtime reliability + per-unit "done" + floor grid~~ **done
+  2026-07-28** (branch `pos-menu-kitchen`; `49_pos_kitchen.sql`; full gate green,
+  owner-tested). Close-out in the plan.
+- **PR 2** — menu-as-data + open-house retire + add-ons + first-class meals + kitchen
+  filters. *Gated on the owner's finalized August menu (olives add-on price, drinks list).*
+
+### POS operations v2 (kickoff 2026-07-20) — status
+
+Six capabilities → five PRs. Umbrella: [../plans/pos-operations-v2.md](../plans/pos-operations-v2.md).
 
 - ~~**PR A** — Kitchen in/out visibility~~ **done 2026-07-21 (#26, live).**
 - ~~**PR B** — Summary redesign + expenses upgrade~~ **done 2026-07-21 (#27, live).**
-- **PR C** — Split/partial payments (partial-while-open) + checkout item-delete. *(active)*
-- **PR D** — Menu-as-data (flat items first; combos deferred) — folds in the two ideas below.
-- **PR E** — Day lifecycle: open → booked, drift-flag, re-post/override.
+- ~~**PR C** — Split/partial payments + checkout item-delete~~ **done 2026-07-22 (#28, live).**
+- **PR D** — Menu-as-data → **expanded into the initiative above** (kickoff 2026-07-28).
+- ~~**PR E** — Day lifecycle: open → booked, drift-flag, re-post/override~~ **done 2026-07-22 (#29, live).**
 
 ## Open feature ideas
 

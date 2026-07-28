@@ -130,8 +130,11 @@ decisions: [plans/pos-operations-v2.md](plans/pos-operations-v2.md).*
       flows through `pos_payments`; cash/card DERIVED from payments; every discount attributed;
       fired-item removal → manager + structured reason. Backward-compat fallback kept the
       deployed 2-arg client closing tables during the transition)*
-- [ ] **PR D** — Menu-as-data (owner-editable items/prices/categories; combos deferred);
-      retires the `pos.menu_price()` literal mirror
+- [ ] **PR D** — Menu-as-data (owner-editable items/prices/categories); retires the
+      `pos.menu_price()` literal mirror. **Expanded 2026-07-28** into a full initiative that
+      also retires open house (forward-only, history kept), makes meals first-class with
+      components, and folds in three kitchen/floor fixes (realtime reliability, per-unit
+      "done", floor grid). Plan: [plans/pos-menu-kitchen.md](plans/pos-menu-kitchen.md)
 - [x] **PR E** — Day lifecycle: open → booked, drift detection, explicit re-post/override
       *(done 2026-07-22, PR #29 merged + deployed; `48_pos_day_lifecycle.sql` on prod. Manual
       first post, then auto re-post on any change to a booked day; report badge (✓ booked / ⟳

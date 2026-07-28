@@ -134,8 +134,12 @@ export default function PosModule() {
                   >
                     <div style={S.tableCardHead}>
                       <span style={{ ...S.tableNumBadge, background: t.useOH ? SEA : SUN }}>{t.num}</span>
+                      {/* Name gets the whole head row now (wraps in full) — kitchen state moved
+                          down to the meta line so a long name is never truncated. */}
                       <span style={S.tableName}>{t.name || tr('שולחן', 'طاولة') + ' ' + t.num}</span>
-                      {/* Kitchen state beside the title — compact icon+count, not a new row */}
+                    </div>
+                    <div style={S.tableMetaRow}>
+                      <span style={S.tableMeta}>{tt.headcount + ' ' + tr('סועדים', 'ضيوف') + ' · ' + tt.itemsCount + ' ' + tr('פריטים', 'أصناف')}</span>
                       {(k.ready > 0 || k.cooking > 0) ? (
                         <span style={S.kitchenHead}>
                           {k.ready > 0 && <span style={S.stReady} title={tr('מוכן', 'جاهز')}>{'🔔 ' + k.ready}</span>}
@@ -145,7 +149,6 @@ export default function PosModule() {
                         <span style={S.stServed} title={tr('הכל הוגש', 'تم التقديم')}>✓</span>
                       ) : null}
                     </div>
-                    <span style={S.tableMeta}>{tt.headcount + ' ' + tr('סועדים', 'ضيوف') + ' · ' + tt.itemsCount + ' ' + tr('פריטים', 'أصناف')}</span>
                     {paid > 0 && (
                       <span style={S.tablePartPaid}>{tr('נותר', 'المتبقي') + ' ' + Math.max(0, tt.grand - paid) + ' ₪ · ' + tr('שולם', 'مدفوع') + ' ' + paid}</span>
                     )}
