@@ -163,8 +163,12 @@ demands as the platform absorbs bookings, community initiatives, and public tran
    also pending (PR 3).
 3. **PR 3 — Staging site (Cloudflare Pages).** `staging` branch deploy + `staging.levyam.com`
    + PR previews + noindex + DNS (owner).
-4. **PR 4 — Docs + gate cut-over + close-out.** Rewrite ARCHITECTURE / ROADMAP / CLAUDE.md /
-   supabase README wording; update the pre-commit gate; close-out + alignment verdict.
+4. **PR 4 — Docs + gate cut-over. ~DONE (2026-07-28), close-out pending PR 3.** Rewrote the
+   "one project / no staging" wording across ARCHITECTURE.md (diagram box + deploy note + §5
+   consolidation-debt), ROADMAP.md ("How we work"), and CLAUDE.md (Deploying, the pre-commit
+   gate, the platform-dev line) to describe the three-tier reality (local stack + staging + prod;
+   `main` → prod only). supabase/README got its local-dev section back in PR 1. Full **close-out
+   + alignment verdict** written once PR 3 (staging.levyam.com) lands.
 
 Each PR runs the full pre-commit gate. PRs 2–3 have **owner prerequisites** (provision the
 project / connect Cloudflare / DNS) that block Claude — called out at the top of each.

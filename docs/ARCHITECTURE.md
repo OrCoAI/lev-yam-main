@@ -18,7 +18,7 @@ How the app is built and why, through five lenses: **security**, **mobile-first*
                         │ anon key (public by design)    │ anon key + user JWT
                         ▼                                ▼
         ┌─────────────────────────────────────────────────────────────────┐
-        │  SUPABASE (one project: lev-yam)                                │
+        │  SUPABASE: prod (lev-yam) + staging (lev-yam-staging)           │
         │  Auth (email+password, WebAuthn passkeys)                       │
         │  Postgres — one schema per module:                              │
         │    core (identity, RBAC) │ pos │ finance │ quotes │ bookings…   │
@@ -28,7 +28,8 @@ How the app is built and why, through five lenses: **security**, **mobile-first*
         └─────────────────────────────────────────────────────────────────┘
 
         Deploy: push to main → GitHub Action builds app-src → bundles with
-        static site → Pages. No staging; verify locally first.
+        static site → Pages (prod). Dev + the /verify gate run on a LOCAL Docker
+        Supabase stack (or the staging tier) — never prod. main → prod only.
 ```
 
 Two frontend surfaces, one backend, zero servers of our own. The public site stays
@@ -150,8 +151,10 @@ Scale here means two different things, and the architecture answers both:
   the platform scales *down* gracefully too, which matters for a social business.
 - **Known consolidation debt** (tracked, not urgent): the survey lives in a second
   Supabase project to be merged eventually (POS tables moved from `public` into their own
-  `pos` schema at cut-over, 2026-07-14). End state: one project, schema-per-module
-  throughout.
+  `pos` schema at cut-over, 2026-07-14). End state: one *production* project,
+  schema-per-module throughout. Note: `lev-yam-staging` is a **deliberate, permanent second
+  project** (2026-07-28) — a prod mirror for pre-deploy testing, kept schema-synced via the
+  migration pipeline — and is distinct from this survey-merge debt.
 
 ## 6. Flexibility — the architecture of the dream
 

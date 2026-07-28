@@ -4,11 +4,14 @@ The path from today's platform to the [vision](VISION.md). Ordered by **value an
 dependency** (steady pace, no external deadline). Tick tasks as they complete; each work
 session should start by reading this file and end by updating it.
 
-**How we work:** one phase = one or more feature branches off `main`; verify locally
-(`cd app-src && npm run dev`, static pages via `python3 -m http.server 8080`) before pushing —
-there is no staging. DB changes go through `supabase/schema/*.sql` (re-run in the Supabase SQL
-editor). `pos.html` and the marketing site stay untouched until their replacement earns
-cut-over on real service days.
+**How we work:** one phase = one or more feature branches off `main`; verify against the
+**local Supabase stack** (`supabase start && supabase db reset`, then `cd app-src && npm run dev`;
+static pages via `python3 -m http.server 8080`) — and, for prod-like checks, the **staging tier**
+(`lev-yam-staging` / staging.levyam.com) — before pushing. `main` still deploys straight to prod.
+DB changes go through `supabase/schema/*.sql` (source of truth) plus the generated baseline the
+migration pipeline applies (`supabase/tests/build-baseline.mjs`; see
+[plans/platform-staging-environment.md](plans/platform-staging-environment.md)). `pos.html` and the
+marketing site stay untouched until their replacement earns cut-over on real service days.
 
 ---
 
