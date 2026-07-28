@@ -217,15 +217,16 @@ item — the anon `pos_*` surface — is the POS cut-over task above, not repeat
       follow-up: unify `core.modules`/`core.permissions` labels onto the same bilingual DB
       shape.)*
 
-- [ ] **Staging environment** (kickoff 2026-07-28, owner-directed — plan + close-out:
-      [plans/platform-staging-environment.md](plans/platform-staging-environment.md)):
-      three tiers — local Docker Supabase stack (daily dev) + a cloud `lev-yam-staging`
-      project + `staging.levyam.com` (Cloudflare Pages, PR previews) — so dev and the
-      `/verify` gate stop running against production. Synthetic seed only (no prod data).
-      **Absorbs H2** (versioned migration pipeline). Resolves the "one project / no staging"
-      wording in ARCHITECTURE/ROADMAP/CLAUDE.md. **Owner prerequisite:** free-tier is capped
-      at 2 active projects (platform + survey already) — the cloud staging tier needs a
-      project-cap decision; the free local stack lands regardless.
+- [x] **Staging environment** (kickoff + delivered 2026-07-28, owner-directed — plan +
+      close-out: [plans/platform-staging-environment.md](plans/platform-staging-environment.md)):
+      three tiers now live — local Colima/Docker Supabase stack (daily dev) + cloud
+      `lev-yam-staging` project + **`staging.levyam.com`** (Cloudflare Pages, noindex) — so dev
+      and the `/verify` gate no longer run against production. Synthetic seed only (no prod data).
+      **Absorbed H2** (versioned migration pipeline). Resolved the "one project / no staging"
+      wording in ARCHITECTURE/ROADMAP/CLAUDE.md. Free-tier cap turned out moot (survey + b2b
+      already inactive). Fixed a fresh-install last-admin-guard lockout along the way. **Deferred
+      follow-ups:** deploy Supabase edge functions to staging (from a normal machine), and a
+      GitHub Action for auto-deploy on `staging` push (currently manual `wrangler pages deploy`).
 
 ## Phase 2 — What's happening: bookings & events
 

@@ -196,5 +196,64 @@ project / connect Cloudflare / DNS) that block Claude — called out at the top 
 - **Cloudflare as a new external dependency:** first non-GitHub host in the stack. Acceptable
   (still no server of ours), but note it in ARCHITECTURE so the "zero servers" story stays honest.
 
-## Close-out
-_(to be written when the initiative completes — what shipped, decisions made, alignment verdict)_
+## Close-out (2026-07-28)
+
+**Delivered: the full three-tier environment is live.** Dev and the `/verify` gate no longer
+run against production.
+
+**What shipped**
+- **Local tier (PR 1, commit `0cb07a6`):** Colima/Docker Supabase stack; `config.toml`; a
+  generated baseline migration (`build-baseline.mjs` + shared `schema-files.mjs`) with a drift
+  check in `ci.yml`/`deploy.yml`; `seed.sql` (synthetic owner/manager/staff). Absorbs roadmap
+  **H2**. `.env.local` now points at the local stack. Full pre-commit gate run green.
+- **Staging backend (PR 2, commit `c015757` + live infra):** cloud project **`lev-yam-staging`**
+  (`vhvghcehkcbtygomixmu`, eu-central-1, free — the free-tier active-project slot was already
+  open; survey + b2b were both already INACTIVE, so nothing had to be paused). Baseline + seed
+  applied and all config set **via the Supabase management-API SQL/config endpoints** (the DB
+  pooler is unreachable from the dev box). Exposed `core/finance/quotes/pos`; staging auth
+  `site_url` + redirect allow-list set.
+- **Staging site (PR 3, build tooling `34c3132` + live deploy):** **`staging.levyam.com`** on
+  **Cloudflare Pages** (SSL active), built from `scripts/build-site.sh` (staging env baked in,
+  whole-site **noindex**, no CNAME). Deployed by **direct upload via the Cloudflare API**
+  (`wrangler pages deploy`) after the Git-connected Workers-Builds wizard proved unworkable.
+  GoDaddy CNAME `staging` → `lev-yam-staging.pages.dev` added by the owner.
+- **Docs cut-over (PR 4, commit `05f1d0d`):** rewrote "one project / no staging" across
+  ARCHITECTURE / ROADMAP / CLAUDE.md to the three-tier reality.
+
+**Verified end-to-end:** `staging.levyam.com/` + `/app/` → 200, SSL active, `x-robots-tag:
+noindex`, `/pos.html` 308 and `/app/*` deep-link routing both matching prod; the deployed
+bundle talks to the staging Supabase project (no localhost); owner login + RLS read succeed.
+`rls_matrix.sql` (extended with guard-bypass assertions) green on local.
+
+**Key decisions along the way**
+- Runtime is **Colima**, not Docker Desktop (owner declined Docker Desktop).
+- **Fresh-install bug fixed:** the last-admin guard couldn't be seeded on an empty DB; added a
+  migration-only bootstrap bypass (`levyam.bootstrap` flag + `session_user` denylist), inert at
+  runtime. Necessary for *any* new environment.
+- Staging deploy is **direct-upload** (not Git-connected) because the Cloudflare wizard silently
+  failed; trade-off is no auto-deploy on push (see follow-ups).
+- Secrets (staging DB password, Cloudflare API token, account id) live only in gitignored
+  `.secrets/`.
+
+**Deliberately deferred (follow-ups, not blockers)**
+- **Supabase edge functions on staging** (`passkey-verify`, `admin-invite`, `admin-user-ops`) —
+  `supabase functions deploy` fails from the dev box (bundler/upload `Effect.tryPromise`, twice).
+  Deploy from a normal machine: `supabase functions deploy <name> --project-ref vhvghcehkcbtygomixmu`
+  (add `--no-verify-jwt` for `passkey-verify`). Password login + RLS work without them.
+- **Auto-deploy on `staging` push** — currently a manual `wrangler pages deploy _site`. Add a
+  GitHub Action (build + `cloudflare/wrangler-action`) with the CF token as a repo secret.
+- **Staging auth email** (Resend vs default) — untouched; default sender works for testing.
+
+**Alignment verdict**
+- **VISION.md — aligned.** Serves Principle 7 (evolution, not revolution): a safe, prod-like
+  place to prove changes before they hit live operations, which the community-facing phases
+  (2–6) depend on. No principle contradicted.
+- **ARCHITECTURE.md — aligned after the PR 4 rewrite.** The one conflict (the "one project / no
+  staging" invariant) was resolved *in the docs*, per the CLAUDE.md conflict rule, not coded
+  around. Cloudflare is a new external static host, but "zero servers of our own" still holds
+  (no server we run). All §7 invariants intact: RLS unchanged; only anon/publishable keys in the
+  browser/repo; **no secrets or real data in the public repo** (synthetic seed only; staging is a
+  separate project); business invariants still DB-enforced. The staging project is documented as a
+  deliberate, permanent second project, distinct from the survey-merge debt.
+
+**Verdict: done and aligned.** Remaining items are the two deferred follow-ups above.
