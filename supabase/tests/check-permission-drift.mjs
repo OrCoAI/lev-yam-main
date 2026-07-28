@@ -8,9 +8,10 @@
 // Keys must appear in a schema file's `insert into core.permissions` seed to
 // count as real; keys later retired with `delete from core.permissions` (the
 // Phase-0 pos placeholders) are subtracted.
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readSchemaFiles } from './schema-files.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -24,9 +25,9 @@ if (!permBlock) {
 const uiKeys = new Set([...permBlock[1].matchAll(/'([a-z_]+\.[a-z_]+)'/g)].map(m => m[1]));
 
 // --- DB side: seeded minus retired keys across all schema files --------
-const schemaDir = join(root, 'supabase/schema');
-const sql = readdirSync(schemaDir).filter(f => f.endsWith('.sql')).sort()
-  .map(f => readFileSync(join(schemaDir, f), 'utf8')).join('\n');
+// Schema file set + order comes from the shared helper so this and
+// build-baseline.mjs can never disagree on which files count.
+const sql = readSchemaFiles().map(({ sql }) => sql).join('\n');
 
 const dbKeys = new Set();
 const seedBlocks = [];

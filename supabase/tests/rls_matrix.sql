@@ -671,5 +671,34 @@ select pg_temp.assert_num('pos_bills DELETE (re-open) auto-reposts: cash leg she
 select pg_temp.assert_num('pos_bills DELETE auto-repost: other bill''s card leg preserved',
   (select coalesce(sum(amount), 0) from finance.entries where source_ref like 'pos:2099-04-04:card%'), 60);
 
+-- ---------------------------------------------------------------------
+--  Last-admin guard + bootstrap bypass (staging-environment diff, 2026-07-28).
+--  The guard blocks any statement that would leave zero users.manage holders.
+--  The new bypass in core.guard_users_manage_survives() must stay INERT unless
+--  levyam.bootstrap='on' — otherwise it would be a lockout/last-admin hole.
+--  Run as postgres (reset role): session_user is 'postgres', not a data-API
+--  role, so it exercises the flag branch. The session_user denylist itself
+--  can't be tripped here — every runtime request connects through PostgREST as
+--  'authenticator', which is denied — so that half is covered by construction.
+--  `delete from core.user_roles` (wipe every role grant → zero admins) is the
+--  cleanest trigger; assert_raises catches+rolls back the guarded attempts, and
+--  the one allowed delete is wrapped in a savepoint.
+-- ---------------------------------------------------------------------
+reset role;
+select pg_temp.assert_num('bootstrap flag is OFF by default (runtime state)',
+  (case when current_setting('levyam.bootstrap', true) = 'on' then 1 else 0 end), 0);
+select pg_temp.assert_raises('last-admin guard fires when bypass flag is off',
+  $q$ delete from core.user_roles $q$, 'users.manage');
+
+set levyam.bootstrap = 'on';
+savepoint guard_bypass;
+select pg_temp.assert_ok('bootstrap bypass permits the wipe only when flag is on',
+  $q$ delete from core.user_roles $q$);
+rollback to savepoint guard_bypass;
+reset levyam.bootstrap;
+
+select pg_temp.assert_raises('last-admin guard active again after the flag resets',
+  $q$ delete from core.user_roles $q$, 'users.manage');
+
 do $$ begin raise notice 'RLS MATRIX: ALL ASSERTIONS PASSED'; end $$;
 rollback;

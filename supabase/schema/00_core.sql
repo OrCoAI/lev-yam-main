@@ -203,6 +203,21 @@ language plpgsql security definer
 set search_path = core, public
 as $$
 begin
+  -- Bootstrap bypass. A from-scratch install (local stack / new staging project)
+  -- applies the whole schema in one migration BEFORE any admin user is seeded —
+  -- the roles/permissions writes here would otherwise trip this guard with no
+  -- admin yet to find (prod never hits this: it only ever re-runs these files
+  -- with an owner already present). Allow ONLY when the bootstrap flag is set
+  -- AND the session did NOT log in through the data API. session_user is the
+  -- login role and is immune to this function's SECURITY DEFINER context (and
+  -- to SET ROLE): migrations connect as `postgres`, while every runtime request
+  -- comes through PostgREST as `authenticator` (then SET ROLE authenticated/
+  -- anon/service_role). So a client can set the flag but never satisfy the
+  -- session_user check — it can never bypass the guard.
+  if current_setting('levyam.bootstrap', true) = 'on'
+     and session_user not in ('authenticator', 'authenticated', 'anon') then
+    return null;
+  end if;
   if not exists (
     select 1
     from core.user_roles ur

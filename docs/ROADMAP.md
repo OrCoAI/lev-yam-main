@@ -148,7 +148,9 @@ item — the anon `pos_*` surface — is the POS cut-over task above, not repeat
       *(done 2026-07-16 — PR #11 of [plans/users-permissions-suite.md](plans/users-permissions-suite.md);
       caught real drift on its first prod run: viewer role held zero permissions)*
 - [ ] **H2** Schema migration pipeline (Supabase CLI, versioned migrations + drift
-      check in the gate) — owner decision Q2
+      check in the gate) — **folded into the Staging environment initiative** (kickoff
+      2026-07-28): you can't keep prod + a staging project schema-synced without it. See
+      [plans/platform-staging-environment.md](plans/platform-staging-environment.md).
 - [x] **H3** Permission governance: last-admin lockout guard + `core.audit_log` on
       role/permission changes *(done 2026-07-15, bundled with H5 + users-scoped H7 —
       plan: [plans/users-hardening.md](plans/users-hardening.md); landed **ahead of**
@@ -211,6 +213,16 @@ item — the anon `pos_*` surface — is the POS cut-over task above, not repeat
       prod + `admin-user-ops` redeployed, `rls_matrix` green, awaiting merge. Newly-tracked
       follow-up: unify `core.modules`/`core.permissions` labels onto the same bilingual DB
       shape.)*
+
+- [ ] **Staging environment** (kickoff 2026-07-28, owner-directed — plan + close-out:
+      [plans/platform-staging-environment.md](plans/platform-staging-environment.md)):
+      three tiers — local Docker Supabase stack (daily dev) + a cloud `lev-yam-staging`
+      project + `staging.levyam.com` (Cloudflare Pages, PR previews) — so dev and the
+      `/verify` gate stop running against production. Synthetic seed only (no prod data).
+      **Absorbs H2** (versioned migration pipeline). Resolves the "one project / no staging"
+      wording in ARCHITECTURE/ROADMAP/CLAUDE.md. **Owner prerequisite:** free-tier is capped
+      at 2 active projects (platform + survey already) — the cloud staging tier needs a
+      project-cap decision; the free local stack lands regardless.
 
 ## Phase 2 — What's happening: bookings & events
 

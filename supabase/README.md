@@ -13,6 +13,42 @@ Backend for the Lev Yam platform (`/app`), the survey, and the POS. One Supabase
 Module schemas added later (`crm`, `events`, `inventory`, …) follow the same pattern: their
 own schema, RLS policies that call `core.has_permission('<module>.<action>')`.
 
+## Local development (Docker stack)
+
+Daily dev runs against a **local** Supabase stack — not production. (Full initiative:
+[docs/plans/platform-staging-environment.md](../docs/plans/platform-staging-environment.md).)
+Requires Docker running. From the repo root:
+
+```bash
+supabase start        # boots Postgres/Auth/PostgREST/Studio at 127.0.0.1:54321 (Studio :54323)
+supabase db reset     # applies migrations/ then seed.sql — synthetic users + data, fresh each time
+supabase status       # prints the API URL + anon key if you need to confirm them
+```
+
+Then `cp app-src/.env.example app-src/.env.local` (already points at the local stack) and
+`cd app-src && npm run dev` → `localhost:5173/app`. Seeded logins (dev-only passwords, in
+`seed.sql`):
+
+| Email | Password | Role |
+|---|---|---|
+| `owner@levyam.local` | `levyamdev` | owner |
+| `manager@levyam.local` | `levyamdev` | manager |
+| `staff@levyam.local` | `levyamdev` | staff |
+
+- **`supabase db reset` is destructive to the *local* DB only** — it drops and rebuilds it
+  from `migrations/` + `seed.sql`. It never touches prod (that needs an explicit `--linked`,
+  which we don't run).
+- **Passkeys can't be enrolled on localhost** (WebAuthn is origin-bound) — use email+password
+  locally; passkeys are exercised on `staging.levyam.com` (PR 3).
+- **Migrations vs. `schema/`.** `schema/*.sql` stays the source of truth. The CLI applies
+  `migrations/20260728120000_baseline.sql`, which is those files concatenated in fresh-install
+  order. **After editing any `schema/*.sql`, regenerate the baseline:**
+  `node supabase/tests/build-baseline.mjs --write` (CI fails otherwise — the `--check` runs in
+  `ci.yml` + `deploy.yml`). New post-baseline changes will land as their own timestamped
+  migration files under `migrations/`.
+- Edge functions: `supabase functions serve` (uses the local service-role key — local-only,
+  never committed).
+
 ## First-time setup
 
 1. **Apply the schema** — in the Supabase SQL editor, run the `schema/*.sql` files in
