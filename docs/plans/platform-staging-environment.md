@@ -139,11 +139,28 @@ demands as the platform absorbs bookings, community initiatives, and public tran
   never prod. Update the gate + "Deploying" wording.
 
 ## Suggested PR breakdown
-1. **PR 1 — Migration pipeline + local stack (H2).** `config.toml`, baseline migration, seed,
-   `.env` restructure to default-local, `supabase start` docs, schema-drift check in CI/gate.
-   **Free, no external deps — this alone gets daily dev off prod.**
-2. **PR 2 — Cloud staging project.** Provision (owner) + apply migrations + seed + Edge
-   Functions + Auth config; CI secrets; optionally point `/verify`/`rls_matrix` at staging.
+1. **PR 1 — Migration pipeline + local stack (H2). ✅ DONE (2026-07-28, commit `0cb07a6` on
+   `feat/staging-environment`).** `config.toml`, generated baseline migration + `build-baseline.mjs`
+   (+ shared `schema-files.mjs`) with drift check in `ci.yml`/`deploy.yml`, `seed.sql` (synthetic
+   owner/manager/staff), `.env` restructure to default-local, `supabase start` docs. Runtime is
+   **Colima** (Docker-Desktop-free). Fresh-install fix: migration-only bootstrap bypass on the
+   last-admin guard (`levyam.bootstrap` + `session_user` denylist), inert at runtime. Full gate
+   green; `rls_matrix.sql` extended with both-branch guard-bypass assertions. **This alone gets
+   daily dev off prod.** Not yet pushed / no GitHub PR opened.
+2. **PR 2 — Cloud staging project. ~DONE (2026-07-28), except edge functions.** Provisioned
+   `lev-yam-staging` (ref `vhvghcehkcbtygomixmu`, eu-central-1, free — free-tier slot was
+   already open: survey + b2b both already INACTIVE, so no pause/Pro needed after all). Baseline
+   + seed applied via the **management-API `database/query` endpoint** (the DB pooler is
+   unreachable from this dev box — TCP resets during the Postgres startup handshake; the HTTPS
+   management API is the working path). Exposed schemas (`core/finance/quotes/pos`) + staging
+   auth `site_url`/redirect allow-list configured. **Verified end-to-end:** owner login + RLS
+   finance read via REST, anon denied. DB password saved to gitignored `.secrets/staging-db-password`.
+   `.env.staging.example` filled with the real (non-secret) URL + publishable key.
+   **DEFERRED:** edge functions (`passkey-verify`, `admin-invite`, `admin-user-ops`) — `functions
+   deploy` errors in this sandbox (bundler/upload `Effect.tryPromise`), and passkey needs the
+   `staging.levyam.com` origin from PR 3 anyway; deploy them alongside PR 3 with
+   `supabase functions deploy <name> --project-ref vhvghcehkcbtygomixmu`. CI secrets for staging
+   also pending (PR 3).
 3. **PR 3 — Staging site (Cloudflare Pages).** `staging` branch deploy + `staging.levyam.com`
    + PR previews + noindex + DNS (owner).
 4. **PR 4 — Docs + gate cut-over + close-out.** Rewrite ARCHITECTURE / ROADMAP / CLAUDE.md /
