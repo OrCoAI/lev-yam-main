@@ -39,6 +39,8 @@ export interface AdminUser {
   created_at: string
   last_sign_in_at: string | null
   banned_until: string | null
+  /** null = invited but never accepted; such a user cannot sign in at all. */
+  email_confirmed_at: string | null
   roles: string[]
 }
 

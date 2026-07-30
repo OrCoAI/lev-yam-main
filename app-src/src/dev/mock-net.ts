@@ -447,7 +447,10 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise
     const body = (await req.json()) as { email: string; role_id: string }
     if (!body.email || !body.role_id) return json({ error: 'missing_fields' }, 400)
     if (!db.roles.some((r) => r.id === body.role_id)) return json({ error: 'unknown_role' }, 400)
-    const newUser = { user_id: `00000000-0000-4000-8000-${String(++seq).padStart(12, '0')}`, email: body.email, created_at: new Date().toISOString(), banned_until: null }
+    // email_confirmed_at: null mirrors the real invite — the account stays
+    // unconfirmed (and so unable to sign in) until the invitee opens the link or
+    // an owner confirms it, which is what the users module now surfaces
+    const newUser = { user_id: `00000000-0000-4000-8000-${String(++seq).padStart(12, '0')}`, email: body.email, created_at: new Date().toISOString(), banned_until: null, last_sign_in_at: null, email_confirmed_at: null }
     db.admin_users.push(newUser)
     db.user_roles.push({ user_id: newUser.user_id, role_id: body.role_id })
     return json({ invited: true, user_id: newUser.user_id })
@@ -458,11 +461,16 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise
     // the mock has no FK graph)
     const body = (await req.json()) as { action: string; user_id: string }
     const target = db.admin_users.find((u) => u.user_id === body.user_id)
-    if (!['delete', 'deactivate', 'reactivate'].includes(body.action) || !body.user_id)
+    // set_password/send_reset are deliberately absent: preview has no
+    // users.password grant, so the UI never offers them here.
+    if (!['delete', 'deactivate', 'reactivate', 'confirm_email'].includes(body.action) || !body.user_id)
       return json({ error: 'missing_fields' }, 400)
     if (body.user_id === user.id) return json({ error: 'self_forbidden' }, 400)
     if (!target) return json({ error: 'user_not_found' }, 404)
-    if (body.action !== 'reactivate') {
+    if (!target.email && body.action === 'confirm_email') return json({ error: 'no_email' }, 400)
+    // only the two actions that can strip the last active admin (POLICY's
+    // NEEDS_SURVIVES) — reactivate and confirm_email can't
+    if (body.action === 'delete' || body.action === 'deactivate') {
       const manageRoleIds = db.role_permissions
         .filter((rp) => db.permissions.find((p) => p.id === rp.permission_id)?.key === 'users.manage')
         .map((rp) => rp.role_id)
@@ -477,6 +485,9 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise
     if (body.action === 'delete') {
       db.admin_users = db.admin_users.filter((u) => u.user_id !== body.user_id)
       db.user_roles = db.user_roles.filter((ur) => ur.user_id !== body.user_id)
+    } else if (body.action === 'confirm_email') {
+      // only when unconfirmed, like confirmIfNeeded() server-side
+      target.email_confirmed_at ??= new Date().toISOString()
     } else {
       target.banned_until = body.action === 'deactivate' ? '2126-01-01T00:00:00Z' : null
     }

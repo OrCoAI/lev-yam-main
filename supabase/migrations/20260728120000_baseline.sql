@@ -182,22 +182,31 @@ $$;
 -- gated by 'users.manage' OR 'users.view' (view-only holders get the same read data;
 -- the UI's canManage flag already disables every mutating control for them).
 -- drop-first: adding last_sign_in_at (2026-07-16) then banned_until (2026-07-16,
--- delete/deactivate initiative) changed the return type, which
--- `create or replace` refuses; the blanket grant below re-covers it on re-run.
+-- delete/deactivate initiative) then email_confirmed_at (2026-07-30) changed the
+-- return type, which `create or replace` refuses; the blanket grant below
+-- re-covers it on re-run.
+-- email_confirmed_at is exposed because an unconfirmed address can't sign in at
+-- all while the project runs with mailer_autoconfirm off (GoTrue answers the
+-- password grant with email_not_confirmed) — so "invited but never accepted" is
+-- an admin-actionable account state, not a cosmetic detail. The users module
+-- surfaces it on the row and offers confirm_email (admin-user-ops).
 drop function if exists core.admin_list_users();
 create function core.admin_list_users()
 returns table (user_id uuid, email text, created_at timestamptz,
-               last_sign_in_at timestamptz, banned_until timestamptz, roles text[])
+               last_sign_in_at timestamptz, banned_until timestamptz,
+               email_confirmed_at timestamptz, roles text[])
 language sql stable security definer
 set search_path = core, public, auth
 as $$
   select u.id, u.email, u.created_at, u.last_sign_in_at, u.banned_until,
+         u.email_confirmed_at,
          coalesce(array_agg(r.key order by r.sort) filter (where r.key is not null), '{}')
   from auth.users u
   left join core.user_roles ur on ur.user_id = u.id
   left join core.roles r       on r.id = ur.role_id
   where core.has_permission('users.manage') or core.has_permission('users.view')
-  group by u.id, u.email, u.created_at, u.last_sign_in_at, u.banned_until
+  group by u.id, u.email, u.created_at, u.last_sign_in_at, u.banned_until,
+           u.email_confirmed_at
   order by u.created_at;
 $$;
 
