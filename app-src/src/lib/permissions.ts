@@ -15,6 +15,7 @@ export const PERM = {
   posCostsLabor: 'pos.costs_labor', // log employee/labor costs — manager
   posReports: 'pos.reports',      // full financial report (revenue/net) — manager
   posManage: 'pos.manage',        // end-day + close_day posting, voids — manager
+  posMenu: 'pos.menu',            // edit the menu — items, prices, options, meals — owner/manager
   financeView: 'finance.view',
   financeManage: 'finance.manage',
   eventsView: 'events.view',       // shared calendar spine (40_events.sql) — owner/manager/staff

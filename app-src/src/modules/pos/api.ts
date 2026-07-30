@@ -132,6 +132,60 @@ export function archiveBills(ids: string[]) {
   return pos().from('pos_bills').update({ archived_at: new Date().toISOString() }).in('id', ids)
 }
 
+// ── menu-as-data (51_pos_menu) — owner-editable menu, source of truth ──
+export interface MenuCategoryRow {
+  id: string; name_he: string; name_ar: string; sort: number; pos_only: boolean; active: boolean
+}
+export interface MenuItemRow {
+  id: string; category_id: string; name_he: string; name_ar: string; price: number | string
+  sort: number; is_meal: boolean; composition: unknown; active: boolean
+}
+export interface MenuOptionGroupRow {
+  id: string; item_id: string; name_he: string; name_ar: string
+  kind: 'choice' | 'count' | 'add'; min_sel: number; max_sel: number; included: number; sort: number
+}
+export interface MenuOptionRow {
+  id: string; group_id: string; name_he: string; name_ar: string; price_delta: number | string; sort: number
+}
+
+// Categories + items + option groups/options, sorted for display. `activeOnly` = the
+// floor view (fetchMenu); the admin editor (fetchMenuAdmin) wants inactive rows too.
+export interface MenuTables { categories: MenuCategoryRow[]; items: MenuItemRow[]; groups: MenuOptionGroupRow[]; options: MenuOptionRow[] }
+async function fetchMenuTables(activeOnly: boolean): Promise<MenuTables> {
+  const catQ = pos().from('menu_categories').select('*')
+  const itemQ = pos().from('menu_items').select('*')
+  const [c, i, g, o] = await Promise.all([
+    (activeOnly ? catQ.eq('active', true) : catQ).order('sort'),
+    (activeOnly ? itemQ.eq('active', true) : itemQ).order('sort'),
+    pos().from('menu_option_groups').select('*').order('sort'),
+    pos().from('menu_options').select('*').order('sort'),
+  ])
+  for (const r of [c, i, g, o]) if (r.error) throw r.error
+  return {
+    categories: (c.data as MenuCategoryRow[]) || [], items: (i.data as MenuItemRow[]) || [],
+    groups: (g.data as MenuOptionGroupRow[]) || [], options: (o.data as MenuOptionRow[]) || [],
+  }
+}
+// The active menu for the floor.
+export const fetchMenu = () => fetchMenuTables(true)
+// The full menu (incl. inactive) for the admin editor (pos.menu). Writes go through RLS.
+export const fetchMenuAdmin = () => fetchMenuTables(false)
+
+// updated_at/updated_by are stamped server-side (pos.touch_menu_actor trigger).
+export type CategoryInput = { id: string; name_he: string; name_ar: string; sort: number; pos_only: boolean; active: boolean }
+export type ItemInput = { id: string; category_id: string; name_he: string; name_ar: string; price: number; sort: number; is_meal: boolean; composition: unknown; active: boolean }
+export type OptionGroupInput = { id: string; item_id: string; name_he: string; name_ar: string; kind: 'choice' | 'count' | 'add'; min_sel: number; max_sel: number; included: number; sort: number }
+export type OptionInput = { id: string; group_id: string; name_he: string; name_ar: string; price_delta: number; sort: number }
+
+export const upsertCategory = (row: CategoryInput) => pos().from('menu_categories').upsert(row)
+export const deleteCategory = (id: string) => pos().from('menu_categories').delete().eq('id', id)
+export const upsertItem = (row: ItemInput) => pos().from('menu_items').upsert(row)
+export const deleteItem = (id: string) => pos().from('menu_items').delete().eq('id', id)
+export const upsertOptionGroup = (row: OptionGroupInput) => pos().from('menu_option_groups').upsert(row)
+export const deleteOptionGroup = (id: string) => pos().from('menu_option_groups').delete().eq('id', id)
+export const upsertOption = (row: OptionInput) => pos().from('menu_options').upsert(row)
+export const deleteOption = (id: string) => pos().from('menu_options').delete().eq('id', id)
+
 // ── day report + costs (date-scoped, read from the DB so past days work) ──
 export async function fetchDayReport(date: string): Promise<DayReport> {
   const { data, error } = await pos().rpc('pos_day_report', { p_date: date })

@@ -92,7 +92,7 @@ the conversation kickoff and will be encoded verbatim in the seed migration.
 
 ## Design
 
-### Schema (menu-as-data) — `supabase/schema/49_pos_menu.sql` (new)
+### Schema (menu-as-data) — `supabase/schema/51_pos_menu.sql` (new; **built + applied to local 2026-07-28**)
 
 New `pos` tables (RLS on all; read = `pos.order`+, write = new `pos.menu` permission):
 
@@ -218,6 +218,41 @@ Two PRs, each running the full pre-commit gate + its own close-out:
   **Gated on the owner's finalized August menu** (owner will send the final version before
   this PR starts, 2026-07-28) — until then O2–O4 stay open and PR 2 does not begin.
 
+## Revised model — owner feedback during PR 2a testing (2026-07-29)
+
+Testing PR 2a, the owner reshaped the menu model. **Supersedes** the "separate add-on
+items" decision and the flat-meal composition. Split: **PR 2a** = the stable foundation
+(menu DB-sourced, open house retired, base kitchen filter, first-cut meals) — commit as-is,
+minus the standalone add-ons (removed so a rejected pattern isn't committed). **PR 2b** = the
+options engine + refinements below.
+
+- **Per-item options engine (replaces standalone add-ons).** An item (or meal) carries
+  **option groups**, each of one kind:
+  - *choose-one* — e.g. breakfast spread לבנה|טחינה (free), or main שקשוקה|חביתה;
+  - *count* — a stepper with `min`/`max`, **`included` free count**, and a **per-unit price**
+    beyond that (e.g. hummus pita: 1 included, each extra +₪5; breakfast pita 0–1 free);
+  - *optional-add* — e.g. egg +₪5 on חומוס/תרד, olives +₪5 on פיצה.
+  The standalone `addon_egg`/`addon_olives` items go away; egg/olives become options on the
+  items that offer them. Meals use the **same** option-group mechanism (no separate combo path).
+- **Money validation must cover option deltas.** A line's `unit_price` = base +
+  Σ(selected option deltas). `pos.menu_price` alone no longer suffices — the server close-path
+  must recompute the option deltas from the DB (option prices + counts) so table-closes stay
+  guarded. Design this with the options schema (a `pos.menu_option_groups` / `pos.menu_options`
+  pair, or option groups as `jsonb` on the item — decide at 2b kickoff; jsonb matches the combo
+  precedent but relational is cleaner for the admin UI + server price recompute).
+- **Reworked meals (data):**
+  - *ארוחת בוקר של הדוקטור* — choose main (שקשוקה|חביתה), choose salad (1 of 4), choose spread
+    (לבנה|טחינה), pita count 0–1 (free). No fixed labneh+tahini.
+  - *ארוחת חומוס* — includes hummus + salad + tahini/pickles; **optional egg +₪5**; pita count
+    (1 included, extra +₪5).
+  - (ארוחת השף / הדייג keep their salad/pastry choices; add option groups if the owner wants.)
+- **Kitchen filter presets (replaces single multi-select).** Save several **named** filter
+  sets (device-local) and switch between them quickly; each preset is a set of dish names.
+- **Closed tables on the floor tab.** Surface today's closed/paid tables on the floor screen
+  directly (today they're only in the report) — quick view/reopen without opening the report.
+- **Admin UI (PR 2b)** manages items + their option groups + meals, in the POS-embedded editor
+  (owner-confirmed placement).
+
 ## Open questions
 
 - **O1 — meal composition storage:** jsonb on the meal row (recommended, matches ARCHITECTURE
@@ -264,3 +299,19 @@ Shipped items #4 (realtime reliability), #5 (per-unit kitchen "done"), #6 (floor
   filters — gated on the owner's finalized August menu (O2 olives price, O3 drinks list).
 - **Alignment:** no drift — client-only reliability + a per-unit RPC + CSS; no finance/history
   touched. Consistent with ARCHITECTURE §7 and the initiative's alignment verdict above.
+
+## Known trade-off — editing the menu while a table is open (raised in PR 2b gate)
+
+`pos.assert_line_prices` (server, `53_pos_close_options.sql`) validates each line's
+`unit_price` against the **live** menu (`menu_price(name)` + `option_charge(id,qty)`). The
+menu is now owner-editable *during service* (admin UI). Consequence: if the owner **reprices
+/ renames an item or deletes an option while a table holding it is open**, that line's
+snapshotted price no longer matches the recomputed one and the close is **rejected** with a
+clear Hebrew message (or "תוספת לא מוכרת" if an option id was deleted). It is a hard,
+visible failure — never silent money corruption — and recoverable (re-add the line at the
+new price, or void it). We deliberately keep strict server validation (the "nothing from the
+side" guard) rather than trusting the client's `unit_price`. **Guidance to owner:** avoid
+repricing/deleting items or options mid-shift; prefer the **פעיל/active toggle** to hide an
+item (hiding doesn't affect open tables or the close path). Future option if this bites:
+validate against a snapshot / version the menu so already-open lines settle at their
+add-time price.

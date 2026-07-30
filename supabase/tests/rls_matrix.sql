@@ -299,6 +299,10 @@ select pg_temp.assert_noop('viewer: pos table update is a silent noop',
   $q$ update pos.pos_tables set name = 'x' where id = 'rls-test-t1' $q$);
 select pg_temp.assert_raises('viewer: cannot mark a kitchen item (no pos.kitchen)',
   $q$ select pos.pos_mark_item('rls-kite-tbl', 'k1', true) $q$, 'pos.kitchen');
+select pg_temp.assert_rows('viewer: menu hidden (no pos.view)',
+  $q$ select 1 from pos.menu_items where id = 'hummus' $q$, 0);
+select pg_temp.assert_rows('viewer: menu option groups hidden (no pos.view)',
+  $q$ select 1 from pos.menu_option_groups where id = 'g_hummus_add' $q$, 0);
 select pg_temp.assert_rows('viewer: raw pos_expenses hidden (needs pos.reports)',
   $q$ select 1 from pos.pos_expenses where note like 'rls-test%' $q$, 0);
 select pg_temp.assert_rows('viewer: finance.expected hidden',
@@ -370,6 +374,30 @@ select pg_temp.assert_ok('staff: undo below served is a clamped no-op',
 select pg_temp.assert_num('staff: done clamps at served (0), never negative',
   (select (i->>'done')::int from pos.pos_tables t, jsonb_array_elements(t.items) i
    where t.id = 'rls-kite-tbl' and i->>'id' = 'k1'), 0);
+-- 51_pos_menu: the menu is readable by anyone who can see the POS (pos.view),
+-- writable only with pos.menu (owner/manager)
+select pg_temp.assert_rows('staff: can read the menu (pos.view)',
+  $q$ select 1 from pos.menu_items where id = 'hummus' $q$, 1);
+select pg_temp.assert_denied('staff: cannot add a menu category (no pos.menu)',
+  $q$ insert into pos.menu_categories (id, name_he, name_ar) values ('rls-test-cat', 'x', 'x') $q$);
+select pg_temp.assert_noop('staff: menu price edit is a silent noop (no pos.menu)',
+  $q$ update pos.menu_items set price = 999 where id = 'hummus' $q$);
+select pg_temp.assert_rows('staff: can read menu option groups (pos.view)',
+  $q$ select 1 from pos.menu_option_groups where id = 'g_hummus_add' $q$, 1);
+select pg_temp.assert_rows('staff: can read menu options (pos.view)',
+  $q$ select 1 from pos.menu_options where id = 'o_hummus_egg' $q$, 1);
+select pg_temp.assert_denied('staff: cannot add a menu option group (no pos.menu)',
+  $q$ insert into pos.menu_option_groups (id, item_id, name_he, name_ar, kind) values ('rls-test-og','hummus','x','x','add') $q$);
+select pg_temp.assert_noop('staff: menu option price edit is a silent noop (no pos.menu)',
+  $q$ update pos.menu_options set price_delta = 999 where id = 'o_hummus_egg' $q$);
+-- 51/53: the price-validation helpers are internal to pos_close_table (SECURITY DEFINER);
+-- revoked from public so no role can call them directly (guards the money path).
+select pg_temp.assert_denied('staff: pos.menu_price is internal — not directly callable',
+  $q$ select pos.menu_price('החומוס של רמי') $q$);
+select pg_temp.assert_denied('staff: pos.option_charge is internal — not directly callable',
+  $q$ select pos.option_charge('o_hummus_egg', 1) $q$);
+select pg_temp.assert_denied('staff: pos.assert_line_prices is internal — not directly callable',
+  $q$ select pos.assert_line_prices('[]'::jsonb) $q$);
 select pg_temp.assert_raises('staff: cannot post the day to finance (no pos.manage)',
   $q$ select pos.close_day(current_date) $q$, 'pos.manage');
 select pg_temp.assert_denied('staff: pos.post_day is internal — not callable by any role',
@@ -403,6 +431,19 @@ select pg_temp.assert_rows('staff: quotes-docs storage objects unreachable (zero
 select pg_temp.become('aaaaaaaa-0000-0000-0000-000000000002');
 select pg_temp.assert_rows('manager: sees finance.entries',
   $q$ select 1 from finance.entries where note like 'rls-test%' $q$, 2);
+-- 51_pos_menu: managers hold pos.menu — they may edit the menu
+select pg_temp.assert_ok('manager: can add a menu category (pos.menu)',
+  $q$ insert into pos.menu_categories (id, name_he, name_ar, sort) values ('rls-test-cat', 'בדיקה', 'اختبار', 999) $q$);
+select pg_temp.assert_ok('manager: can edit a menu item price (pos.menu)',
+  $q$ update pos.menu_items set price = 34 where id = 'hummus' $q$);
+select pg_temp.assert_ok('manager: can add a menu option group (pos.menu)',
+  $q$ insert into pos.menu_option_groups (id, item_id, name_he, name_ar, kind, min_sel, max_sel, included, sort)
+      values ('rls-test-og','hummus','בדיקה','اختبار','add',0,1,0,999) $q$);
+select pg_temp.assert_ok('manager: can add a menu option (pos.menu)',
+  $q$ insert into pos.menu_options (id, group_id, name_he, name_ar, price_delta, sort)
+      values ('rls-test-o','rls-test-og','בדיקה','اختبار',7,10) $q$);
+select pg_temp.assert_ok('manager: can edit a menu option price (pos.menu)',
+  $q$ update pos.menu_options set price_delta = 6 where id = 'o_hummus_egg' $q$);
 select pg_temp.assert_ok('manager: can edit a MANUAL finance entry',
   $q$ update finance.entries set amount = 51
       where id = 'bbbbbbbb-0000-0000-0000-000000000002' $q$);

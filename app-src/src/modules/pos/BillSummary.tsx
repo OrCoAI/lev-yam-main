@@ -1,24 +1,19 @@
-// Customer-facing bill overlay: open-house cover + included items + paid
-// extras, optional payment QR. Ported from pos.html.
+// Customer-facing bill overlay: the ordered lines and the total, optional
+// payment QR. À-la-carte only (open house retired 2026-07-28).
 import { useState } from 'react'
-import { itemName, usePosTr } from './i18n'
+import { componentsLine, itemName, usePosTr } from './i18n'
+import { lineUnitPrice } from './logic'
 import qrSrc from './pay-qr.jpg'
 import S from './styles'
 import type { PosLine } from './types'
 
-export default function BillSummary({ orderedItems, useOH, headcount, guests, ohCharge, grand, onClose, onPay }: {
+export default function BillSummary({ orderedItems, grand, onClose, onPay }: {
   orderedItems: PosLine[]
-  useOH: boolean
-  headcount: number
-  guests: { a: number; c: number }
-  ohCharge: number
   grand: number
   onClose: () => void
   onPay?: () => void
 }) {
   const { tr, lang } = usePosTr()
-  const ohItems = orderedItems.filter((it) => it.oh)
-  const extraItems = orderedItems.filter((it) => !it.oh)
   const [showQR, setShowQR] = useState(false)
 
   return (
@@ -29,61 +24,20 @@ export default function BillSummary({ orderedItems, useOH, headcount, guests, oh
         </div>
 
         <div style={S.receiptScroll}>
-          {useOH && headcount > 0 && (
+          {orderedItems.length > 0 && (
             <div style={S.receiptSection}>
-              <div style={S.receiptRow}>
-                <span style={S.receiptItemName}>
-                  {tr('בית פתוח', 'بيت مفتوح')}
-                  <span style={S.receiptItemSub}>
-                    {[
-                      guests.a > 0 ? guests.a + ' ' + tr('מבוגרים', 'بالغين') : null,
-                      guests.c > 0 ? guests.c + ' ' + tr('ילדים', 'أطفال') : null,
-                    ].filter(Boolean).join(' · ')}
-                  </span>
-                </span>
-                <span style={S.receiptItemPrice}>{ohCharge} ₪</span>
-              </div>
-            </div>
-          )}
-
-          {useOH && ohItems.length > 0 && (
-            <div style={S.receiptNote}>{tr('כלול בבית פתוח, ללא תוספת', 'مشمول في البيت المفتوح، بدون إضافة')}:</div>
-          )}
-
-          {useOH && ohItems.map((it) => (
-            <div key={it.id} style={S.receiptRowSub}>
-              <span style={S.receiptItemNameSub}>
-                {itemName(it, lang)} <span style={S.receiptQtyTag}>×{it.qty}</span>
-              </span>
-              <span style={S.receiptItemPriceSub}>—</span>
-            </div>
-          ))}
-
-          {!useOH && ohItems.map((it) => (
-            <div key={it.id} style={S.receiptRow}>
-              <span style={S.receiptItemName}>
-                {itemName(it, lang)} <span style={S.receiptQtyTag}>×{it.qty}</span>
-              </span>
-              <span style={S.receiptItemPrice}>{it.qty * it.price} ₪</span>
-            </div>
-          ))}
-
-          {extraItems.length > 0 && (
-            <div style={S.receiptSection}>
-              {useOH && <div style={S.receiptNote}>{tr('תוספות בתשלום', 'إضافات بتكلفة')}:</div>}
-              {extraItems.map((it) => (
+              {orderedItems.map((it) => (
                 <div key={it.id}>
                   <div style={S.receiptRow}>
                     <span style={S.receiptItemName}>
                       {itemName(it, lang)} <span style={S.receiptQtyTag}>×{it.qty}</span>
                     </span>
-                    <span style={S.receiptItemPrice}>{it.qty * it.price} ₪</span>
+                    <span style={S.receiptItemPrice}>{it.qty * lineUnitPrice(it)} ₪</span>
                   </div>
-                  {it.combo && it.components && it.components.length > 0 && (
-                    <div style={S.receiptComboParts}>
-                      {it.components.map((c) => itemName(c, lang) + (c.qty ? ' ×' + c.qty : '')).join(' · ')}
-                    </div>
+                  {it.components && it.components.length > 0 && (
+                    <div style={S.receiptComboParts}>{componentsLine(it.components, lang)}</div>
                   )}
+                  {it.note && <div style={S.receiptComboParts}>{'📝 ' + it.note}</div>}
                 </div>
               ))}
             </div>

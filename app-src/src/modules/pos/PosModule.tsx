@@ -7,7 +7,9 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { PERM, useCan } from '../../lib/permissions'
 import ChefView from './ChefView'
 import { usePosTr } from './i18n'
-import { fmtDate, kitchenCounts, REPORT_DATE_RE, tableTotals, todayKey } from './logic'
+import MenuAdmin from './MenuAdmin'
+import { fmtDate, fmtTime, kitchenCounts, REPORT_DATE_RE, tableTotals, todayKey } from './logic'
+import { useMenu } from './menuData'
 import ReportView from './ReportView'
 import S, { INK, SEA, SUN } from './styles'
 import TableView from './TableView'
@@ -21,6 +23,7 @@ export default function PosModule() {
   const canAnalytics = useCan(PERM.posAnalytics)
   const canReports = useCan(PERM.posReports)
   const canManage = useCan(PERM.posManage)
+  const canMenu = useCan(PERM.posMenu)
   const canAddFood = useCan(PERM.posCostsFood)
   const canAddLabor = useCan(PERM.posCostsLabor)
 
@@ -34,6 +37,8 @@ export default function PosModule() {
   const [activeId, setActiveId] = useState<string | null>(null)
   const [showReport, setShowReport] = useState(reportDate !== null)
   const [chefMode, setChefMode] = useState(false)
+  const [menuMode, setMenuMode] = useState(false)
+  useMenu() // load the owner-editable menu (DB) into the runtime store; re-renders when it refreshes
 
   const pos = usePosData(activeId, (message) =>
     alert(tr('שמירת החשבון נכשלה — בדקו חיבור ונסו שוב', 'فشل حفظ الحساب — تحقق من الاتصال وحاول مجدداً') + '\n' + message))
@@ -46,6 +51,10 @@ export default function PosModule() {
 
   if (chefMode && canKitchen) {
     return <ChefView tables={data.tables} onMarkDone={pos.markDone} onBack={() => setChefMode(false)} />
+  }
+
+  if (menuMode && canMenu) {
+    return <MenuAdmin onBack={() => setMenuMode(false)} />
   }
 
   const active = data.tables.find((t) => t.id === activeId)
@@ -133,7 +142,7 @@ export default function PosModule() {
                     onClick={() => { if (canOrder) { pos.serveReady(t.id); setActiveId(t.id) } }}
                   >
                     <div style={S.tableCardHead}>
-                      <span style={{ ...S.tableNumBadge, background: t.useOH ? SEA : SUN }}>{t.num}</span>
+                      <span style={{ ...S.tableNumBadge, background: SUN }}>{t.num}</span>
                       {/* Name gets the whole head row now (wraps in full) — kitchen state moved
                           down to the meta line so a long name is never truncated. */}
                       <span style={S.tableName}>{t.name || tr('שולחן', 'طاولة') + ' ' + t.num}</span>
@@ -162,10 +171,43 @@ export default function PosModule() {
             </div>
           )}
 
+          {/* Closed today — visible right on the floor (owner 2026-07-29), not only in
+              the report. Read-only; a manager can reopen a mistakenly-closed table. */}
+          {list.length > 0 && (
+            <>
+              <div style={{ ...S.sectionLabel, marginTop: 18 }}>{tr('שולחנות שנסגרו היום', 'طاولات أُغلقت اليوم') + ' · ' + list.length}</div>
+              <div style={S.closedList}>
+                {list.map((c) => (
+                  <div key={c.id} style={S.closedRowCard}>
+                    <span style={S.closedRowBadge}>{c.num}</span>
+                    <div style={S.closedRowInfo}>
+                      <span style={S.closedRowName}>{c.name || tr('שולחן', 'طاولة') + ' ' + c.num}</span>
+                      <span style={S.closedRowSub}>
+                        {fmtTime(c.paidAt)
+                          + (c.cash > 0 ? ' · ' + tr('מזומן', 'نقداً') + ' ' + c.cash : '')
+                          + (c.card > 0 ? ' · ' + tr('אשראי', 'بطاقة') + ' ' + c.card : '')}
+                      </span>
+                    </div>
+                    <span style={S.closedRowTotal}>{c.total} ₪</span>
+                    {canManage && (
+                      <button className="pos-tap" style={S.reopenBtn}
+                        onClick={() => { if (window.confirm(tr('לפתוח מחדש את השולחן?', 'إعادة فتح الطاولة؟'))) reopen(c.id) }}>
+                        {tr('פתח מחדש', 'إعادة فتح')}
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
           <div style={{ height: 120 }} />
         </div>
 
         <div style={S.homeDock}>
+          {canMenu && (
+            <button className="pos-tap" style={S.menuBtn} onClick={() => setMenuMode(true)}>{tr('תפריט', 'القائمة')}</button>
+          )}
           {canKitchen && (
             <button className="pos-tap" style={S.chefEnterBtn} onClick={() => setChefMode(true)}>{tr('מטבח', 'المطبخ')}</button>
           )}

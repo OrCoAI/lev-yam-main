@@ -10,6 +10,16 @@ export interface ComboComponent {
   qty?: number
 }
 
+// A chosen menu option on an order line (52_pos_menu_options). `price` is the
+// charge for this selection (client total); the server re-derives it by id+qty.
+export interface SelectedOption {
+  id: string
+  name: string
+  nameAr?: string
+  qty?: number   // count kind: chosen quantity
+  price: number  // effective charge (0 for free choices)
+}
+
 // One order line. Kitchen pipeline counts: qty (ordered) → sent → done → served.
 export interface PosLine {
   id: string
@@ -24,8 +34,10 @@ export interface PosLine {
   done?: number
   served?: number
   custom?: boolean
-  combo?: boolean
+  combo?: boolean            // configured through the picker (a meal, or an item with options/note) — a distinct line in the order list
   components?: ComboComponent[]
+  options?: SelectedOption[] // chosen options (item add-ons / meal choices)
+  note?: string              // free-text kitchen note on this line
   firedAt?: string
 }
 

@@ -4167,5 +4167,548 @@ on conflict (id) do update set public = false;
 
 -- No storage.objects policies — intentionally none (see header).
 
+-- =====================================================================
+-- schema/51_pos_menu.sql
+-- =====================================================================
+-- =====================================================================
+--  51_pos_menu.sql — POS menu-as-data (PR 2 of the pos-menu-kitchen initiative)
+--
+--  The menu stops being a code literal (app-src/src/modules/pos/menu.ts) and
+--  becomes owner-editable DB rows. This is the single source of truth for
+--  categories, items, prices (HE/AR), add-ons, and meals; it retires the
+--  hand-kept pos.menu_price() literal mirror (its price validation now reads
+--  these tables) and feeds Phase 4's QR menu later.
+--
+--  Open house is retired going forward (owner 2026-07-28): no menu row carries
+--  an open-house flag, new bills are always à-la-carte. History is untouched —
+--  pricing_mode/oh_charge/is_open_house columns and pos.oh_charge() stay so a
+--  reopened legacy bill still settles; new bills simply never use them.
+--
+--  Plan: docs/plans/pos-menu-kitchen.md. Seed = the August 2026 printed menu
+--  (owner-confirmed prices) + the four hot drinks carried POS-only.
+-- =====================================================================
+
+-- ── 1) Tables ────────────────────────────────────────────────────────
+create table if not exists pos.menu_categories (
+  id         text primary key,                        -- stable slug ('salads', 'meals'…)
+  name_he    text not null,
+  name_ar    text not null,
+  sort       int  not null default 0,
+  pos_only   boolean not null default false,          -- sold at the POS but off the printed menu (drinks)
+  active     boolean not null default true,
+  updated_at timestamptz not null default now(),
+  updated_by text
+);
+
+create table if not exists pos.menu_items (
+  id          text primary key,                       -- stable slug
+  category_id text not null references pos.menu_categories(id),
+  name_he     text not null,
+  name_ar     text not null,
+  price       numeric not null default 0 check (price >= 0),
+  sort        int  not null default 0,
+  is_meal     boolean not null default false,         -- a combo: composition drives the picker + kitchen
+  composition jsonb,                                  -- meals only: { includes:[…], slots:[{…,options:[…]}] }
+  active      boolean not null default true,
+  updated_at  timestamptz not null default now(),
+  updated_by  text,
+  constraint menu_items_meal_has_composition check (not is_meal or composition is not null)
+);
+create index if not exists menu_items_category_idx on pos.menu_items (category_id);
+-- price validation (pos.menu_price) looks an item up by name — keep active names unique
+-- so the lookup is unambiguous, and a duplicate name fails closed at edit time.
+create unique index if not exists menu_items_name_active_idx on pos.menu_items (name_he) where active;
+
+-- ── 2) Audit: stamp updated_at / updated_by from the JWT on write ─────
+create or replace function pos.touch_menu_actor()
+returns trigger language plpgsql security definer set search_path = pos, public as $$
+begin
+  new.updated_at := now();
+  new.updated_by := coalesce(auth.jwt()->>'email', 'לא ידוע');
+  return new;
+end; $$;
+drop trigger if exists menu_categories_touch on pos.menu_categories;
+create trigger menu_categories_touch before insert or update on pos.menu_categories
+for each row execute function pos.touch_menu_actor();
+drop trigger if exists menu_items_touch on pos.menu_items;
+create trigger menu_items_touch before insert or update on pos.menu_items
+for each row execute function pos.touch_menu_actor();
+
+-- ── 3) RLS: everyone who can see the POS reads the menu; only pos.menu writes ──
+alter table pos.menu_categories enable row level security;
+alter table pos.menu_items      enable row level security;
+revoke all on pos.menu_categories, pos.menu_items from anon, authenticated;
+grant select, insert, update, delete on pos.menu_categories, pos.menu_items to authenticated;
+
+drop policy if exists menu_categories_read  on pos.menu_categories;
+drop policy if exists menu_categories_write on pos.menu_categories;
+drop policy if exists menu_items_read       on pos.menu_items;
+drop policy if exists menu_items_write      on pos.menu_items;
+-- (select …) wrapping keeps has_permission out of the per-row initplan (H4 sweep)
+create policy menu_categories_read  on pos.menu_categories for select to authenticated
+  using ((select core.has_permission('pos.view')));
+create policy menu_categories_write on pos.menu_categories for all to authenticated
+  using ((select core.has_permission('pos.menu'))) with check ((select core.has_permission('pos.menu')));
+create policy menu_items_read  on pos.menu_items for select to authenticated
+  using ((select core.has_permission('pos.view')));
+create policy menu_items_write on pos.menu_items for all to authenticated
+  using ((select core.has_permission('pos.menu'))) with check ((select core.has_permission('pos.menu')));
+
+-- ── 4) Permission: pos.menu (owner + manager) ────────────────────────
+insert into core.permissions (key, module, action, label) values
+  ('pos.menu', 'pos', 'menu', 'עריכת תפריט — מנות, מחירים וקטגוריות')
+on conflict (key) do nothing;
+insert into core.role_permissions (role_id, permission_id)
+select r.id, p.id from core.roles r join core.permissions p on p.key = 'pos.menu'
+where r.key in ('owner', 'manager')
+on conflict do nothing;
+
+-- ── 5) Retire the literal price mirror → read the menu table ─────────
+-- Same contract as before: price for a known item by its Hebrew name, NULL for
+-- anything not on the menu (custom lines stay the deliberate no-check escape
+-- hatch). Meals validate on their own top-line price; their components are not
+-- separate priced lines. `stable` (reads a table) instead of `immutable`.
+create or replace function pos.menu_price(p_name text)
+returns numeric language sql stable set search_path = pos as $$
+  select price from pos.menu_items where name_he = p_name and active limit 1
+$$;
+revoke all on function pos.menu_price(text) from public, anon, authenticated;
+
+-- ── 6) Seed: the August 2026 menu (owner-confirmed) ──────────────────
+insert into pos.menu_categories (id, name_he, name_ar, sort, pos_only) values
+  ('salads', 'פתיחים וסלטים',      'مقبلات وسلطات',   10, false),
+  ('sea',    'מהים',               'من البحر',        20, false),
+  ('mahashi','הממולאים של אסרא',    'محاشي إسراء',     30, false),
+  ('taboon', 'מאפים מהטאבון',       'مخبوزات من الطابون', 40, false),
+  ('sweets', 'מתוקים',             'حلويات',          50, false),
+  ('meals',  'ארוחות',             'وجبات',           60, false),
+  ('drinks', 'שתייה חמה',          'مشروبات ساخنة',   80, true)
+on conflict (id) do update set
+  name_he = excluded.name_he, name_ar = excluded.name_ar,
+  sort = excluded.sort, pos_only = excluded.pos_only;
+
+insert into pos.menu_items (id, category_id, name_he, name_ar, price, sort, is_meal, composition) values
+  -- פתיחים וסלטים
+  ('tahini',   'salads', 'טחינה וחמוצים', 'طحينة ومخللات', 15, 10, false, null),
+  ('labneh',   'salads', 'לבנה',          'لبنة',          20, 20, false, null),
+  ('cabbage',  'salads', 'סלט כרוב',      'سلطة ملفوف',    27, 30, false, null),
+  ('tabbouleh','salads', 'סלט טבולה',     'تبولة',         27, 40, false, null),
+  ('salad_veg','salads', 'סלט ירקות',     'سلطة خضار',     32, 50, false, null),
+  ('jarjir',   'salads', 'סלט ג׳רג׳יר',   'سلطة جرجير',    32, 60, false, null),
+  ('hummus',   'salads', 'החומוס של רמי', 'حمّص رامي',     33, 70, false, null),
+  ('chips',    'salads', 'צ׳יפס',         'بطاطس مقلية',   30, 80, false, null),
+  -- מהים
+  ('fish',     'sea',    'מנת דג',        'وجبة سمك',      80, 10, false, null),
+  ('shrimp',   'sea',    'שרימפס',        'جمبري',         65, 20, false, null),
+  -- הממולאים של אסרא
+  ('vine_leaves',   'mahashi', 'עלי גפן',       'ورق عنب',      30, 10, false, null),
+  ('stuffed_cabbage','mahashi','מלפוף',         'ملفوف محشي',   30, 20, false, null),
+  ('stuffed_plate', 'mahashi', 'צלחת ממולאים',  'صحن محاشي',    54, 30, false, null),
+  -- מאפים מהטאבון
+  ('pastry_zaatar',  'taboon', 'מאפה זעתר',        'معجنة زعتر',        20, 10, false, null),
+  ('pastry_pizza',   'taboon', 'מאפה פיצה',        'معجنة بيتزا',       28, 20, false, null),
+  ('pastry_spinach', 'taboon', 'מאפה תרד וגבינה',  'معجنة سبانخ وجبنة', 32, 30, false, null),
+  ('pita',           'taboon', 'פיתה בעבודת יד',   'خبز بيتا يدوي',      8, 40, false, null),
+  -- מתוקים
+  ('watermelon', 'sweets', 'אבטיח טרי',        'بطيخ طازج', 25, 10, false, null),
+  ('cookies',    'sweets', 'עוגיות בעבודת יד', 'كعك بيتي',  15, 20, false, null),
+  -- ארוחות (meals) — composition.includes = the FIXED dishes (display / kitchen);
+  -- all guest CHOICES live in pos.menu_option_groups (52_pos_menu_options.sql).
+  ('meal_breakfast', 'meals', 'ארוחת בוקר של הדוקטור', 'فطور الدكتور', 65, 10, true,
+    jsonb_build_object('includes', jsonb_build_array())),
+  ('meal_hummus', 'meals', 'ארוחת חומוס', 'وجبة حمّص', 55, 20, true,
+    jsonb_build_object('includes', jsonb_build_array(
+      jsonb_build_object('name_he','מנת חומוס','name_ar','صحن حمّص'),
+      jsonb_build_object('name_he','סלט ירקות','name_ar','سلطة خضار'),
+      jsonb_build_object('name_he','טחינה וחמוצים','name_ar','طحينة ومخللات')))),
+  ('meal_chef', 'meals', 'ארוחת השף', 'وجبة الشيف', 75, 30, true,
+    jsonb_build_object('includes', jsonb_build_array(
+      jsonb_build_object('name_he','מיקס ממולאים','name_ar','تشكيلة محاشي'),
+      jsonb_build_object('name_he','טחינה וחמוצים','name_ar','طحينة ومخللات')))),
+  ('meal_fisherman', 'meals', 'ארוחת הדייג', 'وجبة الصيّاد', 110, 40, true,
+    jsonb_build_object('includes', jsonb_build_array(
+      jsonb_build_object('name_he','מנת דג','name_ar','وجبة سمك'),
+      jsonb_build_object('name_he','צ׳יפס','name_ar','بطاطس مقلية')))),
+  -- שתייה חמה (POS-only, carried from the previous menu)
+  ('drink_espresso',    'drinks', 'אספרסו / שחור', 'إسبريسو / قهوة سوداء', 5,  10, false, null),
+  ('drink_coffee_milk', 'drinks', 'קפה עם חלב',    'قهوة بحليب',           8,  20, false, null),
+  ('drink_tea_cup',     'drinks', 'תה בכוס',       'شاي بكوب',             8,  30, false, null),
+  ('drink_tea_pot',     'drinks', 'קנקן תה',       'إبريق شاي',            15, 40, false, null)
+on conflict (id) do update set
+  category_id = excluded.category_id, name_he = excluded.name_he, name_ar = excluded.name_ar,
+  price = excluded.price, sort = excluded.sort,
+  is_meal = excluded.is_meal, composition = excluded.composition;
+
+-- =====================================================================
+-- schema/52_pos_menu_options.sql
+-- =====================================================================
+-- =====================================================================
+--  52_pos_menu_options.sql — per-item option groups (PR 2b)
+--
+--  Owner feedback (2026-07-29): add-ons are not standalone items — they are
+--  OPTIONS on an item, and meals use the same mechanism. An item (or meal)
+--  carries option groups of three kinds:
+--    choice — pick one (breakfast spread לבנה|טחינה, main שקשוקה|חביתה)
+--    count  — a quantity min..max with `included` free units, each extra priced
+--             (hummus pita: 1 free, extra +₪5; breakfast pita 0–1 free)
+--    add    — optional add(s), each priced (egg +₪5, olives +₪5)
+--
+--  Meals keep their FIXED dishes in pos.menu_items.composition.includes (display /
+--  kitchen), and move all guest CHOICES here. The standalone add-on items are gone
+--  (removed from 51's seed). Line price = base + Σ selected option deltas; the
+--  close-path validates that server-side (see the pos_close_table change below).
+--
+--  Plan: docs/plans/pos-menu-kitchen.md.
+-- =====================================================================
+
+-- ── 1) Tables ────────────────────────────────────────────────────────
+create table if not exists pos.menu_option_groups (
+  id         text primary key,
+  item_id    text not null references pos.menu_items(id) on delete cascade,
+  name_he    text not null,
+  name_ar    text not null,
+  kind       text not null check (kind in ('choice', 'count', 'add')),
+  min_sel    int  not null default 0,     -- choice: 1 = required; add: 0; count: min qty
+  max_sel    int  not null default 1,     -- choice: 1; add: N allowed; count: max qty
+  included   int  not null default 0,     -- count only: free units before per-unit pricing
+  sort       int  not null default 0,
+  updated_at timestamptz not null default now(),
+  updated_by text,
+  constraint menu_option_groups_sel_chk check (max_sel >= min_sel and included >= 0)
+);
+create index if not exists menu_option_groups_item_idx on pos.menu_option_groups (item_id);
+
+create table if not exists pos.menu_options (
+  id          text primary key,
+  group_id    text not null references pos.menu_option_groups(id) on delete cascade,
+  name_he     text not null,
+  name_ar     text not null,
+  price_delta numeric not null default 0 check (price_delta >= 0), -- per selection (count: per unit)
+  sort        int  not null default 0
+);
+create index if not exists menu_options_group_idx on pos.menu_options (group_id);
+
+-- ── 2) Audit trigger (reuse the menu actor stamp from 51) ────────────
+drop trigger if exists menu_option_groups_touch on pos.menu_option_groups;
+create trigger menu_option_groups_touch before insert or update on pos.menu_option_groups
+for each row execute function pos.touch_menu_actor();
+
+-- ── 3) RLS: read with pos.view, write with pos.menu (same as the menu) ──
+alter table pos.menu_option_groups enable row level security;
+alter table pos.menu_options       enable row level security;
+revoke all on pos.menu_option_groups, pos.menu_options from anon, authenticated;
+grant select, insert, update, delete on pos.menu_option_groups, pos.menu_options to authenticated;
+
+drop policy if exists menu_option_groups_read  on pos.menu_option_groups;
+drop policy if exists menu_option_groups_write on pos.menu_option_groups;
+drop policy if exists menu_options_read        on pos.menu_options;
+drop policy if exists menu_options_write       on pos.menu_options;
+create policy menu_option_groups_read  on pos.menu_option_groups for select to authenticated
+  using ((select core.has_permission('pos.view')));
+create policy menu_option_groups_write on pos.menu_option_groups for all to authenticated
+  using ((select core.has_permission('pos.menu'))) with check ((select core.has_permission('pos.menu')));
+create policy menu_options_read  on pos.menu_options for select to authenticated
+  using ((select core.has_permission('pos.view')));
+create policy menu_options_write on pos.menu_options for all to authenticated
+  using ((select core.has_permission('pos.menu'))) with check ((select core.has_permission('pos.menu')));
+
+-- (server-side price validation lives in 53_pos_close_options.sql: pos.option_charge
+--  computes an option's effective charge, and the close path validates each line.)
+
+-- ── 4) Seed: item options + meal option groups ───────────────────────
+-- egg / olives as options on the items that offer them
+insert into pos.menu_option_groups (id, item_id, name_he, name_ar, kind, min_sel, max_sel, included, sort) values
+  ('g_hummus_add',  'hummus',         'תוספות', 'إضافات', 'add',   0, 1, 0, 10),
+  ('g_hummus_pita', 'hummus',         'פיתה',   'خبز',    'count', 0, 4, 1, 20),  -- like the meal: 1 free, extras +₪5
+  ('g_spinach_add', 'pastry_spinach', 'תוספות', 'إضافات', 'add',   0, 1, 0, 10),
+  ('g_pizza_add',   'pastry_pizza',   'תוספות', 'إضافات', 'add',   0, 1, 0, 10)
+on conflict (id) do update set item_id = excluded.item_id, name_he = excluded.name_he,
+  name_ar = excluded.name_ar, kind = excluded.kind, min_sel = excluded.min_sel,
+  max_sel = excluded.max_sel, included = excluded.included, sort = excluded.sort;
+insert into pos.menu_options (id, group_id, name_he, name_ar, price_delta, sort) values
+  ('o_hummus_egg',   'g_hummus_add',  'תוספת ביצה',  'إضافة بيضة',  5, 10),
+  ('o_hummus_pita',  'g_hummus_pita', 'פיתה',        'خبز',         5, 20),
+  ('o_spinach_egg',  'g_spinach_add', 'תוספת ביצה',  'إضافة بيضة',  5, 10),
+  ('o_pizza_olives', 'g_pizza_add',   'תוספת זיתים', 'إضافة زيتون', 5, 10)
+on conflict (id) do update set group_id = excluded.group_id, name_he = excluded.name_he,
+  name_ar = excluded.name_ar, price_delta = excluded.price_delta, sort = excluded.sort;
+
+-- meal choices (fixed meal dishes stay in menu_items.composition.includes)
+insert into pos.menu_option_groups (id, item_id, name_he, name_ar, kind, min_sel, max_sel, included, sort) values
+  -- ארוחת בוקר של הדוקטור
+  ('g_bf_main',   'meal_breakfast', 'עיקרית', 'الطبق الرئيسي', 'choice', 1, 1, 0, 10),
+  ('g_bf_salad',  'meal_breakfast', 'סלט',    'سلطة',          'choice', 1, 1, 0, 20),
+  ('g_bf_spread', 'meal_breakfast', 'ממרח',   'إضافة',         'choice', 1, 1, 0, 30),
+  ('g_bf_pita',   'meal_breakfast', 'פיתה',   'خبز',           'count',  0, 4, 1, 40),  -- 1 free, extras +₪5
+  -- ארוחת חומוס
+  ('g_hm_add',    'meal_hummus',    'תוספות', 'إضافات', 'add',   0, 1, 0, 10),
+  ('g_hm_pita',   'meal_hummus',    'פיתה',   'خبز',    'count', 0, 4, 1, 20),
+  -- ארוחת השף
+  ('g_chef_salad',  'meal_chef', 'סלט',  'سلطة',  'choice', 1, 1, 0, 10),
+  ('g_chef_pastry', 'meal_chef', 'מאפה', 'معجنة', 'choice', 1, 1, 0, 20),
+  -- ארוחת הדייג
+  ('g_fish_salad', 'meal_fisherman', 'סלט', 'سلطة', 'choice', 1, 1, 0, 10)
+on conflict (id) do update set item_id = excluded.item_id, name_he = excluded.name_he,
+  name_ar = excluded.name_ar, kind = excluded.kind, min_sel = excluded.min_sel,
+  max_sel = excluded.max_sel, included = excluded.included, sort = excluded.sort;
+
+insert into pos.menu_options (id, group_id, name_he, name_ar, price_delta, sort) values
+  ('o_bf_shakshuka', 'g_bf_main',  'שקשוקה',    'شكشوكة',   0, 10),
+  ('o_bf_omelet',    'g_bf_main',  'חביתה',     'عجة',      0, 20),
+  ('o_bf_omelet_veg','g_bf_main',  'חביתת ירק', 'عجة خضار', 0, 30),
+  ('o_bf_salad_cab', 'g_bf_salad', 'סלט כרוב',   'سلطة ملفوف', 0, 10),
+  ('o_bf_salad_tab', 'g_bf_salad', 'סלט טבולה',  'تبولة',      0, 20),
+  ('o_bf_salad_veg', 'g_bf_salad', 'סלט ירקות',  'سلطة خضار',  0, 30),
+  ('o_bf_salad_jar', 'g_bf_salad', 'סלט ג׳רג׳יר','سلطة جرجير', 0, 40),
+  ('o_bf_labneh',    'g_bf_spread','לבנה',   'لبنة',           0, 10),
+  ('o_bf_tahini',    'g_bf_spread','טחינה',  'طحينة',          0, 20),
+  ('o_bf_pita',      'g_bf_pita',  'פיתה',   'خبز',            5, 10),
+  ('o_hm_egg',       'g_hm_add',   'תוספת ביצה', 'إضافة بيضة', 5, 10),
+  ('o_hm_pita',      'g_hm_pita',  'פיתה',   'خبز',            5, 10),
+  ('o_chef_salad_cab', 'g_chef_salad', 'סלט כרוב',   'سلطة ملفوف', 0, 10),
+  ('o_chef_salad_tab', 'g_chef_salad', 'סלט טבולה',  'تبولة',      0, 20),
+  ('o_chef_salad_veg', 'g_chef_salad', 'סלט ירקות',  'سلطة خضار',  0, 30),
+  ('o_chef_salad_jar', 'g_chef_salad', 'סלט ג׳רג׳יר','سلطة جرجير', 0, 40),
+  ('o_chef_zaatar',  'g_chef_pastry', 'מאפה זעתר',       'معجنة زعتر',        0, 10),
+  ('o_chef_pizza',   'g_chef_pastry', 'מאפה פיצה',       'معجنة بيتزا',       0, 20),
+  ('o_chef_spinach', 'g_chef_pastry', 'מאפה תרד וגבינה', 'معجنة سبانخ وجبنة', 0, 30),
+  ('o_fish_salad_cab', 'g_fish_salad', 'סלט כרוב',   'سلطة ملفوف', 0, 10),
+  ('o_fish_salad_tab', 'g_fish_salad', 'סלט טבולה',  'تبولة',      0, 20),
+  ('o_fish_salad_veg', 'g_fish_salad', 'סלט ירקות',  'سلطة خضار',  0, 30),
+  ('o_fish_salad_jar', 'g_fish_salad', 'סלט ג׳רג׳יר','سلطة جرجير', 0, 40)
+on conflict (id) do update set group_id = excluded.group_id, name_he = excluded.name_he,
+  name_ar = excluded.name_ar, price_delta = excluded.price_delta, sort = excluded.sort;
+
+-- =====================================================================
+-- schema/53_pos_close_options.sql
+-- =====================================================================
+-- =====================================================================
+--  53_pos_close_options.sql — option-aware price validation on close (PR 2b)
+--
+--  With per-item options (52), a line's unit_price is base + Σ option deltas, so
+--  the close path can no longer validate `unit_price == menu_price(name)`. This
+--  file adds:
+--    * pos.option_charge(option_id, qty) — the effective charge of one selected
+--      option (count kind: only units beyond `included` are charged);
+--    * pos.assert_line_prices(p_items) — validates every non-custom line's
+--      unit_price against base + its options, rejecting unknown option ids
+--      (tampering) and price mismatches;
+--  and redefines pos.pos_close_table to call assert_line_prices in place of the
+--  old inline base-only check. The rest of the function is byte-identical to
+--  47_pos_payments.sql (money path unchanged).
+--
+--  Plan: docs/plans/pos-menu-kitchen.md.
+-- =====================================================================
+
+-- Effective charge of one selected option. NULL if the id is unknown — an
+-- unknown option on a line is tampering, which assert_line_prices rejects.
+create or replace function pos.option_charge(p_id text, p_qty int)
+returns numeric language sql stable set search_path = pos as $$
+  select case g.kind
+    when 'count' then greatest(0, coalesce(p_qty, 0) - g.included) * o.price_delta
+    else o.price_delta   -- choice / add: one delta per selection
+  end
+  from pos.menu_options o
+  join pos.menu_option_groups g on g.id = o.group_id
+  where o.id = p_id
+$$;
+revoke all on function pos.option_charge(text, int) from public, anon, authenticated;
+
+-- Server-side price guard: each non-custom line's unit_price must equal its base
+-- menu price plus the charges of its selected options. Custom items and items not
+-- on the menu (menu_price NULL) stay the deliberate no-check escape hatch.
+create or replace function pos.assert_line_prices(p_items jsonb)
+returns void language plpgsql stable set search_path = pos as $$
+declare
+  it     jsonb;
+  v_base numeric;
+  v_opts numeric;
+begin
+  for it in select value from jsonb_array_elements(coalesce(p_items, '[]'::jsonb)) loop
+    if coalesce((it->>'is_custom')::boolean, false) then continue; end if;
+    v_base := pos.menu_price(it->>'item_name');
+    if v_base is null then continue; end if;
+    -- reject any selected option whose id isn't in the menu (tampered price)
+    if exists (
+      select 1 from jsonb_array_elements(coalesce(it->'options', '[]'::jsonb)) o
+      where pos.option_charge(o->>'id', coalesce((o->>'qty')::int, 1)) is null
+    ) then
+      raise exception 'תוספת לא מוכרת בפריט %', it->>'item_name';
+    end if;
+    select coalesce(sum(pos.option_charge(o->>'id', coalesce((o->>'qty')::int, 1))), 0)
+      into v_opts
+    from jsonb_array_elements(coalesce(it->'options', '[]'::jsonb)) o;
+    if v_base + v_opts <> coalesce((it->>'unit_price')::numeric, 0) then
+      raise exception 'מחיר פריט אינו תואם לתפריט (%)', it->>'item_name';
+    end if;
+  end loop;
+end; $$;
+revoke all on function pos.assert_line_prices(jsonb) from public, anon, authenticated;
+
+create or replace function pos.pos_close_table(p_bill jsonb, p_items jsonb, p_payments jsonb default '[]'::jsonb)
+returns void language plpgsql security definer set search_path = pos, public as $$
+declare
+  v_id       text    := p_bill->>'id';
+  v_oh       numeric := coalesce((p_bill->>'oh_charge')::numeric, 0);
+  v_extras   numeric := coalesce((p_bill->>'extras_total')::numeric, 0);
+  v_discount numeric := coalesce((p_bill->>'discount')::numeric, 0);
+  v_grand    numeric := coalesce((p_bill->>'grand_total')::numeric, 0);
+  v_tip      numeric := coalesce((p_bill->>'tip')::numeric, 0);
+  v_kind     text    := nullif(btrim(p_bill->>'discount_kind'), '');
+  v_reason   text    := nullif(btrim(p_bill->>'discount_reason'), '');
+  v_adults   int     := coalesce((p_bill->>'guests_adults')::int, 0);
+  v_children int     := coalesce((p_bill->>'guests_children')::int, 0);
+  v_cash     numeric;
+  v_card     numeric;
+  v_pcount   int;
+  v_left     numeric;
+  v_computed_extras numeric;
+  r          record;
+begin
+  perform pos.require('pos.order');
+  -- this close writes several payment rows + tip_part updates; suppress the
+  -- per-row auto re-post (48) so they don't each fire — we re-post once at the
+  -- end instead. No-op until 48 is applied.
+  perform set_config('levyam.suppress_repost', 'on', true);
+
+  -- every discount is attributed — enforced here, not just in the UI, because
+  -- "nothing from the side" is only true if the database refuses the alternative
+  if v_discount > 0 then
+    if v_kind is null then
+      raise exception 'יש לציין את סיבת ההנחה';
+    end if;
+    if v_kind = 'other' and v_reason is null then
+      raise exception 'יש לפרט את סיבת ההנחה';
+    end if;
+  end if;
+
+  -- server-side price validation: each non-custom line's unit_price must equal
+  -- its base menu price plus its selected options' charges (52/53). Custom items
+  -- and off-menu items stay the deliberate no-price-check escape hatch.
+  perform pos.assert_line_prices(p_items);
+
+  if coalesce(p_bill->>'pricing_mode', 'open_house') = 'open_house'
+     and v_oh <> pos.oh_charge(v_adults, v_children) then
+    raise exception 'סכום בית פתוח (%) אינו תואם למספר הסועדים', v_oh;
+  end if;
+
+  select coalesce(sum(coalesce((it->>'qty')::int, 0) * coalesce((it->>'unit_price')::numeric, 0)), 0)
+    into v_computed_extras
+  from jsonb_array_elements(coalesce(p_items, '[]'::jsonb)) it
+  where coalesce(p_bill->>'pricing_mode', 'open_house') <> 'open_house'
+     or not coalesce((it->>'is_open_house')::boolean, false);
+
+  if v_extras <> v_computed_extras then
+    raise exception 'סכום התוספות (%) אינו תואם לפריטים שהוזמנו (%)', v_extras, v_computed_extras;
+  end if;
+
+  if v_grand <> v_oh + v_extras - v_discount then
+    raise exception 'חשבון לא עקבי: סה״כ (%) שונה מ-בית פתוח (%) + תוספות (%) − הנחה (%)', v_grand, v_oh, v_extras, v_discount;
+  end if;
+
+  -- record the closing payment(s) before deriving — one row per array entry
+  insert into pos.pos_payments (bill_id, method, amount, note, taken_by)
+  select v_id,
+         coalesce(pmt->>'method', 'cash'),
+         (pmt->>'amount')::numeric,
+         nullif(btrim(pmt->>'note'), ''),
+         coalesce(auth.jwt()->>'email', 'לא ידוע')
+  from jsonb_array_elements(coalesce(p_payments, '[]'::jsonb)) pmt
+  where coalesce((pmt->>'amount')::numeric, 0) > 0
+    and coalesce(pmt->>'method', 'cash') in ('cash', 'card');
+
+  -- allocate the bill's tip across its payments, newest first, so that
+  -- (amount - tip_part) is exactly the revenue collected by each payment
+  update pos.pos_payments set tip_part = 0 where bill_id = v_id;
+  v_left := v_tip;
+  for r in select id, amount from pos.pos_payments
+            where bill_id = v_id order by taken_at desc, id desc loop
+    exit when v_left <= 0;
+    update pos.pos_payments set tip_part = least(v_left, r.amount) where id = r.id;
+    v_left := v_left - least(v_left, r.amount);
+  end loop;
+
+  -- cash/card come from the recorded payments — the client no longer gets to
+  -- assert what was collected. BACKWARD COMPAT: a legacy client (pre-split-
+  -- payments) records no payments and instead sends cash_paid/card_paid in the
+  -- payload; when there are zero recorded payments, trust those so the deployed
+  -- POS keeps closing tables until the new client ships.
+  select coalesce(sum(amount) filter (where method = 'cash'), 0),
+         coalesce(sum(amount) filter (where method = 'card'), 0),
+         count(*)
+    into v_cash, v_card, v_pcount
+  from pos.pos_payments where bill_id = v_id;
+
+  if v_pcount = 0 then
+    v_cash := coalesce((p_bill->>'cash_paid')::numeric, 0);
+    v_card := coalesce((p_bill->>'card_paid')::numeric, 0);
+  end if;
+
+  if v_cash + v_card <> v_grand + v_tip then
+    raise exception 'חשבון לא עקבי: תשלומים שנרשמו (%) שונים מסה״כ + טיפ (%)', v_cash + v_card, v_grand + v_tip;
+  end if;
+
+  insert into pos.pos_bills (
+    id, table_num, name, status, closed_by, guests_adults, guests_children,
+    pricing_mode, opened_at, paid_at, items_count,
+    oh_charge, extras_total, menu_value, discount, discount_kind, discount_reason,
+    grand_total, tip, cash_paid, card_paid, items
+  ) values (
+    v_id,
+    (p_bill->>'table_num')::int, p_bill->>'name',
+    coalesce(p_bill->>'status','paid'), p_bill->>'closed_by',
+    v_adults, v_children,
+    coalesce(p_bill->>'pricing_mode','open_house'),
+    (p_bill->>'opened_at')::timestamptz,
+    coalesce((p_bill->>'paid_at')::timestamptz, now()),
+    coalesce((p_bill->>'items_count')::int,0),
+    v_oh, v_extras,
+    coalesce((p_bill->>'menu_value')::numeric,0),
+    v_discount, v_kind, v_reason,
+    v_grand, v_tip, v_cash, v_card,
+    coalesce(p_bill->'items','[]'::jsonb)
+  )
+  on conflict (id) do update set
+    status=excluded.status, paid_at=excluded.paid_at,
+    cash_paid=excluded.cash_paid, card_paid=excluded.card_paid,
+    discount=excluded.discount, discount_kind=excluded.discount_kind,
+    discount_reason=excluded.discount_reason, tip=excluded.tip,
+    grand_total=excluded.grand_total, items=excluded.items;
+
+  delete from pos.pos_bill_items where bill_id = v_id;
+  insert into pos.pos_bill_items
+    (bill_id, table_num, paid_at, item_name, category, is_open_house, is_custom, unit_price, qty)
+  select v_id, (p_bill->>'table_num')::int,
+         coalesce((p_bill->>'paid_at')::timestamptz, now()),
+         it->>'item_name', it->>'category',
+         coalesce((it->>'is_open_house')::boolean,false),
+         coalesce((it->>'is_custom')::boolean,false),
+         coalesce((it->>'unit_price')::numeric,0),
+         coalesce((it->>'qty')::int,0)
+  from jsonb_array_elements(coalesce(p_items,'[]'::jsonb)) as it;
+
+  delete from pos.pos_tables where id = v_id;
+
+  -- Re-post every already-booked day this bill touches. Usually that's just
+  -- today (a no-op — today isn't booked yet). But a reopened past bill can carry
+  -- payments on a past, booked day, and the tip_part reallocation above
+  -- (suppressed, so it didn't fire the row trigger) changed their revenue. The
+  -- bill's own paid_at day is included too: a legacy/fallback close records NO
+  -- payment rows (post_day reads its revenue straight off the bill, 47), and the
+  -- pos_bills insert was suppressed with everything else — so without paid_at
+  -- here a fallback close onto a booked day would never re-post. repost_if_posted
+  -- is defined in 48; the reference resolves at call time. Then lift the suppress.
+  for r in
+    select distinct d from (
+      select (taken_at at time zone 'Asia/Jerusalem')::date as d
+      from pos.pos_payments where bill_id = v_id
+      union
+      select (coalesce((p_bill->>'paid_at')::timestamptz, now()) at time zone 'Asia/Jerusalem')::date
+    ) days loop
+    perform pos.repost_if_posted(r.d);
+  end loop;
+  perform set_config('levyam.suppress_repost', '', true);
+end; $$;
+
 -- End bootstrap window (added by build-baseline.mjs):
 reset levyam.bootstrap;

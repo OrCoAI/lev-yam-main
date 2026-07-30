@@ -1,8 +1,6 @@
 // Small shared POS widgets, ported from pos.html.
 import { useI18n } from '../../lib/i18n'
-import { usePosTr } from './i18n'
 import S from './styles'
-import type { PosLine } from './types'
 
 export function Line({ label, val }: { label: string; val: number }) {
   return (
@@ -46,38 +44,6 @@ export function TotalCell({ label, val, color, cur }: {
       </span>
       <span style={S.totalCellLbl}>{label}</span>
     </div>
-  )
-}
-
-// Pale kitchen-state chips (cooking / ready / served), each shown when present
-// so the full pipeline state is legible. `emoji` adds the 🔔/🍳/✓ prefix (used
-// by the table-level strip); the per-line StatusChip omits it. One place owns
-// the state → label → style mapping for both callers.
-export function KitchenChips({ cooking, ready, served, emoji }: {
-  cooking: number
-  ready: number
-  served: number
-  emoji?: boolean
-}) {
-  const { tr } = usePosTr()
-  if (!cooking && !ready && !served) return null
-  return (
-    <span style={S.statusChips}>
-      {ready > 0 && <span style={S.stReady}>{(emoji ? '🔔 ' : '') + tr('מוכן', 'جاهز')} ×{ready}</span>}
-      {cooking > 0 && <span style={S.stFired}>{(emoji ? '🍳 ' : '') + tr('במטבח', 'في المطبخ')} ×{cooking}</span>}
-      {served > 0 && <span style={S.stServed}>{(emoji ? '✓ ' : '') + tr('הוגש', 'قُدّم')} ×{served}</span>}
-    </span>
-  )
-}
-
-// Kitchen-status badges for a single order line (waiter-facing).
-export function StatusChip({ it }: { it: PosLine }) {
-  return (
-    <KitchenChips
-      cooking={Math.max(0, (it.sent || 0) - (it.done || 0))}
-      ready={Math.max(0, (it.done || 0) - (it.served || 0))}
-      served={it.served || 0}
-    />
   )
 }
 
