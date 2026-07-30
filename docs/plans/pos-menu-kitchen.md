@@ -315,3 +315,65 @@ repricing/deleting items or options mid-shift; prefer the **פעיל/active togg
 item (hiding doesn't affect open tables or the close path). Future option if this bites:
 validate against a snapshot / version the menu so already-open lines settle at their
 add-time price.
+
+## PR 2 close-out (shipped 2026-07-30)
+
+**What shipped** (commit `9a85450` on `main` + `staging`; PR1 `9c0eb7b` rode along as it had
+not been deployed):
+
+- **Menu-as-data** — `pos.menu_categories` / `pos.menu_items` are the source of truth
+  (`51_pos_menu.sql`); the literal `pos.menu_price()` mirror now reads the table. Open house
+  retired forward-only (history untouched). Client menu loads from the DB via `menuData.ts`
+  (localStorage cache for first paint).
+- **Per-item options** (`52`) — option groups of kind choice / count / add on items and meals;
+  meals keep fixed `includes`, all guest choices are options. Count pricing = N included free
+  then per-unit (hummus/breakfast pita 1 free, +₪5).
+- **Server-side price validation** (`53`) — `pos.option_charge` + `pos.assert_line_prices`
+  recompute `base + Σ options` and reject tampering / unknown option ids; `pos_close_table`
+  swaps its base-only check for it (money path otherwise byte-identical to `47`).
+- **Ordering UX** — items with add-ons stay in their category grid (original order); a per-card
+  ✎ opens an options + note sheet; configured units become distinct lines. One **"ההזמנה"**
+  order list below the grid is the single home for configured lines + sent items, colour-coded
+  by kitchen state (orange in kitchen → green out); the menu grid never reorders. Notes flow to
+  kitchen + bill + history. Breakfast gained a 3rd main (חביתת ירק).
+- **Kitchen** — saved, named, switchable filter presets (device-local); per-table badge counts
+  units not lines.
+- **Floor** — closed-today tables shown read-only with a manager reopen.
+- **Menu admin** (`MenuAdmin.tsx`, new `pos.menu` permission → owner+manager) — CRUD for
+  categories, items (incl. meals), option groups and options, from a תפריט button on the POS
+  home; every save refreshes the live floor menu. Custom items may be ₪0.
+
+**Schema/permission changes applied** (prod + staging, via the management-API `database/query`
+endpoint — prod hasn't joined the migration pipeline): `49` (per-unit mark, from PR1), `51`,
+`52`, `53`. New permission `pos.menu` (owner+manager). Dead `is_addon` column dropped. Baseline
+regenerated. Verified on both tiers: seed correct (27 items, no `is_addon`, breakfast 3 mains,
+hummus 2 groups), `pos.menu` → owner+manager, money path accepts valid / rejects tampered +
+unknown option, price functions owner-only (no PUBLIC execute).
+
+**Decisions along the way**
+- Add-ons are **per-item options**, not standalone items (owner reversal during 2a testing).
+- Configured items have **one home** (the order list), never a second card in the grid.
+- Green = the kitchen's מוכן tap (2-state board), no separate waiter "delivered" action.
+- `combo` and the short-lived `variant` flag were **collapsed into one** (`combo`) in the gate.
+
+**Gate** — `/simplify` (variant→combo, shared helpers `lineCooking`/`lineOut`/`componentsLine`,
+dead-code + `is_addon` drop), `/code-review high` (fixed: void recorded base not option-inclusive
+price; empty required-choice could lock the picker), `/security-review` (fixed: revoke the three
+price functions from PUBLIC — repo hardening standard; no exploitable vuln), `rls_matrix` green
+(option-table + internal-fn + per-unit assertions), typecheck/build/`db reset` clean,
+owner-verified on local **and** staging.levyam.com.
+
+**Deliberately left out / follow-ups**
+- Menu edit mid-service can block an open table's close — documented trade-off above; strict
+  validation kept. Future: snapshot/version the menu if it bites.
+- `min_sel` on option groups isn't enforced server-side (choice deltas are ₪0 → no money impact).
+- The floor closed-list duplicates ReportView's closed section — a shared component was left for
+  a later cleanup (would touch code outside this diff).
+- Vestigial `useOH` on `PosTable` kept for pos.html wire-format compatibility.
+
+**Alignment verdict** — **no drift.** Serves `docs/VISION.md` (owner-run venue, staff on phones,
+one internal platform) and holds every `docs/ARCHITECTURE.md` invariant: permissions **DB-first**
+(RLS via `core.has_permission`, `pos.menu` gates writes; UI mirror second), schema is the source
+of truth in `supabase/schema/`, money/lifecycle stays on the cross-module spine (close path
+unchanged except the stricter, server-authoritative price check), bilingual HE/AR throughout,
+mobile-first. The one trade-off is documented and resolved (strict validation retained).
