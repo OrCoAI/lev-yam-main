@@ -8,7 +8,14 @@ touching schema, permissions, or the events/finance spine graduates to a `docs/p
 
 ## Open bugs
 
-- (none logged)
+- **`admin-user-ops` and `admin-invite` are unusable on staging** — their `ALLOWED_ORIGINS`
+  lists `localhost:5173`, `levyam.com`, `www.levyam.com` but **not**
+  `https://staging.levyam.com`, so every call from the staging site returns
+  `origin_not_allowed` (probe-verified 2026-07-30 after deploying the function to the
+  staging project). That means invite / delete / deactivate / password / confirm-email can
+  only ever be tested against prod — exactly the flows least safe to test there. Pre-existing
+  (not introduced by the confirm-email work); found while deploying. Fix: add the staging
+  origin to both functions' allowlists and redeploy to both projects.
 
 ## Done (cont.)
 
@@ -44,6 +51,14 @@ touching schema, permissions, or the events/finance spine graduates to a `docs/p
   - *Prod note:* Wedad's account was unblocked by hand via the Auth Admin API before the
     code fix. **Prod signup is currently open** (`disable_signup: false`) though the
     platform has no signup UI — worth turning off; logged as a feature idea below.
+  - **Deployed 2026-07-30** (PR #38, `3ac758f`): `core.admin_list_users()` re-created on
+    **prod and staging** via the management API (verified `security definer`, locked
+    `search_path`, ACL `{postgres,authenticated}` — no PUBLIC grant); `admin-user-ops`
+    redeployed to both projects. **Deploy gotcha:** plain `supabase functions deploy` fails
+    on this box with an opaque `Effect.tryPromise` error *after* bundling succeeds —
+    **`--use-api`** (server-side bundling, no Docker) works and is now the known-good path.
+    Prod site probe-verified: `/`, `/app/`, `/pos.html` all 200, and the live `boot-*.js`
+    chunk contains `confirm_email` + both languages' new strings.
 
 - **2026-07-20** — UX iteration + role-delete guard (same PR #25, second commit;
   gate re-run in full on the combined diff):
