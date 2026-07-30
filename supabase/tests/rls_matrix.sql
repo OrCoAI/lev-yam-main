@@ -160,21 +160,24 @@ end $fn$;
 --  Test identities — one per role + one with no roles. Fixed UUIDs so
 --  failures are easy to read; rolled back with everything else.
 -- ---------------------------------------------------------------------
--- Password = random unknown hash, email unconfirmed, banned forever: even a
--- partial paste that never reaches the rollback leaves nothing sign-in-able.
+-- Password = random unknown hash, banned forever: even a partial paste that never
+-- reaches the rollback leaves nothing sign-in-able. The ban and the unknown hash
+-- are what make that true — so the manager fixture can carry a *confirmed* email
+-- (a fixed literal the admin_list_users assertions below compare against) while
+-- the rest stay unconfirmed, covering both states without weakening any of it.
 insert into auth.users (instance_id, id, aud, role, email,
                         encrypted_password, email_confirmed_at, banned_until,
                         created_at, updated_at)
 select '00000000-0000-0000-0000-000000000000', uid::uuid, 'authenticated', 'authenticated',
        email, extensions.crypt(gen_random_uuid()::text, extensions.gen_salt('bf')),
-       null, 'infinity', now(), now()
+       confirmed, 'infinity', now(), now()
 from (values
-  ('aaaaaaaa-0000-0000-0000-000000000001', 'rls-test-owner@levyam.test'),
-  ('aaaaaaaa-0000-0000-0000-000000000002', 'rls-test-manager@levyam.test'),
-  ('aaaaaaaa-0000-0000-0000-000000000003', 'rls-test-staff@levyam.test'),
-  ('aaaaaaaa-0000-0000-0000-000000000004', 'rls-test-viewer@levyam.test'),
-  ('aaaaaaaa-0000-0000-0000-000000000005', 'rls-test-norole@levyam.test')
-) v(uid, email);
+  ('aaaaaaaa-0000-0000-0000-000000000001', 'rls-test-owner@levyam.test',   null::timestamptz),
+  ('aaaaaaaa-0000-0000-0000-000000000002', 'rls-test-manager@levyam.test', '2020-01-02 03:04:05+00'::timestamptz),
+  ('aaaaaaaa-0000-0000-0000-000000000003', 'rls-test-staff@levyam.test',   null),
+  ('aaaaaaaa-0000-0000-0000-000000000004', 'rls-test-viewer@levyam.test',  null),
+  ('aaaaaaaa-0000-0000-0000-000000000005', 'rls-test-norole@levyam.test',  null)
+) v(uid, email, confirmed);
 
 insert into core.user_roles (user_id, role_id)
 select v.uid::uuid, r.id
@@ -532,6 +535,20 @@ select pg_temp.assert_raises('manager: atomic matrix-apply RPC raises (no users.
 select pg_temp.assert_rows('manager: admin_list_users() works via users.view',
   $q$ select 1 from core.admin_list_users()
       where email = 'rls-test-owner@levyam.test' $q$, 1);
+-- email_confirmed_at (added 2026-07-30) must come through faithfully — the users
+-- module decides "invited but never accepted" from it and gates the confirm_email
+-- action on that verdict, so a stale/wrong value would either hide a locked-out
+-- account or offer a pointless action. Both states are asserted against the
+-- literals the fixtures were seeded with (below): joining auth.users here would
+-- fail — `authenticated` has no grant on it — and comparing the function to
+-- itself via a join would pass even if the column were a constant.
+select pg_temp.assert_rows('manager: admin_list_users() reports the confirmed fixture''s timestamp',
+  $q$ select 1 from core.admin_list_users()
+      where email = 'rls-test-manager@levyam.test'
+        and email_confirmed_at = '2020-01-02 03:04:05+00'::timestamptz $q$, 1);
+select pg_temp.assert_rows('manager: admin_list_users() reports null for the unconfirmed fixtures',
+  $q$ select 1 from core.admin_list_users()
+      where email <> 'rls-test-manager@levyam.test' and email_confirmed_at is null $q$, 4);
 
 -- =====================================================================
 --  OWNER — full control, but the DB guards still hold the line

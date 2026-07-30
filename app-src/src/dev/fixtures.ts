@@ -1,6 +1,7 @@
 // Realistic in-memory data for the dev preview (`?preview`). Dates are
 // generated relative to "today" so day-chips, the calendar and auto-expire
 // visuals always look alive. Never imported by production code.
+import type { AdminUser } from '../types'
 import type { ContractRow, QuoteRow } from '../modules/quotes/types'
 import {
   DEFAULT_CLAUSES,
@@ -428,17 +429,24 @@ export const rolesFixture = [
   { id: 'role-viewer', key: 'viewer', label: 'צפייה', sort: 40 },
 ]
 
-export const adminUsersFixture = [
+// typed: a new required AdminUser field must be filled in here too, or the build
+// fails — an untyped literal silently shipped a wrong preview when
+// email_confirmed_at was added (2026-07-30). `roles` is the one exception: the
+// mock derives it from db.user_roles, so it's omitted per row.
+export const adminUsersFixture: Omit<AdminUser, 'roles'>[] = [
   // the signed-in preview user (…dead) is listed first, exactly as the real
   // admin_list_users() includes the caller — so preview shows the "own card
   // has no delete/deactivate buttons" behavior instead of looking deletable
-  { user_id: '00000000-0000-4000-8000-00000000dead', email: 'preview@levyam.com', created_at: '2026-01-01T00:00:00Z', last_sign_in_at: `${iso(0)}T09:00:00Z`, banned_until: null },
+  { user_id: '00000000-0000-4000-8000-00000000dead', email: 'preview@levyam.com', created_at: '2026-01-01T00:00:00Z', last_sign_in_at: `${iso(0)}T09:00:00Z`, banned_until: null, email_confirmed_at: '2026-01-01T00:05:00Z' },
   // staff's null last_sign_in_at deliberately exercises the "never logged in"
-  // state; viewer's banned_until exercises the "deactivated" badge
-  { user_id: '00000000-0000-4000-8000-00000000aa01', email: 'or@levyam.com', created_at: '2026-01-01T08:00:00Z', last_sign_in_at: `${iso(0)}T07:45:00Z`, banned_until: null },
-  { user_id: '00000000-0000-4000-8000-00000000aa02', email: 'manager@levyam.com', created_at: '2026-02-10T08:00:00Z', last_sign_in_at: `${iso(-3)}T18:20:00Z`, banned_until: null },
-  { user_id: '00000000-0000-4000-8000-00000000aa03', email: 'staff@levyam.com', created_at: '2026-03-15T08:00:00Z', last_sign_in_at: null, banned_until: null },
-  { user_id: '00000000-0000-4000-8000-00000000aa04', email: 'former@levyam.com', created_at: '2026-04-01T08:00:00Z', last_sign_in_at: `${iso(-30)}T12:00:00Z`, banned_until: '2126-01-01T00:00:00Z' },
+  // state; viewer's banned_until exercises the "deactivated" badge; pending's
+  // null email_confirmed_at exercises the "invited, never accepted" state that
+  // blocks sign-in (orange marker + confirm-email action)
+  { user_id: '00000000-0000-4000-8000-00000000aa01', email: 'or@levyam.com', created_at: '2026-01-01T08:00:00Z', last_sign_in_at: `${iso(0)}T07:45:00Z`, banned_until: null, email_confirmed_at: '2026-01-01T08:05:00Z' },
+  { user_id: '00000000-0000-4000-8000-00000000aa02', email: 'manager@levyam.com', created_at: '2026-02-10T08:00:00Z', last_sign_in_at: `${iso(-3)}T18:20:00Z`, banned_until: null, email_confirmed_at: '2026-02-10T08:05:00Z' },
+  { user_id: '00000000-0000-4000-8000-00000000aa03', email: 'staff@levyam.com', created_at: '2026-03-15T08:00:00Z', last_sign_in_at: null, banned_until: null, email_confirmed_at: '2026-03-15T08:05:00Z' },
+  { user_id: '00000000-0000-4000-8000-00000000aa04', email: 'former@levyam.com', created_at: '2026-04-01T08:00:00Z', last_sign_in_at: `${iso(-30)}T12:00:00Z`, banned_until: '2126-01-01T00:00:00Z', email_confirmed_at: '2026-04-01T08:05:00Z' },
+  { user_id: '00000000-0000-4000-8000-00000000aa05', email: 'pending@levyam.com', created_at: `${iso(-6)}T10:00:00Z`, last_sign_in_at: null, banned_until: null, email_confirmed_at: null },
 ]
 
 // mutable copy lives in mock-net's `db` (admin-invite pushes onto it, same
@@ -452,6 +460,7 @@ export const userRolesFixture = [
   { user_id: '00000000-0000-4000-8000-00000000aa02', role_id: 'role-manager' },
   { user_id: '00000000-0000-4000-8000-00000000aa03', role_id: 'role-staff' },
   { user_id: '00000000-0000-4000-8000-00000000aa04', role_id: 'role-viewer' },
+  { user_id: '00000000-0000-4000-8000-00000000aa05', role_id: 'role-staff' },
 ]
 
 // A representative subset of the real catalog, in the '<module>.<action>'

@@ -82,8 +82,36 @@ Then `cp app-src/.env.example app-src/.env.local` (already points at the local s
    so real invite usage fails with `over_email_send_rate_limit` (surfaced in-app
    as the generic "invite failed / שליחת ההזמנה נכשלה"). Raise it once Resend is
    the sender (set to **30** on 2026-07-16 via the management API `config/auth`).
-5. **Create the first user** — Authentication → Users → *Add user* (email + password).
-6. **Bootstrap the owner** — run the snippet at the bottom of `00_core.sql` with that email to
+5. **Email confirmation is ON, deliberately** — prod runs with `mailer_autoconfirm: false`
+   (verified live 2026-07-30), so **an account whose `email_confirmed_at` is null cannot
+   sign in at all**: GoTrue answers every password grant with `email_not_confirmed`, no
+   matter how correct the password is. This is the single most confusing failure mode in
+   the platform, because the address is normally confirmed as a side effect of opening the
+   invite link — so an invitee whose link expired, went to spam, or was never opened ends
+   up with a working password and no way in. **Note the local stack does the opposite:**
+   `config.toml` sets `enable_confirmations = false`, so local/`db reset` users are
+   auto-confirmed and this state never occurs by itself. To reproduce it locally:
+   `update auth.users set email_confirmed_at = null where email = '…';`
+   The in-app remedy is the users module's **אימות אימייל / تأكيد الإيميل** action
+   (`admin-user-ops` `confirm_email`, owner-only via `users.password`) — and setting a
+   password from the console also confirms the address when it isn't confirmed yet.
+   Out-of-band remedy (no app needed), e.g. if the owner is locked out:
+   ```
+   curl -X PUT "https://<ref>.supabase.co/auth/v1/admin/users/<user_id>" \
+     -H "apikey: $SERVICE_KEY" -H "Authorization: Bearer $SERVICE_KEY" \
+     -H "Content-Type: application/json" -d '{"email_confirm":true}'
+   ```
+   **Never send `email_confirm: true` unconditionally** to an already-confirmed user:
+   GoTrue re-stamps `email_confirmed_at` with `now()` (it is *not* idempotent — measured
+   2026-07-30), destroying the record of when the account was really verified. The edge
+   function guards this with `confirmIfNeeded()`.
+   **Self-signup is currently open** on prod (`disable_signup: false`) even though the
+   platform is invite-only and ships no signup UI. A stranger can therefore create an
+   unconfirmed, role-less account (harmless on its own — RLS denies everything without a
+   role). Recommended: turn it off, so `confirm_email` can never unlock a password the
+   platform never verified anyone controls. See `docs/modules/users.md`.
+6. **Create the first user** — Authentication → Users → *Add user* (email + password).
+7. **Bootstrap the owner** — run the snippet at the bottom of `00_core.sql` with that email to
    grant the `owner` role. From then on, manage everyone from the in-app **Users & Permissions**
    module.
 

@@ -56,6 +56,11 @@
 .u-substatus { display: inline-flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--muted); }
 .u-dot { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
 .u-dot-off { background: var(--danger); }
+/* unconfirmed email: needs owner action but nothing is broken — the module's
+   orange (same "owner acts here" language as the password/confirm pills), not
+   the red reserved for deactivated/destructive */
+.u-dot-warn { background: var(--orange); }
+.u-substatus-warn { color: var(--orange-dark); font-weight: 600; }
 
 .u-summaryroles { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
 .u-rolepill {
@@ -88,6 +93,9 @@
 .u-op-accent { color: var(--orange-dark); border-color: #f0d3a8; }
 .u-op-accent:hover:not(:disabled) { border-color: var(--orange); background: #fdf3e6; }
 .u-op-on, .u-op-on:hover:not(:disabled) { background: var(--orange); color: #fff; border-color: var(--orange-dark); }
+/* explanatory line under the ops row (why this account can't sign in) */
+/* same size as .u-emptyline — one muted-explanation size across the module */
+.u-ophint { font-size: 0.85rem; margin: 8px 0 0; max-width: 56ch; line-height: 1.5; }
 /* delete pushed to the row end, away from the safe actions */
 .u-op-end { margin-inline-start: auto; }
 .u-danger { color: var(--danger); }

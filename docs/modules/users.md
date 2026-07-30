@@ -12,6 +12,39 @@ touching schema, permissions, or the events/finance spine graduates to a `docs/p
 
 ## Done (cont.)
 
+- **2026-07-30** — **Unconfirmed-email accounts couldn't log in, invisibly.** Reported
+  live: an owner set a password for `wedad.jorban11@gmail.com` from the admin console and
+  the user still couldn't sign in. Cause: she never opened her invite link, so
+  `email_confirmed_at` was null, and with the project's `mailer_autoconfirm` **off** GoTrue
+  rejects every password grant as `email_not_confirmed` — however correct the password is.
+  The console reported success because `set_password` only wrote the password. Shipped:
+  - `admin-user-ops` **`confirm_email`** action (gated on the existing owner-only
+    `users.password` — an owner vouching for an address out-of-band is the same assurance
+    the invite link would have been; owner decision 2026-07-30, no new permission).
+  - `set_password` now also confirms the address **when it isn't already confirmed**.
+    `email_confirm: true` is *not* idempotent — GoTrue re-stamps `email_confirmed_at` with
+    `now()` every time — so sending it unconditionally would have let a routine password
+    reset erase a long-standing account's real verification date. Guarded by
+    `confirmIfNeeded()`.
+  - `core.admin_list_users()` returns **`email_confirmed_at`** (drop-first; baseline
+    regenerated), and the users list shows an **orange "האימייל לא אומת" marker** plus a
+    **אימות אימייל** pill + explanatory hint, only for affected users. Hint wording states
+    the fact without asserting the cause — the platform can't distinguish "invite never
+    opened" from any other unconfirmed row.
+  - Gate side-effects: the action dispatch was refactored from two category sets
+    (`LIFECYCLE`/`PASSWORD_OPS` + one `isPassword` boolean that drove *both* the permission
+    key and the self-targeting rule) into a per-action **`POLICY`** table
+    (`perm`/`allowSelf`/`needsEmail`), so a new action can't inherit a policy nobody chose;
+    `PasswordForm` now re-reads the list on success (otherwise the row kept showing "cannot
+    sign in" right after the fix); dev-preview fixtures typed as `AdminUser[]` so the next
+    field addition fails the build instead of silently lying.
+  - `rls_matrix` extended (one fixture seeded confirmed, the rest null — the first version
+    of the assertion joined `auth.users`, which `authenticated` can't read, and would have
+    aborted the whole suite). Green.
+  - *Prod note:* Wedad's account was unblocked by hand via the Auth Admin API before the
+    code fix. **Prod signup is currently open** (`disable_signup: false`) though the
+    platform has no signup UI — worth turning off; logged as a feature idea below.
+
 - **2026-07-20** — UX iteration + role-delete guard (same PR #25, second commit;
   gate re-run in full on the combined diff):
   - **Refined "calm" redesign** of the whole module — one shared container width
@@ -37,6 +70,18 @@ touching schema, permissions, or the events/finance spine graduates to a `docs/p
 
 ## Open feature ideas
 
+- **Close open self-signup on prod** (surfaced by the 2026-07-30 security review):
+  `disable_signup` is `false`, so anyone with the public anon key can create an
+  unconfirmed account, even though the platform is invite-only and ships no signup UI.
+  Harmless alone (no roles ⇒ empty launcher, RLS denies everything), but it's the one
+  scenario where `confirm_email` unlocks a password the platform never verified anyone
+  controls. One dashboard toggle.
+- **Confirm the address at invite time** (`admin-invite`), so no account is ever created
+  in the sign-in-blocked state — the invite itself is the owner's vouch, and "invited but
+  never accepted" is a normal steady state (links expire, land in spam). Raised by the
+  2026-07-30 altitude review; deliberately deferred out of that diff because it changes
+  invite semantics and needs the `type=invite` acceptance flow re-tested. Would make the
+  `set_password` rider belt-and-braces rather than load-bearing.
 - Bilingual HE/AR templates for the *other* auth emails (password recovery,
   magic link, email change) — still stock English; now editable since custom
   SMTP is configured (2026-07-16). Same pattern as the invite template.

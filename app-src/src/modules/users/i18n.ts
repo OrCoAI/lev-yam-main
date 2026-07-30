@@ -46,6 +46,16 @@ const he = {
   userDeactivated: 'מושבת/ת',
   userDeleteConfirm: 'למחוק את המשתמש לצמיתות? מחיקה אפשרית רק למשתמש ללא היסטוריית פעילות.',
   userDeactivateConfirm: 'להשבית את המשתמש? הכניסה שלו/ה תיחסם עד הפעלה מחדש.',
+
+  // email confirmation — an invitee who never opened the invite link cannot sign
+  // in at all, whatever password is set for them
+  userUnconfirmed: 'האימייל לא אומת',
+  confirmEmail: 'אימות אימייל',
+  // states the fact, not a cause — the platform can't actually tell "invite never
+  // opened" from any other unconfirmed row, so it must not assert one
+  confirmEmailHint:
+    'כתובת האימייל לא אומתה, ולכן המשתמש לא יכול להיכנס — גם עם סיסמה נכונה (למשל אם קישור ההזמנה לא נפתח). אימות הכתובת פותח את הכניסה.',
+  confirmEmailConfirm: 'לאמת את כתובת האימייל של המשתמש? הכניסה תיפתח ללא צורך בקישור ההזמנה.',
   opErrorSelf: 'לא ניתן לבצע פעולה זו על החשבון של עצמך.',
   opErrorLastAdmin: 'לא ניתן — זהו המשתמש הפעיל האחרון עם הרשאת ניהול משתמשים.',
   opErrorHasRecords: 'לא ניתן למחוק — למשתמש יש היסטוריית פעילות במערכת. השביתו אותו במקום.',
@@ -94,7 +104,8 @@ const he = {
   pwSending: 'שולח…',
   pwResetSent: 'נשלח קישור איפוס לכתובת האימייל של המשתמש.',
   pwErrorWeak: 'הסיסמה קצרה מדי — לפחות 8 תווים.',
-  pwErrorNoEmail: 'למשתמש אין כתובת אימייל לשליחת איפוס.',
+  // covers both send_reset and confirm_email — kept action-neutral
+  pwErrorNoEmail: 'למשתמש אין כתובת אימייל במערכת.',
   pwErrorGeneric: 'הפעולה נכשלה. נסו שוב.',
 
   viewAs: 'תצוגה כמשתמש זה',
@@ -143,6 +154,14 @@ const ar: typeof he = {
   userDeactivated: 'معطّل/ة',
   userDeleteConfirm: 'حذف المستخدم نهائياً؟ الحذف ممكن فقط لمستخدم بلا سجلّ نشاط.',
   userDeactivateConfirm: 'تعطيل المستخدم؟ رح ينحظر دخوله لحد ما ينرجع يتفعّل.',
+
+  // email confirmation — an invitee who never opened the invite link cannot sign
+  // in at all, whatever password is set for them
+  userUnconfirmed: 'الإيميل غير مؤكَّد',
+  confirmEmail: 'تأكيد الإيميل',
+  confirmEmailHint:
+    'عنوان الإيميل غير مؤكَّد، فما بيقدر المستخدم يدخل — حتى بكلمة سر صحيحة (مثلاً إذا ما انفتح رابط الدعوة). تأكيد العنوان بيفتح له الدخول.',
+  confirmEmailConfirm: 'تأكيد عنوان بريد المستخدم؟ رح ينفتح الدخول بدون الحاجة لرابط الدعوة.',
   opErrorSelf: 'ما بصير تنفّذ هالإجراء على حسابك.',
   opErrorLastAdmin: 'ما بصير — هاد آخر مستخدم فعّال عندو صلاحية إدارة المستخدمين.',
   opErrorHasRecords: 'ما بينحذف — عند المستخدم سجلّ نشاط بالنظام. عطّلوه بدال الحذف.',
@@ -191,7 +210,7 @@ const ar: typeof he = {
   pwSending: 'جارٍ الإرسال…',
   pwResetSent: 'تم إرسال رابط إعادة التعيين إلى بريد المستخدم.',
   pwErrorWeak: 'كلمة السر قصيرة جداً — ٨ أحرف على الأقل.',
-  pwErrorNoEmail: 'المستخدم بلا بريد إلكتروني لإرسال إعادة التعيين.',
+  pwErrorNoEmail: 'المستخدم بلا عنوان بريد إلكتروني بالنظام.',
   pwErrorGeneric: 'فشل الإجراء. حاولوا مجدداً.',
 
   viewAs: 'عرض كهذا المستخدم',

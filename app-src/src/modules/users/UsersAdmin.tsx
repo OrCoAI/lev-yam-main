@@ -136,6 +136,23 @@ function initials(email: string | null, fallback: string): string {
 /** A GoTrue ban is "deactivated" for us — any banned_until still in the future. */
 const isDeactivated = (u: AdminUser) => !!u.banned_until && new Date(u.banned_until) > new Date()
 
+/** Invited but never accepted: with mailer_autoconfirm off, GoTrue refuses this
+ *  user's password sign-in outright (email_not_confirmed) — so it's a blocking
+ *  account state the owner needs to see and can clear (admin-user-ops
+ *  confirm_email). See docs/modules/users.md, 2026-07-30.
+ *
+ *  Explicit `=== null`, not falsy: prod's DB is migrated by hand while the UI
+ *  ships on push, so the field can be *absent* from the RPC payload for a window
+ *  after a deploy (or while PostgREST's schema cache is stale). Absent must read
+ *  as "nothing to report" — falsy would flag every user in the list at once.
+ *  An address-less account is excluded too: there is no address to confirm, so
+ *  "not confirmed" would be the wrong story (and the action would 400). */
+const isUnconfirmed = (u: AdminUser) => u.email_confirmed_at === null && !!u.email
+
+/** The admin-user-ops actions reachable straight from a user row (no extra input).
+ *  set_password/send_reset live in PasswordForm instead — they need a form. */
+type UserOp = 'delete' | 'deactivate' | 'reactivate' | 'confirm_email'
+
 function UsersTab({
   canManage,
   inviteOpen,
@@ -194,9 +211,16 @@ function UsersTab({
     return m
   }, [grants])
 
-  async function userOp(action: 'delete' | 'deactivate' | 'reactivate', target: AdminUser) {
-    const confirmMsg =
-      action === 'delete' ? ut.userDeleteConfirm : action === 'deactivate' ? ut.userDeactivateConfirm : null
+  async function userOp(action: UserOp, target: AdminUser) {
+    // exhaustive by type: a new UserOp won't compile until it states whether it
+    // needs a confirmation prompt (reactivate deliberately doesn't).
+    const prompts: Record<UserOp, string | null> = {
+      delete: ut.userDeleteConfirm,
+      deactivate: ut.userDeactivateConfirm,
+      confirm_email: ut.confirmEmailConfirm,
+      reactivate: null,
+    }
+    const confirmMsg = prompts[action]
     if (confirmMsg && !window.confirm(`${confirmMsg} (${target.email ?? target.user_id})`)) return
     setBusy(target.user_id + action)
     setActionError(null)
@@ -265,6 +289,7 @@ function UsersTab({
             busy={busy}
             onToggleRole={toggleRole}
             onUserOp={userOp}
+            onReload={load}
             onViewAs={(email, keys) => {
               if (startPreview(email, keys)) navigate('/')
             }}
@@ -291,6 +316,7 @@ function UserRow({
   busy,
   onToggleRole,
   onUserOp,
+  onReload,
   onViewAs,
 }: {
   u: AdminUser
@@ -303,12 +329,27 @@ function UserRow({
   canPassword: boolean
   busy: string | null
   onToggleRole: (u: AdminUser, r: RoleRow, assigned: boolean) => void
-  onUserOp: (action: 'delete' | 'deactivate' | 'reactivate', u: AdminUser) => void
+  onUserOp: (action: UserOp, u: AdminUser) => void
+  /** Re-read the users list — for actions that change row data outside onUserOp. */
+  onReload: () => Promise<void>
+
   onViewAs: (email: string, keys: string[]) => void
 }) {
   const ut = useUT()
   const roleName = useRoleName()
   const deactivated = isDeactivated(u)
+  // Status line: deactivated outranks unconfirmed — an explicit ban is the
+  // stronger, deliberate state, and lifting it is the action that matters first.
+  const status = deactivated
+    ? { dot: 'u-dot u-dot-off', label: ut.userDeactivated, warn: false }
+    : isUnconfirmed(u)
+      ? { dot: 'u-dot u-dot-warn', label: ut.userUnconfirmed, warn: true }
+      : { dot: 'u-dot', label: ut.statusActive, warn: false }
+  // The action stays offered while banned (unlike the status line, which ranks
+  // the ban higher) — both states block sign-in and both need clearing.
+  // !isSelf mirrors the server (POLICY.confirm_email is allowSelf: false), so the
+  // pill is never a button that can only fail.
+  const canConfirmEmail = canPassword && !isSelf && isUnconfirmed(u)
   const assignedRoles = roles.filter((r) => u.roles.includes(r.key))
   const [pwOpen, setPwOpen] = useState(false)
 
@@ -341,9 +382,9 @@ function UserRow({
           <span className="u-mail" title={u.email ?? u.user_id}>
             {u.email ?? u.user_id}
           </span>
-          <span className="u-substatus">
-            <span className={deactivated ? 'u-dot u-dot-off' : 'u-dot'} aria-hidden="true" />
-            {deactivated ? ut.userDeactivated : ut.statusActive}
+          <span className={status.warn ? 'u-substatus u-substatus-warn' : 'u-substatus'}>
+            <span className={status.dot} aria-hidden="true" />
+            {status.label}
           </span>
         </span>
         <span className="u-summaryroles">
@@ -400,8 +441,8 @@ function UserRow({
           )}
         </div>
 
-        {/* actions — view-as (manage), password (owner, orange accent),
-            lifecycle (owner). Lifecycle never targets your own account. */}
+        {/* actions — view-as (manage), confirm-email + password (owner, orange
+            accent), lifecycle (owner). Lifecycle never targets your own account. */}
         {(canManage || canDelete || canPassword) && (
           <div className="u-detailsec">
             <div className="u-seclabel">{ut.secActions}</div>
@@ -413,6 +454,16 @@ function UserRow({
                   onClick={() => onViewAs(u.email ?? u.user_id, permKeys)}
                 >
                   {ut.viewAs}
+                </button>
+              )}
+              {canConfirmEmail && (
+                <button
+                  type="button"
+                  className="u-opbtn u-op-accent"
+                  disabled={busy !== null}
+                  onClick={() => onUserOp('confirm_email', u)}
+                >
+                  {ut.confirmEmail}
                 </button>
               )}
               {canPassword && (
@@ -446,7 +497,12 @@ function UserRow({
                 </button>
               )}
             </div>
-            {canPassword && pwOpen && <PasswordForm user={u} onDone={() => setPwOpen(false)} />}
+            {/* why the account is stuck — otherwise "correct password still fails"
+                reads as a mystery (the live 2026-07-30 report) */}
+            {canConfirmEmail && <p className="muted u-ophint">{ut.confirmEmailHint}</p>}
+            {canPassword && pwOpen && (
+              <PasswordForm user={u} onDone={() => setPwOpen(false)} onChanged={onReload} />
+            )}
           </div>
         )}
 
@@ -463,7 +519,18 @@ function UserRow({
  *  Rendered below the actions row when its toggle (in UserRow) is open. Both
  *  actions re-check users.password server-side in admin-user-ops; the typed
  *  password never leaves this component except in the one privileged call. */
-function PasswordForm({ user, onDone }: { user: AdminUser; onDone: () => void }) {
+function PasswordForm({
+  user,
+  onDone,
+  onChanged,
+}: {
+  user: AdminUser
+  onDone: () => void
+  /** set_password also clears an unconfirmed email server-side, so the row's own
+   *  status/actions go stale on success — re-read the list (the panel stays open,
+   *  success banner and all; the row keeps its identity via its user_id key). */
+  onChanged: () => Promise<void>
+}) {
   const ut = useUT()
   const [pw, setPw] = useState('')
   const [busy, setBusy] = useState<'set' | 'reset' | null>(null)
@@ -482,6 +549,7 @@ function PasswordForm({ user, onDone }: { user: AdminUser; onDone: () => void })
       })
       setPw('')
       setResult({ ok: ut.pwSetOk })
+      await onChanged()
     } catch (e) {
       setResult({ err: mapOpError((e as Error).message, ut) ?? ut.pwErrorGeneric })
     } finally {
