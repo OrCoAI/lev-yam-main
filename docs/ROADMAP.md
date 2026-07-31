@@ -85,6 +85,28 @@ bilingual is ever a retrofit.*
         quotes → quote page); folds in two tracked follow-ups: **HE/AR retrofit** of
         the finance module chrome (predates the i18n layer) and EntriesTab form →
         child component (keystrokes re-render the entries table)
+  - [ ] **Finance books integrity** (kickoff 2026-07-31, Or's brief) —
+        [plans/finance-books-integrity.md](plans/finance-books-integrity.md): four PRs,
+        A → B → C → D.
+        - [ ] **PR A** categories as data — owner-editable `finance.categories`
+              (`54_finance_categories.sql`) replacing the twice-declared `CHECK` + the
+              client mirror; constrains `finance.expected.category` (free text today);
+              seeds the missing real categories (rent, utilities, insurance, taxes,
+              payment fees, event costs, donations) and archives legacy `makrer`;
+              `owned_by_module` becomes the single source of the derived-only rule;
+              new owner-only `finance.categories` permission
+        - [ ] **PR B** reconciliation — `finance.reconciliation()` over three checks
+              (POS day never posted · POS recompute mismatch · overdue expectations),
+              live-computed with a one-click fix per item; launcher badges on the finance
+              **and** POS tiles, in-module banner, dedicated tab. Directly targets the
+              failure the parity trial found by hand (first week of July never posted)
+        - [ ] **PR C** owner override — owner-only correction entries against any row
+              incl. module-derived, + a POS day **pin** so auto-re-post can't overwrite
+              them. §7.4 immutability preserved: the override is additive, never an edit
+        - [ ] **PR D** transfers — `finance.transfers` as its own table (cash↔bank),
+              deliberately outside every income/expense total
+        - Out of scope (kickoff): signed-quote-vs-booked check, partial payments (stays
+          an open item above), tips in the books, sub-categories
 - [x] POS: map `pos.html` features → module design under `app-src/src/modules/pos/`
       (against the spines: `pos.close_day()` posts to finance; bills carry optional `event_id`)
       — **full migration plan: [plans/pos-module.md](plans/pos-module.md)** (kickoff

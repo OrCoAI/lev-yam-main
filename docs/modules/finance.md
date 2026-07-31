@@ -14,6 +14,11 @@ touching schema, permissions, or the events/finance spine graduates to a `docs/p
 
 ## Open feature ideas
 
+> **In flight (2026-07-31):** categories-as-data, books reconciliation/alerts, owner
+> override and cash↔bank transfers graduated to an initiative —
+> [plans/finance-books-integrity.md](../plans/finance-books-integrity.md). The items below
+> are *not* covered by it and stay open here.
+
 - Partial payments on `finance.expected` — `record_payment` currently closes the
   expectation at any amount; needs remainder/split support (carried over from the
   2026-07-09 UI-pass review, see ROADMAP Phase 1 finance follow-ups)
