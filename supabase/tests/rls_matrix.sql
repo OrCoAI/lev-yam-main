@@ -155,6 +155,23 @@ begin
   raise notice 'ok: %', label;
 end $$;
 
+-- Statement must be rejected by a CHECK constraint (SQLSTATE 23514) — the
+-- transfer invariants in 57_finance_transfers.sql. Pinned to 23514 for the same
+-- reason assert_fk_denied pins 23503: an unrelated failure must never pass.
+create function pg_temp.assert_check_denied(label text, stmt text)
+returns void language plpgsql as $$
+declare ok boolean := false;
+begin
+  begin
+    execute stmt;
+  exception when check_violation then ok := true;
+  end;
+  if not ok then
+    raise exception 'FAIL: % — expected a check-constraint violation', label;
+  end if;
+  raise notice 'ok: %', label;
+end $$;
+
 -- The shared "locked-out" baseline — what an identity with ZERO module grants
 -- must (not) see. Runs under whatever identity become()/become_anon() set last.
 create function pg_temp.assert_locked_out(prefix text)
@@ -457,6 +474,11 @@ select pg_temp.assert_denied('staff: cannot freeze a day',
   $q$ insert into pos.day_pins (business_date, reason) values ('2099-09-09','x') $q$);
 select pg_temp.assert_rows('staff: finance.entries hidden',
   $q$ select 1 from finance.entries where note like 'rls-test%' $q$, 0);
+select pg_temp.assert_rows('staff: finance.transfers hidden (no finance.view)',
+  $q$ select 1 from finance.transfers $q$, 0);
+select pg_temp.assert_denied('staff: cannot record a transfer',
+  $q$ insert into finance.transfers (amount, from_method, to_method)
+      values (10, 'cash', 'bank') $q$);
 select pg_temp.assert_rows('staff: finance.expected hidden',
   $q$ select 1 from finance.expected where note like 'rls-test%' $q$, 0);
 select pg_temp.assert_rows('staff: quotes hidden',
@@ -552,6 +574,35 @@ select pg_temp.assert_raises('manager: cannot post an owner correction',
   $q$ select finance.post_correction(
         (select id from finance.entries where source_module = 'pos' limit 1), 1, 'x') $q$,
   'permission denied');
+-- 57_finance_transfers (PR D): a transfer is ordinary money handling, gated by
+-- the same finance.view/manage pair as entries — no new permission.
+select pg_temp.assert_ok('manager: can record a cash -> bank transfer',
+  $q$ insert into finance.transfers (amount, from_method, to_method, note)
+      values (2000, 'cash', 'bank', 'rls-test transfer') $q$);
+select pg_temp.assert_rows('manager: and can read it back',
+  $q$ select 1 from finance.transfers where note = 'rls-test transfer' $q$, 1);
+select pg_temp.assert_check_denied('manager: a transfer to the SAME pocket is rejected',
+  $q$ insert into finance.transfers (amount, from_method, to_method)
+      values (50, 'cash', 'cash') $q$);
+select pg_temp.assert_check_denied('manager: an unknown payment method is rejected',
+  $q$ insert into finance.transfers (amount, from_method, to_method)
+      values (50, 'cash', 'crypto') $q$);
+select pg_temp.assert_check_denied('manager: a non-positive transfer is rejected',
+  $q$ insert into finance.transfers (amount, from_method, to_method)
+      values (0, 'cash', 'bank') $q$);
+select pg_temp.assert_denied('manager: cannot forge a transfer''s author (column grant)',
+  $q$ update finance.transfers set created_by = '00000000-0000-0000-0000-000000000009'
+      where note = 'rls-test transfer' $q$);
+-- THE invariant this table exists for: a transfer is neither income nor
+-- expense, so nothing that sums either may see it. If a later change ever
+-- routes transfers into finance.entries, this fails loudly.
+select pg_temp.assert_rows('manager: a transfer creates NO finance.entries row',
+  $q$ select 1 from finance.entries where note = 'rls-test transfer' $q$, 0);
+select pg_temp.assert_num('manager: and it does not move the P&L',
+  (select (finance.report(current_date - 1, current_date + 1)->>'income_total')::numeric
+   + (finance.report(current_date - 1, current_date + 1)->>'expense_total')::numeric
+   - (select coalesce(sum(amount), 0) from finance.entries
+      where entry_date between current_date - 1 and current_date + 1)), 0);
 select pg_temp.assert_denied('manager: pos.day_expected_legs is internal — not callable',
   $q$ select * from pos.day_expected_legs(current_date) $q$);
 select pg_temp.assert_rows('manager: sees raw pos_expenses (pos.reports)',

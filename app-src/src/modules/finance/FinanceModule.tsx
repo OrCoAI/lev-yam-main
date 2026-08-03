@@ -7,8 +7,9 @@ import { useFT } from './i18n'
 import ReconcileTab from './ReconcileTab'
 import { useReconciliation } from './reconciliation'
 import ReportTab from './ReportTab'
+import TransfersTab from './TransfersTab'
 
-type Tab = 'entries' | 'expected' | 'report' | 'recon' | 'categories'
+type Tab = 'entries' | 'expected' | 'transfers' | 'report' | 'recon' | 'categories'
 
 export default function FinanceModule() {
   const ft = useFT()
@@ -39,6 +40,12 @@ export default function FinanceModule() {
         <button className={tab === 'expected' ? 'tab on' : 'tab'} onClick={() => setTab('expected')}>
           {ft.tabExpected}
         </button>
+        <button
+          className={tab === 'transfers' ? 'tab on' : 'tab'}
+          onClick={() => setTab('transfers')}
+        >
+          {ft.tabTransfers}
+        </button>
         <button className={tab === 'report' ? 'tab on' : 'tab'} onClick={() => setTab('report')}>
           {ft.tabReport}
         </button>
@@ -67,6 +74,7 @@ export default function FinanceModule() {
 
       {tab === 'entries' && <EntriesTab canManage={canManage} />}
       {tab === 'expected' && <ExpectedTab canManage={canManage} />}
+      {tab === 'transfers' && <TransfersTab canManage={canManage} />}
       {tab === 'report' && <ReportTab />}
       {tab === 'recon' && <ReconcileTab recon={recon} onGoExpected={() => setTab('expected')} />}
       {tab === 'categories' && canEditCategories && <CategoriesTab />}

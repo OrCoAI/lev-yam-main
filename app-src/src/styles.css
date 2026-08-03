@@ -546,8 +546,12 @@ a.btn-ghost, a.btn-primary {
   .grid input[type='checkbox'] { width: 22px; height: 22px; }
 
   /* tabs read as a proper full-width segmented control, not sparse left-aligned pills */
-  .tabs { gap: 6px; }
-  .tab { flex: 1; text-align: center; padding: 10px 10px; min-height: 44px; }
+  /* Tabs wrap instead of being squeezed. `flex: 1` with a zero basis lets a
+     row of tabs shrink without limit, so a sixth tab (finance gained one in
+     PR D) crushed every Hebrew label into an ellipsis rather than moving to a
+     second line. A percentage basis makes them wrap at three per row. */
+  .tabs { gap: 6px; flex-wrap: wrap; }
+  .tab { flex: 1 1 30%; text-align: center; padding: 10px 10px; min-height: 44px; }
 
   /* date-preset chips: one swipeable line instead of a tall wrapped block */
   .chips-scroll {

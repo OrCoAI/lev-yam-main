@@ -225,11 +225,25 @@ finance.categories
 - Also retired here: `47_pos_payments.sql`'s stale copy of `pos.post_day` (superseded by 55).
   Left in place, a re-run of 47 would have restored a `post_day` with no pin check at all.
 
-### `57_finance_transfers.sql` (PR D)
+### `57_finance_transfers.sql` (PR D) — **shipped 2026-08-03**
 
 - `finance.transfers (id, amount, from_method, to_method, transfer_date, note, created_by,
-  created_at)`, RLS mirroring `finance.entries` (`finance.view` / `finance.manage`).
-- Read by nothing that sums income or expense — by construction.
+  created_at, updated_at)`, RLS mirroring `finance.entries` (`finance.view` / `finance.manage`).
+  **No new permission** — a transfer is ordinary money handling.
+- Read by nothing that sums income or expense, by construction. `rls_matrix` asserts this
+  directly: recording a transfer creates no `finance.entries` row and does not move
+  `finance.report()`'s totals, so a future change that routes transfers through the ledger
+  fails loudly instead of silently distorting the P&L.
+- Constraints: positive amount, both methods from the same four `finance.entries` allows, and
+  `from_method <> to_method` (a transfer to the same pocket is a typo that would read as real
+  movement in any future balance view). `created_by` is not client-writable.
+- **Open question resolved:** a dedicated **TransfersTab**, not a filter inside the entries
+  list. The entries list, its kind filter, its pagination and its edit/delete paths all assume
+  every row is an income or an expense; threading a third kind through them would reintroduce
+  one layer up exactly the coupling the separate table exists to avoid. The tab strip was made
+  to wrap on phones to fit the sixth tab.
+- Deliberately **not** included: a running cash-on-hand balance. That needs an opening balance
+  per method and a rule for which POS takings reach the drawer — its own initiative.
 
 Each PR regenerates the baseline (`node supabase/tests/build-baseline.mjs --write`) and extends
 `supabase/tests/rls_matrix.sql` with assertions for what it added, per the pre-commit gate.
@@ -362,5 +376,74 @@ per-initiative categories. Noted here so it is a known extension point rather th
 
 ## 10. Close-out
 
-*(to be written when the initiative completes — what shipped, decisions made along the way,
-what was deliberately left out, and the alignment verdict against VISION.md + ARCHITECTURE.md)*
+**Delivered 2026-08-03**, all four PRs, on branch `finance-books-integrity`
+(`5f66a26` PR A · `3d1bf42` PRs B+C · PR D in the following commit).
+
+### What shipped
+
+| PR | Delivered |
+|---|---|
+| **A** | `finance.categories` — owner-editable taxonomy replacing a `CHECK` declared 3× across 2 files plus a client mirror; `owned_by_module` becomes the single source of the derived-only rule; composite `(kind, category)` FKs on **both** `entries` and `expected`, closing the free-text hole on `expected.category`; owner-only `finance.categories` permission; CategoriesTab |
+| **B** | `finance.reconciliation()` / `_count()` over live checks; `pos.day_expected_legs()` extraction so the `source_ref` grammar has one author; launcher badges on the finance **and** POS tiles, in-module banner, dedicated ReconcileTab with a one-click fix per item |
+| **C** | `finance.post_correction()` — additive owner correction against any module-posted row; `pos.day_pins` freeze with the refusal in `post_day()` so every caller inherits it; owner-only `finance.override` permission; CorrectionForm + pin toggle on the POS day view |
+| **D** | `finance.transfers` — cash↔bank as its own table, outside every income/expense total; dedicated TransfersTab |
+
+### Decisions that changed during the build
+
+1. **`makrer` kept active, not archived** (PR A). Its existing HE/AR labels showed it means
+   *fridge* — live drinks income, not a legacy tender. Relabelled `מקרר ושתייה` /
+   `برّاد ومشروبات`; slug deliberately unchanged, since renaming a key silently re-files history.
+2. **A correction does NOT auto-pin its day** (PR C) — the significant one. The kickoff decision
+   paired the two on the premise that the auto re-post would otherwise overwrite the correction.
+   Measured: `post_day()` totals a leg from `source_module = 'pos'` rows only, so an override row
+   is invisible to it and survives re-posting unaided. Auto-pinning was also actively harmful — a
+   pin freezes the whole day, and the first test silently swallowed ₪80 of food cost entered
+   afterwards. Full reasoning under §3; both behaviours are now `rls_matrix` assertions.
+3. **Pinned days get their own reconciliation check** with variable severity — `low` while the
+   freeze costs nothing (so the badge never sits permanently lit on a deliberate state),
+   `medium` once money piles up behind it. `reconciliation_count()` counts non-`low` items only.
+4. **Transfers get a dedicated tab**, not a filter in the entries list (§4, PR D).
+
+### Deliberately left out
+
+Signed-quote-vs-booked reconciliation (needs the events module surface), partial payments on
+`finance.expected` (pre-existing open item — note it will need a *remaining* amount once it
+lands, since check 3 flags on `due_date` against the full amount), tips in the books,
+sub-categories, and a running cash-on-hand balance (needs opening balances per method).
+
+### Alignment verdict
+
+**ARCHITECTURE.md §7 — passes.** Re-checked against the delivered code, not the plan:
+
+| Invariant | Verdict on what shipped |
+|---|---|
+| 1. RLS everywhere, UI never the only gate | ✅ `categories`, `day_pins`, `transfers` all ship RLS + policies; every gated function checks `core.has_permission` in the DB. `rls_matrix` proves staff and manager are shut out of each owner-only path |
+| 2. Anon keys only in the browser | ✅ no new secrets, no edge function |
+| 3. No PII in the public repo | ✅ labels and amounts only |
+| 4. Business invariants in Postgres | ✅ **§7.4 preserved exactly** — the override is additive; `entries_guard()` still rejects every client edit and delete of a derived row, for the owner too. The pin is a DB table checked inside `post_day()`/`repost_if_posted()`, never a UI flag |
+| 5. HE + AR everywhere | ✅ category labels bilingual *in the data*; all new UI through shell i18n; both languages required by a DB CHECK |
+| 6. Public visibility flag | n/a — finance is internal |
+| 7. Live tools keep working | ✅ the §7 watch item held: the `'pos:<date>:<leg>[:r<n>]'` grammar is byte-identical, now authored in exactly one place (`day_ref_prefix` writer / `day_ref_leg` reader) and asserted by the re-post tests. PR C additionally retired 47's stale `post_day` copy, which would have restored a pin-blind version on any re-run |
+| 8. ROADMAP is the tracker | ✅ all four PRs ticked |
+
+**VISION.md — passes.** Principle 6 ("real ventures, real numbers — tightly guarded") is the
+direct target: the books now say when they lag reality instead of failing silently, which is the
+production failure that started this. Principle 2 ("everything is a module") is served by
+`owned_by_module` — modules declare their own category ownership instead of finance hardcoding a
+list of its neighbours. Principle 5 (bilingual) and 7 (evolution, not revolution — every change
+additive, no historical row invalidated) both hold.
+
+**No drift found; no conflict to escalate.** The one deviation from the kickoff contract
+(decision 2 above) is a change to *how* the agreed capability is delivered, not to the capability
+or to any invariant — it makes §7.4 more true, not less. It is recorded in §3 and was surfaced to
+the owner when it was made.
+
+### Follow-ups discovered
+
+- **Cash-on-hand balance per payment method** — transfers now record the movement, but nothing
+  yet shows the resulting drawer/bank position. Needs opening balances and a rule for which POS
+  takings land in the drawer.
+- **Phase 3 forward-compat** (carried from §8): per-initiative money visibility will want a scope
+  dimension on `finance.categories`. Known extension point, not a blocker.
+- **H6** (`finance.expected` write guard, which must also cover `finance.record_payment()`)
+  remains open and is tracked on the roadmap independently of this initiative.

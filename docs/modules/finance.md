@@ -16,8 +16,8 @@ touching schema, permissions, or the events/finance spine graduates to a `docs/p
 
 ## Open feature ideas
 
-> **In flight (2026-07-31):** categories-as-data, books reconciliation/alerts, owner
-> override and cash↔bank transfers graduated to an initiative —
+> **Completed 2026-08-03:** categories-as-data, books reconciliation/alerts, owner
+> override and cash↔bank transfers shipped as an initiative —
 > [plans/finance-books-integrity.md](../plans/finance-books-integrity.md). The items below
 > are *not* covered by it and stay open here.
 
@@ -37,6 +37,15 @@ touching schema, permissions, or the events/finance spine graduates to a `docs/p
 
 ## Done
 
+- **2026-08-03 — books-integrity initiative COMPLETE (PRs A–D).** Categories as data,
+  reconciliation + alerts, owner override, cash↔bank transfers. Close-out and alignment verdict
+  in [plans/finance-books-integrity.md](../plans/finance-books-integrity.md) §10. Follow-up
+  discovered: a cash-on-hand balance per payment method (transfers record the movement, nothing
+  yet shows the resulting position).
+- **2026-08-03 — transfers (initiative PR D).** `finance.transfers` as its own table, outside
+  every income/expense total, with its own tab. A transfer creates no `finance.entries` row and
+  does not move the P&L — both asserted in `rls_matrix`, so a future change that routes them
+  through the ledger fails loudly.
 - **2026-08-03 — owner override (initiative PR C).** `finance.post_correction()` lets the owner
   set any module-posted number to the right total by posting an additive correction; the
   original stays untouched (§7.4 holds). POS day **pins** ship alongside as a separate explicit

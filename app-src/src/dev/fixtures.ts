@@ -359,6 +359,22 @@ export const posExpensesFixture = [
 const posDay = iso(-3)
 // Mirrors the 54_finance_categories.sql seed — the preview harness needs the
 // taxonomy as data now that the entries form reads its options from the DB.
+// finance.transfers (57) — money changing pocket. Kept OUT of the entries
+// fixture on purpose: nothing that sums income or expense may see a transfer.
+export const financeTransfersFixture = [
+  {
+    id: '00000000-0000-4000-8000-0000000f0001',
+    amount: 2000,
+    from_method: 'cash',
+    to_method: 'bank',
+    transfer_date: iso(-9),
+    note: 'הפקדה שבועית',
+    created_by: '00000000-0000-4000-8000-00000000dead',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+]
+
 export const financeCategoriesFixture = [
   ...([
     ['expense', 'equipment', 'ציוד', 'معدات', null, 10],

@@ -112,8 +112,9 @@ bilingual is ever a retrofit.*
               swallow every cost entered afterwards (deviation recorded in the plan). Pinned
               days are reported by reconciliation as `pinned`, escalating from `low` to
               `medium` once money starts piling up behind the freeze
-        - [ ] **PR D** transfers — `finance.transfers` as its own table (cash↔bank),
-              deliberately outside every income/expense total
+        - [x] **PR D** transfers — `finance.transfers` as its own table (cash↔bank),
+              deliberately outside every income/expense total; dedicated TransfersTab
+              (decided in PR D), no new permission, asserted to leave the P&L untouched
         - Out of scope (kickoff): signed-quote-vs-booked check, partial payments (stays
           an open item above), tips in the books, sub-categories
 - [x] POS: map `pos.html` features → module design under `app-src/src/modules/pos/`

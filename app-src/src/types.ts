@@ -91,6 +91,21 @@ export interface FinanceEntry {
   updated_at: string
 }
 
+// finance.transfers — money moving between our own pockets (cash → bank).
+// Deliberately NOT a finance.entries row: it is neither income nor expense, and
+// nothing that sums either reads this table (57_finance_transfers.sql).
+export interface FinanceTransfer {
+  id: string
+  amount: number
+  from_method: FinancePaymentMethod
+  to_method: FinancePaymentMethod
+  transfer_date: string // 'YYYY-MM-DD'
+  note: string | null
+  created_by: string
+  created_at: string
+  updated_at: string
+}
+
 // finance.expected — money that should move (deposits, balances, supplier bills)
 export type FinanceExpectedStatus = 'open' | 'fulfilled' | 'cancelled'
 

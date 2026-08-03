@@ -8,6 +8,7 @@ import {
   financeCategoriesFixture,
   financeEntriesFixture,
   financeExpectedFixture,
+  financeTransfersFixture,
   ownerSecretsFixture,
   permissionRowsFixture,
   permissionsFixture,
@@ -68,6 +69,7 @@ const db: Record<string, Row[]> = {
   pos_expenses: posExpensesFixture.map((r) => ({ ...r })),
   // starts empty: a pin is something the owner does, not a seeded state
   day_pins: [],
+  transfers: financeTransfersFixture.map((r) => ({ ...r })),
 }
 let seq = 100
 
@@ -176,6 +178,8 @@ async function handleRest(table: string, req: Request, params: URLSearchParams):
       },
       pos_expenses: { note: null, created_by: null, created_at: new Date().toISOString() },
       day_pins: { reason: '', pinned_by: null, pinned_at: new Date().toISOString() },
+      transfers: { note: null, created_by: null,
+        created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
     }
     const row: Row = {
       id: `00000000-0000-4000-8000-${String(++seq).padStart(12, '0')}`,
