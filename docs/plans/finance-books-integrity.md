@@ -74,6 +74,23 @@ today it either goes unrecorded or distorts both totals.
   both remain open items in the module log. PR C partially relieves the second (an owner
   correction can now offset such a row) but does not implement a proper corrector.
 - **Sub-categories / hierarchy** — flat list only; roll-up reporting is not in this initiative.
+- **A write guard on `finance.expected`** — PR A gives that table the taxonomy FK but no
+  trigger, so a `finance.manage` holder can still create an expectation naming a module-owned
+  category (`record_payment` would then post it into `entries` behind the posting GUC). This is
+  *pre-existing* — before PR A `expected.category` was unconstrained free text, so the diff only
+  narrows it — and it is precisely roadmap item **H6** (`finance.expected` module-row guard).
+  Left whole for H6 rather than half-done here. The shared
+  `finance.assert_category_writable()` PR A introduces is the hook H6 should call.
+  **PR A's security review traced the same hole one step further** (2026-08-03): the reachable
+  path is not a direct insert but `finance.record_payment()`
+  ([21_finance_spine.sql:166](../../supabase/schema/21_finance_spine.sql#L166)) — it is
+  `SECURITY DEFINER`, checks only `finance.manage`, flips the posting GUC, and posts using
+  `exp.category` without consulting the one-writer rule. So a **manager** can create an
+  expectation with `direction='in', category='pos'`, call `record_payment`, and land a row in
+  the POS-owned income category that the guard then makes permanently un-editable by everyone,
+  owner included. Pre-existing and unchanged by PR A (the old CHECK permitted income `pos` and
+  `expected.category` was unconstrained), but H6 must cover `record_payment`, not just a write
+  guard on the table — a table-only guard would leave this path open.
 
 ## 3. Decisions locked at kickoff
 
@@ -86,7 +103,7 @@ today it either goes unrecorded or distorts both totals.
 | Alert behavior | Live-computed, never dismissible; each item carries its one-click fix |
 | Override model | Correction entry + day pin. Derived rows stay immutable — §7.4 preserved |
 | Tips | Stay out of the books |
-| `makrer` | Legacy — archived, not deleted (historical rows stay valid) |
+| `makrer` | Kept ACTIVE with a clearer label (מקרר ושתייה / برّاد ومشروبات). Revised from "archive it" at kickoff once the existing HE/AR labels showed it means *fridge* — i.e. live drinks income, not a legacy tender. Slug deliberately not renamed: history references it |
 | Transfers | Own table, **not** a third `kind` on `finance.entries` |
 | Sequencing | A → B → C → D |
 
@@ -126,7 +143,8 @@ finance.categories
 
 - Seeded with **every** category currently valid, so no historical row is orphaned, plus the
   additions approved at kickoff: expense `rent`, `utilities`, `insurance`, `taxes`,
-  `payment_fees`, `event_costs`; income `donations`. `makrer` seeds with `active = false`.
+  `payment_fees`, `event_costs`; income `donations`. `makrer` stays active with a clearer
+  label (see the decisions table).
 - `owned_by_module` seeds `'pos'` for `pos`/`pos_food`/`pos_labor` and `'quotes'` for `events`
    — this table becomes the single source of the derived-only rule, replacing the hardcoded
    `derived_only` array in `entries_guard()` **and** the `DERIVED_ONLY` set in `categories.ts`.
@@ -272,8 +290,12 @@ per-initiative categories. Noted here so it is a known extension point rather th
 
 ## 9. Open questions
 
-- `finance.expected` category enforcement: stored generated `kind` column + composite FK, or
-  validation trigger? (PR A)
+- ~~`finance.expected` category enforcement: stored generated `kind` column + composite FK, or
+  validation trigger?~~ **Resolved (PR A):** the generated column works — verified on the local
+  stack that a stored generated column is usable as an FK referencing column and that an `in`
+  row pointing at an expense category is rejected. Declarative, no trigger. One constraint
+  discovered: Postgres rejects `ON UPDATE CASCADE` on an FK containing a generated column, so
+  neither taxonomy FK cascades — safe, because `key` is not client-updatable (column grant).
 - Does the reconciliation banner belong in `FinanceModule` only, or also on the POS day view
   where the unposted-day fix actually happens? (PR B)
 - Transfers UI: own tab, or a kind-filter chip inside the entries list? (PR D)

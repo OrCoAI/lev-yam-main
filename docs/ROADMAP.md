@@ -92,7 +92,7 @@ bilingual is ever a retrofit.*
               (`54_finance_categories.sql`) replacing the twice-declared `CHECK` + the
               client mirror; constrains `finance.expected.category` (free text today);
               seeds the missing real categories (rent, utilities, insurance, taxes,
-              payment fees, event costs, donations) and archives legacy `makrer`;
+              payment fees, event costs, donations);
               `owned_by_module` becomes the single source of the derived-only rule;
               new owner-only `finance.categories` permission
         - [ ] **PR B** reconciliation — `finance.reconciliation()` over three checks
@@ -209,7 +209,12 @@ item — the anon `pos_*` surface — is the POS cut-over task above, not repeat
       also closed a live PUBLIC-execute privilege-escalation in `core` found by
       the gate)*
 - [ ] **H6** `finance.expected` module-row guard (status-only client transitions on
-      module-sourced expectations)
+      module-sourced expectations). **Must also cover `finance.record_payment()`** — PR A's
+      security review (2026-08-03) found the reachable bypass is there, not on the table: it
+      is SECURITY DEFINER, checks only `finance.manage`, and posts `exp.category` behind the
+      posting GUC without the one-writer check, so a manager can land a row in a module-owned
+      category that is then permanently un-editable. Call the
+      `finance.assert_category_writable()` hook PR A added (`54_finance_categories.sql`).
 - [x] **H7** Hygiene batch — nine small repo/UX/ops items; **8 of 9 done** (3 with
       H3/H5 on 2026-07-15, 5 more on 2026-07-16 via PR #11 of
       [plans/users-permissions-suite.md](plans/users-permissions-suite.md): storage

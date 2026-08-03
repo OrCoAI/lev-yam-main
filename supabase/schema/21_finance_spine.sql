@@ -49,18 +49,11 @@ alter table finance.entries drop constraint if exists finance_entries_amount_che
 alter table finance.entries add constraint finance_entries_amount_check
   check (amount <> 0 and (source_module is not null or amount > 0));
 
--- Category taxonomy + the derived-only POS categories (NOT VALID like the
--- original: re-runs never choke on historical rows, new writes are enforced).
-alter table finance.entries drop constraint if exists finance_entries_category_check;
-alter table finance.entries add constraint finance_entries_category_check check (
-  (kind = 'expense' and category in
-    ('equipment','inventory','maintenance','marketing','salaries','or_prati','nimer','suppliers',
-     'pos_food','pos_labor'))                      -- derived-only: pos.close_day()
-  or
-  (kind = 'income' and category in
-    ('events','bookings','makrer','other',
-     'pos'))                                       -- derived-only: pos.close_day()
-) not valid;
+-- The category taxonomy (and the derived-only POS categories) used to be a CHECK
+-- constraint re-declared here. Superseded by 54_finance_categories.sql: the list
+-- is data, and `finance.categories.owned_by_module` — not a literal — is what
+-- makes a category derived-only. Re-declaring it here would resurrect a stale
+-- taxonomy on any re-run of this file.
 
 -- One posting per source fact — modules can re-run their posting functions
 -- forever without double-counting (same philosophy as every file in this folder).
@@ -78,44 +71,12 @@ create index if not exists finance_entries_event_idx  on finance.entries (event_
 --     provenance is rejected — a client cannot forge, edit, or erase a posted
 --     fact (the same "the DB is the law" stance as signed contracts).
 -- ---------------------------------------------------------------------
-create or replace function finance.entries_guard()
-returns trigger language plpgsql as $$
-declare
-  posting boolean := coalesce(current_setting('levyam.finance_posting', true), '') = 'on';
-  -- one writer per category (docs §3b): these are module-written only.
-  -- Mirrored for the form UI in app-src/src/modules/finance/categories.ts (DERIVED_ONLY).
-  derived_only text[] := array['events','pos','pos_food','pos_labor'];
-begin
-  if posting then
-    return coalesce(new, old);
-  end if;
-  if tg_op = 'INSERT' then
-    if new.source_module is not null then
-      raise exception 'רישום ממקור מודול (%.%) נכתב רק דרך פונקציית הרישום של אותו מודול', new.source_module, new.source_ref;
-    end if;
-    if new.category = any (derived_only) then
-      raise exception 'הקטגוריה "%" נרשמת אוטומטית על ידי מודול — לא ניתן להזין אותה ידנית', new.category;
-    end if;
-    return new;
-  end if;
-  if old.source_module is not null then
-    raise exception 'רישום שנוצר על ידי מודול (%) אינו ניתן לעריכה או מחיקה — תיקון נרשם כתנועת היפוך מאותו מודול', old.source_module;
-  end if;
-  if tg_op = 'UPDATE' and new.source_module is not null then
-    raise exception 'לא ניתן להפוך רישום ידני לרישום ממקור מודול';
-  end if;
-  -- legacy manual rows in a now-derived category stay editable, but a manual row
-  -- cannot MOVE into a derived-only category
-  if tg_op = 'UPDATE' and new.category = any (derived_only) and new.category is distinct from old.category then
-    raise exception 'הקטגוריה "%" נרשמת אוטומטית על ידי מודול — לא ניתן להזין אותה ידנית', new.category;
-  end if;
-  return coalesce(new, old);
-end; $$;
-
-drop trigger if exists finance_entries_guard on finance.entries;
-create trigger finance_entries_guard
-  before insert or update or delete on finance.entries
-  for each row execute function finance.entries_guard();
+-- finance.entries_guard() and its trigger are authored in
+-- 54_finance_categories.sql — ONE definition, because the one-writer rule it
+-- enforces now reads finance.categories.owned_by_module instead of a literal
+-- array. Keeping a copy here meant a re-run of this file silently restored the
+-- old four-slug array: newly added module categories would stop being protected
+-- while the old ones kept working, which looks like it works.
 
 -- ---------------------------------------------------------------------
 --  3) finance.expected — money that SHOULD move (docs §3c)

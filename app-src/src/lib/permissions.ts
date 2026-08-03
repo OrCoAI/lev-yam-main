@@ -18,6 +18,7 @@ export const PERM = {
   posMenu: 'pos.menu',            // edit the menu — items, prices, options, meals — owner/manager
   financeView: 'finance.view',
   financeManage: 'finance.manage',
+  financeCategories: 'finance.categories', // edit the income/expense taxonomy — owner-only seed
   eventsView: 'events.view',       // shared calendar spine (40_events.sql) — owner/manager/staff
   eventsManage: 'events.manage',   // create/edit events directly — owner/manager
   eventsTasks: 'events.tasks',     // mark/manage prep tasks — owner/manager/staff

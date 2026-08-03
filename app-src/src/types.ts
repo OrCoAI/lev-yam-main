@@ -48,26 +48,30 @@ export interface AdminUser {
 
 export type FinanceKind = 'income' | 'expense'
 
-export type FinanceExpenseCategory =
-  | 'equipment'
-  | 'inventory'
-  | 'maintenance'
-  | 'marketing'
-  | 'salaries'
-  | 'or_prati'
-  | 'nimer'
-  | 'suppliers'
-  | 'pos_food' // derived-only: pos.close_day()
-  | 'pos_labor' // derived-only: pos.close_day()
+/**
+ * A category slug. Deliberately `string`, not a union: since
+ * `54_finance_categories.sql` the taxonomy is owner-editable DB rows
+ * (`finance.categories`), so a compile-time union would go stale the moment the
+ * owner adds a category. The DB enforces validity — a composite FK on
+ * (kind, category) that also rejects a category belonging to the other kind.
+ */
+export type FinanceCategory = string
 
-export type FinanceIncomeCategory =
-  | 'events' // derived-only: quotes postings via finance.record_payment()
-  | 'bookings'
-  | 'makrer'
-  | 'other'
-  | 'pos' // derived-only: pos.close_day()
-
-export type FinanceCategory = FinanceExpenseCategory | FinanceIncomeCategory
+/** A row of finance.categories — the taxonomy itself. */
+export interface FinanceCategoryRow {
+  id: string
+  kind: FinanceKind
+  key: string
+  label_he: string
+  label_ar: string
+  /** Non-null = derived-only: this module's posting function is the one writer. */
+  owned_by_module: string | null
+  /** Archived categories stay valid on history but are not offered on new entries. */
+  active: boolean
+  sort: number
+  updated_at: string
+  updated_by: string | null
+}
 
 export type FinancePaymentMethod = 'cash' | 'private' | 'grow' | 'bank'
 

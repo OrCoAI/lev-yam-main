@@ -5,6 +5,7 @@
 import {
   adminUsersFixture,
   contractsFixture,
+  financeCategoriesFixture,
   financeEntriesFixture,
   financeExpectedFixture,
   ownerSecretsFixture,
@@ -54,6 +55,7 @@ const db: Record<string, Row[]> = {
   contracts: contractsFixture.map((r) => ({ ...r })),
   settings: [{ ...settingsFixture }],
   owner_secrets: [{ ...ownerSecretsFixture }],
+  categories: financeCategoriesFixture.map((r) => ({ ...r })),
   entries: financeEntriesFixture.map((r) => ({ ...r })),
   expected: financeExpectedFixture.map((r) => ({ ...r })),
   roles: rolesFixture.map((r) => ({ ...r })),

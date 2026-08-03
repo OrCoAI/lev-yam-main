@@ -1,13 +1,14 @@
 // Finance module dictionary — two parallel typed objects through makeDictHook
 // (THE module i18n pattern). The 2026-07 UX pass retrofitted the whole module
-// chrome here (it predated the i18n layer), including the category / payment /
-// status / source / reason label maps that used to live in categories.ts.
+// chrome here (it predated the i18n layer), including the payment / status /
+// source / reason label maps that used to live in categories.ts.
+//
+// CATEGORY labels are deliberately NOT here: since 54_finance_categories.sql the
+// taxonomy is owner-editable DB rows carrying their own label_he/label_ar, so a
+// category the owner adds is bilingual immediately instead of waiting for a
+// deploy. Resolve them with useCategoryName() from ./categories.
 import { makeDictHook } from '../../lib/i18n'
-import type {
-  FinanceCategory,
-  FinanceExpectedStatus,
-  FinancePaymentMethod,
-} from '../../types'
+import type { FinanceExpectedStatus, FinancePaymentMethod } from '../../types'
 
 const he = {
   title: 'כספים',
@@ -100,24 +101,31 @@ const he = {
   ofExpenses: 'מסך ההוצאות',
   detailLimit: (n: string) => `מוצגות ${n} התנועות הראשונות בטווח.`,
 
+  // categories tab (owner-only — finance.categories)
+  tabCategories: 'קטגוריות',
+  catIntro: 'הקטגוריות שלפיהן נרשמות ההכנסות וההוצאות. שינוי כאן משפיע על כל הדוחות.',
+  catAdd: 'הוספת קטגוריה',
+  catKindIncome: 'הכנסה',
+  catKindExpense: 'הוצאה',
+  catKey: 'מזהה',
+  catKeyHint: 'אותיות אנגליות קטנות וקו תחתון בלבד — קבוע ולא ניתן לשינוי אחר כך',
+  catKeyInvalid: 'המזהה חייב להיות אותיות אנגליות קטנות, ספרות וקו תחתון בלבד.',
+  catKeyTaken: 'כבר קיימת קטגוריה עם המזהה הזה בסוג הזה.',
+  catLabelHe: 'שם בעברית',
+  catLabelAr: 'שם בערבית',
+  catLabelsRequired: 'נא למלא שם בעברית ובערבית — שתי השפות חובה.',
+  catArchive: 'לארכיון',
+  catRestore: 'החזרה לשימוש',
+  catArchived: 'בארכיון',
+  catArchivedHint: 'לא מוצעת בתנועות חדשות — תנועות קיימות נשמרות',
+  catModuleOwned: 'נרשמת אוטומטית על ידי',
+  catModuleOwnedHint: 'קטגוריה של מודול — אפשר לערוך את השם בלבד',
+  catLoading: 'טוען קטגוריות…',
+  catNone: 'אין קטגוריות מסוג זה.',
+  catSave: 'שמירה',
+  catSaveFailed: 'השמירה נכשלה — ייתכן שאין הרשאה.',
+
   // label maps (mirror the DB enums)
-  categoryLabels: {
-    equipment: 'ציוד',
-    inventory: 'מלאי',
-    maintenance: 'תחזוקה',
-    marketing: 'שיווק',
-    salaries: 'משכורות',
-    or_prati: 'אור פרטי',
-    nimer: 'נימר',
-    suppliers: 'ספקים',
-    pos_food: 'POS — מזון',
-    pos_labor: 'POS — שכר יומי',
-    events: 'אירועים',
-    bookings: 'הזמנות',
-    makrer: 'מקרר',
-    other: 'אחר',
-    pos: 'POS — יום מכירות',
-  } satisfies Record<FinanceCategory, string>,
   paymentLabels: {
     cash: 'מזומן',
     private: 'פרטי',
@@ -229,23 +237,29 @@ const ar: typeof he = {
   ofExpenses: 'من المصاريف',
   detailLimit: (n: string) => `تُعرض أول ${n} حركة في الفترة.`,
 
-  categoryLabels: {
-    equipment: 'معدات',
-    inventory: 'مخزون',
-    maintenance: 'صيانة',
-    marketing: 'تسويق',
-    salaries: 'رواتب',
-    or_prati: 'أور خاص',
-    nimer: 'نمر',
-    suppliers: 'موردون',
-    pos_food: 'POS — طعام',
-    pos_labor: 'POS — أجر يومي',
-    events: 'مناسبات',
-    bookings: 'حجوزات',
-    makrer: 'برّاد',
-    other: 'أخرى',
-    pos: 'POS — يوم مبيعات',
-  },
+  tabCategories: 'الفئات',
+  catIntro: 'الفئات التي تُسجَّل تحتها الإيرادات والمصاريف. التغيير هنا يؤثّر على كل التقارير.',
+  catAdd: 'إضافة فئة',
+  catKindIncome: 'إيراد',
+  catKindExpense: 'مصروف',
+  catKey: 'المعرّف',
+  catKeyHint: 'أحرف إنجليزية صغيرة وشرطة سفليّة فقط — ثابت ولا يمكن تغييره لاحقاً',
+  catKeyInvalid: 'المعرّف يجب أن يكون أحرفاً إنجليزية صغيرة وأرقاماً وشرطة سفليّة فقط.',
+  catKeyTaken: 'توجد فئة بهذا المعرّف ضمن هذا النوع مسبقاً.',
+  catLabelHe: 'الاسم بالعبرية',
+  catLabelAr: 'الاسم بالعربية',
+  catLabelsRequired: 'الرجاء تعبئة الاسم بالعبرية والعربية — اللغتان إلزاميتان.',
+  catArchive: 'أرشفة',
+  catRestore: 'إعادة للاستخدام',
+  catArchived: 'مؤرشفة',
+  catArchivedHint: 'لا تُعرض في الحركات الجديدة — الحركات القائمة تبقى كما هي',
+  catModuleOwned: 'تُسجَّل تلقائياً بواسطة',
+  catModuleOwnedHint: 'فئة تابعة لوحدة — يمكن تعديل الاسم فقط',
+  catLoading: 'جارٍ تحميل الفئات…',
+  catNone: 'لا توجد فئات من هذا النوع.',
+  catSave: 'حفظ',
+  catSaveFailed: 'فشل الحفظ — قد لا تكون هناك صلاحية.',
+
   paymentLabels: {
     cash: 'نقداً',
     private: 'خاص',

@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { finance } from '../../lib/supabase'
 import type { FinanceCategory, FinanceEntry, FinanceKind, FinancePaymentMethod } from '../../types'
-import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, PAYMENT_METHODS } from './categories'
+import { PAYMENT_METHODS, pickable, useCategories, useCategoryName } from './categories'
+import { pickDbLabel, useI18n } from '../../lib/i18n'
 import { useRowDisclosure } from '../../lib/useRowDisclosure'
 import DateField from './DateField'
+import ErrorNotice from './ErrorNotice'
 import { shortDate, signedAmount, todayStr } from './format'
 import { useFT } from './i18n'
 import KindFilterChips, { type KindFilter } from './KindFilterChips'
@@ -22,12 +24,9 @@ type EntryPayload = {
   note: string | null
 }
 
-function categoriesFor(kind: FinanceKind): FinanceCategory[] {
-  return kind === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES
-}
-
 export default function EntriesTab({ canManage }: { canManage: boolean }) {
   const ft = useFT()
+  const categoryName = useCategoryName()
   const { isPhone, rowProps } = useRowDisclosure()
   const [entries, setEntries] = useState<FinanceEntry[]>([])
   const [loading, setLoading] = useState(true)
@@ -148,11 +147,7 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
 
       <KindFilterChips value={kindFilter} onChange={setKindFilter} />
 
-      {error && (
-        <div className="error">
-          {ft.errorPrefix} {error}
-        </div>
-      )}
+      {error && <ErrorNotice error={error} />}
 
       {loading ? (
         <div className="muted">{ft.loadingEntries}</div>
@@ -185,7 +180,7 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
                       {e.kind === 'income' ? ft.income : ft.expense}
                     </td>
                     <td className="rl-main">
-                      {ft.categoryLabels[e.category] ?? e.category}
+                      {categoryName(e.kind, e.category)}
                       <SourceBadge module={e.source_module} sourceRef={e.source_ref} href={href} />
                     </td>
                     <td className="rl-more" data-label={ft.colPayment}>
@@ -280,10 +275,21 @@ function EntryForm({
   onClose?: () => void
 }) {
   const ft = useFT()
+  const { lang } = useI18n()
+  const { rows, error: catError } = useCategories()
   const [kind, setKind] = useState<FinanceKind>(initial?.kind ?? 'expense')
-  const [category, setCategory] = useState<FinanceCategory>(
-    initial?.category ?? EXPENSE_CATEGORIES[0],
-  )
+  // only the user's explicit choice is state; the taxonomy loads async, so the
+  // effective value falls back to the first option until then — derived, so
+  // there's no effect writing state and no render pass with an empty select
+  const [picked, setPicked] = useState<FinanceCategory>(initial?.category ?? '')
+  const options = useMemo(() => pickable(rows, kind), [rows, kind])
+  const category = picked || options[0]?.key || ''
+  // an entry being edited under a category since archived or made module-owned
+  // keeps its own option, so editing it never silently re-files the row
+  const legacy =
+    category && !options.some((c) => c.key === category)
+      ? rows.find((c) => c.kind === kind && c.key === category)
+      : undefined
   const [method, setMethod] = useState<FinancePaymentMethod>(initial?.payment_method ?? 'cash')
   const [amount, setAmount] = useState(initial ? String(initial.amount) : '')
   const [entryDate, setEntryDate] = useState(initial?.entry_date ?? todayStr())
@@ -292,12 +298,12 @@ function EntryForm({
 
   function changeKind(next: FinanceKind) {
     setKind(next)
-    setCategory(categoriesFor(next)[0])
+    setPicked('')
   }
 
   function submit() {
     const n = Number(amount)
-    if (!n || n <= 0) {
+    if (!n || n <= 0 || !category) {
       setInvalid(true)
       return
     }
@@ -334,14 +340,14 @@ function EntryForm({
 
       <label className="field">
         <span className="field-label">{ft.category}</span>
-        <select value={category} onChange={(e) => setCategory(e.target.value as FinanceCategory)}>
-          {/* editing a legacy row whose category is now derived-only keeps its option */}
-          {!categoriesFor(kind).includes(category) && (
-            <option value={category}>{ft.categoryLabels[category] ?? category}</option>
+        <select value={category} onChange={(e) => setPicked(e.target.value)}>
+          {legacy !== undefined && <option value={category}>{pickDbLabel(lang, legacy)}</option>}
+          {category && legacy === undefined && !options.some((c) => c.key === category) && (
+            <option value={category}>{category}</option>
           )}
-          {categoriesFor(kind).map((c) => (
-            <option key={c} value={c}>
-              {ft.categoryLabels[c]}
+          {options.map((c) => (
+            <option key={c.key} value={c.key}>
+              {pickDbLabel(lang, c)}
             </option>
           ))}
         </select>
@@ -392,6 +398,9 @@ function EntryForm({
         />
       </label>
 
+      {/* a failed taxonomy fetch leaves the select empty; without this the only
+          feedback would be the misleading "invalid amount" on submit */}
+      {catError && <ErrorNotice error={catError} />}
       {invalid && <div className="error">{ft.invalidAmount}</div>}
 
       <div className="field-actions">

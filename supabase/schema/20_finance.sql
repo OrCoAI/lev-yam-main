@@ -29,14 +29,12 @@ create table if not exists finance.entries (
   created_at     timestamptz not null default now(),
   updated_at     timestamptz not null default now(),
 
-  constraint finance_entries_kind_check check (kind in ('income','expense')),
-  constraint finance_entries_category_check check (
-    (kind = 'expense' and category in
-      ('equipment','inventory','maintenance','marketing','salaries','or_prati','nimer','suppliers'))
-    or
-    (kind = 'income' and category in
-      ('events','bookings','makrer','other'))
-  )
+  constraint finance_entries_kind_check check (kind in ('income','expense'))
+  -- NO category CHECK here. The taxonomy is DATA since 54_finance_categories.sql
+  -- (finance.categories + a composite FK on (kind, category)). A CHECK re-declared
+  -- here would be re-added by any re-run of this file and would then reject every
+  -- category the owner has added since — and unlike `create or replace`, an added
+  -- constraint is not something a later file can own the absence of.
 );
 
 -- Idempotent add for databases created before payment_method existed.
@@ -46,18 +44,10 @@ do $$ begin
     check (payment_method is null or payment_method in ('cash','private','grow','bank'));
 exception when duplicate_object then null; end $$;
 
--- Idempotent replace: category taxonomy updated to the venue's real categories
--- (was a placeholder set: rent/utilities/insurance/... — never matched real usage).
--- NOT VALID so it doesn't choke re-running this on a live DB that already has
--- rows under the old category names; it still applies to every new insert/update.
-alter table finance.entries drop constraint if exists finance_entries_category_check;
-alter table finance.entries add constraint finance_entries_category_check check (
-  (kind = 'expense' and category in
-    ('equipment','inventory','maintenance','marketing','salaries','or_prati','nimer','suppliers'))
-  or
-  (kind = 'income' and category in
-    ('events','bookings','makrer','other'))
-) not valid;
+-- The category taxonomy used to be re-declared here as a CHECK constraint. It is
+-- now owner-editable data — see 54_finance_categories.sql, which owns the list,
+-- the HE/AR labels, the one-writer (`owned_by_module`) rule, and the FK that
+-- enforces all of it. Nothing about categories belongs in this file any more.
 
 create index if not exists finance_entries_date_idx on finance.entries (entry_date desc);
 create index if not exists finance_entries_kind_idx on finance.entries (kind);

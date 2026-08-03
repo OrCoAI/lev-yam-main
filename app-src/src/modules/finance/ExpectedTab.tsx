@@ -1,16 +1,24 @@
 import { Fragment, useCallback, useEffect, useState } from 'react'
 import { finance } from '../../lib/supabase'
-import type { FinanceExpected, FinancePaymentMethod } from '../../types'
+import type { FinanceExpected, FinanceKind, FinancePaymentMethod } from '../../types'
 import { useRowDisclosure } from '../../lib/useRowDisclosure'
-import { PAYMENT_METHODS } from './categories'
+import { PAYMENT_METHODS, useCategoryName } from './categories'
 import DateField from './DateField'
+import ErrorNotice from './ErrorNotice'
 import { shortDate, todayStr } from './format'
 import { useFT, type FinanceDict } from './i18n'
 import { sourceHref } from './provenance'
 import SourceBadge from './SourceBadge'
 
-function expectedTitle(ft: FinanceDict, r: FinanceExpected) {
-  return ft.reasonLabels[r.reason] ?? (r.reason || (ft.categoryLabels[r.category] ?? r.category))
+function expectedTitle(
+  ft: FinanceDict,
+  categoryName: (kind: FinanceKind, key: string) => string,
+  r: FinanceExpected,
+) {
+  // direction is the expectation's income/expense sense — the categories table
+  // is keyed by kind, so map it before looking the label up
+  const kind: FinanceKind = r.direction === 'in' ? 'income' : 'expense'
+  return ft.reasonLabels[r.reason] ?? (r.reason || categoryName(kind, r.category))
 }
 
 type FulfillValues = {
@@ -22,6 +30,7 @@ type FulfillValues = {
 
 export default function ExpectedTab({ canManage }: { canManage: boolean }) {
   const ft = useFT()
+  const categoryName = useCategoryName()
   const { rowProps } = useRowDisclosure()
   const [rows, setRows] = useState<FinanceExpected[]>([])
   const [loading, setLoading] = useState(true)
@@ -118,7 +127,7 @@ export default function ExpectedTab({ canManage }: { canManage: boolean }) {
           {r.direction === 'in' ? ft.expectedIn : ft.expectedOut}
         </td>
         <td className="rl-main">
-          {expectedTitle(ft, r)}
+          {expectedTitle(ft, categoryName, r)}
           <SourceBadge
             module={r.source_module}
             sourceRef={r.source_ref}
@@ -178,11 +187,7 @@ export default function ExpectedTab({ canManage }: { canManage: boolean }) {
         </div>
       </div>
 
-      {error && (
-        <div className="error">
-          {ft.errorPrefix} {error}
-        </div>
-      )}
+      {error && <ErrorNotice error={error} />}
 
       {loading ? (
         <div className="muted">{ft.loadingExpected}</div>
@@ -261,6 +266,7 @@ function FulfillForm({
   onCancel: () => void
 }) {
   const ft = useFT()
+  const categoryName = useCategoryName()
   const [amount, setAmount] = useState(String(row.amount))
   const [method, setMethod] = useState<FinancePaymentMethod>('cash')
   const [date, setDate] = useState(todayStr())
@@ -288,7 +294,7 @@ function FulfillForm({
   return (
     <div className="finance-form finance-fulfill">
       <div className="muted">
-        {ft.recordPaymentTitle} — {expectedTitle(ft, row)} (
+        {ft.recordPaymentTitle} — {expectedTitle(ft, categoryName, row)} (
         <span dir="ltr">{Number(row.amount).toLocaleString('he-IL')} ₪</span> {ft.expectedSuffix})
       </div>
       {invalid && <div className="error">{ft.invalidAmount}</div>}

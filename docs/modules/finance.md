@@ -1,7 +1,8 @@
 # Finance — module log
 
 Live at `/app/finance`. Schema: `supabase/schema/20_finance.sql`,
-`21_finance_spine.sql`. UI: `app-src/src/modules/finance/`.
+`21_finance_spine.sql`, `54_finance_categories.sql` (categories-as-data).
+UI: `app-src/src/modules/finance/`.
 Background: [plans/finance-ux-pass.md](../plans/finance-ux-pass.md),
 [plans/cross-module-foundation.md](../plans/cross-module-foundation.md).
 

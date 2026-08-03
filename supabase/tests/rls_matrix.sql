@@ -137,6 +137,24 @@ begin
   raise notice 'ok: %', label;
 end $$;
 
+-- Statement must be rejected by a FOREIGN KEY (SQLSTATE 23503) — the taxonomy
+-- FKs added in 54_finance_categories.sql, which enforce both "this category
+-- exists" and "it belongs to this kind". Pinned to 23503 like assert_raises
+-- pins P0001, so an unrelated failure can never pass the assertion.
+create function pg_temp.assert_fk_denied(label text, stmt text)
+returns void language plpgsql as $$
+declare ok boolean := false;
+begin
+  begin
+    execute stmt;
+  exception when foreign_key_violation then ok := true;
+  end;
+  if not ok then
+    raise exception 'FAIL: % — expected a foreign-key violation', label;
+  end if;
+  raise notice 'ok: %', label;
+end $$;
+
 -- The shared "locked-out" baseline — what an identity with ZERO module grants
 -- must (not) see. Runs under whatever identity become()/become_anon() set last.
 create function pg_temp.assert_locked_out(prefix text)
@@ -211,6 +229,9 @@ values ('bbbbbbbb-0000-0000-0000-000000000002', 'income', 'other', 50, current_d
         'rls-test manual', 'aaaaaaaa-0000-0000-0000-000000000001');
 insert into finance.expected (id, direction, category, amount, note)
 values ('bbbbbbbb-0000-0000-0000-000000000003', 'in', 'events', 500, 'rls-test expected');
+-- an archived category, to prove the guard blocks NEW money under it (54)
+insert into finance.categories (kind, key, label_he, label_ar, active, sort)
+values ('expense', 'rls_archived', 'בדיקה ארכיון', 'اختبار أرشيف', false, 995);
 
 -- quotes: one quote + its SIGNED (immutable) contract
 insert into quotes.quotes (id, quote_number, customer_name, created_by)
@@ -456,6 +477,32 @@ select pg_temp.assert_raises('manager: DERIVED finance entry rejects UPDATE (gua
 select pg_temp.assert_raises('manager: DERIVED finance entry rejects DELETE (guard)',
   $q$ delete from finance.entries
       where id = 'bbbbbbbb-0000-0000-0000-000000000001' $q$, 'אינו ניתן לעריכה או מחיקה');
+-- 54_finance_categories: the taxonomy reads with finance.view but writes need
+-- finance.categories (owner-only) — a manager has the first and not the second.
+select pg_temp.assert_rows('manager: sees the category taxonomy (finance.view)',
+  $q$ select 1 from finance.categories where kind = 'expense' and key = 'rent' $q$, 1);
+select pg_temp.assert_denied('manager: cannot add a category (no finance.categories)',
+  $q$ insert into finance.categories (kind, key, label_he, label_ar)
+      values ('expense','rls_test_cat','בדיקה','اختبار') $q$);
+select pg_temp.assert_noop('manager: cannot rename a category (RLS hides the row)',
+  $q$ update finance.categories set label_he = 'שינוי' where kind = 'expense' and key = 'rent' $q$);
+-- the one-writer rule is now DATA: the guard resolves owned_by_module per row
+select pg_temp.assert_raises('manager: MODULE-OWNED category still rejects a manual entry',
+  $q$ insert into finance.entries (kind, category, amount, entry_date, note)
+      values ('income','pos', 5, current_date, 'rls-test cat') $q$, 'נרשמת אוטומטית');
+select pg_temp.assert_fk_denied('manager: unknown category rejected by the taxonomy FK',
+  $q$ insert into finance.entries (kind, category, amount, entry_date, note)
+      values ('expense','no_such_category', 5, current_date, 'rls-test cat') $q$);
+select pg_temp.assert_fk_denied('manager: category from the OTHER kind rejected (composite FK)',
+  $q$ insert into finance.entries (kind, category, amount, entry_date, note)
+      values ('income','rent', 5, current_date, 'rls-test cat') $q$);
+select pg_temp.assert_fk_denied('manager: expected row with a direction/category mismatch rejected',
+  $q$ insert into finance.expected (direction, category, amount, note)
+      values ('in','rent', 5, 'rls-test cat') $q$);
+-- archived is a DB rule too, not merely a hidden option in the picker
+select pg_temp.assert_raises('manager: ARCHIVED category rejects a new entry',
+  $q$ insert into finance.entries (kind, category, amount, entry_date, note)
+      values ('expense','rls_archived', 5, current_date, 'rls-test cat') $q$, 'בארכיון');
 select pg_temp.assert_rows('manager: sees raw pos_expenses (pos.reports)',
   $q$ select 1 from pos.pos_expenses where note = 'rls-test' $q$, 2);
 -- receipt/paid RPCs: manage may flag either kind and mark/clear paid
@@ -602,6 +649,39 @@ select pg_temp.assert_rows('owner: sees both events',
   $q$ select 1 from events.events where title like 'rls-test%' $q$, 2);
 select pg_temp.assert_rows('owner: sees the raw pos_expenses (pos.reports)',
   $q$ select 1 from pos.pos_expenses where note = 'rls-test' $q$, 2);
+
+-- 54_finance_categories: owner is the only role holding finance.categories.
+select pg_temp.assert_ok('owner: can add a category (finance.categories)',
+  $q$ insert into finance.categories (kind, key, label_he, label_ar, sort)
+      values ('expense','rls_test_cat','בדיקה','اختبار',990) $q$);
+select pg_temp.assert_ok('owner: can rename a category in both languages',
+  $q$ update finance.categories set label_he = 'בדיקה 2', label_ar = 'اختبار ٢'
+      where kind = 'expense' and key = 'rls_test_cat' $q$);
+select pg_temp.assert_ok('owner: can archive a category',
+  $q$ update finance.categories set active = false
+      where kind = 'expense' and key = 'rls_test_cat' $q$);
+-- module ownership is declared by the module in SQL, never from the admin UI —
+-- enforced by a COLUMN grant, so even the owner is refused
+select pg_temp.assert_denied('owner: cannot claim module ownership (column grant)',
+  $q$ update finance.categories set owned_by_module = 'pos'
+      where kind = 'expense' and key = 'rls_test_cat' $q$);
+select pg_temp.assert_denied('owner: cannot re-key a category (column grant)',
+  $q$ update finance.categories set key = 'rls_test_renamed'
+      where kind = 'expense' and key = 'rls_test_cat' $q$);
+select pg_temp.assert_ok('owner: can delete an UNUSED category',
+  $q$ delete from finance.categories where kind = 'expense' and key = 'rls_test_cat' $q$);
+-- archive-not-delete is enforced by the FK, not merely by the UI
+select pg_temp.assert_fk_denied('owner: cannot delete a category history references',
+  $q$ delete from finance.categories where kind = 'income' and key = 'other' $q$);
+-- §7.4 holds for the owner too: no role bypasses the one-writer rule
+select pg_temp.assert_raises('owner: MODULE-OWNED category rejects a manual entry (no owner bypass)',
+  $q$ insert into finance.entries (kind, category, amount, entry_date, note)
+      values ('income','pos', 5, current_date, 'rls-test cat') $q$, 'נרשמת אוטומטית');
+select pg_temp.assert_rows('finance.categories is granted to owner ONLY',
+  $q$ select 1 from core.role_permissions rp
+      join core.roles r on r.id = rp.role_id
+      join core.permissions p on p.id = rp.permission_id
+      where p.key = 'finance.categories' and r.key <> 'owner' $q$, 0);
 
 -- =====================================================================
 --  USER LIFECYCLE — delete & deactivate (plans/users-delete-deactivate.md)
