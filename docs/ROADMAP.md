@@ -88,21 +88,30 @@ bilingual is ever a retrofit.*
   - [ ] **Finance books integrity** (kickoff 2026-07-31, Or's brief) —
         [plans/finance-books-integrity.md](plans/finance-books-integrity.md): four PRs,
         A → B → C → D.
-        - [ ] **PR A** categories as data — owner-editable `finance.categories`
-              (`54_finance_categories.sql`) replacing the twice-declared `CHECK` + the
+        - [x] **PR A** categories as data *(done 2026-08-03, commit 5f66a26; gate
+              fully run — /simplify 18 fixes incl. a supersession hazard,
+              /security-review clean, /code-review high 5 findings all fixed)* — owner-editable `finance.categories`
+              (`54_finance_categories.sql`) replacing the thrice-declared `CHECK` + the
               client mirror; constrains `finance.expected.category` (free text today);
               seeds the missing real categories (rent, utilities, insurance, taxes,
               payment fees, event costs, donations);
               `owned_by_module` becomes the single source of the derived-only rule;
               new owner-only `finance.categories` permission
-        - [ ] **PR B** reconciliation — `finance.reconciliation()` over three checks
-              (POS day never posted · POS recompute mismatch · overdue expectations),
-              live-computed with a one-click fix per item; launcher badges on the finance
-              **and** POS tiles, in-module banner, dedicated tab. Directly targets the
-              failure the parity trial found by hand (first week of July never posted)
-        - [ ] **PR C** owner override — owner-only correction entries against any row
-              incl. module-derived, + a POS day **pin** so auto-re-post can't overwrite
-              them. §7.4 immutability preserved: the override is additive, never an edit
+        - [x] **PR B** reconciliation — `finance.reconciliation()` over four checks
+              (POS day never posted · POS recompute mismatch · overdue expectations ·
+              pinned days, added by PR C), live-computed with a one-click fix per item;
+              launcher badges on the finance **and** POS tiles, in-module banner, dedicated
+              tab. Directly targets the failure the parity trial found by hand (first week
+              of July never posted). Set-based after a measured 718ms → ~4ms rewrite
+        - [x] **PR C** owner override — owner-only correction entries against any row
+              incl. module-derived (`56_finance_override.sql`, new `finance.override` perm);
+              §7.4 immutability preserved: the override is additive, never an edit. The POS day
+              **pin** ships as a *separate explicit* action, not as an implicit companion to a
+              correction — measured during the build: an additive correction already survives
+              the auto re-post untouched, while a pin freezes the whole day and would silently
+              swallow every cost entered afterwards (deviation recorded in the plan). Pinned
+              days are reported by reconciliation as `pinned`, escalating from `low` to
+              `medium` once money starts piling up behind the freeze
         - [ ] **PR D** transfers — `finance.transfers` as its own table (cash↔bank),
               deliberately outside every income/expense total
         - Out of scope (kickoff): signed-quote-vs-booked check, partial payments (stays

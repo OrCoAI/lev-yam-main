@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { useI18n, type TKey } from '../lib/i18n'
+import { useDriftCount } from '../modules/finance/reconciliation'
 import { core } from '../lib/supabase'
 import type { ModuleRow } from '../types'
 
@@ -16,19 +17,41 @@ interface ModuleMeta {
   href?: string
   icon?: string
   descKey?: TKey
+  /** Which live counter (if any) badges this tile. ARCHITECTURE.md: nothing
+   *  about the shell may assume which modules exist — so the module keys live
+   *  here, in the per-module registration record, and never in the tile JSX.
+   *  A module wanting a badge adds a row; the render tree stays generic. */
+  badge?: BadgeSource
+  badgeTitleKey?: TKey
 }
+
+// The counters a tile may display. One entry per source, not per module — the
+// books can drift in finance while the usual fix (close the day) is a POS
+// action, so a single count legitimately badges two tiles.
+type BadgeSource = 'finance-drift'
 
 const MODULE_META: Record<string, ModuleMeta> = {
   users: { to: '/users', icon: '/app/brand/heart.png', descKey: 'launcher.desc.users' },
   // POS is a platform module (parity trial); pos.html stays live at /pos.html until cut-over
-  pos: { to: '/pos', icon: '/app/brand/palm-orange.png', descKey: 'launcher.desc.pos' },
-  finance: { to: '/finance', icon: '/app/brand/sun-orange.png', descKey: 'launcher.desc.finance' },
+  pos: {
+    to: '/pos', icon: '/app/brand/palm-orange.png', descKey: 'launcher.desc.pos',
+    badge: 'finance-drift', badgeTitleKey: 'launcher.driftTitle',
+  },
+  finance: {
+    to: '/finance', icon: '/app/brand/sun-orange.png', descKey: 'launcher.desc.finance',
+    badge: 'finance-drift', badgeTitleKey: 'launcher.driftTitle',
+  },
   quotes: { to: '/quotes', icon: '/app/brand/house-blue.png', descKey: 'launcher.desc.quotes' },
 }
 
 export default function Launcher() {
   const { t } = useI18n()
   const { preview, has } = useAuth()
+  // Resolved once, keyed by BadgeSource — the tile only asks "what is my
+  // badge's count", never "am I the finance tile".
+  const badgeCounts: Record<BadgeSource, number> = {
+    'finance-drift': useDriftCount(has('finance.view')),
+  }
   const [modules, setModules] = useState<ModuleRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -82,6 +105,14 @@ export default function Launcher() {
                 )}
               </span>
               <span className="tile-label">{m.label}</span>
+              {meta.badge && badgeCounts[meta.badge] > 0 && (
+                <span
+                  className="tile-badge"
+                  title={meta.badgeTitleKey ? t(meta.badgeTitleKey) : undefined}
+                >
+                  {badgeCounts[meta.badge]}
+                </span>
+              )}
               {meta.descKey && <span className="tile-desc">{t(meta.descKey)}</span>}
               <span className="tile-go">{hasDest ? t('launcher.open') : t('launcher.soon')}</span>
             </>

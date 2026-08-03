@@ -1,7 +1,8 @@
 # Finance — module log
 
 Live at `/app/finance`. Schema: `supabase/schema/20_finance.sql`,
-`21_finance_spine.sql`, `54_finance_categories.sql` (categories-as-data).
+`21_finance_spine.sql`, `54_finance_categories.sql` (categories-as-data),
+`55_finance_reconciliation.sql` (drift detection).
 UI: `app-src/src/modules/finance/`.
 Background: [plans/finance-ux-pass.md](../plans/finance-ux-pass.md),
 [plans/cross-module-foundation.md](../plans/cross-module-foundation.md).
@@ -36,4 +37,12 @@ touching schema, permissions, or the events/finance spine graduates to a `docs/p
 
 ## Done
 
+- **2026-08-03 — owner override (initiative PR C).** `finance.post_correction()` lets the owner
+  set any module-posted number to the right total by posting an additive correction; the
+  original stays untouched (§7.4 holds). POS day **pins** ship alongside as a separate explicit
+  freeze. Measured during the build and worth remembering: an additive correction already
+  survives the auto re-post — `post_day()` totals a leg from its own `pos` rows and cannot see
+  an `override` row — so correcting deliberately does **not** pin, because a pin freezes the
+  whole day and swallows every cost entered afterwards. See
+  [plans/finance-books-integrity.md](../plans/finance-books-integrity.md).
 - (move closed items here with date + one-line note)

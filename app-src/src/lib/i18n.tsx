@@ -58,6 +58,7 @@ const dict = {
   'launcher.sub': { he: 'בחרו מודול כדי להתחיל', ar: 'اختاروا وحدة للبدء' },
   'launcher.open': { he: 'פתח ←', ar: 'افتح ←' },
   'launcher.soon': { he: 'בקרוב', ar: 'قريبًا' },
+  'launcher.driftTitle': { he: 'הספרים לא מעודכנים — לחצו לפרטים', ar: 'الدفاتر غير محدّثة — اضغطوا للتفاصيل' },
   // one-line tile descriptions — every launcher button says what's inside it
   'launcher.desc.users': { he: 'משתמשים, תפקידים והרשאות', ar: 'مستخدمون، أدوار وصلاحيات' },
   'launcher.desc.finance': { he: 'תנועות, צפי ודוח כספי', ar: 'حركات، متوقّع وتقرير مالي' },

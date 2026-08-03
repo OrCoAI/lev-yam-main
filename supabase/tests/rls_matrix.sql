@@ -430,6 +430,31 @@ select pg_temp.assert_raises('staff: cannot read day posting status (needs pos.r
   $q$ select pos.day_status(current_date) $q$, 'pos.reports');
 select pg_temp.assert_denied('staff: pos.day_is_posted is internal — not callable',
   $q$ select pos.day_is_posted(current_date) $q$);
+-- 55_finance_reconciliation: the drift report is definer-rights (it must read POS
+-- tables a finance reader may not see), so its ONLY gate is the explicit
+-- permission check inside it — assert it actually fires.
+select pg_temp.assert_raises('staff: finance.reconciliation denied (no finance.view)',
+  $q$ select finance.reconciliation() $q$, 'permission denied');
+select pg_temp.assert_raises('staff: finance.reconciliation_count denied (no finance.view)',
+  $q$ select finance.reconciliation_count() $q$, 'permission denied');
+select pg_temp.assert_denied('staff: pos.day_expected_legs is internal — not callable',
+  $q$ select * from pos.day_expected_legs(current_date) $q$);
+-- 56_finance_override (PR C): the owner override is the ONE key that can move a
+-- module-posted number, so every entry point to it is asserted shut here.
+select pg_temp.assert_raises('staff: finance.post_correction denied (no finance.override)',
+  $q$ select finance.post_correction(
+        (select id from finance.entries limit 1), 1, 'x') $q$, 'permission denied');
+select pg_temp.assert_raises('staff: finance.correction_preview denied (no finance.override)',
+  $q$ select finance.correction_preview((select id from finance.entries limit 1)) $q$,
+  'permission denied');
+select pg_temp.assert_denied('staff: finance.correction_target is internal — not callable',
+  $q$ select * from finance.correction_target((select id from finance.entries limit 1)) $q$);
+select pg_temp.assert_denied('staff: pos.day_is_pinned is internal — not callable',
+  $q$ select pos.day_is_pinned(current_date) $q$);
+select pg_temp.assert_rows('staff: pos.day_pins hidden (no pos.reports, no finance.view)',
+  $q$ select 1 from pos.day_pins $q$, 0);
+select pg_temp.assert_denied('staff: cannot freeze a day',
+  $q$ insert into pos.day_pins (business_date, reason) values ('2099-09-09','x') $q$);
 select pg_temp.assert_rows('staff: finance.entries hidden',
   $q$ select 1 from finance.entries where note like 'rls-test%' $q$, 0);
 select pg_temp.assert_rows('staff: finance.expected hidden',
@@ -503,6 +528,32 @@ select pg_temp.assert_fk_denied('manager: expected row with a direction/category
 select pg_temp.assert_raises('manager: ARCHIVED category rejects a new entry',
   $q$ insert into finance.entries (kind, category, amount, entry_date, note)
       values ('expense','rls_archived', 5, current_date, 'rls-test cat') $q$, 'בארכיון');
+-- manager holds finance.view → the report runs and is well-formed
+select pg_temp.assert_rows('manager: finance.reconciliation returns a report',
+  $q$ select 1 where (finance.reconciliation() ? 'items')
+                 and (finance.reconciliation() ? 'count') $q$, 1);
+-- count is the ACTIONABLE count, not items length: pinned days (severity 'low')
+-- are listed but must never light a badge. Assert the contract that actually
+-- holds, or a pin would make this pass only by luck.
+select pg_temp.assert_rows('manager: reconciliation_count = the non-low item count',
+  $q$ select 1 where finance.reconciliation_count()
+                     = (select count(*)
+                        from jsonb_array_elements(finance.reconciliation()->'items') x
+                        where x->>'severity' <> 'low') $q$, 1);
+select pg_temp.assert_rows('manager: reconciliation.count agrees with reconciliation_count()',
+  $q$ select 1 where (finance.reconciliation()->>'count')::int
+                     = finance.reconciliation_count() $q$, 1);
+-- manager has pos.reports (so a pin is visible to them) but NOT finance.override
+select pg_temp.assert_ok('manager: CAN read pos.day_pins (pos.reports)',
+  $q$ select 1 from pos.day_pins $q$);
+select pg_temp.assert_denied('manager: cannot freeze a day (no finance.override)',
+  $q$ insert into pos.day_pins (business_date, reason) values ('2099-09-09','x') $q$);
+select pg_temp.assert_raises('manager: cannot post an owner correction',
+  $q$ select finance.post_correction(
+        (select id from finance.entries where source_module = 'pos' limit 1), 1, 'x') $q$,
+  'permission denied');
+select pg_temp.assert_denied('manager: pos.day_expected_legs is internal — not callable',
+  $q$ select * from pos.day_expected_legs(current_date) $q$);
 select pg_temp.assert_rows('manager: sees raw pos_expenses (pos.reports)',
   $q$ select 1 from pos.pos_expenses where note = 'rls-test' $q$, 2);
 -- receipt/paid RPCs: manage may flag either kind and mark/clear paid
@@ -671,6 +722,19 @@ select pg_temp.assert_denied('owner: cannot re-key a category (column grant)',
 select pg_temp.assert_ok('owner: can delete an UNUSED category',
   $q$ delete from finance.categories where kind = 'expense' and key = 'rls_test_cat' $q$);
 -- archive-not-delete is enforced by the FK, not merely by the UI
+-- 56_finance_override (PR C) — the owner really does get the last word, and it
+-- lands as an ADDITIVE row: the module posting it corrects stays untouched.
+select pg_temp.assert_ok('owner: can freeze a day',
+  $q$ insert into pos.day_pins (business_date, reason)
+      values ('2099-09-09', 'rls-test freeze') $q$);
+-- reason is editable; pinned_by is NOT — a client that could write it could
+-- forge who froze a day, which is the whole audit value of the row
+select pg_temp.assert_ok('owner: can restate the freeze reason',
+  $q$ update pos.day_pins set reason = 'rls-test freeze 2' where business_date = '2099-09-09' $q$);
+select pg_temp.assert_denied('owner: cannot forge who froze a day (column grant)',
+  $q$ update pos.day_pins set pinned_by = null where business_date = '2099-09-09' $q$);
+select pg_temp.assert_ok('owner: can unfreeze a day',
+  $q$ delete from pos.day_pins where business_date = '2099-09-09' $q$);
 select pg_temp.assert_fk_denied('owner: cannot delete a category history references',
   $q$ delete from finance.categories where kind = 'income' and key = 'other' $q$);
 -- §7.4 holds for the owner too: no role bypasses the one-writer rule
@@ -816,6 +880,146 @@ select pg_temp.assert_num('legacy-day: card revenue PRESERVED after auto-repost'
   (select coalesce(sum(amount), 0) from finance.entries where source_ref like 'pos:2099-03-03:card%'), 130);
 select pg_temp.assert_num('legacy-day: the new expense DID post to food',
   (select coalesce(sum(amount), 0) from finance.entries where source_ref like 'pos:2099-03-03:food%'), 40);
+
+-- ---------------------------------------------------------------------
+--  55_finance_reconciliation: the drift report must actually DETECT, not just
+--  return well-formed JSON. A day with real money and no posting is the exact
+--  production failure this initiative exists for (July 2026, found by hand).
+-- ---------------------------------------------------------------------
+-- Reads finance.reconciliation_items() (the internal row source) rather than
+-- finance.reconciliation(): this phase runs as postgres, LATE in the
+-- transaction, after the user-lifecycle section has stripped role grants — so a
+-- has_permission-gated wrapper would fail for reasons unrelated to detection.
+-- The gate itself is asserted in the staff/manager phases above.
+select pg_temp.seed_actor();
+insert into pos.pos_bills (id, table_num, status, paid_at, grand_total, cash_paid, card_paid, tip)
+values ('rls-unposted-day', 994, 'paid', '2099-05-05 12:00+02', 500, 200, 300, 0);
+select pg_temp.assert_rows('recon: an UNPOSTED day with money is reported',
+  $q$ select 1 from finance.reconciliation_items('2099-01-01') r
+      where r.item->>'type' = 'unposted_day' and r.item->>'business_date' = '2099-05-05' $q$, 1);
+select pg_temp.assert_num('recon: it reports the day''s full revenue',
+  (select (r.item->>'revenue')::numeric from finance.reconciliation_items('2099-01-01') r
+   where r.item->>'type' = 'unposted_day' and r.item->>'business_date' = '2099-05-05'), 500);
+-- posting it must make the item disappear — the alert clears because the
+-- problem is gone, never because someone dismissed it
+select pos.post_day('2099-05-05'::date);
+select pg_temp.assert_rows('recon: posting the day clears the item',
+  $q$ select 1 from finance.reconciliation_items('2099-01-01') r
+      where r.item->>'type' = 'unposted_day' and r.item->>'business_date' = '2099-05-05' $q$, 0);
+-- and a silent money change on a booked day must surface as recompute drift
+select set_config('levyam.suppress_repost', 'on', true);
+update pos.pos_bills set grand_total = 700 where id = 'rls-unposted-day';
+select set_config('levyam.suppress_repost', '', true);
+select pg_temp.assert_rows('recon: a silently-changed booked day is reported as drift',
+  $q$ select 1 from finance.reconciliation_items('2099-01-01') r
+      where r.item->>'type' = 'recompute_drift' and r.item->>'business_date' = '2099-05-05' $q$, 1);
+select pos.post_day('2099-05-05'::date);
+select pg_temp.assert_rows('recon: re-posting clears the drift',
+  $q$ select 1 from finance.reconciliation_items('2099-01-01') r
+      where r.item->>'business_date' = '2099-05-05' $q$, 0);
+
+-- ---------------------------------------------------------------------
+--  56_finance_override (PR C) — the owner correction and the day pin.
+--
+--  The two behaviours below are the reason this PR's design differs from the
+--  plan, so they are pinned as assertions rather than left to a comment:
+--    1. an ADDITIVE correction survives a re-post on its own. post_day totals
+--       a leg from source_module = 'pos' rows only, so it cannot see, and
+--       therefore cannot undo, an override row. No pin is needed to protect it.
+--    2. a pin freezes the WHOLE day — which is why correcting must NOT pin
+--       automatically: every cost entered afterwards would silently never land.
+-- ---------------------------------------------------------------------
+insert into pos.pos_bills (id, table_num, status, paid_at, grand_total, cash_paid, card_paid, tip)
+values ('rls-override-day', 993, 'paid', '2099-06-06 12:00+02', 400, 400, 0, 0);
+select pos.post_day('2099-06-06'::date);
+select pg_temp.assert_num('override: day booked at its computed cash',
+  (select coalesce(sum(amount), 0) from finance.entries
+   where source_ref like 'pos:2099-06-06:cash%'), 400);
+
+-- post_correction is permission-gated, and this phase runs after the
+-- user-lifecycle section stripped role grants — user ...0005 is the one owner
+-- left standing, so act as them for the gated call.
+select set_config('request.jwt.claims',
+  json_build_object('sub', 'aaaaaaaa-0000-0000-0000-000000000005', 'role', 'authenticated')::text,
+  true);
+-- the owner says the drawer really held 350
+select finance.post_correction(
+  (select id from finance.entries where source_ref = 'pos:2099-06-06:cash'), 350, 'ספירת קופה');
+select pg_temp.assert_num('override: the correction moved the leg to the stated total',
+  (select coalesce(sum(amount), 0) from finance.entries
+   where source_ref like '%pos:2099-06-06:cash%'), 350);
+select pg_temp.assert_num('override: the ORIGINAL posting is untouched (§7.4 holds)',
+  (select amount from finance.entries where source_ref = 'pos:2099-06-06:cash'), 400);
+select pg_temp.assert_rows('override: correcting does NOT freeze the day',
+  $q$ select 1 from pos.day_pins where business_date = '2099-06-06' $q$, 0);
+select pg_temp.seed_actor();  -- back to the default actor for the rest
+
+-- (1) a re-post cannot undo it, and new money still lands
+insert into pos.pos_expenses (business_date, kind, amount, note)
+values ('2099-06-06', 'food', 60, 'rls-test');
+select pg_temp.assert_num('override: the correction SURVIVES the auto re-post',
+  (select coalesce(sum(amount), 0) from finance.entries
+   where source_ref like '%pos:2099-06-06:cash%'), 350);
+select pg_temp.assert_num('override: later costs still reach the books',
+  (select coalesce(sum(amount), 0) from finance.entries
+   where source_ref like 'pos:2099-06-06:food%'), 60);
+
+-- (2) an explicit pin freezes the day: drift is reported as 'pinned', the
+--     manual post is refused outright, and the trigger path skips silently
+insert into pos.day_pins (business_date, reason) values ('2099-06-06', 'rls-test pin');
+select pg_temp.assert_rows('pin: a frozen day is reported as pinned, never as drift',
+  $q$ select 1 from finance.reconciliation_items('2099-01-01') r
+      where r.item->>'business_date' = '2099-06-06'
+        and r.item->>'type' = 'recompute_drift' $q$, 0);
+select pg_temp.assert_rows('pin: and it IS listed, so the freeze stays visible',
+  $q$ select 1 from finance.reconciliation_items('2099-01-01') r
+      where r.item->>'business_date' = '2099-06-06' and r.item->>'type' = 'pinned' $q$, 1);
+select pg_temp.assert_rows('pin: a clean frozen day is severity low (never badges)',
+  $q$ select 1 from finance.reconciliation_items('2099-01-01') r
+      where r.item->>'business_date' = '2099-06-06' and r.severity = 'low' $q$, 1);
+select pg_temp.assert_raises('pin: pos.post_day refuses a frozen day',
+  $q$ select pos.post_day('2099-06-06'::date) $q$, 'נעול');
+-- money entered behind the freeze does NOT reach the books, and the item
+-- escalates to 'medium' so the badge lights rather than hiding it
+insert into pos.pos_expenses (business_date, kind, amount, note)
+values ('2099-06-06', 'labor', 90, 'rls-test');
+select pg_temp.assert_num('pin: the trigger skipped silently — labor never posted',
+  (select coalesce(sum(amount), 0) from finance.entries
+   where source_ref like 'pos:2099-06-06:labor%'), 0);
+select pg_temp.assert_rows('pin: money piling up behind the freeze escalates to medium',
+  $q$ select 1 from finance.reconciliation_items('2099-01-01') r
+      where r.item->>'business_date' = '2099-06-06' and r.item->>'type' = 'pinned'
+        and r.severity = 'medium' $q$, 1);
+-- A day pinned BEFORE it was ever posted is the nastier case: reported as
+-- 'unposted_day' it would offer a post button that post_day() refuses, so the
+-- item could never clear and both badges would stay lit forever. It must be
+-- reported as pinned — and at 'medium', because its whole takings sit outside
+-- the books, which is precisely money piling up behind a freeze.
+insert into pos.pos_bills (id, table_num, status, paid_at, grand_total, cash_paid, card_paid, tip)
+values ('rls-pinned-unposted', 992, 'paid', '2099-07-07 12:00+02', 250, 250, 0, 0);
+insert into pos.day_pins (business_date, reason) values ('2099-07-07', 'rls-test never posted');
+select pg_temp.assert_rows('pin: a never-posted frozen day is NOT reported as unposted_day',
+  $q$ select 1 from finance.reconciliation_items('2099-01-01') r
+      where r.item->>'business_date' = '2099-07-07'
+        and r.item->>'type' = 'unposted_day' $q$, 0);
+select pg_temp.assert_rows('pin: it is reported as pinned at medium (its takings are outside)',
+  $q$ select 1 from finance.reconciliation_items('2099-01-01') r
+      where r.item->>'business_date' = '2099-07-07' and r.item->>'type' = 'pinned'
+        and r.severity = 'medium' $q$, 1);
+select pg_temp.assert_num('pin: and it reports the full withheld amount',
+  (select (r.item->>'total_delta')::numeric from finance.reconciliation_items('2099-01-01') r
+   where r.item->>'business_date' = '2099-07-07'), 250);
+delete from pos.day_pins where business_date = '2099-07-07';
+
+-- unfreezing lets the day resume, and the correction still stands
+delete from pos.day_pins where business_date = '2099-06-06';
+select pos.post_day('2099-06-06'::date);
+select pg_temp.assert_num('pin: unfreezing lets the withheld labor post',
+  (select coalesce(sum(amount), 0) from finance.entries
+   where source_ref like 'pos:2099-06-06:labor%'), 90);
+select pg_temp.assert_num('pin: and the owner correction is still standing',
+  (select coalesce(sum(amount), 0) from finance.entries
+   where source_ref like '%pos:2099-06-06:cash%'), 350);
 
 -- ---------------------------------------------------------------------
 --  pos_bills auto-repost (48). Because post_day now reads revenue from

@@ -2,7 +2,8 @@
 
 **Kickoff:** 2026-07-31 (Or's brief: "categories must be fixed", "notification if the books
 are not aligned with the rest of the modules", "ability to override everything by the owner").
-**Branch:** `finance-books-integrity`. **Status:** aligned, not started.
+**Branch:** `finance-books-integrity`. **Status:** PR A committed (2026-08-03, `5f66a26`);
+PRs B and C code-complete and verified locally, pending review + commit; PR D not started.
 
 Background: [cross-module-foundation.md](cross-module-foundation.md) §3 (the money spine),
 [finance-ux-pass.md](finance-ux-pass.md), [pos-day-lifecycle.md](pos-day-lifecycle.md)
@@ -101,7 +102,7 @@ today it either goes unrecorded or distorts both totals.
 | Drift checks | POS day never posted · POS recompute mismatch · overdue expectations |
 | Alert surfaces | Finance tile badge · POS tile badge · in-module banner · dedicated tab |
 | Alert behavior | Live-computed, never dismissible; each item carries its one-click fix |
-| Override model | Correction entry + day pin. Derived rows stay immutable — §7.4 preserved |
+| Override model | Correction entry; derived rows stay immutable — §7.4 preserved. The day pin ships too but is a **separate, explicit** action — see the PR C deviation below (revised 2026-08-03 on measured behaviour) |
 | Tips | Stay out of the books |
 | `makrer` | Kept ACTIVE with a clearer label (מקרר ושתייה / برّاد ومشروبات). Revised from "archive it" at kickoff once the existing HE/AR labels showed it means *fridge* — i.e. live drinks income, not a legacy tender. Slug deliberately not renamed: history references it |
 | Transfers | Own table, **not** a third `kind` on `finance.entries` |
@@ -110,10 +111,24 @@ today it either goes unrecorded or distorts both totals.
 **Why the override is additive, not an edit.** Beyond invariant §7.4, there is a mechanical
 reason: POS re-posts a booked day automatically on any change to its bills, payments or
 expenses ([48_pos_day_lifecycle.sql](../../supabase/schema/48_pos_day_lifecycle.sql)). A direct
-hand-edit of a POS revenue row would be silently recomputed away by the next expense edit. So
-"owner can edit anything" without a pin is a feature that quietly does not work. Correction +
-pin gives the same practical power — any number ends up whatever the owner says — while the
-original posting stays visible and auditable.
+hand-edit of a POS revenue row would be silently recomputed away by the next expense edit. The
+additive correction has no such problem — and that turns out to matter more than expected; see
+the deviation recorded under PR C.
+
+> **Deviation, recorded 2026-08-03 (PR C build).** The kickoff decision above paired every
+> correction with an automatic day pin, on the premise that the auto re-post would otherwise
+> overwrite it. **That premise is false**, and the difference was measured, not argued:
+> `pos.post_day()` totals a leg from `source_module = 'pos'` rows only, so an `override` row is
+> invisible to it. A day corrected to ₪150 and then given another ₪100 of takings re-posts to
+> ₪300 pos + (−50) override = **₪250** — the right answer, since the correction records a known
+> discrepancy rather than a permanent ceiling.
+>
+> Auto-pinning was therefore not merely unnecessary but **harmful**: a pin freezes the *whole*
+> day, so the first test of it silently swallowed ₪80 of real food cost entered afterwards.
+> PR C ships the correction with **no** implicit pin. Pinning remains as an explicit owner
+> action for when freezing is the actual intent (a closed period, a disputed day), and the
+> reconciliation list keeps every pin visible so a freeze cannot decay into invisible drift.
+> Both behaviours are pinned as assertions in `rls_matrix.sql` rather than left to comments.
 
 **Why transfers get their own table.** A third `kind` on `finance.entries` would put a
 non-income, non-expense row inside every existing sum, filter and report branch — `report()`,
@@ -175,18 +190,40 @@ finance.categories
   3. **Overdue expectation** — `finance.expected` still `open` with `due_date < current_date`.
 - `finance.reconciliation_count()` → int, the cheap version the launcher badges call.
 
-### `56_finance_override.sql` (PR C)
+### `56_finance_override.sql` (PR C) — **shipped 2026-08-03**
 
-- `finance.post_correction(...)` — owner-only, posts an adjustment entry with
-  `source_module = 'override'` and a `source_ref` referencing the corrected entry or day. The
-  original posting is never touched.
-- `pos.day_pins (business_date pk, pinned_by, pinned_at, reason)`; `pos.repost_if_posted()`
-  skips a pinned day. Note this file touches **two schemas** — the pin table belongs next to
-  the re-post logic that honours it (`pos`), while the permission gating it is finance's.
-  RLS on `day_pins`: read with `pos.reports`-level access, write with `finance.override`.
-- New owner-only permission `finance.override`.
-- A pinned day is deliberately a **visible** state, not a silent one: PR B's check 2 reports it
-  as *pinned* rather than hiding it, so a day frozen months ago never becomes invisible drift.
+- `finance.post_correction(p_entry, p_amount, p_reason)` — owner-only. The owner states the
+  correct **total**; the server computes the delta from what the books actually hold and posts
+  it as an additive row with `source_module = 'override'` and
+  `source_ref = 'override:<target>:c<n>'`. The original posting is never touched.
+- **The target is resolved, not assumed.** Correcting a POS leg means the whole leg — its
+  original posting, every `:r<n>` re-post correction since, and every override already applied
+  — because correcting only the row the owner happened to click would be undone by the next
+  re-post. Correcting a correction resolves back to the original target rather than nesting.
+  `finance.correction_target()` owns this and is internal; `correction_preview()` is the gated
+  read the form needs (the client must never compute a leg total it has not loaded).
+- A reason is **required** by the DB, not just the form: an override with no stated reason is an
+  unauditable number, and staying explainable is the entire basis for allowing it.
+- `pos.day_pins (business_date pk, reason, pinned_by, pinned_at)` — an explicit freeze, **not**
+  implied by a correction (see the deviation above). Lives in
+  [48_pos_day_lifecycle.sql](../../supabase/schema/48_pos_day_lifecycle.sql), next to the
+  re-post logic that honours it and — decisively — *before* `55`, which reads it: a table
+  created in a later-numbered file could not be referenced there on a fresh install.
+- The refusal lives in `pos.post_day()` rather than `pos.close_day()`, so **every** caller
+  inherits it. `pos.repost_if_posted()` checks the pin first and skips **silently**, because it
+  runs inside a trigger on someone else's expense edit and must not abort an unrelated write.
+- New owner-only permission `finance.override`; `pos.day_pins` RLS reads with
+  `pos.reports` **or** `finance.view` (a pin is never a secret) and writes with
+  `finance.override`. `pinned_by`/`pinned_at` are not client-writable — a client that could
+  write them could forge who froze a day.
+- **PR B's check 2 amended, as required:** pinned days are excluded from `recompute_drift` and
+  reported by a new check 4 as `type = 'pinned'`. Severity is **not** constant — `low` while the
+  freeze costs nothing (so the badge never sits permanently lit on a deliberate state),
+  escalating to `medium` the moment money starts piling up behind it. `reconciliation_count()`
+  counts non-`low` items only, and the UI's "all clear" now keys off `items.length`, never
+  `count`.
+- Also retired here: `47_pos_payments.sql`'s stale copy of `pos.post_day` (superseded by 55).
+  Left in place, a re-run of 47 would have restored a `post_day` with no pin check at all.
 
 ### `57_finance_transfers.sql` (PR D)
 
@@ -216,6 +253,25 @@ executable by `PUBLIC` (`core` role self-grant escalation found by the gate on
   behind the posting GUC), so it checks `finance.override` on entry and **`revoke execute from
   public`** explicitly — revoking from `authenticated` alone does not remove the `PUBLIC` grant.
 - Same `revoke ... from public` treatment for every new function in PRs A–D.
+
+**Deviations taken in PR B, recorded here because this section is the contract:**
+- `finance.reconciliation()` / `reconciliation_count()` are **`SECURITY DEFINER` with an
+  explicit `core.has_permission('finance.view')` check**, not invoker-rights as written
+  above. Invoker rights are right for `report()`/`event_pnl()`, which read only
+  `finance.entries` — every `finance.view` holder can already see those rows. These two must
+  read `pos.pos_payments` / `pos_bills` / `pos_expenses` to know whether a day's money exists
+  at all, and under invoker rights a finance reader without POS permissions would see zero POS
+  rows and be told the books are perfectly aligned — the worst possible answer from a function
+  whose job is finding missing money.
+- `pos.day_expected_legs()` took the third option: **definer with NO permission check, revoked
+  from every client role** (the `pos.post_day` posture). It has two callers that cannot share a
+  gate — the auto re-post trigger, which runs as whichever staff member edited an expense, and
+  the reconciliation report, which runs for a finance reader who may hold no POS permission at
+  all. The gate therefore lives on the public entry points, and `rls_matrix` asserts the
+  function is unreachable from `staff` and `manager` alike.
+- `finance.reconciliation_items()` (added during PR B's `/simplify`) is internal for the same
+  reason: it is the shared row source both public entry points read, so the count can be a real
+  `count(*)` instead of building a payload and discarding it.
 
 ## 5. Permissions
 
@@ -296,8 +352,12 @@ per-initiative categories. Noted here so it is a known extension point rather th
   row pointing at an expense category is rejected. Declarative, no trigger. One constraint
   discovered: Postgres rejects `ON UPDATE CASCADE` on an FK containing a generated column, so
   neither taxonomy FK cascades — safe, because `key` is not client-updatable (column grant).
-- Does the reconciliation banner belong in `FinanceModule` only, or also on the POS day view
-  where the unposted-day fix actually happens? (PR B)
+- ~~Does the reconciliation banner belong in `FinanceModule` only, or also on the POS day view
+  where the unposted-day fix actually happens?~~ **Answered (PR B):** banner in `FinanceModule`
+  only, plus a count badge on **both** the finance and POS launcher tiles — the books drift in
+  finance but the usual fix is a POS action, so the warning must be visible from whichever tile
+  you were reaching for. No POS day-view surface: each drift row already deep-links into
+  `/pos?report=<date>` via the existing `posReportHref()` contract.
 - Transfers UI: own tab, or a kind-filter chip inside the entries list? (PR D)
 
 ## 10. Close-out

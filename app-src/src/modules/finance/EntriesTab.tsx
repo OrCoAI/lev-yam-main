@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { finance } from '../../lib/supabase'
+import { useCan, PERM } from '../../lib/permissions'
 import type { FinanceCategory, FinanceEntry, FinanceKind, FinancePaymentMethod } from '../../types'
 import { PAYMENT_METHODS, pickable, useCategories, useCategoryName } from './categories'
+import CorrectionForm from './CorrectionForm'
 import { pickDbLabel, useI18n } from '../../lib/i18n'
 import { useRowDisclosure } from '../../lib/useRowDisclosure'
 import DateField from './DateField'
@@ -35,6 +37,13 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [editing, setEditing] = useState<FinanceEntry | null>(null)
+  const canOverride = useCan(PERM.financeOverride)
+  // the entry whose total the owner is correcting (never an edit — see
+  // CorrectionForm); independent of `editing`, which is the manual-row form
+  const [correcting, setCorrecting] = useState<string | null>(null)
+  // the actions column exists for either capability: manage edits manual rows,
+  // override corrects module-posted ones
+  const showActions = canManage || canOverride
   // remounts EntryForm after a successful insert — the fields must not keep
   // their just-saved values (a second submit would duplicate the entry)
   const [formEpoch, setFormEpoch] = useState(0)
@@ -145,6 +154,17 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
         />
       )}
 
+      {correcting && (
+        <CorrectionForm
+          entryId={correcting}
+          onCancel={() => setCorrecting(null)}
+          onDone={() => {
+            setCorrecting(null)
+            void load()
+          }}
+        />
+      )}
+
       <KindFilterChips value={kindFilter} onChange={setKindFilter} />
 
       {error && <ErrorNotice error={error} />}
@@ -162,7 +182,7 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
                 <th>{ft.colPayment}</th>
                 <th>{ft.colAmount}</th>
                 <th>{ft.colNote}</th>
-                {canManage && <th></th>}
+                {showActions && <th></th>}
               </tr>
             </thead>
             <tbody>
@@ -192,31 +212,33 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
                     <td className="rl-more muted" data-label={ft.colNote}>
                       {e.note ?? ''}
                     </td>
-                    {canManage && (
+                    {showActions && (
                       <td className="rl-actions">
-                        {/* module-posted rows are immutable (DB guard) — corrections are
-                            reversals posted by the source module, so no edit/delete here */}
+                        {/* module-posted rows are immutable (DB guard) — a correction is
+                            an additive row, never an edit, so no edit/delete here */}
                         {!e.source_module ? (
-                          <>
-                            <button
-                              className="btn-ghost btn-sm btn-icon-label"
-                              disabled={busy}
-                              onClick={() => startEdit(e)}
-                              aria-label={ft.edit}
-                            >
-                              <span aria-hidden="true">✎</span>
-                              <span className="btn-label">{ft.edit}</span>
-                            </button>
-                            <button
-                              className="btn-ghost btn-sm btn-icon-label"
-                              disabled={busy}
-                              onClick={() => remove(e.id)}
-                              aria-label={ft.delete}
-                            >
-                              <span aria-hidden="true">✕</span>
-                              <span className="btn-label">{ft.delete}</span>
-                            </button>
-                          </>
+                          canManage && (
+                            <>
+                              <button
+                                className="btn-ghost btn-sm btn-icon-label"
+                                disabled={busy}
+                                onClick={() => startEdit(e)}
+                                aria-label={ft.edit}
+                              >
+                                <span aria-hidden="true">✎</span>
+                                <span className="btn-label">{ft.edit}</span>
+                              </button>
+                              <button
+                                className="btn-ghost btn-sm btn-icon-label"
+                                disabled={busy}
+                                onClick={() => remove(e.id)}
+                                aria-label={ft.delete}
+                              >
+                                <span aria-hidden="true">✕</span>
+                                <span className="btn-label">{ft.delete}</span>
+                              </button>
+                            </>
+                          )
                         ) : (
                           <>
                             <span className="rl-lock">{ft.lockedByModule}</span>
@@ -230,6 +252,21 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
                                 <span className="btn-label">{ft.openSource}</span>
                               </Link>
                             )}
+                            {/* Only on module-posted rows: a manual row is already
+                                fully editable above, and offering two ways to
+                                change the same number invites picking the wrong
+                                one. The owner's reach is the same either way. */}
+                            {canOverride && (
+                              <button
+                                className="btn-ghost btn-sm btn-icon-label"
+                                disabled={busy}
+                                onClick={() => setCorrecting(e.id)}
+                                aria-label={ft.correct}
+                              >
+                                <span aria-hidden="true">±</span>
+                                <span className="btn-label">{ft.correct}</span>
+                              </button>
+                            )}
                           </>
                         )}
                       </td>
@@ -239,7 +276,7 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
               })}
               {entries.length === 0 && (
                 <tr>
-                  <td colSpan={canManage ? 7 : 6} className="muted">
+                  <td colSpan={showActions ? 7 : 6} className="muted">
                     {kindFilter === 'all' ? ft.noEntries : ft.noEntriesFiltered}
                   </td>
                 </tr>

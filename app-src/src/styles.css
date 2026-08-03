@@ -33,6 +33,8 @@
   --orange: #f49834;
   --orange-dark: #d97f1f;
   --sand: #fff7ea;          /* cream */
+  --warn: #e0a800;
+  --warn-tint: #fbe9e7;
   --sand-2: #fdeccf;        /* warmer cream for depth */
   --ink: #1a3340;
   --muted: #4a6571;
@@ -341,7 +343,15 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   font-size: 0.72rem; font-weight: 600; border-radius: 999px;
   background: var(--sand-2); color: var(--sea-dark); vertical-align: 1px; white-space: nowrap;
 }
-.finance-badge-warn { background: #fbe9e7; color: var(--danger); }
+.finance-badge-warn { background: var(--warn-tint); color: var(--danger); }
+/* launcher tile counter — lives with the .tile family, not with the module that
+   happens to feed it (.tile already establishes the positioning context) */
+.tile-badge {
+  position: absolute; inset-block-start: 10px; inset-inline-end: 12px;
+  min-width: 22px; padding: 1px 7px; border-radius: 999px;
+  background: var(--danger); color: #fff; font-size: 0.75rem; font-weight: 700;
+  line-height: 1.6; text-align: center;
+}
 .badge-muted { background: transparent; color: var(--muted); border: 1px solid var(--line); }
 a.finance-badge-link { text-decoration: none; }
 a.finance-badge-link:hover { text-decoration: underline; }
@@ -349,6 +359,46 @@ a.btn-ghost, a.btn-primary {
   text-decoration: none; display: inline-flex; align-items: center; justify-content: center;
 }
 .finance-fulfill { margin: 14px 0 4px; padding: 14px; border: 1px dashed var(--sea); border-radius: 12px; }
+
+/* ---------- reconciliation: badges, banner, drift list (PR B) ----------
+   The count is the alert — nothing here is dismissible, so the styling leans on
+   colour + placement rather than on a close affordance. */
+.badge-drift { background: var(--danger); color: #fff; }
+
+.finance-recon-banner {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  width: 100%; margin: 0 0 14px; padding: 12px 14px; font: inherit; text-align: start;
+  border: 1px solid var(--danger); border-radius: 12px;
+  background: var(--warn-tint); color: var(--danger); font-weight: 600; cursor: pointer;
+}
+.finance-recon-banner-go { white-space: nowrap; font-weight: 700; }
+
+/* Severity marker on the drift rows. These sit on the <tr> of the .rowline
+   table, so they must NOT be compounded with a wrapper class — an earlier
+   revision scoped them to a list item this tab no longer renders, which meant
+   severity showed as nothing at all. */
+.finance-recon-high td:first-child,
+.finance-recon-medium td:first-child,
+.finance-recon-low td:first-child { border-inline-start: 4px solid var(--muted); }
+.finance-recon-high td:first-child { border-inline-start-color: var(--danger); }
+.finance-recon-medium td:first-child { border-inline-start-color: var(--warn); }
+/* low = listed for visibility, deliberately not a problem (a pinned day that is
+   currently costing nothing). Muted so it reads as a note, not an alarm. */
+.finance-recon-low td:first-child { border-inline-start-color: var(--line); }
+.finance-recon-low { color: var(--muted); }
+.finance-recon-detail { display: block; font-size: 0.86rem; }
+.finance-recon-clear { text-align: center; padding: 24px 16px; }
+.finance-recon-clear-title { font-weight: 700; color: var(--ok); margin: 0 0 4px; }
+
+/* ---------- owner correction form (finance.override) ----------
+   Visually set apart from the normal entry form: this posts against a
+   module-owned row, which nothing else in the app can do. */
+.finance-correction { border-color: var(--warn); }
+.finance-correction-title { font-weight: 700; margin: 0 0 4px; }
+.finance-correction-now {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  padding: 10px 12px; margin: 10px 0; border-radius: 10px; background: var(--sand-2);
+}
 
 /* ---------- finance categories admin (owner-only tab) ----------
    Class names are finance-prefixed: unprefixed module classes have collided in
@@ -477,6 +527,12 @@ a.btn-ghost, a.btn-primary {
   .rowline tr[aria-expanded='true'] .rl-actions .btn-sm { flex: 1; min-height: 44px; min-width: 0; }
   .rowline tr[aria-expanded='true'] .rl-actions .btn-label { display: inline; }
   .rowline tr[aria-expanded='true'] .rl-lock { display: block; flex: 1 1 100%; color: var(--muted); font-size: 0.8rem; text-align: start; }
+  /* The drift explanation lives inside .rl-main, which is a one-line ellipsis
+     while collapsed — so it would be clipped away rather than shortened. Hide
+     it until the row opens, then let .rl-main wrap and give it its own line. */
+  .rowline .finance-recon-detail { display: none; }
+  .rowline tr[aria-expanded='true'] .rl-main { white-space: normal; overflow: visible; }
+  .rowline tr[aria-expanded='true'] .finance-recon-detail { display: block; }
 
   /* an inline form row (e.g. record-payment) is a plain block, not a summary line */
   .rowline tr.rl-formrow { display: block; cursor: default; }

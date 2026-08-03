@@ -224,12 +224,30 @@ export function updateExpense(id: number, note: string, amount: number) {
   return pos().rpc('set_expense', { p_id: id, p_note: note, p_amount: amount })
 }
 
-// Whether a day has been written to the books, and whether it has been
-// auto-corrected since (48_pos_day_lifecycle). Reports-permission only.
-export async function fetchDayStatus(date: string): Promise<{ posted: boolean; corrected: boolean }> {
+// Whether a day has been written to the books, whether it has been
+// auto-corrected since, and whether it is frozen (48_pos_day_lifecycle).
+// Reports-permission only.
+export interface DayStatus {
+  posted: boolean
+  corrected: boolean
+  pinned: boolean
+  pin_reason: string | null
+}
+
+export async function fetchDayStatus(date: string): Promise<DayStatus> {
   const { data, error } = await pos().rpc('day_status', { p_date: date })
   if (error) throw error
-  return data as { posted: boolean; corrected: boolean }
+  return data as DayStatus
+}
+
+// Freeze / unfreeze a day: while pinned, POS stops writing it to the books
+// entirely, so nothing entered afterwards lands. Gated in the DB to
+// finance.override (owner) by the RLS policy on pos.day_pins.
+export async function setDayPin(date: string, pinned: boolean, reason: string) {
+  const { error } = pinned
+    ? await pos().from('day_pins').insert({ business_date: date, reason })
+    : await pos().from('day_pins').delete().eq('business_date', date)
+  if (error) throw error
 }
 
 // ── the business day posts to finance (docs/plans/pos-module.md §3) ──

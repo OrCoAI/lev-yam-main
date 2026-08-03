@@ -19,6 +19,7 @@ export const PERM = {
   financeView: 'finance.view',
   financeManage: 'finance.manage',
   financeCategories: 'finance.categories', // edit the income/expense taxonomy — owner-only seed
+  financeOverride: 'finance.override', // owner correction entries + day pins — owner-only seed
   eventsView: 'events.view',       // shared calendar spine (40_events.sql) — owner/manager/staff
   eventsManage: 'events.manage',   // create/edit events directly — owner/manager
   eventsTasks: 'events.tasks',     // mark/manage prep tasks — owner/manager/staff
