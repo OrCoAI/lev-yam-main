@@ -6,8 +6,19 @@
 .vscode/
 .idea/
 
-# Claude Code agent state
-.claude/
+# Claude Code agent state — ignored, EXCEPT the Bluebox agent skills.
+# Those are part of the platform's observability workflow (roadmap H8,
+# docs/plans/bluebox-observability.md) and must survive `git clone`, so every
+# checkout and CI run has them. Note the two-step dance: git cannot re-include a
+# path whose parent directory is excluded, so `.claude/` must be `.claude/*`.
+# Verified token-free before tracking; they are vendor-generated guidance only.
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/bluebox-investigation-context/
+!.claude/skills/bluebox-otel-instrumentation/
+!.claude/skills/bluebox-overview/
+!.claude/skills/production-query/
 
 # Platform build (app-src/) — Node deps, build output, and local env
 node_modules/
@@ -15,6 +26,11 @@ app-src/dist/
 .env
 .env.local
 .env.*.local
+
+# Bluebox OTel config template — generated per-repo by `bluebox setup local-repos`.
+# Token-free by design, but it carries an OTLP endpoint and is machine-generated,
+# not source. The repo is public; keep it local.
+.env.otel.bluebox-template
 
 # Assembled site (scripts/build-site.sh) + Cloudflare local state — build output
 _site/

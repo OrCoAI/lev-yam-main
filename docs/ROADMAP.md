@@ -188,6 +188,12 @@ item — the anon `pos_*` surface — is the POS cut-over task above, not repeat
       the gate)*
 - [ ] **H6** `finance.expected` module-row guard (status-only client transitions on
       module-sourced expectations)
+- [ ] **H8** Platform observability — Bluebox/OTel tracing on the four Supabase edge
+      functions, the only server-side code the platform owns (today the platform has no
+      telemetry of its own; Dynatrace RUM covers the marketing site only). Strict span
+      attribute allow-list per architecture invariant 3. Kickoff + plan:
+      [plans/bluebox-observability.md](plans/bluebox-observability.md)
+      *(kickoff 2026-08-03, owner-directed; depends on deploying edge functions to staging)*
 - [x] **H7** Hygiene batch — nine small repo/UX/ops items; **8 of 9 done** (3 with
       H3/H5 on 2026-07-15, 5 more on 2026-07-16 via PR #11 of
       [plans/users-permissions-suite.md](plans/users-permissions-suite.md): storage
