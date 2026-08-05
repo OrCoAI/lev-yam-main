@@ -5181,17 +5181,18 @@ revoke all on function pos.post_day(date) from public, anon, authenticated;
 --
 --     Internal (no permission check, revoked from clients) so the two public
 --     entry points below can share it: reconciliation() aggregates it to
---     jsonb, reconciliation_count() counts it without ever building a payload.
+--     jsonb, reconciliation_counts() counts it without ever building a payload.
 --     That is what makes the badge query genuinely cheap rather than "the full
 --     report with its result thrown away".
 -- ---------------------------------------------------------------------
 --     `severity` is a real output column, not something the count has to dig
 --     back out of the jsonb: pinned days are listed but must NOT light the
 --     badge (a pin is a deliberate state, not a problem, and a badge that
---     never clears is one nobody reads). reconciliation_count() filters on it.
+--     never clears is one nobody reads). reconciliation_counts() filters on it.
+--     `modules` names who OWNS each item, so the launcher can badge that tile.
 -- ---------------------------------------------------------------------
 create or replace function finance.reconciliation_items(p_since date)
-returns table (sort_key text, severity text, item jsonb)
+returns table (sort_key text, severity text, modules text[], item jsonb)
 language sql stable security definer set search_path = finance, pos, core as $$
   with
   -- sargable bounds: compare the raw timestamp against Jerusalem midnight so
@@ -5274,7 +5275,7 @@ language sql stable security definer set search_path = finance, pos, core as $$
     from leg_delta ld group by ld.d
   )
   -- 1) days with real money that were never written to the books
-  select 'a:' || e.d, 'high', jsonb_build_object(
+  select 'a:' || e.d, 'high', array['pos'], jsonb_build_object(
            'type', 'unposted_day', 'severity', 'high', 'business_date', e.d,
            'cash', e.cash, 'card', e.card, 'food', e.food, 'labor', e.labor,
            'revenue', e.cash + e.card, 'fix', 'post_day')
@@ -5296,7 +5297,7 @@ language sql stable security definer set search_path = finance, pos, core as $$
   --    day the books are SUPPOSED to differ from the recomputation — that is
   --    what the owner's correction did — so listing it here would offer a "post
   --    to books" button that un-does the very correction the pin protects.
-  select 'b:' || d.d, 'high', jsonb_build_object(
+  select 'b:' || d.d, 'high', array['pos'], jsonb_build_object(
            'type', 'recompute_drift', 'severity', 'high', 'business_date', d.d,
            'legs', d.legs, 'total_delta', d.total, 'fix', 'post_day')
   from day_drift d
@@ -5312,6 +5313,15 @@ language sql stable security definer set search_path = finance, pos, core as $$
   -- 3) money that should have moved and did not
   select 'c:' || to_char(x.due_date, 'YYYY-MM-DD') || ':' || x.id,
          case when x.due_date < current_date - 30 then 'high' else 'medium' end,
+         -- the module that CREATED this expectation owns it: a deposit from a
+         -- signed quote is the quotes module's problem to chase, even though
+         -- the payment itself is recorded in finance. Guarded by core.modules
+         -- so a retired or misspelled provenance can never badge a tile that
+         -- does not exist; a hand-created expectation belongs to nobody but
+         -- finance and yields an empty array.
+         case when x.source_module is not null and x.source_module <> 'finance'
+                   and exists (select 1 from core.modules m where m.key = x.source_module)
+              then array[x.source_module] else '{}'::text[] end,
          jsonb_build_object(
            'type', 'overdue_expected',
            'severity', case when x.due_date < current_date - 30 then 'high' else 'medium' end,
@@ -5342,6 +5352,7 @@ language sql stable security definer set search_path = finance, pos, core as $$
   --    non-null only for pins inside the scanned window, null outside it.
   select 'd:' || p.business_date,
          case when d.legs is null then 'low' else 'medium' end,
+         array['pos'],
          jsonb_build_object(
            'type', 'pinned',
            'severity', case when d.legs is null then 'low' else 'medium' end,
@@ -5387,33 +5398,59 @@ begin
   select coalesce(jsonb_agg(item order by sort_key), '[]'::jsonb),
          count(*) filter (where severity <> 'low')
     into v_items, v_count from finance.reconciliation_items(v_since);
+  -- v_count is the same number reconciliation_counts() reports under 'finance'
   return jsonb_build_object(
     'since', v_since, 'generated_at', now(),
     'count', v_count, 'items', v_items);
 end; $$;
 
 -- Genuinely count-only: shares the item query but never builds the payload.
--- Counts what needs ACTION — pinned days (severity 'low') are excluded, or the
--- launcher badge would sit permanently lit on a state the owner chose.
-create or replace function finance.reconciliation_count(p_since date default null)
-returns int language plpgsql stable security definer
+--
+-- Returns a MAP of module key → count, not a single number, so the launcher can
+-- badge whichever tile owns the problem. Every item names the module
+-- responsible for it (reconciliation_items.modules): an unposted day is POS's,
+-- an overdue deposit from a signed quote is the quotes module's to chase. The
+-- 'finance' entry is always the full actionable total — the books are finance's
+-- business whoever caused the drift.
+--
+-- The shell must not have to know which modules exist (ARCHITECTURE.md), so the
+-- DATA decides which tiles light up: a future module that posts to finance gets
+-- a badge by writing its own provenance, with no shell change at all.
+--
+-- Counts what needs ACTION — pinned days that cost nothing (severity 'low') are
+-- excluded, or the badge would sit permanently lit on a state the owner chose.
+drop function if exists finance.reconciliation_count(date);
+
+create or replace function finance.reconciliation_counts(p_since date default null)
+returns jsonb language plpgsql stable security definer
 set search_path = finance, pos, core as $$
-declare n int;
+declare
+  v_since date := coalesce(p_since, current_date - 90);
+  v_out jsonb;
 begin
   if not core.has_permission('finance.view') then
     raise exception 'permission denied';
   end if;
-  select count(*) into n
-  from finance.reconciliation_items(coalesce(p_since, current_date - 90))
-  where severity <> 'low';
-  return n;
+  -- materialized: referenced twice below, and the scan must happen once
+  with it as materialized (
+    select modules from finance.reconciliation_items(v_since) where severity <> 'low'
+  ),
+  per_module as (
+    select m as key, count(*) as n
+    from it cross join lateral unnest(it.modules) as m
+    group by m
+  )
+  select coalesce((select jsonb_object_agg(key, n) from per_module), '{}'::jsonb)
+         || jsonb_build_object('finance', (select count(*) from it))
+    into v_out;
+  return v_out;
 end; $$;
 
 -- revoking from `authenticated` alone leaves the implicit PUBLIC grant in place
 revoke all on function finance.reconciliation(date) from public;
-revoke all on function finance.reconciliation_count(date) from public;
+revoke all on function finance.reconciliation_counts(date) from public;
 grant execute on function finance.reconciliation(date) to authenticated;
-grant execute on function finance.reconciliation_count(date) to authenticated;
+grant execute on function finance.reconciliation_counts(date) to authenticated;
 
 -- =====================================================================
 -- schema/56_finance_override.sql

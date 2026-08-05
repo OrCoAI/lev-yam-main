@@ -37,6 +37,13 @@ touching schema, permissions, or the events/finance spine graduates to a `docs/p
 
 ## Done
 
+- **2026-08-05 — per-module drift badges.** The POS tile showed the *global* drift count, so it
+  advertised problems POS cannot solve (Or, on staging: "why in the pos it is marked like 2?" —
+  1 unposted day + 1 overdue deposit). Each drift item now names the module responsible for it
+  and `reconciliation_counts()` returns a module→count map; quotes gets badged for an overdue
+  deposit it created. The shell no longer names any module, so a new module badges itself by
+  writing its own provenance. Note the badge still renders only for `finance.view` holders — a
+  drift count is financial information.
 - **2026-08-03 — two bugs found by Or on staging, fixed.**
   (1) The owner-correction `±` button "did nothing": `CorrectionForm` renders at the *top* of
   the entries tab, but unlike `startEdit` the correction path never scrolled, so clicking a row

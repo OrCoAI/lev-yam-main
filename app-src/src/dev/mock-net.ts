@@ -416,7 +416,7 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise
     // finance.reconciliation / _count — the preview harness computes the same
     // three checks over its fixtures, so the badges, banner and reconcile tab
     // are all exercisable in ?preview without a database.
-    if (rpc[1] === 'reconciliation' || rpc[1] === 'reconciliation_count') {
+    if (rpc[1] === 'reconciliation' || rpc[1] === 'reconciliation_counts') {
       const num = (v: unknown) => Number(v) || 0
       const today = new Date().toISOString().slice(0, 10)
       const since = new Date(Date.now() - 90 * 864e5).toISOString().slice(0, 10)
@@ -445,7 +445,7 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise
         const total = l.cash + l.card + l.food + l.labor
         if (!isPosted(d) && total !== 0)
           items.push({ type: 'unposted_day', severity: 'high', business_date: d, ...l,
-            revenue: l.cash + l.card, fix: 'post_day' })
+            revenue: l.cash + l.card, fix: 'post_day', modules: ['pos'] })
       }
       for (const r of db.expected) {
         if (r.status !== 'open' || !r.due_date || String(r.due_date) >= today) continue
@@ -453,7 +453,9 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise
           (Date.parse(today) - Date.parse(String(r.due_date))) / 864e5)
         items.push({ type: 'overdue_expected', severity: daysOverdue > 30 ? 'high' : 'medium',
           expected_id: r.id, direction: r.direction, category: r.category, amount: num(r.amount),
-          due_date: r.due_date, reason: r.reason, days_overdue: daysOverdue, fix: 'record_payment' })
+          due_date: r.due_date, reason: r.reason, days_overdue: daysOverdue, fix: 'record_payment',
+          // the module that created the expectation owns chasing it
+          modules: r.source_module && r.source_module !== 'finance' ? [r.source_module] : [] })
       }
       // 2) recompute_drift — compare a booked day's legs against the books
       for (const d of days.sort().reverse()) {
@@ -471,7 +473,8 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise
         const pinned = db.day_pins.some((p) => p.business_date === d)
         if (legs.length && !pinned)
           items.push({ type: 'recompute_drift', severity: 'high', business_date: d,
-            legs, total_delta: legs.reduce((s, x) => s + x.delta, 0), fix: 'post_day' })
+            legs, total_delta: legs.reduce((s, x) => s + x.delta, 0), fix: 'post_day',
+            modules: ['pos'] })
       }
       // 4) pinned days — always listed, severity rises only once money has
       //    started piling up behind the freeze (mirrors 55's check 4)
@@ -490,12 +493,19 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise
         items.push({ type: 'pinned', severity: legs.length ? 'medium' : 'low',
           business_date: d, reason: p.reason, pinned_at: p.pinned_at,
           legs: legs.length ? legs : null,
-          total_delta: legs.reduce((s, x) => s + x.delta, 0), fix: 'unpin' })
+          total_delta: legs.reduce((s, x) => s + x.delta, 0), fix: 'unpin', modules: ['pos'] })
       }
       // the badge counts what needs action — 'low' is listed, never counted
-      const actionable = items.filter((i) => i.severity !== 'low').length
-      if (rpc[1] === 'reconciliation_count') return json(actionable)
-      return json({ since, generated_at: new Date().toISOString(), count: actionable, items })
+      const live = items.filter((i) => i.severity !== 'low')
+      if (rpc[1] === 'reconciliation_counts') {
+        // module key -> count, plus finance = the full actionable total
+        const counts: Record<string, number> = { finance: live.length }
+        for (const i of live)
+          for (const m of (i.modules as string[] | undefined) ?? [])
+            counts[m] = (counts[m] ?? 0) + 1
+        return json(counts)
+      }
+      return json({ since, generated_at: new Date().toISOString(), count: live.length, items })
     }
     // pos.day_status — posted / auto-corrected / frozen, for the day report
     if (rpc[1] === 'day_status') {

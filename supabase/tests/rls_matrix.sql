@@ -452,8 +452,8 @@ select pg_temp.assert_denied('staff: pos.day_is_posted is internal — not calla
 -- permission check inside it — assert it actually fires.
 select pg_temp.assert_raises('staff: finance.reconciliation denied (no finance.view)',
   $q$ select finance.reconciliation() $q$, 'permission denied');
-select pg_temp.assert_raises('staff: finance.reconciliation_count denied (no finance.view)',
-  $q$ select finance.reconciliation_count() $q$, 'permission denied');
+select pg_temp.assert_raises('staff: finance.reconciliation_counts denied (no finance.view)',
+  $q$ select finance.reconciliation_counts() $q$, 'permission denied');
 select pg_temp.assert_denied('staff: pos.day_expected_legs is internal — not callable',
   $q$ select * from pos.day_expected_legs(current_date) $q$);
 -- 56_finance_override (PR C): the owner override is the ONE key that can move a
@@ -557,14 +557,14 @@ select pg_temp.assert_rows('manager: finance.reconciliation returns a report',
 -- count is the ACTIONABLE count, not items length: pinned days (severity 'low')
 -- are listed but must never light a badge. Assert the contract that actually
 -- holds, or a pin would make this pass only by luck.
-select pg_temp.assert_rows('manager: reconciliation_count = the non-low item count',
-  $q$ select 1 where finance.reconciliation_count()
+select pg_temp.assert_rows('manager: counts.finance = the non-low item count',
+  $q$ select 1 where (finance.reconciliation_counts()->>'finance')::int
                      = (select count(*)
                         from jsonb_array_elements(finance.reconciliation()->'items') x
                         where x->>'severity' <> 'low') $q$, 1);
-select pg_temp.assert_rows('manager: reconciliation.count agrees with reconciliation_count()',
+select pg_temp.assert_rows('manager: reconciliation.count agrees with counts.finance',
   $q$ select 1 where (finance.reconciliation()->>'count')::int
-                     = finance.reconciliation_count() $q$, 1);
+                     = (finance.reconciliation_counts()->>'finance')::int $q$, 1);
 -- manager has pos.reports (so a pin is visible to them) but NOT finance.override
 select pg_temp.assert_ok('manager: CAN read pos.day_pins (pos.reports)',
   $q$ select 1 from pos.day_pins $q$);
@@ -1061,6 +1061,41 @@ select pg_temp.assert_num('pin: and it reports the full withheld amount',
   (select (r.item->>'total_delta')::numeric from finance.reconciliation_items('2099-01-01') r
    where r.item->>'business_date' = '2099-07-07'), 250);
 delete from pos.day_pins where business_date = '2099-07-07';
+
+-- ---------------------------------------------------------------------
+--  Per-module badge counts. Every drift item names the module RESPONSIBLE for
+--  it, so the launcher badges that tile rather than lighting POS up with
+--  problems POS cannot solve (an overdue deposit is not a POS failure).
+--  The shell names no module: the DATA decides which tiles badge.
+-- ---------------------------------------------------------------------
+-- an expectation created by the quotes module, overdue -> quotes owns it
+insert into finance.expected
+  (direction, category, amount, due_date, reason, status, source_module, source_ref)
+values ('in', 'events', 4000, current_date - 20, 'deposit', 'open',
+        'quotes', 'rls-test-quote:deposit');
+-- a hand-created one belongs to nobody but finance
+insert into finance.expected (direction, category, amount, due_date, reason, status)
+values ('out', 'suppliers', 900, current_date - 5, 'supplier', 'open');
+select pg_temp.assert_rows('badges: a quotes-sourced overdue expectation is owned by quotes',
+  $q$ select 1 from finance.reconciliation_items('2099-01-01') r
+      where r.item->>'expected_id' = (select id::text from finance.expected
+                                      where source_ref = 'rls-test-quote:deposit')
+        and r.modules = array['quotes'] $q$, 1);
+select pg_temp.assert_rows('badges: a hand-created expectation is owned by no module',
+  $q$ select 1 from finance.reconciliation_items('2099-01-01') r
+      where r.item->>'reason' = 'supplier' and r.modules = '{}'::text[] $q$, 1);
+select pg_temp.assert_rows('badges: POS items are owned by pos',
+  $q$ select 1 where not exists (
+        select 1 from finance.reconciliation_items('2099-01-01') r
+        where r.item->>'type' in ('unposted_day','recompute_drift','pinned')
+          and r.modules <> array['pos']) $q$, 1);
+-- the point of the whole change: POS must NOT be badged for finance problems
+select pg_temp.assert_rows('badges: no overdue expectation is ever charged to pos',
+  $q$ select 1 where not exists (
+        select 1 from finance.reconciliation_items('2099-01-01') r
+        where r.item->>'type' = 'overdue_expected' and 'pos' = any(r.modules)) $q$, 1);
+delete from finance.expected where source_ref = 'rls-test-quote:deposit';
+delete from finance.expected where reason = 'supplier' and amount = 900;
 
 -- unfreezing lets the day resume, and the correction still stands
 delete from pos.day_pins where business_date = '2099-06-06';

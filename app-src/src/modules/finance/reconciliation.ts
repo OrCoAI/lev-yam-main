@@ -6,10 +6,13 @@
 //
 // Ownership: FinanceModule holds ONE useReconciliation and hands it to the tab,
 // so the banner, the tab badge and the list all read the same fetch and all
-// refresh together when a day is posted. The launcher uses the count-only hook
+// refresh together when a day is posted. The launcher uses the counts-only hook
 // because it must not pay for a payload it never renders.
 import { useCallback, useEffect, useState } from 'react'
 import { finance } from '../../lib/supabase'
+
+// stable empty map: a fresh object literal each render would re-run consumers
+const NO_COUNTS: Record<string, number> = {}
 
 // 'low' = listed but deliberately not counted by the badge (a pinned day that
 // is currently costing nothing). The DB decides this, not the client.
@@ -114,21 +117,26 @@ export function useReconciliation(): UseReconciliation {
   return { data, loading, error, reload }
 }
 
-/** Count only — what the launcher badges need. Returns 0 rather than throwing:
- *  a badge is decoration, and a failed count must never break the launcher.
- *  Aborts on unmount, since users click a tile long before a scan returns. */
-export function useDriftCount(enabled: boolean): number {
-  const [count, setCount] = useState(0)
+/** Per-module drift counts — `{ finance: 3, pos: 1, quotes: 1 }` — which is
+ *  what the launcher badges. The DB decides which module owns each item, so a
+ *  new module that posts to finance gets a badge by writing its own
+ *  provenance, with no change to the shell.
+ *
+ *  Returns {} rather than throwing: a badge is decoration, and a failed count
+ *  must never break the launcher. Aborts on unmount, since users click a tile
+ *  long before a scan returns. */
+export function useDriftCounts(enabled: boolean): Record<string, number> {
+  const [counts, setCounts] = useState<Record<string, number>>(NO_COUNTS)
   useEffect(() => {
     if (!enabled) return
     const ctrl = new AbortController()
     finance()
-      .rpc('reconciliation_count')
+      .rpc('reconciliation_counts')
       .abortSignal(ctrl.signal)
       .then(({ data, error }) => {
-        if (!error && typeof data === 'number') setCount(data)
+        if (!error && data && typeof data === 'object') setCounts(data as Record<string, number>)
       })
     return () => ctrl.abort()
   }, [enabled])
-  return count
+  return counts
 }

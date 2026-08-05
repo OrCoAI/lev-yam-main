@@ -100,7 +100,7 @@ today it either goes unrecorded or distorts both totals.
 | Category model | Owner-editable table (`finance.categories`), not an expanded `CHECK` |
 | Who edits categories | **Owner only** — new `finance.categories` permission (tighter than POS's `pos.menu`, which is owner+manager, because categories reshape every historical report) |
 | Drift checks | POS day never posted · POS recompute mismatch · overdue expectations |
-| Alert surfaces | Finance tile badge · POS tile badge · in-module banner · dedicated tab |
+| Alert surfaces | Per-module tile badges · in-module banner · dedicated tab. **Revised 2026-08-05:** each tile shows only the items that module *owns*, not the global total — see §4 |
 | Alert behavior | Live-computed, never dismissible; each item carries its one-click fix |
 | Override model | Correction entry; derived rows stay immutable — §7.4 preserved. The day pin ships too but is a **separate, explicit** action — see the PR C deviation below (revised 2026-08-03 on measured behaviour) |
 | Tips | Stay out of the books |
@@ -188,7 +188,18 @@ finance.categories
      finance holds. Should always be zero; a non-zero means the auto-re-post trigger failed or
      was bypassed. Days pinned by PR C are reported as *pinned*, not as drift.
   3. **Overdue expectation** — `finance.expected` still `open` with `due_date < current_date`.
-- `finance.reconciliation_count()` → int, the cheap version the launcher badges call.
+- `finance.reconciliation_counts()` → jsonb map of module key → count, the cheap version the
+  launcher badges call. **Revised 2026-08-05** (Or, verifying on staging: "why in the pos it is
+  marked like 2?"). Both tiles used to show the same global total, so POS advertised problems
+  POS cannot solve — an overdue deposit is not a POS failure. Every item now names the module
+  RESPONSIBLE for it (`reconciliation_items.modules`): POS owns unposted days, recompute drift
+  and pins; an expectation is owned by the module that created it, so a deposit from a signed
+  quote badges **quotes**. `finance` is always the full actionable total — the books are
+  finance's business whoever caused the drift, and a hand-created expectation is owned by
+  nobody else.
+  The shell names no module: the DATA decides which tiles light up, so a future module that
+  posts to finance badges itself by writing its own provenance, with no shell change
+  (ARCHITECTURE.md §6). This deleted the `BadgeSource` indirection in `Launcher.tsx`.
 
 ### `56_finance_override.sql` (PR C) — **shipped 2026-08-03**
 
