@@ -228,7 +228,9 @@ function CategoryRow({
         </div>
       ) : (
         <div className="finance-cat-actions">
-          <button type="button" className="btn-ghost" onClick={() => setEditing(true)}>
+          {/* btn-sm: row actions are compact everywhere else in the module (the
+              phone breakpoint still gives them a 44px tap target) */}
+          <button type="button" className="btn-ghost btn-sm" onClick={() => setEditing(true)}>
             {ft.edit}
           </button>
           {/* Archive, never delete: the FKs from entries/expected refuse to drop a
@@ -241,7 +243,7 @@ function CategoryRow({
           {!row.owned_by_module && (
             <button
               type="button"
-              className="btn-ghost"
+              className="btn-ghost btn-sm"
               disabled={busy}
               onClick={() => onPatch(row.id, { active: !row.active })}
             >
