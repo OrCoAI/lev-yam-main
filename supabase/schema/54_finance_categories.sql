@@ -264,6 +264,25 @@ begin
   if finance.is_posting() then
     return new;
   end if;
+  -- PROVENANCE IS MODULE-WRITTEN ONLY, the same rule entries_guard() enforces
+  -- one screen up. Leaving it off the plan side left a laundering path into the
+  -- ledger: finance.record_payment() copies the expectation's own source_module
+  -- into the entry it posts, behind the GUC, so a finance.manage holder (manager,
+  -- not owner) could insert an expectation tagged 'override' — the provenance
+  -- PR C mints for owner-only corrections — fulfil it, and end up with a ledger
+  -- row badged "תיקון בעלים" carrying their own note and amount. Worse, that row
+  -- is then beyond repair: correction_target() unwraps 'expected:<uuid>' and
+  -- casts split_part(...,2) to date, so the owner's own correction tool throws on
+  -- exactly these rows. Nothing in the app inserts finance.expected at all (the
+  -- only client write is ExpectedTab's status='cancelled'), so this costs no
+  -- legitimate flow.
+  if tg_op = 'INSERT' and new.source_module is not null then
+    raise exception 'צפי ממקור מודול (%) נכתב רק דרך פונקציית הרישום של אותו מודול',
+      new.source_module;
+  end if;
+  if tg_op = 'UPDATE' and new.source_module is distinct from old.source_module then
+    raise exception 'לא ניתן לשנות את מקור הצפי';
+  end if;
   -- an UPDATE that leaves the category where it is has nothing to re-check:
   -- a legacy row whose category has since been archived stays editable
   if tg_op = 'UPDATE'

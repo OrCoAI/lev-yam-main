@@ -578,6 +578,36 @@ select pg_temp.assert_raises('manager: ...and cannot get in by FORGING source_mo
       values ('in','events', 5, 'rls-test cat', 'quotes', 'rls-test-quote:forged') $q$, 'מודול');
 select pg_temp.assert_rows('manager: the forged expectation really was not written',
   $q$ select 1 from finance.expected where source_ref = 'rls-test-quote:forged' $q$, 0);
+-- Provenance on the PLAN side is module-written only, or record_payment() will
+-- launder a forged tag into the ledger: it copies the expectation's own
+-- source_module into the entry it posts, behind the GUC. 'override' is the
+-- sharpest case — PR C mints it for OWNER-only corrections, so a manager
+-- reaching it would put a row badged "תיקון בעלים" in the books with their own
+-- note, and correction_target() then throws on that row (it casts
+-- split_part('expected:<uuid>', ':', 2) to date), so even the owner cannot
+-- repair it. `grant insert on finance.expected` covers every column, so this
+-- has to be a guard, not a grant.
+select pg_temp.assert_raises('manager: cannot create an expectation carrying PROVENANCE',
+  $q$ insert into finance.expected (direction, category, amount, note, source_module, source_ref)
+      values ('in','bookings', 5000, 'rls-test forge', 'override', 'x') $q$, 'מודול');
+select pg_temp.assert_rows('manager: ...so no override-badged row can be laundered in',
+  $q$ select 1 from finance.expected where note = 'rls-test forge' $q$, 0);
+-- own fixture, so these do not depend on a row created further down the file
+insert into finance.expected (id, direction, category, amount, note)
+values ('bbbbbbbb-0000-0000-0000-0000000000fe', 'in', 'bookings', 300, 'rls-test provenance');
+select pg_temp.assert_raises('manager: cannot re-tag an existing expectation either',
+  $q$ update finance.expected set source_module = 'override'
+      where id = 'bbbbbbbb-0000-0000-0000-0000000000fe' $q$, 'מקור');
+-- and the amount amplifier: record_payment posts with non-null provenance, where
+-- finance_entries_amount_check permits negatives (module reversals need that) —
+-- so an unvalidated p_amount was the one client path to a negative entry
+select pg_temp.assert_raises('manager: record_payment refuses a NEGATIVE amount',
+  $q$ select finance.record_payment('bbbbbbbb-0000-0000-0000-0000000000fe'::uuid,
+        -5000, 'cash', current_date, 'rls-test negative') $q$, 'חיובי');
+select pg_temp.assert_raises('manager: ...and refuses zero',
+  $q$ select finance.record_payment('bbbbbbbb-0000-0000-0000-0000000000fe'::uuid,
+        0, 'cash', current_date, 'rls-test zero') $q$, 'חיובי');
+delete from finance.expected where id = 'bbbbbbbb-0000-0000-0000-0000000000fe';
 -- expected_guard() cannot read new.kind (GENERATED STORED columns are computed
 -- AFTER before-row triggers), so it re-derives direction→kind. If that copy ever
 -- diverges from the column's own expression, the guard looks up a (kind, key)

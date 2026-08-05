@@ -162,6 +162,16 @@ begin
   if exp.status <> 'open' then
     raise exception 'הצפי כבר במצב % — רק צפי פתוח ניתן לרישום', exp.status;
   end if;
+  -- A fulfilment is money ARRIVING, so it is positive. Validated here because
+  -- this function posts behind the GUC with non-null provenance, and
+  -- finance_entries_amount_check only requires `amount > 0` for provenance-LESS
+  -- rows (module reversals must be able to go negative). Without this, an
+  -- unvalidated p_amount was the one client-reachable way to write a negative
+  -- entry — i.e. to make income disappear from the books through a path the
+  -- manual-entry form could never take.
+  if coalesce(p_amount, exp.amount) <= 0 then
+    raise exception 'סכום התשלום חייב להיות חיובי';
+  end if;
 
   perform set_config('levyam.finance_posting', 'on', true);
   insert into finance.entries
