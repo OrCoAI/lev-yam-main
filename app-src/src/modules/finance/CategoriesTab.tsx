@@ -241,9 +241,10 @@ function CategoryRow({
               archiving one would silently keep accepting module money while the
               row claims to be archived.
               The same GUC bounds what archiving means for the rest: it stops new
-              MANUAL entries, not the fulfilment of an expectation already open
-              under the category (finance.record_payment posts behind the GUC
-              too). See 54_finance_categories.sql for why that is deliberate. */}
+              manual entries AND new expectations (both tables carry a guard),
+              but not the fulfilment of an expectation already open under the
+              category — record_payment posts behind the GUC, and that money was
+              planned before the archive. See 54_finance_categories.sql. */}
           {!row.owned_by_module && (
             <button
               type="button"

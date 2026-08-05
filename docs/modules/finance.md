@@ -12,19 +12,7 @@ touching schema, permissions, or the events/finance spine graduates to a `docs/p
 
 ## Open bugs
 
-- Archiving a category does not stop a **new `finance.expected` row** from being created
-  under it via the API. `finance.assert_category_writable()` runs from
-  `finance.entries_guard()`, and `finance.expected` has no equivalent guard — only the
-  composite FK, which checks that the category *exists*, not that it is still active. Not
-  reachable from the UI (`pickableCategories` offers active, non-module categories only),
-  and not a privilege boundary (anyone who can do it already holds `finance.manage` and
-  could file the money under an active category instead) — so it is data hygiene, not
-  security. Closing it means an insert/update trigger on `finance.expected` that mirrors
-  the entries guard, including how a module-created expectation is allowed to keep using
-  its own module-owned category. Found by `/code-review high`, 2026-08-05.
-  *Not* a bug, by decision, and documented at both call sites: archiving does not block
-  `record_payment()` from fulfilling an expectation **already open** under the category.
-  That money was planned before the archive; refusing it would strand it.
+- (none logged)
 
 ## Open feature ideas
 
@@ -49,6 +37,24 @@ touching schema, permissions, or the events/finance spine graduates to a `docs/p
 
 ## Done
 
+- **2026-08-05 — `/code-review high` findings on the books-integrity branch.** Four fixed:
+  the drift roll-up was a *signed* sum across all four legs (revenue + cost with the same
+  sign), which also reported a +100 cash / −100 card drift as "0" — it is now a magnitude,
+  pinned by an rls_matrix assertion; a dead `pos_pinned` field whose comment described the
+  auto-pin PR C deliberately dropped; the entries list snapping back to page 1 after a
+  correction, which hid both the corrected row and the new one on a long ledger (`load()`
+  gained `keepWindow`); and the Expected-tab focus effect re-firing on every load inside its
+  2.5s window, yanking the viewport back. Fifth (archived categories) below.
+- **2026-08-05 — archiving a category now also blocks new *expectations*.**
+  `assert_category_writable()` only ran from `finance.entries_guard()`, so `active = false`
+  meant "no new manual entry" while a new `finance.expected` row could still be filed under
+  an archived category through the API and would post an entry under it on fulfilment. New
+  `finance.expected_guard()` trigger mirrors the entries rules on the plan side, with a
+  carve-out letting a module file under a category **it** owns (quotes → `events`). Note
+  `new.kind` is unusable there: it is `GENERATED STORED`, which Postgres computes *after*
+  before-row triggers, so the guard derives the kind from `direction` itself. Deliberately
+  unchanged: fulfilling an expectation already open under a since-archived category still
+  works — that money was planned before the archive.
 - **2026-08-05 — per-module drift badges.** The POS tile showed the *global* drift count, so it
   advertised problems POS cannot solve (Or, on staging: "why in the pos it is marked like 2?" —
   1 unposted day + 1 overdue deposit). Each drift item now names the module responsible for it

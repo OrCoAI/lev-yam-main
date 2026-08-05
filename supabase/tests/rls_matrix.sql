@@ -244,8 +244,12 @@ select set_config('levyam.finance_posting', '', true);
 insert into finance.entries (id, kind, category, amount, entry_date, note, created_by)
 values ('bbbbbbbb-0000-0000-0000-000000000002', 'income', 'other', 50, current_date,
         'rls-test manual', 'aaaaaaaa-0000-0000-0000-000000000001');
-insert into finance.expected (id, direction, category, amount, note)
-values ('bbbbbbbb-0000-0000-0000-000000000003', 'in', 'events', 500, 'rls-test expected');
+-- carries its provenance because 'events' is a quotes-owned category, and since
+-- 54's finance.expected_guard() only the owning module may plan money under one
+-- — which is also how such a row really comes into being
+insert into finance.expected (id, direction, category, amount, note, source_module, source_ref)
+values ('bbbbbbbb-0000-0000-0000-000000000003', 'in', 'events', 500, 'rls-test expected',
+        'quotes', 'rls-test-quote:seed');
 -- an archived category, to prove the guard blocks NEW money under it (54)
 insert into finance.categories (kind, key, label_he, label_ar, active, sort)
 values ('expense', 'rls_archived', 'בדיקה ארכיון', 'اختبار أرشيف', false, 995);
@@ -550,6 +554,47 @@ select pg_temp.assert_fk_denied('manager: expected row with a direction/category
 select pg_temp.assert_raises('manager: ARCHIVED category rejects a new entry',
   $q$ insert into finance.entries (kind, category, amount, entry_date, note)
       values ('expense','rls_archived', 5, current_date, 'rls-test cat') $q$, 'בארכיון');
+-- ...and on the PLAN side, or the rule is only half a rule: an expectation
+-- filed under an archived category posts an entry under it on fulfilment,
+-- because record_payment() runs behind the posting GUC and the entries guard
+-- above never sees it
+select pg_temp.assert_raises('manager: ARCHIVED category rejects a new expectation',
+  $q$ insert into finance.expected (direction, category, amount, note)
+      values ('out','rls_archived', 5, 'rls-test cat') $q$, 'בארכיון');
+select pg_temp.assert_raises('manager: MODULE-OWNED category rejects a hand-written expectation',
+  $q$ insert into finance.expected (direction, category, amount, note)
+      values ('in','events', 5, 'rls-test cat') $q$, 'מודול');
+-- but the owning module may plan money under its own category, or the quotes
+-- module could never file the deposit it exists to track
+select pg_temp.assert_ok('manager: the OWNING module may file under its own category',
+  $q$ insert into finance.expected (direction, category, amount, note, source_module, source_ref)
+      values ('in','events', 5, 'rls-test cat', 'quotes', 'rls-test-quote:guard') $q$);
+delete from finance.expected where source_ref = 'rls-test-quote:guard';
+-- the UPDATE carve-out: an edit that leaves the category where it is skips the
+-- check entirely, so a row under a category archived later stays editable
+-- (archiving must not freeze history); MOVING one into an archived category is
+-- still refused
+insert into finance.expected (direction, category, amount, note)
+values ('out','maintenance', 7, 'rls-test archive-edit');
+select pg_temp.assert_ok('manager: editing an expectation without moving its category is fine',
+  $q$ update finance.expected set amount = 8 where note = 'rls-test archive-edit' $q$);
+select pg_temp.assert_raises('manager: ...but it cannot be MOVED into an archived category',
+  $q$ update finance.expected set category = 'rls_archived'
+      where note = 'rls-test archive-edit' $q$, 'בארכיון');
+delete from finance.expected where note = 'rls-test archive-edit';
+-- record_payment() UPDATEs finance.expected AFTER it has reset the posting GUC,
+-- so the new guard DOES see that write. It falls through the carve-out above
+-- (status changes, category does not) — asserted rather than reasoned about,
+-- because a guard that quietly broke fulfilment would break the money path.
+insert into finance.expected (id, direction, category, amount, note)
+values ('bbbbbbbb-0000-0000-0000-00000000000f', 'out', 'suppliers', 120, 'rls-test fulfil');
+select pg_temp.assert_ok('manager: record_payment can still fulfil an expectation',
+  $q$ select finance.record_payment('bbbbbbbb-0000-0000-0000-00000000000f'::uuid,
+        null, 'cash', current_date, 'rls-test fulfilled') $q$);
+select pg_temp.assert_rows('manager: ...and the expectation is closed against its entry',
+  $q$ select 1 from finance.expected e join finance.entries n on n.id = e.fulfilled_by
+      where e.id = 'bbbbbbbb-0000-0000-0000-00000000000f'
+        and e.status = 'fulfilled' and n.category = 'suppliers' and n.amount = 120 $q$, 1);
 -- manager holds finance.view → the report runs and is well-formed
 select pg_temp.assert_rows('manager: finance.reconciliation returns a report',
   $q$ select 1 where (finance.reconciliation() ? 'items')

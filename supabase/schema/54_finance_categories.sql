@@ -168,14 +168,12 @@ alter table finance.categories add constraint finance_categories_labels_check
 --   * active = false   → archived; readable history, but no new MANUAL entry
 --
 -- Scope, precisely: this runs from finance.entries_guard(), which every posting
--- function short-circuits via the levyam.finance_posting GUC. So archiving does
--- NOT retroactively block finance.record_payment() from fulfilling an
--- expectation already open under the category — that money was planned before
--- the archive and refusing it would strand it, with no way to file it correctly.
--- It also does not reach a NEW finance.expected row: the composite FK constrains
--- the category to one that exists, not to one that is still active (the pickers
--- only offer active, non-module categories, so this is a direct-API gap, not a
--- UI one). Tracked in docs/modules/finance.md.
+-- function short-circuits via the levyam.finance_posting GUC. The PLAN side has
+-- its own guard below (finance.expected_guard), so a new expectation cannot be
+-- filed under an archived category either. What archiving deliberately does NOT
+-- do is block finance.record_payment() from fulfilling an expectation ALREADY
+-- open under the category — that money was planned before the archive, and
+-- refusing it would strand it with nowhere valid to file it.
 -- Existence/kind-correctness is NOT this function's job — the composite FK
 -- already rejects those, and duplicating it here would just fail differently.
 create or replace function finance.assert_category_writable(p_kind text, p_key text)
@@ -236,6 +234,58 @@ drop trigger if exists finance_entries_guard on finance.entries;
 create trigger finance_entries_guard
   before insert or update or delete on finance.entries
   for each row execute function finance.entries_guard();
+
+-- The same two rules on the PLAN side. Without this, `active = false` only ever
+-- meant "no new manual ENTRY": a new finance.expected row could still be filed
+-- under an archived category through the API, and would then post an entry
+-- under it on fulfilment (record_payment runs behind the posting GUC, so the
+-- entries guard never sees it). The UI never offered that — pickableCategories
+-- lists active, non-module categories only — which is exactly why it needed to
+-- be enforced in the database rather than left to the client.
+--
+-- SECURITY DEFINER: it reads finance.categories on behalf of whoever is
+-- writing, and finance.manage does not imply being able to SELECT the taxonomy.
+-- It only reads, and it is reached solely as a trigger.
+create or replace function finance.expected_guard()
+returns trigger language plpgsql security definer set search_path = finance, public as $$
+declare
+  -- NOT new.kind: that column is GENERATED STORED, and Postgres computes
+  -- generated columns AFTER before-row triggers, so it is still null here.
+  v_kind text := case new.direction when 'in' then 'income' else 'expense' end;
+  c record;
+begin
+  if coalesce(current_setting('levyam.finance_posting', true), '') = 'on' then
+    return new;                    -- a posting function; same carve-out as entries
+  end if;
+  -- an UPDATE that leaves the category where it is has nothing to re-check:
+  -- a legacy row whose category has since been archived stays editable
+  if tg_op = 'UPDATE'
+     and (new.category, new.direction) is not distinct from (old.category, old.direction) then
+    return new;
+  end if;
+  select owned_by_module, active into c
+  from finance.categories where kind = v_kind and key = new.category;
+  if not found then
+    return new;                    -- the composite FK rejects it a moment from now
+  end if;
+  -- A module may plan money under a category IT owns (quotes → 'events'); no
+  -- one may plan money under another module's, and a hand-written row may not
+  -- claim a module-owned category at all.
+  if c.owned_by_module is not null
+     and coalesce(new.source_module, '') <> c.owned_by_module then
+    raise exception 'הקטגוריה "%" נרשמת אוטומטית על ידי מודול (%) — לא ניתן להזין אותה ידנית',
+      new.category, c.owned_by_module;
+  end if;
+  if not c.active then
+    raise exception 'הקטגוריה "%" בארכיון — לא ניתן לרשום אליה צפי חדש', new.category;
+  end if;
+  return new;
+end; $$;
+
+drop trigger if exists finance_expected_guard on finance.expected;
+create trigger finance_expected_guard
+  before insert or update on finance.expected
+  for each row execute function finance.expected_guard();
 
 -- ---------------------------------------------------------------------
 --  5) Retire the CHECK constraints; the table is the taxonomy now.
