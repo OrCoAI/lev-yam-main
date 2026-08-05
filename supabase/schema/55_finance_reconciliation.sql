@@ -195,7 +195,16 @@ revoke all on function pos.post_day(date) from public, anon, authenticated;
 --     never clears is one nobody reads). reconciliation_counts() filters on it.
 --     `modules` names who OWNS each item, so the launcher can badge that tile.
 -- ---------------------------------------------------------------------
-create or replace function finance.reconciliation_items(p_since date)
+-- DROP first, not just `create or replace`: this function's OUT parameters
+-- have changed twice now (severity, then modules), and Postgres refuses to
+-- replace a function whose result row type differs — 42P13. Without this the
+-- file applies cleanly to a fresh database and FAILS on every existing one,
+-- which is the only place it actually matters. Nothing depends on it in the
+-- catalog (string-bodied functions record no dependency), and the two callers
+-- are recreated below in the same file.
+drop function if exists finance.reconciliation_items(date);
+
+create function finance.reconciliation_items(p_since date)
 returns table (sort_key text, severity text, modules text[], item jsonb)
 language sql stable security definer set search_path = finance, pos, core as $$
   with
