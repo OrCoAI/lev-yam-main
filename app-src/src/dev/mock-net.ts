@@ -454,6 +454,7 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise
         items.push({ type: 'overdue_expected', severity: daysOverdue > 30 ? 'high' : 'medium',
           expected_id: r.id, direction: r.direction, category: r.category, amount: num(r.amount),
           due_date: r.due_date, reason: r.reason, days_overdue: daysOverdue, fix: 'record_payment',
+          source_module: r.source_module ?? null, source_ref: r.source_ref ?? null,
           // the module that created the expectation owns chasing it
           modules: r.source_module && r.source_module !== 'finance' ? [r.source_module] : [] })
       }

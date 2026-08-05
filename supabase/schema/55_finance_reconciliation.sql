@@ -340,7 +340,11 @@ language sql stable security definer set search_path = finance, pos, core as $$
            'severity', case when x.due_date < current_date - 30 then 'high' else 'medium' end,
            'expected_id', x.id, 'direction', x.direction, 'category', x.category,
            'amount', x.amount, 'due_date', x.due_date, 'reason', x.reason,
-           'days_overdue', current_date - x.due_date, 'fix', 'record_payment')
+           'days_overdue', current_date - x.due_date, 'fix', 'record_payment',
+           -- provenance travels with the item so the UI can link to the thing
+           -- that CAUSED it (the signed quote behind an overdue deposit),
+           -- rather than only to the place where it gets paid
+           'source_module', x.source_module, 'source_ref', x.source_ref)
   from finance.expected x
   where x.status = 'open' and x.due_date is not null and x.due_date < current_date
 

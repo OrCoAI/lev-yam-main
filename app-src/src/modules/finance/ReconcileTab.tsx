@@ -13,6 +13,7 @@ import { posReportHref } from '../pos/logic'
 import { pos } from '../../lib/supabase'
 import ErrorNotice from './ErrorNotice'
 import { amount, shortDate } from './format'
+import { sourceHref } from './provenance'
 import { useFT, type FinanceDict } from './i18n'
 import type { DriftItem, LegDelta, UseReconciliation } from './reconciliation'
 
@@ -23,7 +24,9 @@ export default function ReconcileTab({
   /** owned by FinanceModule so the banner, the tab badge and this list all
    *  refresh together after a fix — otherwise the badge keeps the stale count */
   recon: UseReconciliation
-  onGoExpected: () => void
+  /** jump to the Expected tab AND focus the exact row, so the fix lands on the
+   *  item the user was looking at rather than a list they must re-scan */
+  onGoExpected: (expectedId: string) => void
 }) {
   const ft = useFT()
   const canPostDay = useCan(PERM.posManage)
@@ -135,12 +138,28 @@ export default function ReconcileTab({
                     </>
                   )}
                   {item.fix === 'record_payment' && (
-                    // the expected tab owns the payment form (amount, method,
-                    // date) — a second money-moving form would be a second way
-                    // to get it wrong, so this jumps there instead
-                    <button type="button" className="btn-primary btn-sm" onClick={onGoExpected}>
-                      {ft.reconGoExpected}
-                    </button>
+                    <>
+                      {/* the thing that CAUSED it: a deposit that never arrived
+                          belongs to the signed quote behind it */}
+                      {sourceLink(item.source_module, item.source_ref) && (
+                        <Link
+                          className="btn-ghost btn-sm"
+                          to={sourceLink(item.source_module, item.source_ref) as string}
+                        >
+                          {ft.reconOpenSource}
+                        </Link>
+                      )}
+                      {/* the expected tab owns the payment form (amount, method,
+                          date) — a second money-moving form would be a second
+                          way to get it wrong, so this jumps there instead */}
+                      <button
+                        type="button"
+                        className="btn-primary btn-sm"
+                        onClick={() => onGoExpected(item.expected_id)}
+                      >
+                        {ft.reconGoExpected}
+                      </button>
+                    </>
                   )}
                 </td>
               </tr>
@@ -151,6 +170,10 @@ export default function ReconcileTab({
     </div>
   )
 }
+
+/** Where did this item come from? Only quotes-sourced expectations resolve
+ *  today; a hand-created one has no page to open and simply shows no link. */
+const sourceLink = (module: string | null, ref: string | null) => sourceHref(module, ref)
 
 const itemKey = (i: DriftItem) =>
   i.type === 'overdue_expected' ? `${i.type}:${i.expected_id}` : `${i.type}:${i.business_date}`

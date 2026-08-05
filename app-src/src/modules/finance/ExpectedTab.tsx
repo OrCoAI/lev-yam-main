@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useState } from 'react'
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import { finance } from '../../lib/supabase'
 import type { FinanceExpected, FinanceKind, FinancePaymentMethod } from '../../types'
 import { useRowDisclosure } from '../../lib/useRowDisclosure'
@@ -31,8 +31,15 @@ type FulfillValues = {
 export default function ExpectedTab({
   canManage,
   onMoneyChanged,
+  focusId,
+  onFocusHandled,
 }: {
   canManage: boolean
+  /** an expectation the user was sent to from the Reconcile tab: scroll to it
+   *  and mark it, so "go record the payment" lands on the right row instead of
+   *  dropping them into a list to search again */
+  focusId?: string | null
+  onFocusHandled?: () => void
   /** fulfilling or cancelling an expectation changes the overdue drift check,
    *  so the module's reconciliation read has to be refreshed — otherwise the
    *  banner and the Reconcile tab keep showing the pre-change count */
@@ -47,6 +54,16 @@ export default function ExpectedTab({
   const [busy, setBusy] = useState(false)
   const [showClosed, setShowClosed] = useState(false)
   const [fulfillId, setFulfillId] = useState<string | null>(null)
+  const focusRef = useRef<HTMLTableRowElement | null>(null)
+
+  // Scroll the focused row into view once the list has rendered, then hand the
+  // focus back so it does not re-fire on every later render of this tab.
+  useEffect(() => {
+    if (!focusId || loading) return
+    focusRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    const t = setTimeout(() => onFocusHandled?.(), 2500)
+    return () => clearTimeout(t)
+  }, [focusId, loading, onFocusHandled])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -126,7 +143,12 @@ export default function ExpectedTab({
   function renderRow(r: FinanceExpected) {
     const overdue = r.status === 'open' && !!r.due_date && r.due_date < today
     return (
-      <tr key={r.id} {...rowProps(r.id)}>
+      <tr
+        key={r.id}
+        ref={r.id === focusId ? focusRef : undefined}
+        className={r.id === focusId ? 'finance-row-focus' : undefined}
+        {...rowProps(r.id)}
+      >
         <td className="rl-lead" title={r.due_date ?? undefined}>
           {r.due_date ? shortDate(r.due_date) : '—'}
           {overdue && <span className="finance-badge finance-badge-warn">{ft.overdue}</span>}

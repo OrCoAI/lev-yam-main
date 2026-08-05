@@ -69,6 +69,10 @@ export type DriftItem =
       due_date: string
       reason: string | null
       days_overdue: number
+      /** provenance of the expectation, so the item can link to whatever
+       *  created it (a signed quote), not just to where it gets paid */
+      source_module: string | null
+      source_ref: string | null
     }
 
 export interface Reconciliation {

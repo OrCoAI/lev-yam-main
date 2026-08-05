@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { finance } from '../../lib/supabase'
 import { useCan, PERM } from '../../lib/permissions'
@@ -96,26 +96,21 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
     void load()
   }, [load])
 
-  // Both forms render at the TOP of the tab, so opening one from a row further
-  // down the ledger must bring it into view — otherwise the click reads as
-  // "the button does nothing", which is exactly how it was reported.
-  // They are also mutually exclusive: two money forms stacked above the same
-  // list is an invitation to type into the wrong one.
-  function revealForm() {
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
   function startEdit(e: FinanceEntry) {
     setCorrecting(null)
     setEditing(e)
     setFormOpen(true)
-    revealForm()
+    // the edit form lives at the top of the tab; bring it into view
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  // The correction form opens INLINE, directly under the row being corrected
+  // (same pattern as the record-payment form in ExpectedTab). It used to render
+  // at the top of the tab, which made a click on a row further down look like
+  // nothing had happened and left "what is this correcting?" unanswered.
   function startCorrection(id: string) {
     setEditing(null)
-    setCorrecting(id)
-    revealForm()
+    setCorrecting((cur) => (cur === id ? null : id))
   }
 
   function cancelEdit() {
@@ -170,17 +165,6 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
         />
       )}
 
-      {correcting && (
-        <CorrectionForm
-          entryId={correcting}
-          onCancel={() => setCorrecting(null)}
-          onDone={() => {
-            setCorrecting(null)
-            void load()
-          }}
-        />
-      )}
-
       <KindFilterChips value={kindFilter} onChange={setKindFilter} />
 
       {error && <ErrorNotice error={error} />}
@@ -205,7 +189,8 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
               {entries.map((e) => {
                 const href = sourceHref(e.source_module, e.source_ref, quoteMap)
                 return (
-                  <tr key={e.id} {...rowProps(e.id)}>
+                  <Fragment key={e.id}>
+                  <tr {...rowProps(e.id)}>
                     <td className="rl-lead" title={e.entry_date}>
                       {shortDate(e.entry_date)}
                     </td>
@@ -278,6 +263,7 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
                                 disabled={busy}
                                 onClick={() => startCorrection(e.id)}
                                 aria-label={ft.correct}
+                                title={ft.correctHint}
                               >
                                 <span aria-hidden="true">±</span>
                                 <span className="btn-label">{ft.correct}</span>
@@ -288,6 +274,23 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
                       </td>
                     )}
                   </tr>
+                  {/* the correction opens right under the row it corrects, so
+                      "which number am I fixing?" is never a guess */}
+                  {correcting === e.id && (
+                    <tr className="rl-formrow">
+                      <td colSpan={showActions ? 7 : 6}>
+                        <CorrectionForm
+                          entryId={e.id}
+                          onCancel={() => setCorrecting(null)}
+                          onDone={() => {
+                            setCorrecting(null)
+                            void load()
+                          }}
+                        />
+                      </td>
+                    </tr>
+                  )}
+                  </Fragment>
                 )
               })}
               {entries.length === 0 && (

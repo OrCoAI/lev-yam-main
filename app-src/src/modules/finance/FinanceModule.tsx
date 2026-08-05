@@ -29,6 +29,10 @@ export default function FinanceModule() {
   // phone — and a stale "books are aligned" is the one answer this feature
   // must never give. The query is ~4ms; the tabs that mutate money also call
   // reload() directly, so the banner updates without waiting for a tab switch.
+  // the expectation the user was sent to from the Reconcile tab, so the
+  // Expected tab can scroll to it and mark it — otherwise "go record the
+  // payment" drops you in an unsorted list to find it again yourself
+  const [focusExpected, setFocusExpected] = useState<string | null>(null)
   const reloadRecon = recon.reload
   useEffect(() => {
     if (tab === 'recon') void reloadRecon()
@@ -84,11 +88,24 @@ export default function FinanceModule() {
 
       {tab === 'entries' && <EntriesTab canManage={canManage} />}
       {tab === 'expected' && (
-        <ExpectedTab canManage={canManage} onMoneyChanged={reloadRecon} />
+        <ExpectedTab
+          canManage={canManage}
+          onMoneyChanged={reloadRecon}
+          focusId={focusExpected}
+          onFocusHandled={() => setFocusExpected(null)}
+        />
       )}
       {tab === 'transfers' && <TransfersTab canManage={canManage} />}
       {tab === 'report' && <ReportTab />}
-      {tab === 'recon' && <ReconcileTab recon={recon} onGoExpected={() => setTab('expected')} />}
+      {tab === 'recon' && (
+        <ReconcileTab
+          recon={recon}
+          onGoExpected={(id) => {
+            setFocusExpected(id)
+            setTab('expected')
+          }}
+        />
+      )}
       {tab === 'categories' && canEditCategories && <CategoriesTab />}
     </section>
   )
