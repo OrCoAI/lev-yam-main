@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useCan, PERM } from '../../lib/permissions'
 import CategoriesTab from './CategoriesTab'
 import EntriesTab from './EntriesTab'
@@ -23,6 +23,16 @@ export default function FinanceModule() {
   // RequirePermission finance.view, so there is nothing to gate here.)
   const recon = useReconciliation()
   const drift = recon.data?.count ?? 0
+
+  // The reconcile tab promises a LIVE answer, so it re-reads on entry. Money
+  // can move from anywhere — the POS module in another tab, a colleague's
+  // phone — and a stale "books are aligned" is the one answer this feature
+  // must never give. The query is ~4ms; the tabs that mutate money also call
+  // reload() directly, so the banner updates without waiting for a tab switch.
+  const reloadRecon = recon.reload
+  useEffect(() => {
+    if (tab === 'recon') void reloadRecon()
+  }, [tab, reloadRecon])
 
   return (
     <section>
@@ -73,7 +83,9 @@ export default function FinanceModule() {
       )}
 
       {tab === 'entries' && <EntriesTab canManage={canManage} />}
-      {tab === 'expected' && <ExpectedTab canManage={canManage} />}
+      {tab === 'expected' && (
+        <ExpectedTab canManage={canManage} onMoneyChanged={reloadRecon} />
+      )}
       {tab === 'transfers' && <TransfersTab canManage={canManage} />}
       {tab === 'report' && <ReportTab />}
       {tab === 'recon' && <ReconcileTab recon={recon} onGoExpected={() => setTab('expected')} />}

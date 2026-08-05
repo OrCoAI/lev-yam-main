@@ -96,10 +96,26 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
     void load()
   }, [load])
 
+  // Both forms render at the TOP of the tab, so opening one from a row further
+  // down the ledger must bring it into view — otherwise the click reads as
+  // "the button does nothing", which is exactly how it was reported.
+  // They are also mutually exclusive: two money forms stacked above the same
+  // list is an invitation to type into the wrong one.
+  function revealForm() {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   function startEdit(e: FinanceEntry) {
+    setCorrecting(null)
     setEditing(e)
     setFormOpen(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    revealForm()
+  }
+
+  function startCorrection(id: string) {
+    setEditing(null)
+    setCorrecting(id)
+    revealForm()
   }
 
   function cancelEdit() {
@@ -260,7 +276,7 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
                               <button
                                 className="btn-ghost btn-sm btn-icon-label"
                                 disabled={busy}
-                                onClick={() => setCorrecting(e.id)}
+                                onClick={() => startCorrection(e.id)}
                                 aria-label={ft.correct}
                               >
                                 <span aria-hidden="true">±</span>

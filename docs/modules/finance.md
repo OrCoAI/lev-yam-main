@@ -37,6 +37,17 @@ touching schema, permissions, or the events/finance spine graduates to a `docs/p
 
 ## Done
 
+- **2026-08-03 — two bugs found by Or on staging, fixed.**
+  (1) The owner-correction `±` button "did nothing": `CorrectionForm` renders at the *top* of
+  the entries tab, but unlike `startEdit` the correction path never scrolled, so clicking a row
+  low in the ledger opened the form off-screen above. Both forms now scroll into view and are
+  mutually exclusive (two money forms stacked over one list invites typing into the wrong one).
+  The RPCs were never at fault — verified through PostgREST.
+  (2) Updating צפי did not refresh the התאמה tab: `useReconciliation` fetched once on mount and
+  nothing re-read it after `record_payment`, so a paid deposit stayed listed as overdue. The
+  reconcile tab now re-reads on entry (it promises a *live* answer, and money moves from
+  anywhere — the POS module, a colleague's phone), and ExpectedTab notifies the module after
+  fulfil/cancel so the banner updates without waiting for a tab switch.
 - **2026-08-03 — books-integrity initiative COMPLETE (PRs A–D).** Categories as data,
   reconciliation + alerts, owner override, cash↔bank transfers. Close-out and alignment verdict
   in [plans/finance-books-integrity.md](../plans/finance-books-integrity.md) §10. Follow-up

@@ -28,7 +28,16 @@ type FulfillValues = {
   note: string
 }
 
-export default function ExpectedTab({ canManage }: { canManage: boolean }) {
+export default function ExpectedTab({
+  canManage,
+  onMoneyChanged,
+}: {
+  canManage: boolean
+  /** fulfilling or cancelling an expectation changes the overdue drift check,
+   *  so the module's reconciliation read has to be refreshed — otherwise the
+   *  banner and the Reconcile tab keep showing the pre-change count */
+  onMoneyChanged: () => void
+}) {
   const ft = useFT()
   const categoryName = useCategoryName()
   const { rowProps } = useRowDisclosure()
@@ -88,6 +97,7 @@ export default function ExpectedTab({ canManage }: { canManage: boolean }) {
     setFulfillId(null)
     setError(null)
     await load()
+    onMoneyChanged()
   }
 
   async function cancel(r: FinanceExpected) {
@@ -110,6 +120,7 @@ export default function ExpectedTab({ canManage }: { canManage: boolean }) {
       return
     }
     await load()
+    onMoneyChanged()
   }
 
   function renderRow(r: FinanceExpected) {
