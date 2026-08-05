@@ -592,9 +592,11 @@ select pg_temp.assert_raises('manager: cannot create an expectation carrying PRO
       values ('in','bookings', 5000, 'rls-test forge', 'override', 'x') $q$, 'מודול');
 select pg_temp.assert_rows('manager: ...so no override-badged row can be laundered in',
   $q$ select 1 from finance.expected where note = 'rls-test forge' $q$, 0);
--- own fixture, so these do not depend on a row created further down the file
+-- own fixtures, so these do not depend on a row created further down the file
 insert into finance.expected (id, direction, category, amount, note)
 values ('bbbbbbbb-0000-0000-0000-0000000000fe', 'in', 'bookings', 300, 'rls-test provenance');
+insert into finance.expected (direction, category, amount, note)
+values ('in', 'bookings', 50, 'rls-test provenance-free');
 select pg_temp.assert_raises('manager: cannot re-tag an existing expectation either',
   $q$ update finance.expected set source_module = 'override'
       where id = 'bbbbbbbb-0000-0000-0000-0000000000fe' $q$, 'מקור');
@@ -608,6 +610,25 @@ select pg_temp.assert_raises('manager: ...and refuses zero',
   $q$ select finance.record_payment('bbbbbbbb-0000-0000-0000-0000000000fe'::uuid,
         0, 'cash', current_date, 'rls-test zero') $q$, 'חיובי');
 delete from finance.expected where id = 'bbbbbbbb-0000-0000-0000-0000000000fe';
+-- DELETE erases provenance as effectively as re-tagging it, and it is what
+-- entries_guard() blocks on the ledger side. Deleting a quotes-planned deposit
+-- would destroy the module's record of money owed AND silently clear that
+-- expectation's overdue drift item, so the books would stop reporting a real
+-- problem. Cancelling is the supported retirement (status='cancelled').
+select pg_temp.assert_raises('manager: cannot DELETE a module-planned expectation',
+  $q$ delete from finance.expected
+      where id = 'bbbbbbbb-0000-0000-0000-000000000003' $q$, 'למחיקה');
+select pg_temp.assert_rows('manager: ...and the module expectation is still there',
+  $q$ select 1 from finance.expected
+      where id = 'bbbbbbbb-0000-0000-0000-000000000003' $q$, 1);
+select pg_temp.assert_ok('manager: but CAN cancel it, which is the supported path',
+  $q$ update finance.expected set status = 'cancelled'
+      where id = 'bbbbbbbb-0000-0000-0000-000000000003' $q$);
+update finance.expected set status = 'open'
+ where id = 'bbbbbbbb-0000-0000-0000-000000000003';
+-- a hand-created expectation carries no provenance and stays freely deletable
+select pg_temp.assert_ok('manager: a hand-created expectation is still deletable',
+  $q$ delete from finance.expected where note = 'rls-test provenance-free' $q$);
 -- expected_guard() cannot read new.kind (GENERATED STORED columns are computed
 -- AFTER before-row triggers), so it re-derives direction→kind. If that copy ever
 -- diverges from the column's own expression, the guard looks up a (kind, key)
@@ -1038,31 +1059,57 @@ select pg_temp.assert_num('legacy-day: the new expense DID post to food',
 -- has_permission-gated wrapper would fail for reasons unrelated to detection.
 -- The gate itself is asserted in the staff/manager phases above.
 select pg_temp.seed_actor();
+-- Year-2000 dates, not the 2099 the rest of the suite uses: check 1 only reports
+-- a day that is actually OVER (`e.d < today`), so a future-dated fixture would
+-- make every assertion below pass for the wrong reason. Still unmistakably
+-- synthetic, and every assertion filters on business_date, so widening p_since
+-- to reach them isolates nothing less than a narrow future window did.
 insert into pos.pos_bills (id, table_num, status, paid_at, grand_total, cash_paid, card_paid, tip)
-values ('rls-unposted-day', 994, 'paid', '2099-05-05 12:00+02', 500, 200, 300, 0);
+values ('rls-unposted-day', 994, 'paid', '2000-05-05 12:00+02', 500, 200, 300, 0);
 select pg_temp.assert_rows('recon: an UNPOSTED day with money is reported',
-  $q$ select 1 from finance.reconciliation_items('2099-01-01') r
-      where r.item->>'type' = 'unposted_day' and r.item->>'business_date' = '2099-05-05' $q$, 1);
+  $q$ select 1 from finance.reconciliation_items('2000-01-01') r
+      where r.item->>'type' = 'unposted_day' and r.item->>'business_date' = '2000-05-05' $q$, 1);
 select pg_temp.assert_num('recon: it reports the day''s full revenue',
-  (select (r.item->>'revenue')::numeric from finance.reconciliation_items('2099-01-01') r
-   where r.item->>'type' = 'unposted_day' and r.item->>'business_date' = '2099-05-05'), 500);
+  (select (r.item->>'revenue')::numeric from finance.reconciliation_items('2000-01-01') r
+   where r.item->>'type' = 'unposted_day' and r.item->>'business_date' = '2000-05-05'), 500);
 -- posting it must make the item disappear — the alert clears because the
 -- problem is gone, never because someone dismissed it
-select pos.post_day('2099-05-05'::date);
+select pos.post_day('2000-05-05'::date);
 select pg_temp.assert_rows('recon: posting the day clears the item',
-  $q$ select 1 from finance.reconciliation_items('2099-01-01') r
-      where r.item->>'type' = 'unposted_day' and r.item->>'business_date' = '2099-05-05' $q$, 0);
+  $q$ select 1 from finance.reconciliation_items('2000-01-01') r
+      where r.item->>'type' = 'unposted_day' and r.item->>'business_date' = '2000-05-05' $q$, 0);
+-- TODAY is not late. Every other detection fixture here uses year-2099 dates, so
+-- the live path -- a service in progress -- was the one case the suite could not
+-- see: an unbounded check 1 reported the current day the moment its first bill
+-- was paid, lighting both launcher badges and offering a one-click post of a
+-- PARTIAL day. Dated with real now(), deliberately, since that is the bug.
+insert into pos.pos_bills (id, table_num, status, paid_at, grand_total, cash_paid, card_paid, tip)
+values ('rls-today-open', 991, 'paid', now(), 300, 300, 0, 0);
+select pg_temp.assert_rows('recon: the day being served is NOT reported as unposted',
+  $q$ select 1 from finance.reconciliation_items((current_date - 2)::date) r
+      where r.item->>'type' = 'unposted_day'
+        and r.item->>'business_date' = (now() at time zone 'Asia/Jerusalem')::date::text $q$, 0);
+-- ...while yesterday, genuinely over and never posted, still is
+insert into pos.pos_bills (id, table_num, status, paid_at, grand_total, cash_paid, card_paid, tip)
+values ('rls-yesterday', 990, 'paid', now() - interval '1 day', 300, 300, 0, 0);
+select pg_temp.assert_rows('recon: but YESTERDAY unposted still is',
+  $q$ select 1 from finance.reconciliation_items((current_date - 2)::date) r
+      where r.item->>'type' = 'unposted_day'
+        and r.item->>'business_date'
+            = ((now() - interval '1 day') at time zone 'Asia/Jerusalem')::date::text $q$, 1);
+delete from pos.pos_bills where id in ('rls-today-open', 'rls-yesterday');
+
 -- and a silent money change on a booked day must surface as recompute drift
 select set_config('levyam.suppress_repost', 'on', true);
 update pos.pos_bills set grand_total = 700 where id = 'rls-unposted-day';
 select set_config('levyam.suppress_repost', '', true);
 select pg_temp.assert_rows('recon: a silently-changed booked day is reported as drift',
-  $q$ select 1 from finance.reconciliation_items('2099-01-01') r
-      where r.item->>'type' = 'recompute_drift' and r.item->>'business_date' = '2099-05-05' $q$, 1);
-select pos.post_day('2099-05-05'::date);
+  $q$ select 1 from finance.reconciliation_items('2000-01-01') r
+      where r.item->>'type' = 'recompute_drift' and r.item->>'business_date' = '2000-05-05' $q$, 1);
+select pos.post_day('2000-05-05'::date);
 select pg_temp.assert_rows('recon: re-posting clears the drift',
-  $q$ select 1 from finance.reconciliation_items('2099-01-01') r
-      where r.item->>'business_date' = '2099-05-05' $q$, 0);
+  $q$ select 1 from finance.reconciliation_items('2000-01-01') r
+      where r.item->>'business_date' = '2000-05-05' $q$, 0);
 -- A drift whose legs CANCEL is still a drift: the same money moved from cash to
 -- card and the books did not follow. The day is now grand_total 700 / card 300,
 -- booked as cash 400 + card 300; paying 600 of it by card makes the legs
@@ -1072,15 +1119,15 @@ select set_config('levyam.suppress_repost', 'on', true);
 update pos.pos_bills set card_paid = 600 where id = 'rls-unposted-day';
 select set_config('levyam.suppress_repost', '', true);
 select pg_temp.assert_rows('recon: legs that cancel are still reported as drift',
-  $q$ select 1 from finance.reconciliation_items('2099-01-01') r
-      where r.item->>'type' = 'recompute_drift' and r.item->>'business_date' = '2099-05-05' $q$, 1);
+  $q$ select 1 from finance.reconciliation_items('2000-01-01') r
+      where r.item->>'type' = 'recompute_drift' and r.item->>'business_date' = '2000-05-05' $q$, 1);
 select pg_temp.assert_num('recon: and its amount is the money that moved, not the net',
-  (select (r.item->>'total_delta')::numeric from finance.reconciliation_items('2099-01-01') r
-   where r.item->>'type' = 'recompute_drift' and r.item->>'business_date' = '2099-05-05'), 600);
-select pos.post_day('2099-05-05'::date);
+  (select (r.item->>'total_delta')::numeric from finance.reconciliation_items('2000-01-01') r
+   where r.item->>'type' = 'recompute_drift' and r.item->>'business_date' = '2000-05-05'), 600);
+select pos.post_day('2000-05-05'::date);
 select pg_temp.assert_rows('recon: re-posting clears the cancelling drift too',
-  $q$ select 1 from finance.reconciliation_items('2099-01-01') r
-      where r.item->>'business_date' = '2099-05-05' $q$, 0);
+  $q$ select 1 from finance.reconciliation_items('2000-01-01') r
+      where r.item->>'business_date' = '2000-05-05' $q$, 0);
 
 -- ---------------------------------------------------------------------
 --  56_finance_override (PR C) — the owner correction and the day pin.
@@ -1132,14 +1179,14 @@ select pg_temp.assert_num('override: later costs still reach the books',
 --     manual post is refused outright, and the trigger path skips silently
 insert into pos.day_pins (business_date, reason) values ('2099-06-06', 'rls-test pin');
 select pg_temp.assert_rows('pin: a frozen day is reported as pinned, never as drift',
-  $q$ select 1 from finance.reconciliation_items('2099-01-01') r
+  $q$ select 1 from finance.reconciliation_items('2000-01-01') r
       where r.item->>'business_date' = '2099-06-06'
         and r.item->>'type' = 'recompute_drift' $q$, 0);
 select pg_temp.assert_rows('pin: and it IS listed, so the freeze stays visible',
-  $q$ select 1 from finance.reconciliation_items('2099-01-01') r
+  $q$ select 1 from finance.reconciliation_items('2000-01-01') r
       where r.item->>'business_date' = '2099-06-06' and r.item->>'type' = 'pinned' $q$, 1);
 select pg_temp.assert_rows('pin: a clean frozen day is severity low (never badges)',
-  $q$ select 1 from finance.reconciliation_items('2099-01-01') r
+  $q$ select 1 from finance.reconciliation_items('2000-01-01') r
       where r.item->>'business_date' = '2099-06-06' and r.severity = 'low' $q$, 1);
 select pg_temp.assert_raises('pin: pos.post_day refuses a frozen day',
   $q$ select pos.post_day('2099-06-06'::date) $q$, 'נעול');
@@ -1151,7 +1198,7 @@ select pg_temp.assert_num('pin: the trigger skipped silently — labor never pos
   (select coalesce(sum(amount), 0) from finance.entries
    where source_ref like 'pos:2099-06-06:labor%'), 0);
 select pg_temp.assert_rows('pin: money piling up behind the freeze escalates to medium',
-  $q$ select 1 from finance.reconciliation_items('2099-01-01') r
+  $q$ select 1 from finance.reconciliation_items('2000-01-01') r
       where r.item->>'business_date' = '2099-06-06' and r.item->>'type' = 'pinned'
         and r.severity = 'medium' $q$, 1);
 -- A day pinned BEFORE it was ever posted is the nastier case: reported as
@@ -1160,20 +1207,20 @@ select pg_temp.assert_rows('pin: money piling up behind the freeze escalates to 
 -- reported as pinned — and at 'medium', because its whole takings sit outside
 -- the books, which is precisely money piling up behind a freeze.
 insert into pos.pos_bills (id, table_num, status, paid_at, grand_total, cash_paid, card_paid, tip)
-values ('rls-pinned-unposted', 992, 'paid', '2099-07-07 12:00+02', 250, 250, 0, 0);
-insert into pos.day_pins (business_date, reason) values ('2099-07-07', 'rls-test never posted');
+values ('rls-pinned-unposted', 992, 'paid', '2000-07-07 12:00+02', 250, 250, 0, 0);
+insert into pos.day_pins (business_date, reason) values ('2000-07-07', 'rls-test never posted');
 select pg_temp.assert_rows('pin: a never-posted frozen day is NOT reported as unposted_day',
-  $q$ select 1 from finance.reconciliation_items('2099-01-01') r
-      where r.item->>'business_date' = '2099-07-07'
+  $q$ select 1 from finance.reconciliation_items('2000-01-01') r
+      where r.item->>'business_date' = '2000-07-07'
         and r.item->>'type' = 'unposted_day' $q$, 0);
 select pg_temp.assert_rows('pin: it is reported as pinned at medium (its takings are outside)',
-  $q$ select 1 from finance.reconciliation_items('2099-01-01') r
-      where r.item->>'business_date' = '2099-07-07' and r.item->>'type' = 'pinned'
+  $q$ select 1 from finance.reconciliation_items('2000-01-01') r
+      where r.item->>'business_date' = '2000-07-07' and r.item->>'type' = 'pinned'
         and r.severity = 'medium' $q$, 1);
 select pg_temp.assert_num('pin: and it reports the full withheld amount',
-  (select (r.item->>'total_delta')::numeric from finance.reconciliation_items('2099-01-01') r
-   where r.item->>'business_date' = '2099-07-07'), 250);
-delete from pos.day_pins where business_date = '2099-07-07';
+  (select (r.item->>'total_delta')::numeric from finance.reconciliation_items('2000-01-01') r
+   where r.item->>'business_date' = '2000-07-07'), 250);
+delete from pos.day_pins where business_date = '2000-07-07';
 
 -- ---------------------------------------------------------------------
 --  The quotes -> finance money seam, against 54's finance.expected_guard().
@@ -1208,9 +1255,14 @@ select pg_temp.assert_rows('quotes seam: signing a contract still plans BOTH exp
       where q.quote_number = 'LY-RLS-GUARD'
         and e.source_module = 'quotes' and e.category = 'events'
         and e.source_ref in (q.id::text || ':deposit', q.id::text || ':balance') $q$, 2);
+-- behind the GUC: since 54's guard covers DELETE, a provenance-carrying
+-- expectation cannot be deleted by a client, which is the point of the assertion
+-- further down. Test cleanup is a posting-function-equivalent motion.
+select set_config('levyam.finance_posting', 'on', true);
 delete from finance.expected
  where source_module = 'quotes'
    and source_ref like (select id::text from quotes.quotes where quote_number = 'LY-RLS-GUARD') || ':%';
+select set_config('levyam.finance_posting', '', true);
 -- the quote and its now-SIGNED contract are deliberately left in place: a signed
 -- contract is undeletable by design ("הסכם חתום הוא מסמך משפטי"), and this whole
 -- suite runs inside one transaction that rolls back. Neither row is overdue, so
@@ -1244,24 +1296,26 @@ select set_config('levyam.finance_posting', '', true);
 insert into finance.expected (direction, category, amount, due_date, reason, status)
 values ('out', 'suppliers', 900, current_date - 5, 'rls-test supplier', 'open');
 select pg_temp.assert_rows('badges: a quotes-sourced overdue expectation is owned by quotes',
-  $q$ select 1 from finance.reconciliation_items('2099-01-01') r
+  $q$ select 1 from finance.reconciliation_items('2000-01-01') r
       where r.item->>'expected_id' = (select id::text from finance.expected
                                       where source_ref = 'rls-test-quote:deposit')
         and r.modules = array['quotes'] $q$, 1);
 select pg_temp.assert_rows('badges: a hand-created expectation is owned by no module',
-  $q$ select 1 from finance.reconciliation_items('2099-01-01') r
+  $q$ select 1 from finance.reconciliation_items('2000-01-01') r
       where r.item->>'reason' = 'rls-test supplier' and r.modules = '{}'::text[] $q$, 1);
 select pg_temp.assert_rows('badges: POS items are owned by pos',
   $q$ select 1 where not exists (
-        select 1 from finance.reconciliation_items('2099-01-01') r
+        select 1 from finance.reconciliation_items('2000-01-01') r
         where r.item->>'type' in ('unposted_day','recompute_drift','pinned')
           and r.modules <> array['pos']) $q$, 1);
 -- the point of the whole change: POS must NOT be badged for finance problems
 select pg_temp.assert_rows('badges: no overdue expectation is ever charged to pos',
   $q$ select 1 where not exists (
-        select 1 from finance.reconciliation_items('2099-01-01') r
+        select 1 from finance.reconciliation_items('2000-01-01') r
         where r.item->>'type' = 'overdue_expected' and 'pos' = any(r.modules)) $q$, 1);
+select set_config('levyam.finance_posting', 'on', true);   -- provenance row, see above
 delete from finance.expected where source_ref = 'rls-test-quote:deposit';
+select set_config('levyam.finance_posting', '', true);
 delete from finance.expected where reason = 'rls-test supplier';
 
 -- unfreezing lets the day resume, and the correction still stands

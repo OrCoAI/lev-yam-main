@@ -252,6 +252,7 @@ declare
   -- mapping is therefore duplicated from the column's own expression below —
   -- pinned by an rls_matrix assertion, because if the two ever diverge this
   -- guard looks up a kind that matches no category and fails OPEN.
+  -- NULL on DELETE, where `new` does not exist; only the DELETE branch runs then.
   v_kind text := case new.direction when 'in' then 'income' else 'expense' end;
 begin
   -- A posting function is writing (quotes.plan_money_for_quote sets the GUC
@@ -262,7 +263,21 @@ begin
   -- the very thing entries_guard() makes impossible. It would also let them
   -- charge another module's drift badge and forge its "open the source" link.
   if finance.is_posting() then
-    return new;
+    return coalesce(new, old);
+  end if;
+  -- A DELETE erases provenance just as effectively as re-tagging it, and it is
+  -- the motion entries_guard() blocks on the ledger side. Without it a manager
+  -- could delete a quotes-planned deposit — destroying the module's record of
+  -- money it is owed AND silently clearing that expectation's overdue drift
+  -- item, so the books stop reporting a problem that still exists. Cancelling
+  -- is the supported way to retire one (status = 'cancelled'), which is what
+  -- both the UI and quotes itself do; it keeps the row and its history.
+  if tg_op = 'DELETE' then
+    if old.source_module is not null then
+      raise exception 'צפי ממקור מודול (%) אינו ניתן למחיקה — יש לבטל אותו במקום זאת',
+        old.source_module;
+    end if;
+    return old;
   end if;
   -- PROVENANCE IS MODULE-WRITTEN ONLY, the same rule entries_guard() enforces
   -- one screen up. Leaving it off the plan side left a laundering path into the
@@ -297,7 +312,7 @@ end; $$;
 
 drop trigger if exists finance_expected_guard on finance.expected;
 create trigger finance_expected_guard
-  before insert or update on finance.expected
+  before insert or update or delete on finance.expected
   for each row execute function finance.expected_guard();
 
 -- ---------------------------------------------------------------------

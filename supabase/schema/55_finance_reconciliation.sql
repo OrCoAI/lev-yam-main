@@ -300,6 +300,14 @@ language sql stable security definer set search_path = finance, pos, core as $$
            'revenue', e.cash + e.card, 'fix', 'post_day')
   from expected e
   where not exists (select 1 from posted_days pd where pd.d = e.d)
+    -- TODAY IS NOT LATE. Posting a day is the deliberate end-of-service act, so
+    -- the day currently being served has not failed to be posted — it simply is
+    -- not over. Without this bound the first paid bill of every service lit both
+    -- launcher badges red and the banner, and offered a one-click "post to
+    -- books" that would have written a PARTIAL day into the ledger and left the
+    -- rest of the service to arrive as re-post deltas. The alarm has to mean
+    -- something, or it gets ignored on the day it is real.
+    and e.d < (now() at time zone 'Asia/Jerusalem')::date
     -- a day whose money all nets to zero is not "unposted", it is empty
     and (e.cash + e.card + e.food + e.labor) <> 0
     -- ...and a PINNED day is not "unposted" either, it is frozen. Reporting it

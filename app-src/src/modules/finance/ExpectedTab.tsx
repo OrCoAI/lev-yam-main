@@ -56,25 +56,32 @@ export default function ExpectedTab({
   const [fulfillId, setFulfillId] = useState<string | null>(null)
   const focusRef = useRef<HTMLTableRowElement | null>(null)
 
-  // Scroll to the focused row ONCE per focusId, after the list has rendered.
-  // Guarded by a ref rather than by the effect deps: `loading` flips on every
-  // later load() (recording a payment triggers one), and re-running the effect
-  // would yank the viewport back to this row while the user has moved on.
-  const scrolledToRef = useRef<string | null>(null)
+  // Scroll to the focused row and start its un-highlight timer TOGETHER, once
+  // per focusId, and only once the list has actually rendered.
+  //
+  // Both halves are load-gated on purpose. An earlier split armed the 2.5s timer
+  // on mount while the scroll waited for `loading`: on a slow fetch the focus was
+  // cleared before the row existed, so the user got neither the scroll nor the
+  // highlight — precisely the "dropped into an unsorted list" failure this prop
+  // exists to prevent.
+  //
+  // Guarded by a ref rather than by the deps, because `loading` flips on every
+  // later load() (recording a payment triggers one) and re-running would yank the
+  // viewport back to a row the user has moved on from.
+  const handledRef = useRef<string | null>(null)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
-    if (!focusId || loading || scrolledToRef.current === focusId) return
-    scrolledToRef.current = focusId
+    if (!focusId || loading || handledRef.current === focusId) return
+    handledRef.current = focusId
     focusRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  }, [focusId, loading])
-
-  // ...and clear the highlight 2.5s later. Its own effect, keyed ONLY on
-  // focusId: sharing the one above would let any re-run cancel the pending
-  // timer in cleanup and leave the row marked forever.
-  useEffect(() => {
-    if (!focusId) return
-    const t = setTimeout(() => onFocusHandled?.(), 2500)
-    return () => clearTimeout(t)
-  }, [focusId, onFocusHandled])
+    // deliberately NOT cleaned up on dep change: React runs cleanup on every
+    // re-run, and any later load() flips `loading` — clearing a pending timer
+    // there would leave the row highlighted forever. Unmount-only, below.
+    timerRef.current = setTimeout(() => onFocusHandled?.(), 2500)
+  }, [focusId, loading, onFocusHandled])
+  useEffect(() => () => {
+    if (timerRef.current) clearTimeout(timerRef.current)
+  }, [])
 
   const load = useCallback(async () => {
     setLoading(true)
