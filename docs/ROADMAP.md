@@ -85,7 +85,8 @@ bilingual is ever a retrofit.*
         quotes → quote page); folds in two tracked follow-ups: **HE/AR retrofit** of
         the finance module chrome (predates the i18n layer) and EntriesTab form →
         child component (keystrokes re-render the entries table)
-  - [ ] **Finance books integrity** (kickoff 2026-07-31, Or's brief) —
+  - [x] **Finance books integrity** (kickoff 2026-07-31, Or's brief; delivered 2026-08-03,
+        verified on staging + review pass 2026-08-05) —
         [plans/finance-books-integrity.md](plans/finance-books-integrity.md): four PRs,
         A → B → C → D.
         - [x] **PR A** categories as data *(done 2026-08-03, commit 5f66a26; gate
@@ -117,6 +118,29 @@ bilingual is ever a retrofit.*
               (decided in PR D), no new permission, asserted to leave the P&L untouched
         - Out of scope (kickoff): signed-quote-vs-booked check, partial payments (stays
           an open item above), tips in the books, sub-categories
+        - [x] **Staging verification + review pass** *(2026-08-05, plan §11)* — four bugs Or
+              found on staging (silent `±` button, stale reconciliation, the POS tile badged
+              with finance's problems, table buttons breaking the row layout) and five
+              `/code-review high` findings, the last of which was a real half-rule: archiving
+              a category blocked new **entries** but not new **expectations**, closed by a new
+              `finance.expected_guard()`. `rls_matrix` green locally *and* against the staging
+              database
+- [x] **PROD privilege escalation closed** *(2026-08-05, found by the gate while verifying the
+      finance branch — [modules/users.md](modules/users.md))* — `core.admin_assign_role()` was
+      executable by `authenticated` on prod and staging though `00_core.sql` revokes it, so any
+      signed-up user could grant themselves **owner** (`core` is an exposed schema and
+      `disable_signup` is `false`). Fixed on both tiers, probe-verified; grant audit across all
+      62 declared revokes now reports 0 drift on both. **Root cause is process:** prod is not on
+      the migration pipeline and each PR only hand-applied the *new* objects it added, so a
+      `grant`/`revoke`/`alter` added later against an existing object never ran there
+      - [ ] **Put prod on the migration pipeline** (or run `supabase db push` against it) —
+            until then every schema change needs a deliberate "does prod actually have this?"
+            check, and the same class of drift can recur silently
+      - [ ] **Run `rls_matrix` against prod** as part of the gate, not only locally — it is
+            transaction-wrapped and rolls itself back, and running it only against a stack
+            built *from* the schema files is exactly why this survived
+      - [ ] **Set `disable_signup = true`** on prod and staging — every account is created by
+            invite, so open signup buys nothing and was the first link in the chain above
 - [x] POS: map `pos.html` features → module design under `app-src/src/modules/pos/`
       (against the spines: `pos.close_day()` posts to finance; bills carry optional `event_id`)
       — **full migration plan: [plans/pos-module.md](plans/pos-module.md)** (kickoff

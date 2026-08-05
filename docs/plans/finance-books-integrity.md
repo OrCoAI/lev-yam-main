@@ -457,4 +457,78 @@ the owner when it was made.
 - **Phase 3 forward-compat** (carried from §8): per-initiative money visibility will want a scope
   dimension on `finance.categories`. Known extension point, not a blocker.
 - **H6** (`finance.expected` write guard, which must also cover `finance.record_payment()`)
-  remains open and is tracked on the roadmap independently of this initiative.
+  remains open and is tracked on the roadmap independently of this initiative. *Partially
+  delivered 2026-08-05* — see the category guard below; the H6 item proper (a guard on the
+  *money* fields, not the category) is untouched.
+
+---
+
+## 11. Post-close-out: staging verification and the review pass (2026-08-05)
+
+The close-out above was written from local verification. Deploying to the staging tier then
+found real problems, and running the gate found one that had nothing to do with this branch.
+
+### Found by Or on staging
+
+1. **The `±` correction button "did nothing"** — the form rendered at the *top* of the entries
+   tab, so clicking a row further down opened it off-screen. It now opens **inline under the row
+   it corrects**, which also answers "which number am I fixing?".
+2. **The reconciliation tab did not refresh** after editing an expectation. The module's single
+   `useReconciliation` read is now reloaded on entering the tab and by every surface that moves
+   money.
+3. **The POS tile showed the global drift count** — "why in the pos it is marked like 2?" — for
+   1 unposted day *plus* 1 overdue deposit, a problem POS cannot solve. Every drift item now
+   names the module **responsible** for it and `reconciliation_counts()` returns a module→count
+   map. The shell names no module: the data decides which tiles badge, so a future module badges
+   itself by writing its own provenance.
+4. **Table buttons broke the row layout.** Two failed attempts are recorded in `styles.css`
+   because the cause is worth remembering: `.rl-actions` is a `<td>`, and `display: flex` (or
+   `width: 1%` + `nowrap`) takes it out of the table's layout algorithm — the column stops
+   sharing the row's height, so dividers stagger and the buttons escape the card.
+
+### Found by `/code-review high`
+
+Four fixed, one closed on Or's call:
+
+- **The drift roll-up was a signed sum** across all four legs, adding revenue (cash/card) to
+  cost (food/labor) — and reporting a +100 cash / −100 card drift as "0". Now a magnitude,
+  pinned by an assertion. Severity and the check predicates were always keyed on `legs`, so
+  detection never depended on it.
+- **`correction_preview.pos_pinned`** — dead field whose comment described the auto-pin that
+  decision 2 above deliberately dropped.
+- **The entries list snapped back to page 1** after a correction; since the correction posts on
+  the *original* entry's date, both rows fell outside page 1 on a long ledger and a successful
+  correction looked like a no-op. `load()` gained `keepWindow`.
+- **The Expected-tab focus effect re-fired** on every load inside its 2.5 s window, yanking the
+  viewport back.
+- **Archiving a category only blocked new *entries*, not new *expectations*** — so a plan row
+  could be filed under an archived category through the API and would post an entry under it on
+  fulfilment (`record_payment` runs behind the posting GUC, so the entries guard never sees it).
+  New `finance.expected_guard()` mirrors the rules on the plan side, with a carve-out letting a
+  module file under a category **it** owns. Two traps recorded in the file: `new.kind` is
+  unusable there (`GENERATED STORED` columns are computed *after* before-row triggers), and it
+  must be `SECURITY DEFINER` because `finance.manage` does not imply `SELECT` on the taxonomy.
+  Deliberately unchanged: fulfilling an expectation **already open** under a since-archived
+  category still works — that money was planned before the archive.
+
+### Found by the gate, unrelated to this branch — a live PROD privilege escalation
+
+Running `rls_matrix` against the **staging** database (the gate requires it for any `supabase/`
+diff) failed on an assertion this branch never touched, which led to
+[modules/users.md](../modules/users.md): `core.admin_assign_role()` was executable by
+`authenticated` on **prod and staging**, though `00_core.sql` revokes it — any signed-up user
+could make themselves owner. Fixed on both tiers and verified by probe; a full grant audit
+(62 declared revokes) now reports **0 drift** on both.
+
+**The lesson belongs in this plan too**, because it is why the gate exists: prod is not on the
+migration pipeline, so a `revoke` added later against an **already-existing** function had never
+run there. `rls_matrix` had only ever been run locally, where the schema files *are* the truth.
+
+### Verification state
+
+- `RLS MATRIX: ALL ASSERTIONS PASSED` on a fresh local stack **and** against the staging
+  database (it needed one fixture marker to stop colliding with real staging data).
+- Schema files 54–57 applied to staging; the correction flow re-driven end to end there
+  (leg total 3,300 → 3,000 → a −300 override row).
+- Every finance tab screenshotted at 1280 px and 390 px, with `scrollWidth === clientWidth`
+  measured rather than eyeballed.
