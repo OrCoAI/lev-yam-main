@@ -319,10 +319,13 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
    forms. Full contract: docs/MODULE-TEMPLATE.md §3.
    Class-keyed on purpose — never key mobile CSS on translated label text. */
 .rl-lock { display: none; }
-.rl-actions { display: flex; gap: 6px; justify-content: flex-end; align-items: center; }
-/* actions never dictate row height: the cell keeps its buttons on one line and
-   the column takes the width it needs */
-.grid td.rl-actions { white-space: nowrap; width: 1%; }
+/* Buttons keep their own labels on one line (see .btn-primary/.btn-ghost) and
+   WRAP as whole buttons when the column is narrow — the row grows a little
+   instead of the table being forced wider than its card. An earlier attempt
+   pinned this cell to `width: 1%` with `nowrap`, which made its minimum width
+   the entire button row: every other column collapsed and the text ran under
+   the buttons. */
+.rl-actions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; align-items: center; }
 .rl-formrow > td { padding-top: 0; }
 /* desktop affordance for allViewports drill-down rows (useRowDisclosure):
    a trailing .rl-chev cell; on phones it's hidden and the row's own ::after

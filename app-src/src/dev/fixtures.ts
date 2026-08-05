@@ -295,6 +295,11 @@ export const permissionsFixture = [
   'users.delete',
   'finance.view',
   'finance.manage',
+  // owner-only in the DB; the preview session is the owner, and without these
+  // the correction (±) button and the Categories tab never render in ?preview —
+  // which is exactly the surface that most needs eyes on it
+  'finance.categories',
+  'finance.override',
   'pos.view',
   'pos.order',
   'pos.kitchen',
@@ -524,7 +529,9 @@ const grant = (role: string, permKey: string) => ({ role_id: `role-${role}`, per
 
 // ordered by module then action — the UI groups on module transitions
 export const permissionRowsFixture = [
+  permRow('finance.categories', 'עריכת קטגוריות'),
   permRow('finance.manage', 'ניהול כספים'),
+  permRow('finance.override', 'תיקון בעלים ונעילת ימים'),
   permRow('finance.view', 'צפייה בכספים'),
   permRow('pos.order', 'הזמנות'),
   permRow('pos.view', 'צפייה בקופה'),
