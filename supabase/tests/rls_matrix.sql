@@ -1126,6 +1126,53 @@ select pg_temp.assert_num('pin: and it reports the full withheld amount',
 delete from pos.day_pins where business_date = '2099-07-07';
 
 -- ---------------------------------------------------------------------
+--  The quotes -> finance money seam, against 54's finance.expected_guard().
+--
+--  This is the REAL call site of the guard's module carve-out: signing a
+--  contract fires quotes_contracts_plan_money, which files two expectations
+--  under the quotes-OWNED 'events' category. A guard that rejected them would
+--  not fail a test -- it would stop the business from being able to sign a
+--  contract. The rule is asserted above with a synthetic insert; this asserts
+--  the seam, through the trigger rather than by calling the planner directly
+--  (which is correctly revoked from every client role).
+--
+--  Runs as the one owner surviving this phase's grant stripping (...0005):
+--  plan_money_for_quote() gates on quotes.contracts whenever auth.uid() is set.
+-- ---------------------------------------------------------------------
+select pg_temp.become('aaaaaaaa-0000-0000-0000-000000000005');
+do $$
+declare q uuid;
+begin
+  -- created_by via auth.uid(), NOT a read of auth.users: `authenticated` has no
+  -- select there, and such a join silently kills every later assertion
+  insert into quotes.quotes
+    (quote_number, issue_date, customer_name, final_price, deposit_pct, event_date, status, created_by)
+  values ('LY-RLS-GUARD', current_date, 'rls-test', 10000, 30, current_date + 30, 'draft', auth.uid())
+  returning id into q;
+  insert into quotes.contracts (quote_id, contract_number, status)
+  values (q, 'C-LY-RLS-GUARD', 'draft');
+  update quotes.contracts set status = 'signed' where quote_id = q;   -- fires the trigger
+end $$;
+select pg_temp.assert_rows('quotes seam: signing a contract still plans BOTH expectations',
+  $q$ select 1 from finance.expected e, quotes.quotes q
+      where q.quote_number = 'LY-RLS-GUARD'
+        and e.source_module = 'quotes' and e.category = 'events'
+        and e.source_ref in (q.id::text || ':deposit', q.id::text || ':balance') $q$, 2);
+delete from finance.expected
+ where source_module = 'quotes'
+   and source_ref like (select id::text from quotes.quotes where quote_number = 'LY-RLS-GUARD') || ':%';
+-- the quote and its now-SIGNED contract are deliberately left in place: a signed
+-- contract is undeletable by design ("הסכם חתום הוא מסמך משפטי"), and this whole
+-- suite runs inside one transaction that rolls back. Neither row is overdue, so
+-- neither reaches the reconciliation assertions below.
+-- become() switched the DB role; this phase must go back to postgres (it
+-- bypasses RLS and calls internal functions), so reset the role, not just the
+-- claim. seed_actor() alone leaves `role` = authenticated and the very next
+-- fixture insert dies on an RLS with-check.
+reset role;
+select pg_temp.seed_actor();  -- back to the default actor
+
+-- ---------------------------------------------------------------------
 --  Per-module badge counts. Every drift item names the module RESPONSIBLE for
 --  it, so the launcher badges that tile rather than lighting POS up with
 --  problems POS cannot solve (an overdue deposit is not a POS failure).
