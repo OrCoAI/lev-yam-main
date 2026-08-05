@@ -136,9 +136,18 @@ bilingual is ever a retrofit.*
       - [ ] **Put prod on the migration pipeline** (or run `supabase db push` against it) —
             until then every schema change needs a deliberate "does prod actually have this?"
             check, and the same class of drift can recur silently
-      - [ ] **Run `rls_matrix` against prod** as part of the gate, not only locally — it is
-            transaction-wrapped and rolls itself back, and running it only against a stack
-            built *from* the schema files is exactly why this survived
+      - [ ] **Make `rls_matrix` runnable against prod** — running it only against a stack built
+            *from* the schema files is exactly why the grant drift survived, but **attempted
+            2026-08-05 and it cannot run there as written**: the whole suite assumes the
+            `aaaaaaaa-0000-…-000{1..5}` actors from `supabase/seed.sql`, which exist only
+            locally and on staging. Against prod's real user table the user-lifecycle phase
+            walks into the genuine last-admin guard and aborts (`users.manage` is held by
+            exactly **one** prod account). It rolled back cleanly — verified 0 leftovers — but
+            the value is zero until the suite seeds its own actors instead of borrowing the
+            seed's. Until then, the prod check that *does* work is the grant/objects audit in
+            the deploy script
+      - [ ] **A second `users.manage` holder on prod** — exactly one account holds it today, so
+            losing that account means nobody can administer users. Surfaced by the above
       - [ ] **Set `disable_signup = true`** on prod and staging — every account is created by
             invite, so open signup buys nothing and was the first link in the chain above
 - [ ] **The topbar overflows below ~370px** — found 2026-08-05 while measuring the finance
