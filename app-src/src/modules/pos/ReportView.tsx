@@ -8,8 +8,9 @@
 import { Fragment, useEffect, useState, type ReactNode } from 'react'
 import {
   addExpense, closeDay, deleteExpense, fetchDayReport, fetchDayStatus, fetchRangeReport,
-  setExpensePaid, setExpenseReceipt, updateExpense,
+  setDayPin, setExpensePaid, setExpenseReceipt, updateExpense, type DayStatus,
 } from './api'
+import { useCan, PERM } from '../../lib/permissions'
 import { itemName, usePosTr } from './i18n'
 import { dateRange, dm, fmtTime, jerusalemDate, shiftDate, startOfMonth, startOfWeek, todayKey } from './logic'
 import S, { INK, SEA, SEA_DEEP, SUN } from './styles'
@@ -70,8 +71,10 @@ export default function ReportView({ initialDate, full, canAddFood, canAddLabor,
   const [editDraft, setEditDraft] = useState({ note: '', amount: '' })
   const [open, setOpen] = useState<Record<string, boolean>>({ food: true, labor: false, items: false, details: false, closed: false })
   const [closing, setClosing] = useState(false)
+  const [pinning, setPinning] = useState(false)
   const [closeMsg, setCloseMsg] = useState<string | null>(null)
-  const [dayStat, setDayStat] = useState<{ posted: boolean; corrected: boolean } | null>(null)
+  const [dayStat, setDayStat] = useState<DayStatus | null>(null)
+  const canOverride = useCan(PERM.financeOverride)
   const isRange = from !== to
   const rangeDays = isRange ? dateRange(from, to).length : 1
   const toggle = (k: string) => setOpen((o) => ({ ...o, [k]: !o[k] }))
@@ -211,6 +214,28 @@ export default function ReportView({ initialDate, full, canAddFood, canAddLabor,
       .finally(() => { setClosing(false); setTick((t) => t + 1) }) // refresh the posted badge
   }
 
+  // Freeze / unfreeze the day. Freezing asks for a reason — it is the only
+  // thing that later explains why POS stopped writing this day to the books,
+  // and the finance reconciliation list shows it back verbatim.
+  const togglePin = () => {
+    if (!dayStat) return
+    let reason = ''
+    if (!dayStat.pinned) {
+      const answer = window.prompt(tr('סיבת הנעילה', 'سبب القفل'))
+      if (answer === null) return
+      reason = answer.trim()
+      if (!reason) return
+    }
+    setPinning(true)
+    setCloseMsg(null)
+    setDayPin(from, !dayStat.pinned, reason)
+      .then(() => setCloseMsg(dayStat.pinned
+        ? tr('הנעילה בוטלה', 'أُلغي القفل')
+        : tr('היום ננעל — לא ייכתב לכספים עד ביטול הנעילה', 'قُفل اليوم — لن يُسجَّل حتى إلغاء القفل')))
+      .catch((e: Error) => setCloseMsg(tr('שגיאה', 'خطأ') + ': ' + e.message))
+      .finally(() => { setPinning(false); setTick((t) => t + 1) })
+  }
+
   const detail = (label: string, val: string) => (
     <div style={S.detailRow}>
       <span style={S.detailLbl}>{label}</span>
@@ -344,7 +369,15 @@ export default function ReportView({ initialDate, full, canAddFood, canAddLabor,
                   status badge instead — ⟳ when the books changed since posting. */}
               {canManage && !isRange && (
                 <Fragment>
-                  {dayStat?.posted ? (
+                  {/* a frozen day outranks both other states: while it is pinned
+                      nothing about this day reaches the books at all, so saying
+                      "posted" or offering to post would both be misleading */}
+                  {dayStat?.pinned ? (
+                    <div style={{ ...S.dayBookedBadge, ...S.dayPinnedBadge }}>
+                      {'🔒 ' + tr('היום נעול — אינו נרשם לכספים', 'اليوم مقفل — لا يُسجَّل في المالية')}
+                      {dayStat.pin_reason ? ' · ' + dayStat.pin_reason : ''}
+                    </div>
+                  ) : dayStat?.posted ? (
                     <div style={{ ...S.dayBookedBadge, ...(dayStat.corrected ? S.dayBookedCorrected : {}) }}>
                       {dayStat.corrected
                         ? '⟳ ' + tr('הכספים עודכנו מאז הרישום', 'حُدّثت المالية منذ التسجيل')
@@ -353,6 +386,13 @@ export default function ReportView({ initialDate, full, canAddFood, canAddLabor,
                   ) : (
                     <button className="pos-tap" style={{ ...S.reportExpand, borderColor: SEA, color: SEA_DEEP, opacity: closing ? 0.6 : 1 }} disabled={closing} onClick={postDay}>
                       {closing ? tr('רושם…', 'جار التسجيل…') : tr('רישום היום לכספים', 'تسجيل اليوم في المالية')}
+                    </button>
+                  )}
+                  {canOverride && dayStat && (
+                    <button className="pos-tap" style={{ ...S.reportExpand, opacity: pinning ? 0.6 : 1 }} disabled={pinning} onClick={togglePin}>
+                      {dayStat.pinned
+                        ? tr('ביטול נעילת היום', 'إلغاء قفل اليوم')
+                        : tr('נעילת היום', 'قفل اليوم')}
                     </button>
                   )}
                   {closeMsg && <div style={S.reportHint}>{closeMsg}</div>}

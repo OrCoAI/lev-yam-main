@@ -1,10 +1,14 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { finance } from '../../lib/supabase'
+import { useCan, PERM } from '../../lib/permissions'
 import type { FinanceCategory, FinanceEntry, FinanceKind, FinancePaymentMethod } from '../../types'
-import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, PAYMENT_METHODS } from './categories'
+import { PAYMENT_METHODS, pickable, useCategories, useCategoryName } from './categories'
+import CorrectionForm from './CorrectionForm'
+import { pickDbLabel, useI18n } from '../../lib/i18n'
 import { useRowDisclosure } from '../../lib/useRowDisclosure'
 import DateField from './DateField'
+import ErrorNotice from './ErrorNotice'
 import { shortDate, signedAmount, todayStr } from './format'
 import { useFT } from './i18n'
 import KindFilterChips, { type KindFilter } from './KindFilterChips'
@@ -22,12 +26,9 @@ type EntryPayload = {
   note: string | null
 }
 
-function categoriesFor(kind: FinanceKind): FinanceCategory[] {
-  return kind === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES
-}
-
 export default function EntriesTab({ canManage }: { canManage: boolean }) {
   const ft = useFT()
+  const categoryName = useCategoryName()
   const { isPhone, rowProps } = useRowDisclosure()
   const [entries, setEntries] = useState<FinanceEntry[]>([])
   const [loading, setLoading] = useState(true)
@@ -36,6 +37,14 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [editing, setEditing] = useState<FinanceEntry | null>(null)
+  const canOverride = useCan(PERM.financeOverride)
+  // the entry whose total the owner is correcting (never an edit — see
+  // CorrectionForm); independent of `editing`, which is the manual-row form
+  const [correcting, setCorrecting] = useState<string | null>(null)
+  // the actions column exists for either capability: manage edits manual rows,
+  // override corrects module-posted ones
+  const showActions = canManage || canOverride
+  const colSpan = showActions ? 7 : 6
   // remounts EntryForm after a successful insert — the fields must not keep
   // their just-saved values (a second submit would duplicate the entry)
   const [formEpoch, setFormEpoch] = useState(0)
@@ -54,20 +63,26 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
   const offsetRef = useRef(0)
 
   const load = useCallback(
-    async (append = false) => {
+    // `keepWindow` re-reads every page the user has already pulled in instead
+    // of snapping back to the newest PAGE_SIZE. A correction posts its offset
+    // row on the ORIGINAL entry's date, so on a long ledger both the corrected
+    // row and the new one sit outside page 1 — resetting there makes a
+    // successful correction look like it did nothing at all.
+    async (append = false, keepWindow = false) => {
       const id = ++loadIdRef.current
       if (append) setLoadingMore(true)
       else {
         setLoading(true)
-        offsetRef.current = 0
+        if (!keepWindow) offsetRef.current = 0
       }
       const offset = append ? offsetRef.current : 0
+      const limit = append || !keepWindow ? PAGE_SIZE : Math.max(offsetRef.current, PAGE_SIZE)
       let query = finance().from('entries').select('*')
       if (kindFilter !== 'all') query = query.eq('kind', kindFilter)
       const { data, error } = await query
         .order('entry_date', { ascending: false })
         .order('created_at', { ascending: false })
-        .range(offset, offset + PAGE_SIZE - 1)
+        .range(offset, offset + limit - 1)
       if (id !== loadIdRef.current) return // a newer load superseded this one
       if (error) {
         setError(error.message)
@@ -75,7 +90,9 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
         const rows = (data as FinanceEntry[] | null) ?? []
         setEntries((prev) => (append ? [...prev, ...rows] : rows))
         offsetRef.current = offset + rows.length
-        setHasMore(rows.length === PAGE_SIZE)
+        // a short read means the ledger ended — compare against what was ASKED
+        // for, which is the whole re-read window when keepWindow is on
+        setHasMore(rows.length === limit)
         setError(null)
       }
       setLoading(false)
@@ -89,9 +106,20 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
   }, [load])
 
   function startEdit(e: FinanceEntry) {
+    setCorrecting(null)
     setEditing(e)
     setFormOpen(true)
+    // the edit form lives at the top of the tab; bring it into view
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  // The correction form opens INLINE, directly under the row being corrected
+  // (same pattern as the record-payment form in ExpectedTab). It used to render
+  // at the top of the tab, which made a click on a row further down look like
+  // nothing had happened and left "what is this correcting?" unanswered.
+  function startCorrection(id: string) {
+    setEditing(null)
+    setCorrecting((cur) => (cur === id ? null : id))
   }
 
   function cancelEdit() {
@@ -100,6 +128,7 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
   }
 
   async function save(payload: EntryPayload) {
+    const wasEdit = editing !== null // cancelEdit() below clears it
     setBusy(true)
     const res = editing
       ? await finance().from('entries').update(payload).eq('id', editing.id)
@@ -112,7 +141,9 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
     cancelEdit()
     setFormEpoch((n) => n + 1)
     if (isPhone) setFormOpen(false) // land back on the list — the saved row is the feedback
-    await load()
+    // an INSERT lands at the top of the list, where the form already put the
+    // user; an EDIT keeps whatever page the edited row was on
+    await load(false, wasEdit)
   }
 
   async function remove(id: string) {
@@ -125,7 +156,13 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
       return
     }
     if (editing?.id === id) cancelEdit()
-    await load()
+    // splice it out instead of re-reading: we know exactly which row went, and a
+    // keepWindow reload would re-fetch every loaded page (500+ rows after a few
+    // "load more" presses) and blank the table to delete one row we can already
+    // identify. The window shrinks by one rather than pulling a row in from
+    // beyond it — same as the old page-1 reset did, at zero requests.
+    setEntries((prev) => prev.filter((r) => r.id !== id))
+    offsetRef.current = Math.max(0, offsetRef.current - 1)
   }
 
   return (
@@ -148,11 +185,7 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
 
       <KindFilterChips value={kindFilter} onChange={setKindFilter} />
 
-      {error && (
-        <div className="error">
-          {ft.errorPrefix} {error}
-        </div>
-      )}
+      {error && <ErrorNotice error={error} />}
 
       {loading ? (
         <div className="muted">{ft.loadingEntries}</div>
@@ -167,14 +200,15 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
                 <th>{ft.colPayment}</th>
                 <th>{ft.colAmount}</th>
                 <th>{ft.colNote}</th>
-                {canManage && <th></th>}
+                {showActions && <th></th>}
               </tr>
             </thead>
             <tbody>
               {entries.map((e) => {
                 const href = sourceHref(e.source_module, e.source_ref, quoteMap)
                 return (
-                  <tr key={e.id} {...rowProps(e.id)}>
+                  <Fragment key={e.id}>
+                  <tr {...rowProps(e.id)}>
                     <td className="rl-lead" title={e.entry_date}>
                       {shortDate(e.entry_date)}
                     </td>
@@ -185,7 +219,7 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
                       {e.kind === 'income' ? ft.income : ft.expense}
                     </td>
                     <td className="rl-main">
-                      {ft.categoryLabels[e.category] ?? e.category}
+                      {categoryName(e.kind, e.category)}
                       <SourceBadge module={e.source_module} sourceRef={e.source_ref} href={href} />
                     </td>
                     <td className="rl-more" data-label={ft.colPayment}>
@@ -197,31 +231,33 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
                     <td className="rl-more muted" data-label={ft.colNote}>
                       {e.note ?? ''}
                     </td>
-                    {canManage && (
+                    {showActions && (
                       <td className="rl-actions">
-                        {/* module-posted rows are immutable (DB guard) — corrections are
-                            reversals posted by the source module, so no edit/delete here */}
+                        {/* module-posted rows are immutable (DB guard) — a correction is
+                            an additive row, never an edit, so no edit/delete here */}
                         {!e.source_module ? (
-                          <>
-                            <button
-                              className="btn-ghost btn-sm btn-icon-label"
-                              disabled={busy}
-                              onClick={() => startEdit(e)}
-                              aria-label={ft.edit}
-                            >
-                              <span aria-hidden="true">✎</span>
-                              <span className="btn-label">{ft.edit}</span>
-                            </button>
-                            <button
-                              className="btn-ghost btn-sm btn-icon-label"
-                              disabled={busy}
-                              onClick={() => remove(e.id)}
-                              aria-label={ft.delete}
-                            >
-                              <span aria-hidden="true">✕</span>
-                              <span className="btn-label">{ft.delete}</span>
-                            </button>
-                          </>
+                          canManage && (
+                            <>
+                              <button
+                                className="btn-ghost btn-sm btn-icon-label"
+                                disabled={busy}
+                                onClick={() => startEdit(e)}
+                                aria-label={ft.edit}
+                              >
+                                <span aria-hidden="true">✎</span>
+                                <span className="btn-label">{ft.edit}</span>
+                              </button>
+                              <button
+                                className="btn-ghost btn-sm btn-icon-label"
+                                disabled={busy}
+                                onClick={() => remove(e.id)}
+                                aria-label={ft.delete}
+                              >
+                                <span aria-hidden="true">✕</span>
+                                <span className="btn-label">{ft.delete}</span>
+                              </button>
+                            </>
+                          )
                         ) : (
                           <>
                             <span className="rl-lock">{ft.lockedByModule}</span>
@@ -235,16 +271,51 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
                                 <span className="btn-label">{ft.openSource}</span>
                               </Link>
                             )}
+                            {/* Only on module-posted rows: a manual row is already
+                                fully editable above, and offering two ways to
+                                change the same number invites picking the wrong
+                                one. The owner's reach is the same either way. */}
+                            {canOverride && (
+                              <button
+                                className="btn-ghost btn-sm btn-icon-label"
+                                disabled={busy}
+                                onClick={() => startCorrection(e.id)}
+                                aria-label={ft.correct}
+                                title={ft.correctHint}
+                              >
+                                <span aria-hidden="true">±</span>
+                                <span className="btn-label">{ft.correct}</span>
+                              </button>
+                            )}
                           </>
                         )}
                       </td>
                     )}
                   </tr>
+                  {/* the correction opens right under the row it corrects, so
+                      "which number am I fixing?" is never a guess */}
+                  {correcting === e.id && (
+                    <tr className="rl-formrow">
+                      <td colSpan={colSpan}>
+                        <CorrectionForm
+                          entryId={e.id}
+                          onCancel={() => setCorrecting(null)}
+                          onDone={() => {
+                            setCorrecting(null)
+                            // keep the loaded window: the correction lands on
+                            // the corrected row's date, not at the top
+                            void load(false, true)
+                          }}
+                        />
+                      </td>
+                    </tr>
+                  )}
+                  </Fragment>
                 )
               })}
               {entries.length === 0 && (
                 <tr>
-                  <td colSpan={canManage ? 7 : 6} className="muted">
+                  <td colSpan={colSpan} className="muted">
                     {kindFilter === 'all' ? ft.noEntries : ft.noEntriesFiltered}
                   </td>
                 </tr>
@@ -280,10 +351,21 @@ function EntryForm({
   onClose?: () => void
 }) {
   const ft = useFT()
+  const { lang } = useI18n()
+  const { rows, error: catError } = useCategories()
   const [kind, setKind] = useState<FinanceKind>(initial?.kind ?? 'expense')
-  const [category, setCategory] = useState<FinanceCategory>(
-    initial?.category ?? EXPENSE_CATEGORIES[0],
-  )
+  // only the user's explicit choice is state; the taxonomy loads async, so the
+  // effective value falls back to the first option until then — derived, so
+  // there's no effect writing state and no render pass with an empty select
+  const [picked, setPicked] = useState<FinanceCategory>(initial?.category ?? '')
+  const options = useMemo(() => pickable(rows, kind), [rows, kind])
+  const category = picked || options[0]?.key || ''
+  // an entry being edited under a category since archived or made module-owned
+  // keeps its own option, so editing it never silently re-files the row
+  const legacy =
+    category && !options.some((c) => c.key === category)
+      ? rows.find((c) => c.kind === kind && c.key === category)
+      : undefined
   const [method, setMethod] = useState<FinancePaymentMethod>(initial?.payment_method ?? 'cash')
   const [amount, setAmount] = useState(initial ? String(initial.amount) : '')
   const [entryDate, setEntryDate] = useState(initial?.entry_date ?? todayStr())
@@ -292,12 +374,12 @@ function EntryForm({
 
   function changeKind(next: FinanceKind) {
     setKind(next)
-    setCategory(categoriesFor(next)[0])
+    setPicked('')
   }
 
   function submit() {
     const n = Number(amount)
-    if (!n || n <= 0) {
+    if (!n || n <= 0 || !category) {
       setInvalid(true)
       return
     }
@@ -334,14 +416,14 @@ function EntryForm({
 
       <label className="field">
         <span className="field-label">{ft.category}</span>
-        <select value={category} onChange={(e) => setCategory(e.target.value as FinanceCategory)}>
-          {/* editing a legacy row whose category is now derived-only keeps its option */}
-          {!categoriesFor(kind).includes(category) && (
-            <option value={category}>{ft.categoryLabels[category] ?? category}</option>
+        <select value={category} onChange={(e) => setPicked(e.target.value)}>
+          {legacy !== undefined && <option value={category}>{pickDbLabel(lang, legacy)}</option>}
+          {category && legacy === undefined && !options.some((c) => c.key === category) && (
+            <option value={category}>{category}</option>
           )}
-          {categoriesFor(kind).map((c) => (
-            <option key={c} value={c}>
-              {ft.categoryLabels[c]}
+          {options.map((c) => (
+            <option key={c.key} value={c.key}>
+              {pickDbLabel(lang, c)}
             </option>
           ))}
         </select>
@@ -392,6 +474,9 @@ function EntryForm({
         />
       </label>
 
+      {/* a failed taxonomy fetch leaves the select empty; without this the only
+          feedback would be the misleading "invalid amount" on submit */}
+      {catError && <ErrorNotice error={catError} />}
       {invalid && <div className="error">{ft.invalidAmount}</div>}
 
       <div className="field-actions">

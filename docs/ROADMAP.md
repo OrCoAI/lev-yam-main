@@ -85,6 +85,79 @@ bilingual is ever a retrofit.*
         quotes → quote page); folds in two tracked follow-ups: **HE/AR retrofit** of
         the finance module chrome (predates the i18n layer) and EntriesTab form →
         child component (keystrokes re-render the entries table)
+  - [x] **Finance books integrity** (kickoff 2026-07-31, Or's brief; delivered 2026-08-03,
+        verified on staging + review pass 2026-08-05) —
+        [plans/finance-books-integrity.md](plans/finance-books-integrity.md): four PRs,
+        A → B → C → D.
+        - [x] **PR A** categories as data *(done 2026-08-03, commit 5f66a26; gate
+              fully run — /simplify 18 fixes incl. a supersession hazard,
+              /security-review clean, /code-review high 5 findings all fixed)* — owner-editable `finance.categories`
+              (`54_finance_categories.sql`) replacing the thrice-declared `CHECK` + the
+              client mirror; constrains `finance.expected.category` (free text today);
+              seeds the missing real categories (rent, utilities, insurance, taxes,
+              payment fees, event costs, donations);
+              `owned_by_module` becomes the single source of the derived-only rule;
+              new owner-only `finance.categories` permission
+        - [x] **PR B** reconciliation — `finance.reconciliation()` over four checks
+              (POS day never posted · POS recompute mismatch · overdue expectations ·
+              pinned days, added by PR C), live-computed with a one-click fix per item;
+              launcher badges on the finance **and** POS tiles, in-module banner, dedicated
+              tab. Directly targets the failure the parity trial found by hand (first week
+              of July never posted). Set-based after a measured 718ms → ~4ms rewrite
+        - [x] **PR C** owner override — owner-only correction entries against any row
+              incl. module-derived (`56_finance_override.sql`, new `finance.override` perm);
+              §7.4 immutability preserved: the override is additive, never an edit. The POS day
+              **pin** ships as a *separate explicit* action, not as an implicit companion to a
+              correction — measured during the build: an additive correction already survives
+              the auto re-post untouched, while a pin freezes the whole day and would silently
+              swallow every cost entered afterwards (deviation recorded in the plan). Pinned
+              days are reported by reconciliation as `pinned`, escalating from `low` to
+              `medium` once money starts piling up behind the freeze
+        - [x] **PR D** transfers — `finance.transfers` as its own table (cash↔bank),
+              deliberately outside every income/expense total; dedicated TransfersTab
+              (decided in PR D), no new permission, asserted to leave the P&L untouched
+        - Out of scope (kickoff): signed-quote-vs-booked check, partial payments (stays
+          an open item above), tips in the books, sub-categories
+        - [x] **Staging verification + review pass** *(2026-08-05, plan §11)* — four bugs Or
+              found on staging (silent `±` button, stale reconciliation, the POS tile badged
+              with finance's problems, table buttons breaking the row layout) and five
+              `/code-review high` findings, the last of which was a real half-rule: archiving
+              a category blocked new **entries** but not new **expectations**, closed by a new
+              `finance.expected_guard()`. `rls_matrix` green locally *and* against the staging
+              database
+- [x] **PROD privilege escalation closed** *(2026-08-05, found by the gate while verifying the
+      finance branch — [modules/users.md](modules/users.md))* — `core.admin_assign_role()` was
+      executable by `authenticated` on prod and staging though `00_core.sql` revokes it, so any
+      signed-up user could grant themselves **owner** (`core` is an exposed schema and
+      `disable_signup` is `false`). Fixed on both tiers, probe-verified; grant audit across all
+      62 declared revokes now reports 0 drift on both. **Root cause is process:** prod is not on
+      the migration pipeline and each PR only hand-applied the *new* objects it added, so a
+      `grant`/`revoke`/`alter` added later against an existing object never ran there
+      - [ ] **Put prod on the migration pipeline** (or run `supabase db push` against it) —
+            until then every schema change needs a deliberate "does prod actually have this?"
+            check, and the same class of drift can recur silently
+      - [ ] **Make `rls_matrix` runnable against prod** — running it only against a stack built
+            *from* the schema files is exactly why the grant drift survived, but **attempted
+            2026-08-05 and it cannot run there as written**: the whole suite assumes the
+            `aaaaaaaa-0000-…-000{1..5}` actors from `supabase/seed.sql`, which exist only
+            locally and on staging. Against prod's real user table the user-lifecycle phase
+            walks into the genuine last-admin guard and aborts (`users.manage` is held by
+            exactly **one** prod account). It rolled back cleanly — verified 0 leftovers — but
+            the value is zero until the suite seeds its own actors instead of borrowing the
+            seed's. Until then, the prod check that *does* work is the grant/objects audit in
+            the deploy script
+      - [ ] **A second `users.manage` holder on prod** — exactly one account holds it today, so
+            losing that account means nobody can administer users. Surfaced by the above
+      - [ ] **Set `disable_signup = true`** on prod and staging — every account is created by
+            invite, so open signup buys nothing and was the first link in the chain above
+- [ ] **The topbar overflows below ~370px** — found 2026-08-05 while measuring the finance
+      tables at phone widths, and **pre-existing** (no topbar/brand rule has changed since):
+      `.brand` (94px) + `.topbar-right` (268px: email, language toggle, Face ID, logout) + 40px
+      padding needs ~402px, so at 360px and 320px the whole page gets a horizontal scroll
+      (`documentElement.scrollWidth` 376 vs 360). 360px is a very common phone width — iPhone
+      SE, Galaxy S8/S9 — and mobile-first is a platform invariant. Likely fix: drop `.user-email`
+      to an avatar/initials at the phone breakpoint (the email is already shown in the users
+      module), or move the secondary actions behind a menu
 - [x] POS: map `pos.html` features → module design under `app-src/src/modules/pos/`
       (against the spines: `pos.close_day()` posts to finance; bills carry optional `event_id`)
       — **full migration plan: [plans/pos-module.md](plans/pos-module.md)** (kickoff
@@ -187,7 +260,12 @@ item — the anon `pos_*` surface — is the POS cut-over task above, not repeat
       also closed a live PUBLIC-execute privilege-escalation in `core` found by
       the gate)*
 - [ ] **H6** `finance.expected` module-row guard (status-only client transitions on
-      module-sourced expectations)
+      module-sourced expectations). **Must also cover `finance.record_payment()`** — PR A's
+      security review (2026-08-03) found the reachable bypass is there, not on the table: it
+      is SECURITY DEFINER, checks only `finance.manage`, and posts `exp.category` behind the
+      posting GUC without the one-writer check, so a manager can land a row in a module-owned
+      category that is then permanently un-editable. Call the
+      `finance.assert_category_writable()` hook PR A added (`54_finance_categories.sql`).
 - [x] **H7** Hygiene batch — nine small repo/UX/ops items; **8 of 9 done** (3 with
       H3/H5 on 2026-07-15, 5 more on 2026-07-16 via PR #11 of
       [plans/users-permissions-suite.md](plans/users-permissions-suite.md): storage

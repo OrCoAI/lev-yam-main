@@ -3,7 +3,9 @@ import { finance } from '../../lib/supabase'
 import { useRowDisclosure } from '../../lib/useRowDisclosure'
 import type { FinanceEntry, FinanceKind, FinanceReport } from '../../types'
 import DateField from './DateField'
+import ErrorNotice from './ErrorNotice'
 import { displayDate, signedAmount, shortDate, toDateStr } from './format'
+import { useCategoryName } from './categories'
 import { useFT, type FinanceDict } from './i18n'
 import KindFilterChips, { type KindFilter } from './KindFilterChips'
 import { sourceHref, useQuoteMap } from './provenance'
@@ -77,6 +79,7 @@ const groupPush = (map: Map<string, DetailEntry[]>, key: string, e: DetailEntry)
 
 export default function ReportTab() {
   const ft = useFT()
+  const categoryName = useCategoryName()
   const [from, setFrom] = useState(() => monthRange(0).from)
   const [to, setTo] = useState(() => monthRange(0).to)
   const [customOpen, setCustomOpen] = useState(false)
@@ -159,7 +162,7 @@ export default function ReportTab() {
     .map((b) => ({
       key: `cat:${catKey(b.kind, b.category)}`,
       kind: b.kind,
-      label: ft.categoryLabels[b.category] ?? b.category,
+      label: categoryName(b.kind, b.category),
       total: Number(b.total),
       count: b.entry_count,
       entries: grouped.byCat.get(catKey(b.kind, b.category)) ?? [],
@@ -213,11 +216,7 @@ export default function ReportTab() {
         </div>
       </div>
 
-      {error && (
-        <div className="error">
-          {ft.errorPrefix} {error}
-        </div>
-      )}
+      {error && <ErrorNotice error={error} />}
 
       {loading ? (
         <div className="muted">{ft.loadingReport}</div>
@@ -280,6 +279,7 @@ function BreakdownTable({
   quoteMap: ReadonlyMap<string, string>
 }) {
   const ft = useFT()
+  const categoryName = useCategoryName()
   const { openId, rowProps } = useRowDisclosure({ allViewports: true })
 
   // share-of-side denominators: each kind's rows always arrive complete (the
@@ -336,7 +336,7 @@ function BreakdownTable({
                               {shortDate(e.entry_date)}
                             </span>
                             <span className="re-main">
-                              {e.note ?? (ft.categoryLabels[e.category] ?? e.category)}
+                              {e.note ?? categoryName(e.kind, e.category)}
                               <SourceBadge
                                 module={e.source_module}
                                 sourceRef={e.source_ref}

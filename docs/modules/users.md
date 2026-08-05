@@ -19,6 +19,36 @@ touching schema, permissions, or the events/finance spine graduates to a `docs/p
 
 ## Done (cont.)
 
+- **2026-08-05** — **PROD privilege escalation: any signed-up user could make themselves
+  owner.** `core.admin_assign_role()` is `SECURITY DEFINER` with no internal permission
+  check (by design — it is a service-side helper for `admin-invite`), and
+  [00_core.sql:550](../../supabase/schema/00_core.sql#L550) revokes it from
+  `public, authenticated`. **Prod and staging never had that revoke applied**, along with
+  `has_permission_for`, `users_manage_survives_without` and `admin_audit_user_event`.
+  Since `core` is in PostgREST's exposed schemas and `disable_signup` is still `false`,
+  the whole chain was reachable with nothing but the anon key that ships in the JS bundle:
+  sign up → confirm your own email → `POST /rest/v1/rpc/admin_assign_role` → owner.
+  Verified by probe on staging (non-admin JWT, owner rows `0 → 1`, transaction rolled
+  back), then fixed on both tiers and re-probed to
+  `permission denied for function admin_assign_role`. `service_role` keeps its grants, so
+  `admin-invite` / `admin-user-ops` are unaffected.
+  - **Root cause is process, not code:** prod is not on the migration pipeline
+    (CLAUDE.md), and each PR only ever hand-applied the *new* objects it added — so a
+    `revoke` added later against an **already existing** function never ran there. Any
+    future change to an existing object has the same hole.
+  - **Audit done at the same time:** all 62 `(function, role)` revokes declared across
+    `supabase/schema/*.sql` now verified honoured on prod (and 76 on staging) — 0 drift.
+    Separately, every `SECURITY DEFINER` function in `core`/`finance`/`pos`/`quotes`
+    reachable by `authenticated` or `PUBLIC` was checked for an internal gate; the only
+    ungated ones are `core.my_permissions` (`auth.uid()`-bound, by design),
+    `core.purge_expired_challenges` (deletes only expired rows) and
+    `pos.pos_day_report`/`pos.range_report`, which are thin wrappers over
+    `pos.report_for_range` and inherit its `has_permission` check.
+  - **Follow-up worth doing:** `disable_signup` is still `false` on both tiers while
+    every account is created by invite — open signup is the first link in this chain and
+    buys nothing. And `rls_matrix` caught this only because it asserts the denial; it
+    should be run against prod (it is transaction-wrapped and rolls itself back) as part
+    of the gate, not just locally.
 - **2026-07-30** — **Unconfirmed-email accounts couldn't log in, invisibly.** Reported
   live: an owner set a password for `wedad.jorban11@gmail.com` from the admin console and
   the user still couldn't sign in. Cause: she never opened her invite link, so

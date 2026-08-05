@@ -74,6 +74,14 @@ export function sourceHref(
     const date = ref.split(':')[1]
     return date && REPORT_DATE_RE.test(date) ? posReportHref(date) : '/pos'
   }
+  // an owner correction points at whatever it corrects: 'override:<target>:c<n>'
+  // (56_finance_override.sql). Unwrap it and resolve the target instead, so the
+  // correction row links to the same place as the row it adjusts.
+  if (module === 'override') {
+    const target = ref.replace(/^override:/, '').replace(/:c\d+$/, '')
+    if (target.startsWith('pos:')) return sourceHref('pos', target, quoteByExpected)
+    return null
+  }
   if (module === 'quotes') {
     if (ref.startsWith(EXPECTED_PREFIX)) {
       const quoteId = quoteByExpected?.get(ref.slice(EXPECTED_PREFIX.length))

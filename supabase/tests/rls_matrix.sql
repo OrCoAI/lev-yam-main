@@ -137,6 +137,41 @@ begin
   raise notice 'ok: %', label;
 end $$;
 
+-- Statement must be rejected by a FOREIGN KEY (SQLSTATE 23503) — the taxonomy
+-- FKs added in 54_finance_categories.sql, which enforce both "this category
+-- exists" and "it belongs to this kind". Pinned to 23503 like assert_raises
+-- pins P0001, so an unrelated failure can never pass the assertion.
+create function pg_temp.assert_fk_denied(label text, stmt text)
+returns void language plpgsql as $$
+declare ok boolean := false;
+begin
+  begin
+    execute stmt;
+  exception when foreign_key_violation then ok := true;
+  end;
+  if not ok then
+    raise exception 'FAIL: % — expected a foreign-key violation', label;
+  end if;
+  raise notice 'ok: %', label;
+end $$;
+
+-- Statement must be rejected by a CHECK constraint (SQLSTATE 23514) — the
+-- transfer invariants in 57_finance_transfers.sql. Pinned to 23514 for the same
+-- reason assert_fk_denied pins 23503: an unrelated failure must never pass.
+create function pg_temp.assert_check_denied(label text, stmt text)
+returns void language plpgsql as $$
+declare ok boolean := false;
+begin
+  begin
+    execute stmt;
+  exception when check_violation then ok := true;
+  end;
+  if not ok then
+    raise exception 'FAIL: % — expected a check-constraint violation', label;
+  end if;
+  raise notice 'ok: %', label;
+end $$;
+
 -- The shared "locked-out" baseline — what an identity with ZERO module grants
 -- must (not) see. Runs under whatever identity become()/become_anon() set last.
 create function pg_temp.assert_locked_out(prefix text)
@@ -209,8 +244,18 @@ select set_config('levyam.finance_posting', '', true);
 insert into finance.entries (id, kind, category, amount, entry_date, note, created_by)
 values ('bbbbbbbb-0000-0000-0000-000000000002', 'income', 'other', 50, current_date,
         'rls-test manual', 'aaaaaaaa-0000-0000-0000-000000000001');
-insert into finance.expected (id, direction, category, amount, note)
-values ('bbbbbbbb-0000-0000-0000-000000000003', 'in', 'events', 500, 'rls-test expected');
+-- 'events' is a quotes-OWNED category, so this row is written the only way such
+-- a row is legitimately written: behind the posting GUC, exactly as
+-- quotes.plan_money_for_quote() does it. Provenance alone is not enough and must
+-- not be — source_module is client-writable (see the forging assertion below).
+select set_config('levyam.finance_posting', 'on', true);
+insert into finance.expected (id, direction, category, amount, note, source_module, source_ref)
+values ('bbbbbbbb-0000-0000-0000-000000000003', 'in', 'events', 500, 'rls-test expected',
+        'quotes', 'rls-test-quote:seed');
+select set_config('levyam.finance_posting', '', true);
+-- an archived category, to prove the guard blocks NEW money under it (54)
+insert into finance.categories (kind, key, label_he, label_ar, active, sort)
+values ('expense', 'rls_archived', 'בדיקה ארכיון', 'اختبار أرشيف', false, 995);
 
 -- quotes: one quote + its SIGNED (immutable) contract
 insert into quotes.quotes (id, quote_number, customer_name, created_by)
@@ -409,8 +454,38 @@ select pg_temp.assert_raises('staff: cannot read day posting status (needs pos.r
   $q$ select pos.day_status(current_date) $q$, 'pos.reports');
 select pg_temp.assert_denied('staff: pos.day_is_posted is internal — not callable',
   $q$ select pos.day_is_posted(current_date) $q$);
+-- 55_finance_reconciliation: the drift report is definer-rights (it must read POS
+-- tables a finance reader may not see), so its ONLY gate is the explicit
+-- permission check inside it — assert it actually fires.
+select pg_temp.assert_raises('staff: finance.reconciliation denied (no finance.view)',
+  $q$ select finance.reconciliation() $q$, 'permission denied');
+select pg_temp.assert_raises('staff: finance.reconciliation_counts denied (no finance.view)',
+  $q$ select finance.reconciliation_counts() $q$, 'permission denied');
+select pg_temp.assert_denied('staff: pos.day_expected_legs is internal — not callable',
+  $q$ select * from pos.day_expected_legs(current_date) $q$);
+-- 56_finance_override (PR C): the owner override is the ONE key that can move a
+-- module-posted number, so every entry point to it is asserted shut here.
+select pg_temp.assert_raises('staff: finance.post_correction denied (no finance.override)',
+  $q$ select finance.post_correction(
+        (select id from finance.entries limit 1), 1, 'x') $q$, 'permission denied');
+select pg_temp.assert_raises('staff: finance.correction_preview denied (no finance.override)',
+  $q$ select finance.correction_preview((select id from finance.entries limit 1)) $q$,
+  'permission denied');
+select pg_temp.assert_denied('staff: finance.correction_target is internal — not callable',
+  $q$ select * from finance.correction_target((select id from finance.entries limit 1)) $q$);
+select pg_temp.assert_denied('staff: pos.day_is_pinned is internal — not callable',
+  $q$ select pos.day_is_pinned(current_date) $q$);
+select pg_temp.assert_rows('staff: pos.day_pins hidden (no pos.reports, no finance.view)',
+  $q$ select 1 from pos.day_pins $q$, 0);
+select pg_temp.assert_denied('staff: cannot freeze a day',
+  $q$ insert into pos.day_pins (business_date, reason) values ('2099-09-09','x') $q$);
 select pg_temp.assert_rows('staff: finance.entries hidden',
   $q$ select 1 from finance.entries where note like 'rls-test%' $q$, 0);
+select pg_temp.assert_rows('staff: finance.transfers hidden (no finance.view)',
+  $q$ select 1 from finance.transfers $q$, 0);
+select pg_temp.assert_denied('staff: cannot record a transfer',
+  $q$ insert into finance.transfers (amount, from_method, to_method)
+      values (10, 'cash', 'bank') $q$);
 select pg_temp.assert_rows('staff: finance.expected hidden',
   $q$ select 1 from finance.expected where note like 'rls-test%' $q$, 0);
 select pg_temp.assert_rows('staff: quotes hidden',
@@ -456,6 +531,196 @@ select pg_temp.assert_raises('manager: DERIVED finance entry rejects UPDATE (gua
 select pg_temp.assert_raises('manager: DERIVED finance entry rejects DELETE (guard)',
   $q$ delete from finance.entries
       where id = 'bbbbbbbb-0000-0000-0000-000000000001' $q$, 'אינו ניתן לעריכה או מחיקה');
+-- 54_finance_categories: the taxonomy reads with finance.view but writes need
+-- finance.categories (owner-only) — a manager has the first and not the second.
+select pg_temp.assert_rows('manager: sees the category taxonomy (finance.view)',
+  $q$ select 1 from finance.categories where kind = 'expense' and key = 'rent' $q$, 1);
+select pg_temp.assert_denied('manager: cannot add a category (no finance.categories)',
+  $q$ insert into finance.categories (kind, key, label_he, label_ar)
+      values ('expense','rls_test_cat','בדיקה','اختبار') $q$);
+select pg_temp.assert_noop('manager: cannot rename a category (RLS hides the row)',
+  $q$ update finance.categories set label_he = 'שינוי' where kind = 'expense' and key = 'rent' $q$);
+-- the one-writer rule is now DATA: the guard resolves owned_by_module per row
+select pg_temp.assert_raises('manager: MODULE-OWNED category still rejects a manual entry',
+  $q$ insert into finance.entries (kind, category, amount, entry_date, note)
+      values ('income','pos', 5, current_date, 'rls-test cat') $q$, 'נרשמת אוטומטית');
+select pg_temp.assert_fk_denied('manager: unknown category rejected by the taxonomy FK',
+  $q$ insert into finance.entries (kind, category, amount, entry_date, note)
+      values ('expense','no_such_category', 5, current_date, 'rls-test cat') $q$);
+select pg_temp.assert_fk_denied('manager: category from the OTHER kind rejected (composite FK)',
+  $q$ insert into finance.entries (kind, category, amount, entry_date, note)
+      values ('income','rent', 5, current_date, 'rls-test cat') $q$);
+select pg_temp.assert_fk_denied('manager: expected row with a direction/category mismatch rejected',
+  $q$ insert into finance.expected (direction, category, amount, note)
+      values ('in','rent', 5, 'rls-test cat') $q$);
+-- archived is a DB rule too, not merely a hidden option in the picker
+select pg_temp.assert_raises('manager: ARCHIVED category rejects a new entry',
+  $q$ insert into finance.entries (kind, category, amount, entry_date, note)
+      values ('expense','rls_archived', 5, current_date, 'rls-test cat') $q$, 'בארכיון');
+-- ...and on the PLAN side, or the rule is only half a rule: an expectation
+-- filed under an archived category posts an entry under it on fulfilment,
+-- because record_payment() runs behind the posting GUC and the entries guard
+-- above never sees it
+select pg_temp.assert_raises('manager: ARCHIVED category rejects a new expectation',
+  $q$ insert into finance.expected (direction, category, amount, note)
+      values ('out','rls_archived', 5, 'rls-test cat') $q$, 'בארכיון');
+select pg_temp.assert_raises('manager: MODULE-OWNED category rejects a hand-written expectation',
+  $q$ insert into finance.expected (direction, category, amount, note)
+      values ('in','events', 5, 'rls-test cat') $q$, 'מודול');
+-- ...and CLAIMING to be the module does not help. `grant insert on
+-- finance.expected` covers every column, so source_module is client-writable:
+-- an earlier revision of expected_guard() keyed its carve-out on that column,
+-- which let any finance.manage holder forge provenance, file money under a
+-- derived-only category, charge another module's drift badge and forge its
+-- "open the source" link. Only the posting GUC may open that door.
+select pg_temp.assert_raises('manager: ...and cannot get in by FORGING source_module',
+  $q$ insert into finance.expected (direction, category, amount, note, source_module, source_ref)
+      values ('in','events', 5, 'rls-test cat', 'quotes', 'rls-test-quote:forged') $q$, 'מודול');
+select pg_temp.assert_rows('manager: the forged expectation really was not written',
+  $q$ select 1 from finance.expected where source_ref = 'rls-test-quote:forged' $q$, 0);
+-- Provenance on the PLAN side is module-written only, or record_payment() will
+-- launder a forged tag into the ledger: it copies the expectation's own
+-- source_module into the entry it posts, behind the GUC. 'override' is the
+-- sharpest case — PR C mints it for OWNER-only corrections, so a manager
+-- reaching it would put a row badged "תיקון בעלים" in the books with their own
+-- note, and correction_target() then throws on that row (it casts
+-- split_part('expected:<uuid>', ':', 2) to date), so even the owner cannot
+-- repair it. `grant insert on finance.expected` covers every column, so this
+-- has to be a guard, not a grant.
+select pg_temp.assert_raises('manager: cannot create an expectation carrying PROVENANCE',
+  $q$ insert into finance.expected (direction, category, amount, note, source_module, source_ref)
+      values ('in','bookings', 5000, 'rls-test forge', 'override', 'x') $q$, 'מודול');
+select pg_temp.assert_rows('manager: ...so no override-badged row can be laundered in',
+  $q$ select 1 from finance.expected where note = 'rls-test forge' $q$, 0);
+-- own fixtures, so these do not depend on a row created further down the file
+insert into finance.expected (id, direction, category, amount, note)
+values ('bbbbbbbb-0000-0000-0000-0000000000fe', 'in', 'bookings', 300, 'rls-test provenance');
+insert into finance.expected (direction, category, amount, note)
+values ('in', 'bookings', 50, 'rls-test provenance-free');
+select pg_temp.assert_raises('manager: cannot re-tag an existing expectation either',
+  $q$ update finance.expected set source_module = 'override'
+      where id = 'bbbbbbbb-0000-0000-0000-0000000000fe' $q$, 'מקור');
+-- and the amount amplifier: record_payment posts with non-null provenance, where
+-- finance_entries_amount_check permits negatives (module reversals need that) —
+-- so an unvalidated p_amount was the one client path to a negative entry
+select pg_temp.assert_raises('manager: record_payment refuses a NEGATIVE amount',
+  $q$ select finance.record_payment('bbbbbbbb-0000-0000-0000-0000000000fe'::uuid,
+        -5000, 'cash', current_date, 'rls-test negative') $q$, 'חיובי');
+select pg_temp.assert_raises('manager: ...and refuses zero',
+  $q$ select finance.record_payment('bbbbbbbb-0000-0000-0000-0000000000fe'::uuid,
+        0, 'cash', current_date, 'rls-test zero') $q$, 'חיובי');
+delete from finance.expected where id = 'bbbbbbbb-0000-0000-0000-0000000000fe';
+-- DELETE erases provenance as effectively as re-tagging it, and it is what
+-- entries_guard() blocks on the ledger side. Deleting a quotes-planned deposit
+-- would destroy the module's record of money owed AND silently clear that
+-- expectation's overdue drift item, so the books would stop reporting a real
+-- problem. Cancelling is the supported retirement (status='cancelled').
+select pg_temp.assert_raises('manager: cannot DELETE a module-planned expectation',
+  $q$ delete from finance.expected
+      where id = 'bbbbbbbb-0000-0000-0000-000000000003' $q$, 'למחיקה');
+select pg_temp.assert_rows('manager: ...and the module expectation is still there',
+  $q$ select 1 from finance.expected
+      where id = 'bbbbbbbb-0000-0000-0000-000000000003' $q$, 1);
+select pg_temp.assert_ok('manager: but CAN cancel it, which is the supported path',
+  $q$ update finance.expected set status = 'cancelled'
+      where id = 'bbbbbbbb-0000-0000-0000-000000000003' $q$);
+update finance.expected set status = 'open'
+ where id = 'bbbbbbbb-0000-0000-0000-000000000003';
+-- a hand-created expectation carries no provenance and stays freely deletable
+select pg_temp.assert_ok('manager: a hand-created expectation is still deletable',
+  $q$ delete from finance.expected where note = 'rls-test provenance-free' $q$);
+-- expected_guard() cannot read new.kind (GENERATED STORED columns are computed
+-- AFTER before-row triggers), so it re-derives direction→kind. If that copy ever
+-- diverges from the column's own expression, the guard looks up a (kind, key)
+-- pair that matches no category, takes the "not found" path and fails OPEN —
+-- silently, while the composite FK still passes on the real kind. Pin them.
+insert into finance.expected (direction, category, amount, note)
+values ('in','bookings', 1, 'rls-test kindmap'), ('out','suppliers', 1, 'rls-test kindmap');
+select pg_temp.assert_rows('the generated kind matches the mapping expected_guard() derives',
+  $q$ select 1 from finance.expected
+      where note = 'rls-test kindmap'
+        and kind = case direction when 'in' then 'income' else 'expense' end $q$, 2);
+delete from finance.expected where note = 'rls-test kindmap';
+-- the UPDATE carve-out: an edit that leaves the category where it is skips the
+-- check entirely, so a row under a category archived later stays editable
+-- (archiving must not freeze history); MOVING one into an archived category is
+-- still refused
+insert into finance.expected (direction, category, amount, note)
+values ('out','maintenance', 7, 'rls-test archive-edit');
+select pg_temp.assert_ok('manager: editing an expectation without moving its category is fine',
+  $q$ update finance.expected set amount = 8 where note = 'rls-test archive-edit' $q$);
+select pg_temp.assert_raises('manager: ...but it cannot be MOVED into an archived category',
+  $q$ update finance.expected set category = 'rls_archived'
+      where note = 'rls-test archive-edit' $q$, 'בארכיון');
+delete from finance.expected where note = 'rls-test archive-edit';
+-- record_payment() UPDATEs finance.expected AFTER it has reset the posting GUC,
+-- so the new guard DOES see that write. It falls through the carve-out above
+-- (status changes, category does not) — asserted rather than reasoned about,
+-- because a guard that quietly broke fulfilment would break the money path.
+insert into finance.expected (id, direction, category, amount, note)
+values ('bbbbbbbb-0000-0000-0000-00000000000f', 'out', 'suppliers', 120, 'rls-test fulfil');
+select pg_temp.assert_ok('manager: record_payment can still fulfil an expectation',
+  $q$ select finance.record_payment('bbbbbbbb-0000-0000-0000-00000000000f'::uuid,
+        null, 'cash', current_date, 'rls-test fulfilled') $q$);
+select pg_temp.assert_rows('manager: ...and the expectation is closed against its entry',
+  $q$ select 1 from finance.expected e join finance.entries n on n.id = e.fulfilled_by
+      where e.id = 'bbbbbbbb-0000-0000-0000-00000000000f'
+        and e.status = 'fulfilled' and n.category = 'suppliers' and n.amount = 120 $q$, 1);
+-- manager holds finance.view → the report runs and is well-formed
+select pg_temp.assert_rows('manager: finance.reconciliation returns a report',
+  $q$ select 1 where (finance.reconciliation() ? 'items')
+                 and (finance.reconciliation() ? 'count') $q$, 1);
+-- count is the ACTIONABLE count, not items length: pinned days (severity 'low')
+-- are listed but must never light a badge. Assert the contract that actually
+-- holds, or a pin would make this pass only by luck.
+select pg_temp.assert_rows('manager: counts.finance = the non-low item count',
+  $q$ select 1 where (finance.reconciliation_counts()->>'finance')::int
+                     = (select count(*)
+                        from jsonb_array_elements(finance.reconciliation()->'items') x
+                        where x->>'severity' <> 'low') $q$, 1);
+select pg_temp.assert_rows('manager: reconciliation.count agrees with counts.finance',
+  $q$ select 1 where (finance.reconciliation()->>'count')::int
+                     = (finance.reconciliation_counts()->>'finance')::int $q$, 1);
+-- manager has pos.reports (so a pin is visible to them) but NOT finance.override
+select pg_temp.assert_ok('manager: CAN read pos.day_pins (pos.reports)',
+  $q$ select 1 from pos.day_pins $q$);
+select pg_temp.assert_denied('manager: cannot freeze a day (no finance.override)',
+  $q$ insert into pos.day_pins (business_date, reason) values ('2099-09-09','x') $q$);
+select pg_temp.assert_raises('manager: cannot post an owner correction',
+  $q$ select finance.post_correction(
+        (select id from finance.entries where source_module = 'pos' limit 1), 1, 'x') $q$,
+  'permission denied');
+-- 57_finance_transfers (PR D): a transfer is ordinary money handling, gated by
+-- the same finance.view/manage pair as entries — no new permission.
+select pg_temp.assert_ok('manager: can record a cash -> bank transfer',
+  $q$ insert into finance.transfers (amount, from_method, to_method, note)
+      values (2000, 'cash', 'bank', 'rls-test transfer') $q$);
+select pg_temp.assert_rows('manager: and can read it back',
+  $q$ select 1 from finance.transfers where note = 'rls-test transfer' $q$, 1);
+select pg_temp.assert_check_denied('manager: a transfer to the SAME pocket is rejected',
+  $q$ insert into finance.transfers (amount, from_method, to_method)
+      values (50, 'cash', 'cash') $q$);
+select pg_temp.assert_check_denied('manager: an unknown payment method is rejected',
+  $q$ insert into finance.transfers (amount, from_method, to_method)
+      values (50, 'cash', 'crypto') $q$);
+select pg_temp.assert_check_denied('manager: a non-positive transfer is rejected',
+  $q$ insert into finance.transfers (amount, from_method, to_method)
+      values (0, 'cash', 'bank') $q$);
+select pg_temp.assert_denied('manager: cannot forge a transfer''s author (column grant)',
+  $q$ update finance.transfers set created_by = '00000000-0000-0000-0000-000000000009'
+      where note = 'rls-test transfer' $q$);
+-- THE invariant this table exists for: a transfer is neither income nor
+-- expense, so nothing that sums either may see it. If a later change ever
+-- routes transfers into finance.entries, this fails loudly.
+select pg_temp.assert_rows('manager: a transfer creates NO finance.entries row',
+  $q$ select 1 from finance.entries where note = 'rls-test transfer' $q$, 0);
+select pg_temp.assert_num('manager: and it does not move the P&L',
+  (select (finance.report(current_date - 1, current_date + 1)->>'income_total')::numeric
+   + (finance.report(current_date - 1, current_date + 1)->>'expense_total')::numeric
+   - (select coalesce(sum(amount), 0) from finance.entries
+      where entry_date between current_date - 1 and current_date + 1)), 0);
+select pg_temp.assert_denied('manager: pos.day_expected_legs is internal — not callable',
+  $q$ select * from pos.day_expected_legs(current_date) $q$);
 select pg_temp.assert_rows('manager: sees raw pos_expenses (pos.reports)',
   $q$ select 1 from pos.pos_expenses where note = 'rls-test' $q$, 2);
 -- receipt/paid RPCs: manage may flag either kind and mark/clear paid
@@ -603,6 +868,52 @@ select pg_temp.assert_rows('owner: sees both events',
 select pg_temp.assert_rows('owner: sees the raw pos_expenses (pos.reports)',
   $q$ select 1 from pos.pos_expenses where note = 'rls-test' $q$, 2);
 
+-- 54_finance_categories: owner is the only role holding finance.categories.
+select pg_temp.assert_ok('owner: can add a category (finance.categories)',
+  $q$ insert into finance.categories (kind, key, label_he, label_ar, sort)
+      values ('expense','rls_test_cat','בדיקה','اختبار',990) $q$);
+select pg_temp.assert_ok('owner: can rename a category in both languages',
+  $q$ update finance.categories set label_he = 'בדיקה 2', label_ar = 'اختبار ٢'
+      where kind = 'expense' and key = 'rls_test_cat' $q$);
+select pg_temp.assert_ok('owner: can archive a category',
+  $q$ update finance.categories set active = false
+      where kind = 'expense' and key = 'rls_test_cat' $q$);
+-- module ownership is declared by the module in SQL, never from the admin UI —
+-- enforced by a COLUMN grant, so even the owner is refused
+select pg_temp.assert_denied('owner: cannot claim module ownership (column grant)',
+  $q$ update finance.categories set owned_by_module = 'pos'
+      where kind = 'expense' and key = 'rls_test_cat' $q$);
+select pg_temp.assert_denied('owner: cannot re-key a category (column grant)',
+  $q$ update finance.categories set key = 'rls_test_renamed'
+      where kind = 'expense' and key = 'rls_test_cat' $q$);
+select pg_temp.assert_ok('owner: can delete an UNUSED category',
+  $q$ delete from finance.categories where kind = 'expense' and key = 'rls_test_cat' $q$);
+-- archive-not-delete is enforced by the FK, not merely by the UI
+-- 56_finance_override (PR C) — the owner really does get the last word, and it
+-- lands as an ADDITIVE row: the module posting it corrects stays untouched.
+select pg_temp.assert_ok('owner: can freeze a day',
+  $q$ insert into pos.day_pins (business_date, reason)
+      values ('2099-09-09', 'rls-test freeze') $q$);
+-- reason is editable; pinned_by is NOT — a client that could write it could
+-- forge who froze a day, which is the whole audit value of the row
+select pg_temp.assert_ok('owner: can restate the freeze reason',
+  $q$ update pos.day_pins set reason = 'rls-test freeze 2' where business_date = '2099-09-09' $q$);
+select pg_temp.assert_denied('owner: cannot forge who froze a day (column grant)',
+  $q$ update pos.day_pins set pinned_by = null where business_date = '2099-09-09' $q$);
+select pg_temp.assert_ok('owner: can unfreeze a day',
+  $q$ delete from pos.day_pins where business_date = '2099-09-09' $q$);
+select pg_temp.assert_fk_denied('owner: cannot delete a category history references',
+  $q$ delete from finance.categories where kind = 'income' and key = 'other' $q$);
+-- §7.4 holds for the owner too: no role bypasses the one-writer rule
+select pg_temp.assert_raises('owner: MODULE-OWNED category rejects a manual entry (no owner bypass)',
+  $q$ insert into finance.entries (kind, category, amount, entry_date, note)
+      values ('income','pos', 5, current_date, 'rls-test cat') $q$, 'נרשמת אוטומטית');
+select pg_temp.assert_rows('finance.categories is granted to owner ONLY',
+  $q$ select 1 from core.role_permissions rp
+      join core.roles r on r.id = rp.role_id
+      join core.permissions p on p.id = rp.permission_id
+      where p.key = 'finance.categories' and r.key <> 'owner' $q$, 0);
+
 -- =====================================================================
 --  USER LIFECYCLE — delete & deactivate (plans/users-delete-deactivate.md)
 --  Runs LAST on purpose: it strips every other users.manage grant in-tx
@@ -736,6 +1047,286 @@ select pg_temp.assert_num('legacy-day: card revenue PRESERVED after auto-repost'
   (select coalesce(sum(amount), 0) from finance.entries where source_ref like 'pos:2099-03-03:card%'), 130);
 select pg_temp.assert_num('legacy-day: the new expense DID post to food',
   (select coalesce(sum(amount), 0) from finance.entries where source_ref like 'pos:2099-03-03:food%'), 40);
+
+-- ---------------------------------------------------------------------
+--  55_finance_reconciliation: the drift report must actually DETECT, not just
+--  return well-formed JSON. A day with real money and no posting is the exact
+--  production failure this initiative exists for (July 2026, found by hand).
+-- ---------------------------------------------------------------------
+-- Reads finance.reconciliation_items() (the internal row source) rather than
+-- finance.reconciliation(): this phase runs as postgres, LATE in the
+-- transaction, after the user-lifecycle section has stripped role grants — so a
+-- has_permission-gated wrapper would fail for reasons unrelated to detection.
+-- The gate itself is asserted in the staff/manager phases above.
+select pg_temp.seed_actor();
+-- Year-2000 dates, not the 2099 the rest of the suite uses: check 1 only reports
+-- a day that is actually OVER (`e.d < today`), so a future-dated fixture would
+-- make every assertion below pass for the wrong reason. Still unmistakably
+-- synthetic, and every assertion filters on business_date, so widening p_since
+-- to reach them isolates nothing less than a narrow future window did.
+insert into pos.pos_bills (id, table_num, status, paid_at, grand_total, cash_paid, card_paid, tip)
+values ('rls-unposted-day', 994, 'paid', '2000-05-05 12:00+02', 500, 200, 300, 0);
+select pg_temp.assert_rows('recon: an UNPOSTED day with money is reported',
+  $q$ select 1 from finance.reconciliation_items('2000-01-01') r
+      where r.item->>'type' = 'unposted_day' and r.item->>'business_date' = '2000-05-05' $q$, 1);
+select pg_temp.assert_num('recon: it reports the day''s full revenue',
+  (select (r.item->>'revenue')::numeric from finance.reconciliation_items('2000-01-01') r
+   where r.item->>'type' = 'unposted_day' and r.item->>'business_date' = '2000-05-05'), 500);
+-- posting it must make the item disappear — the alert clears because the
+-- problem is gone, never because someone dismissed it
+select pos.post_day('2000-05-05'::date);
+select pg_temp.assert_rows('recon: posting the day clears the item',
+  $q$ select 1 from finance.reconciliation_items('2000-01-01') r
+      where r.item->>'type' = 'unposted_day' and r.item->>'business_date' = '2000-05-05' $q$, 0);
+-- TODAY is not late. Every other detection fixture here uses year-2099 dates, so
+-- the live path -- a service in progress -- was the one case the suite could not
+-- see: an unbounded check 1 reported the current day the moment its first bill
+-- was paid, lighting both launcher badges and offering a one-click post of a
+-- PARTIAL day. Dated with real now(), deliberately, since that is the bug.
+insert into pos.pos_bills (id, table_num, status, paid_at, grand_total, cash_paid, card_paid, tip)
+values ('rls-today-open', 991, 'paid', now(), 300, 300, 0, 0);
+select pg_temp.assert_rows('recon: the day being served is NOT reported as unposted',
+  $q$ select 1 from finance.reconciliation_items((current_date - 2)::date) r
+      where r.item->>'type' = 'unposted_day'
+        and r.item->>'business_date' = (now() at time zone 'Asia/Jerusalem')::date::text $q$, 0);
+-- ...while yesterday, genuinely over and never posted, still is
+insert into pos.pos_bills (id, table_num, status, paid_at, grand_total, cash_paid, card_paid, tip)
+values ('rls-yesterday', 990, 'paid', now() - interval '1 day', 300, 300, 0, 0);
+select pg_temp.assert_rows('recon: but YESTERDAY unposted still is',
+  $q$ select 1 from finance.reconciliation_items((current_date - 2)::date) r
+      where r.item->>'type' = 'unposted_day'
+        and r.item->>'business_date'
+            = ((now() - interval '1 day') at time zone 'Asia/Jerusalem')::date::text $q$, 1);
+delete from pos.pos_bills where id in ('rls-today-open', 'rls-yesterday');
+
+-- and a silent money change on a booked day must surface as recompute drift
+select set_config('levyam.suppress_repost', 'on', true);
+update pos.pos_bills set grand_total = 700 where id = 'rls-unposted-day';
+select set_config('levyam.suppress_repost', '', true);
+select pg_temp.assert_rows('recon: a silently-changed booked day is reported as drift',
+  $q$ select 1 from finance.reconciliation_items('2000-01-01') r
+      where r.item->>'type' = 'recompute_drift' and r.item->>'business_date' = '2000-05-05' $q$, 1);
+select pos.post_day('2000-05-05'::date);
+select pg_temp.assert_rows('recon: re-posting clears the drift',
+  $q$ select 1 from finance.reconciliation_items('2000-01-01') r
+      where r.item->>'business_date' = '2000-05-05' $q$, 0);
+-- A drift whose legs CANCEL is still a drift: the same money moved from cash to
+-- card and the books did not follow. The day is now grand_total 700 / card 300,
+-- booked as cash 400 + card 300; paying 600 of it by card makes the legs
+-- -300 cash / +300 card. total_delta is a MAGNITUDE precisely so this reports
+-- 600 rather than the "0" a signed roll-up would give it.
+select set_config('levyam.suppress_repost', 'on', true);
+update pos.pos_bills set card_paid = 600 where id = 'rls-unposted-day';
+select set_config('levyam.suppress_repost', '', true);
+select pg_temp.assert_rows('recon: legs that cancel are still reported as drift',
+  $q$ select 1 from finance.reconciliation_items('2000-01-01') r
+      where r.item->>'type' = 'recompute_drift' and r.item->>'business_date' = '2000-05-05' $q$, 1);
+select pg_temp.assert_num('recon: and its amount is the money that moved, not the net',
+  (select (r.item->>'total_delta')::numeric from finance.reconciliation_items('2000-01-01') r
+   where r.item->>'type' = 'recompute_drift' and r.item->>'business_date' = '2000-05-05'), 600);
+select pos.post_day('2000-05-05'::date);
+select pg_temp.assert_rows('recon: re-posting clears the cancelling drift too',
+  $q$ select 1 from finance.reconciliation_items('2000-01-01') r
+      where r.item->>'business_date' = '2000-05-05' $q$, 0);
+
+-- ---------------------------------------------------------------------
+--  56_finance_override (PR C) — the owner correction and the day pin.
+--
+--  The two behaviours below are the reason this PR's design differs from the
+--  plan, so they are pinned as assertions rather than left to a comment:
+--    1. an ADDITIVE correction survives a re-post on its own. post_day totals
+--       a leg from source_module = 'pos' rows only, so it cannot see, and
+--       therefore cannot undo, an override row. No pin is needed to protect it.
+--    2. a pin freezes the WHOLE day — which is why correcting must NOT pin
+--       automatically: every cost entered afterwards would silently never land.
+-- ---------------------------------------------------------------------
+insert into pos.pos_bills (id, table_num, status, paid_at, grand_total, cash_paid, card_paid, tip)
+values ('rls-override-day', 993, 'paid', '2099-06-06 12:00+02', 400, 400, 0, 0);
+select pos.post_day('2099-06-06'::date);
+select pg_temp.assert_num('override: day booked at its computed cash',
+  (select coalesce(sum(amount), 0) from finance.entries
+   where source_ref like 'pos:2099-06-06:cash%'), 400);
+
+-- post_correction is permission-gated, and this phase runs after the
+-- user-lifecycle section stripped role grants — user ...0005 is the one owner
+-- left standing, so act as them for the gated call.
+select set_config('request.jwt.claims',
+  json_build_object('sub', 'aaaaaaaa-0000-0000-0000-000000000005', 'role', 'authenticated')::text,
+  true);
+-- the owner says the drawer really held 350
+select finance.post_correction(
+  (select id from finance.entries where source_ref = 'pos:2099-06-06:cash'), 350, 'ספירת קופה');
+select pg_temp.assert_num('override: the correction moved the leg to the stated total',
+  (select coalesce(sum(amount), 0) from finance.entries
+   where source_ref like '%pos:2099-06-06:cash%'), 350);
+select pg_temp.assert_num('override: the ORIGINAL posting is untouched (§7.4 holds)',
+  (select amount from finance.entries where source_ref = 'pos:2099-06-06:cash'), 400);
+select pg_temp.assert_rows('override: correcting does NOT freeze the day',
+  $q$ select 1 from pos.day_pins where business_date = '2099-06-06' $q$, 0);
+select pg_temp.seed_actor();  -- back to the default actor for the rest
+
+-- (1) a re-post cannot undo it, and new money still lands
+insert into pos.pos_expenses (business_date, kind, amount, note)
+values ('2099-06-06', 'food', 60, 'rls-test');
+select pg_temp.assert_num('override: the correction SURVIVES the auto re-post',
+  (select coalesce(sum(amount), 0) from finance.entries
+   where source_ref like '%pos:2099-06-06:cash%'), 350);
+select pg_temp.assert_num('override: later costs still reach the books',
+  (select coalesce(sum(amount), 0) from finance.entries
+   where source_ref like 'pos:2099-06-06:food%'), 60);
+
+-- (2) an explicit pin freezes the day: drift is reported as 'pinned', the
+--     manual post is refused outright, and the trigger path skips silently
+insert into pos.day_pins (business_date, reason) values ('2099-06-06', 'rls-test pin');
+select pg_temp.assert_rows('pin: a frozen day is reported as pinned, never as drift',
+  $q$ select 1 from finance.reconciliation_items('2000-01-01') r
+      where r.item->>'business_date' = '2099-06-06'
+        and r.item->>'type' = 'recompute_drift' $q$, 0);
+select pg_temp.assert_rows('pin: and it IS listed, so the freeze stays visible',
+  $q$ select 1 from finance.reconciliation_items('2000-01-01') r
+      where r.item->>'business_date' = '2099-06-06' and r.item->>'type' = 'pinned' $q$, 1);
+select pg_temp.assert_rows('pin: a clean frozen day is severity low (never badges)',
+  $q$ select 1 from finance.reconciliation_items('2000-01-01') r
+      where r.item->>'business_date' = '2099-06-06' and r.severity = 'low' $q$, 1);
+select pg_temp.assert_raises('pin: pos.post_day refuses a frozen day',
+  $q$ select pos.post_day('2099-06-06'::date) $q$, 'נעול');
+-- money entered behind the freeze does NOT reach the books, and the item
+-- escalates to 'medium' so the badge lights rather than hiding it
+insert into pos.pos_expenses (business_date, kind, amount, note)
+values ('2099-06-06', 'labor', 90, 'rls-test');
+select pg_temp.assert_num('pin: the trigger skipped silently — labor never posted',
+  (select coalesce(sum(amount), 0) from finance.entries
+   where source_ref like 'pos:2099-06-06:labor%'), 0);
+select pg_temp.assert_rows('pin: money piling up behind the freeze escalates to medium',
+  $q$ select 1 from finance.reconciliation_items('2000-01-01') r
+      where r.item->>'business_date' = '2099-06-06' and r.item->>'type' = 'pinned'
+        and r.severity = 'medium' $q$, 1);
+-- A day pinned BEFORE it was ever posted is the nastier case: reported as
+-- 'unposted_day' it would offer a post button that post_day() refuses, so the
+-- item could never clear and both badges would stay lit forever. It must be
+-- reported as pinned — and at 'medium', because its whole takings sit outside
+-- the books, which is precisely money piling up behind a freeze.
+insert into pos.pos_bills (id, table_num, status, paid_at, grand_total, cash_paid, card_paid, tip)
+values ('rls-pinned-unposted', 992, 'paid', '2000-07-07 12:00+02', 250, 250, 0, 0);
+insert into pos.day_pins (business_date, reason) values ('2000-07-07', 'rls-test never posted');
+select pg_temp.assert_rows('pin: a never-posted frozen day is NOT reported as unposted_day',
+  $q$ select 1 from finance.reconciliation_items('2000-01-01') r
+      where r.item->>'business_date' = '2000-07-07'
+        and r.item->>'type' = 'unposted_day' $q$, 0);
+select pg_temp.assert_rows('pin: it is reported as pinned at medium (its takings are outside)',
+  $q$ select 1 from finance.reconciliation_items('2000-01-01') r
+      where r.item->>'business_date' = '2000-07-07' and r.item->>'type' = 'pinned'
+        and r.severity = 'medium' $q$, 1);
+select pg_temp.assert_num('pin: and it reports the full withheld amount',
+  (select (r.item->>'total_delta')::numeric from finance.reconciliation_items('2000-01-01') r
+   where r.item->>'business_date' = '2000-07-07'), 250);
+delete from pos.day_pins where business_date = '2000-07-07';
+
+-- ---------------------------------------------------------------------
+--  The quotes -> finance money seam, against 54's finance.expected_guard().
+--
+--  This is the REAL call site of the guard's module carve-out: signing a
+--  contract fires quotes_contracts_plan_money, which files two expectations
+--  under the quotes-OWNED 'events' category. A guard that rejected them would
+--  not fail a test -- it would stop the business from being able to sign a
+--  contract. The rule is asserted above with a synthetic insert; this asserts
+--  the seam, through the trigger rather than by calling the planner directly
+--  (which is correctly revoked from every client role).
+--
+--  Runs as the one owner surviving this phase's grant stripping (...0005):
+--  plan_money_for_quote() gates on quotes.contracts whenever auth.uid() is set.
+-- ---------------------------------------------------------------------
+select pg_temp.become('aaaaaaaa-0000-0000-0000-000000000005');
+do $$
+declare q uuid;
+begin
+  -- created_by via auth.uid(), NOT a read of auth.users: `authenticated` has no
+  -- select there, and such a join silently kills every later assertion
+  insert into quotes.quotes
+    (quote_number, issue_date, customer_name, final_price, deposit_pct, event_date, status, created_by)
+  values ('LY-RLS-GUARD', current_date, 'rls-test', 10000, 30, current_date + 30, 'draft', auth.uid())
+  returning id into q;
+  insert into quotes.contracts (quote_id, contract_number, status)
+  values (q, 'C-LY-RLS-GUARD', 'draft');
+  update quotes.contracts set status = 'signed' where quote_id = q;   -- fires the trigger
+end $$;
+select pg_temp.assert_rows('quotes seam: signing a contract still plans BOTH expectations',
+  $q$ select 1 from finance.expected e, quotes.quotes q
+      where q.quote_number = 'LY-RLS-GUARD'
+        and e.source_module = 'quotes' and e.category = 'events'
+        and e.source_ref in (q.id::text || ':deposit', q.id::text || ':balance') $q$, 2);
+-- behind the GUC: since 54's guard covers DELETE, a provenance-carrying
+-- expectation cannot be deleted by a client, which is the point of the assertion
+-- further down. Test cleanup is a posting-function-equivalent motion.
+select set_config('levyam.finance_posting', 'on', true);
+delete from finance.expected
+ where source_module = 'quotes'
+   and source_ref like (select id::text from quotes.quotes where quote_number = 'LY-RLS-GUARD') || ':%';
+select set_config('levyam.finance_posting', '', true);
+-- the quote and its now-SIGNED contract are deliberately left in place: a signed
+-- contract is undeletable by design ("הסכם חתום הוא מסמך משפטי"), and this whole
+-- suite runs inside one transaction that rolls back. Neither row is overdue, so
+-- neither reaches the reconciliation assertions below.
+-- become() switched the DB role; this phase must go back to postgres (it
+-- bypasses RLS and calls internal functions), so reset the role, not just the
+-- claim. seed_actor() alone leaves `role` = authenticated and the very next
+-- fixture insert dies on an RLS with-check.
+reset role;
+select pg_temp.seed_actor();  -- back to the default actor
+
+-- ---------------------------------------------------------------------
+--  Per-module badge counts. Every drift item names the module RESPONSIBLE for
+--  it, so the launcher badges that tile rather than lighting POS up with
+--  problems POS cannot solve (an overdue deposit is not a POS failure).
+--  The shell names no module: the DATA decides which tiles badge.
+-- ---------------------------------------------------------------------
+-- an expectation created by the quotes module, overdue -> quotes owns it.
+-- Behind the GUC, because 'events' is quotes-owned and expected_guard() trusts
+-- nothing else (the seam test above proves the real planner does the same).
+select set_config('levyam.finance_posting', 'on', true);
+insert into finance.expected
+  (direction, category, amount, due_date, reason, status, source_module, source_ref)
+values ('in', 'events', 4000, current_date - 20, 'deposit', 'open',
+        'quotes', 'rls-test-quote:deposit');
+select set_config('levyam.finance_posting', '', true);
+-- a hand-created one belongs to nobody but finance. The reason carries an
+-- rls-test marker so the assertion below identifies THIS row: run against a
+-- tier that holds real data (staging, via the management API) a bare
+-- 'supplier' also matches the real overdue supplier bill sitting there.
+insert into finance.expected (direction, category, amount, due_date, reason, status)
+values ('out', 'suppliers', 900, current_date - 5, 'rls-test supplier', 'open');
+select pg_temp.assert_rows('badges: a quotes-sourced overdue expectation is owned by quotes',
+  $q$ select 1 from finance.reconciliation_items('2000-01-01') r
+      where r.item->>'expected_id' = (select id::text from finance.expected
+                                      where source_ref = 'rls-test-quote:deposit')
+        and r.modules = array['quotes'] $q$, 1);
+select pg_temp.assert_rows('badges: a hand-created expectation is owned by no module',
+  $q$ select 1 from finance.reconciliation_items('2000-01-01') r
+      where r.item->>'reason' = 'rls-test supplier' and r.modules = '{}'::text[] $q$, 1);
+select pg_temp.assert_rows('badges: POS items are owned by pos',
+  $q$ select 1 where not exists (
+        select 1 from finance.reconciliation_items('2000-01-01') r
+        where r.item->>'type' in ('unposted_day','recompute_drift','pinned')
+          and r.modules <> array['pos']) $q$, 1);
+-- the point of the whole change: POS must NOT be badged for finance problems
+select pg_temp.assert_rows('badges: no overdue expectation is ever charged to pos',
+  $q$ select 1 where not exists (
+        select 1 from finance.reconciliation_items('2000-01-01') r
+        where r.item->>'type' = 'overdue_expected' and 'pos' = any(r.modules)) $q$, 1);
+select set_config('levyam.finance_posting', 'on', true);   -- provenance row, see above
+delete from finance.expected where source_ref = 'rls-test-quote:deposit';
+select set_config('levyam.finance_posting', '', true);
+delete from finance.expected where reason = 'rls-test supplier';
+
+-- unfreezing lets the day resume, and the correction still stands
+delete from pos.day_pins where business_date = '2099-06-06';
+select pos.post_day('2099-06-06'::date);
+select pg_temp.assert_num('pin: unfreezing lets the withheld labor post',
+  (select coalesce(sum(amount), 0) from finance.entries
+   where source_ref like 'pos:2099-06-06:labor%'), 90);
+select pg_temp.assert_num('pin: and the owner correction is still standing',
+  (select coalesce(sum(amount), 0) from finance.entries
+   where source_ref like '%pos:2099-06-06:cash%'), 350);
 
 -- ---------------------------------------------------------------------
 --  pos_bills auto-repost (48). Because post_day now reads revenue from

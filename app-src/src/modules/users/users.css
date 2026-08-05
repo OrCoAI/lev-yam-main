@@ -123,6 +123,9 @@
 }
 .u-invite input:focus, .u-invite select:focus { outline: 2px solid var(--sea); border-color: var(--sea); }
 .u-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+/* this row mixes the shared .btn-sm pill with .u-opbtn ones — .btn-sm is sized
+   for dense table rows, so match it to the taller users pill here */
+.u-actions .btn-sm { min-height: 38px; }
 
 /* ===== module-access summary (inside a user card) ===== */
 .u-access { display: flex; flex-wrap: wrap; gap: 8px; }

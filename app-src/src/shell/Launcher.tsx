@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { useI18n, type TKey } from '../lib/i18n'
+import { useDriftCounts } from '../modules/finance/reconciliation'
 import { core } from '../lib/supabase'
 import type { ModuleRow } from '../types'
 
@@ -21,14 +22,23 @@ interface ModuleMeta {
 const MODULE_META: Record<string, ModuleMeta> = {
   users: { to: '/users', icon: '/app/brand/heart.png', descKey: 'launcher.desc.users' },
   // POS is a platform module (parity trial); pos.html stays live at /pos.html until cut-over
-  pos: { to: '/pos', icon: '/app/brand/palm-orange.png', descKey: 'launcher.desc.pos' },
-  finance: { to: '/finance', icon: '/app/brand/sun-orange.png', descKey: 'launcher.desc.finance' },
+  pos: {
+    to: '/pos', icon: '/app/brand/palm-orange.png', descKey: 'launcher.desc.pos',
+  },
+  finance: {
+    to: '/finance', icon: '/app/brand/sun-orange.png', descKey: 'launcher.desc.finance',
+  },
   quotes: { to: '/quotes', icon: '/app/brand/house-blue.png', descKey: 'launcher.desc.quotes' },
 }
 
 export default function Launcher() {
   const { t } = useI18n()
   const { preview, has } = useAuth()
+  // Keyed by MODULE KEY, straight from the DB: the tile only asks "how many
+  // open items are mine". Nothing here names a module, so a new one that posts
+  // to finance badges itself without touching the shell (ARCHITECTURE.md §6).
+  // Only finance.view holders fetch it — a drift count is financial information.
+  const driftCounts = useDriftCounts(has('finance.view'))
   const [modules, setModules] = useState<ModuleRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -82,6 +92,11 @@ export default function Launcher() {
                 )}
               </span>
               <span className="tile-label">{m.label}</span>
+              {driftCounts[m.key] > 0 && (
+                <span className="tile-badge" title={t('launcher.driftTitle')}>
+                  {driftCounts[m.key]}
+                </span>
+              )}
               {meta.descKey && <span className="tile-desc">{t(meta.descKey)}</span>}
               <span className="tile-go">{hasDest ? t('launcher.open') : t('launcher.soon')}</span>
             </>
