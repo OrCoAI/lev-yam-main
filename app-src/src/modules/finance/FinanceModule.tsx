@@ -24,11 +24,6 @@ export default function FinanceModule() {
   const recon = useReconciliation()
   const drift = recon.data?.count ?? 0
 
-  // The reconcile tab promises a LIVE answer, so it re-reads on entry. Money
-  // can move from anywhere — the POS module in another tab, a colleague's
-  // phone — and a stale "books are aligned" is the one answer this feature
-  // must never give. The query is ~4ms; the tabs that mutate money also call
-  // reload() directly, so the banner updates without waiting for a tab switch.
   // the expectation the user was sent to from the Reconcile tab, so the
   // Expected tab can scroll to it and mark it — otherwise "go record the
   // payment" drops you in an unsorted list to find it again yourself
@@ -36,6 +31,19 @@ export default function FinanceModule() {
   // stable identity: ExpectedTab's clear-the-highlight timer keys on it, and an
   // inline arrow would re-arm that timer on every render of this module
   const clearFocusExpected = useCallback(() => setFocusExpected(null), [])
+
+  // The reconcile tab promises a LIVE answer, so it re-reads on entry. Money can
+  // move from anywhere — the POS module in another tab, a colleague's phone —
+  // and a stale "books are aligned" is the one answer this feature must never
+  // give. That costs a second scan (~45ms measured, see 55_finance_reconciliation
+  // .sql) on the mount → click-into-the-tab path, which is the price of the
+  // guarantee and is paid deliberately.
+  //
+  // ExpectedTab additionally calls reload() when it moves money, so the banner
+  // and badge update without waiting for a tab switch. It is the only tab wired
+  // that way, and correctly so: `booked` in reconciliation_items() reads only
+  // source_module = 'pos' rows with a day-ref prefix, so manual entries,
+  // transfers and override rows cannot move any of the four checks.
   const reloadRecon = recon.reload
   useEffect(() => {
     if (tab === 'recon') void reloadRecon()

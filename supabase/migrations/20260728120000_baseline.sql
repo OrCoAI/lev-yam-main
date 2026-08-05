@@ -1259,6 +1259,19 @@ create index if not exists finance_entries_event_idx  on finance.entries (event_
 --     provenance is rejected — a client cannot forge, edit, or erase a posted
 --     fact (the same "the DB is the law" stance as signed contracts).
 -- ---------------------------------------------------------------------
+-- The GUC has exactly one reader, here, so the string that decides whether
+-- EVERY money guard is bypassed is written once. Hand-copying
+-- `current_setting('levyam.finance_posting', true)` into each guard is one typo
+-- away from a guard that never fires — and a misspelled GUC name reads as ''
+-- and fails OPEN, which is the worst possible direction for this particular
+-- condition to fail in.
+create or replace function finance.is_posting()
+returns boolean language sql stable as $$
+  select coalesce(current_setting('levyam.finance_posting', true), '') = 'on';
+$$;
+comment on function finance.is_posting() is
+  'True inside a module posting function. The one reader of levyam.finance_posting.';
+
 -- finance.entries_guard() and its trigger are authored in
 -- 54_finance_categories.sql — ONE definition, because the one-writer rule it
 -- enforces now reads finance.categories.owned_by_module instead of a literal
@@ -2136,6 +2149,14 @@ begin
   v_deposit := case when coalesce(q.deposit_pct, 0) > 0
                     then round(q.final_price * q.deposit_pct / 100, 2) else 0 end;
 
+  -- Declare this a posting function for the duration of the two inserts, the
+  -- same contract finance.record_payment() and pos.post_day() follow. Required
+  -- since 54's finance.expected_guard(): 'events' is a quotes-OWNED category,
+  -- so a write to it is only legitimate from here — and the guard must decide
+  -- that from the GUC, never from the row's own source_module, which any
+  -- finance.manage holder could set to 'quotes' themselves.
+  perform set_config('levyam.finance_posting', 'on', true);
+
   if v_deposit > 0 then
     insert into finance.expected
       (direction, category, amount, due_date, reason, event_id, source_module, source_ref)
@@ -2151,6 +2172,10 @@ begin
             v_event, 'quotes', q.id::text || ':balance')
     on conflict (source_module, source_ref) where source_module is not null do nothing;
   end if;
+
+  -- back off immediately: the GUC is transaction-local, and leaving it on would
+  -- hand the rest of this transaction a free pass through both money guards
+  perform set_config('levyam.finance_posting', '', true);
 end; $$;
 
 -- Runs AFTER the existing quotes_contracts_confirm trigger (alphabetical
@@ -4883,10 +4908,8 @@ grant execute on function finance.assert_category_writable(text, text) to authen
 -- would protect the old slugs and silently miss every category added since.
 create or replace function finance.entries_guard()
 returns trigger language plpgsql as $$
-declare
-  posting boolean := coalesce(current_setting('levyam.finance_posting', true), '') = 'on';
 begin
-  if posting then
+  if finance.is_posting() then      -- one reader, see 21_finance_spine.sql
     return coalesce(new, old);
   end if;
   if tg_op = 'INSERT' then
@@ -4924,19 +4947,28 @@ create trigger finance_entries_guard
 -- lists active, non-module categories only — which is exactly why it needed to
 -- be enforced in the database rather than left to the client.
 --
--- SECURITY DEFINER: it reads finance.categories on behalf of whoever is
--- writing, and finance.manage does not imply being able to SELECT the taxonomy.
--- It only reads, and it is reached solely as a trigger.
+-- Invoker rights, like entries_guard: the rules live in
+-- finance.assert_category_writable(), which is already SECURITY DEFINER and so
+-- can read the taxonomy for a caller who cannot.
 create or replace function finance.expected_guard()
-returns trigger language plpgsql security definer set search_path = finance, public as $$
+returns trigger language plpgsql as $$
 declare
   -- NOT new.kind: that column is GENERATED STORED, and Postgres computes
-  -- generated columns AFTER before-row triggers, so it is still null here.
+  -- generated columns AFTER before-row triggers, so it is still null here. The
+  -- mapping is therefore duplicated from the column's own expression below —
+  -- pinned by an rls_matrix assertion, because if the two ever diverge this
+  -- guard looks up a kind that matches no category and fails OPEN.
   v_kind text := case new.direction when 'in' then 'income' else 'expense' end;
-  c record;
 begin
-  if coalesce(current_setting('levyam.finance_posting', true), '') = 'on' then
-    return new;                    -- a posting function; same carve-out as entries
+  -- A posting function is writing (quotes.plan_money_for_quote sets the GUC
+  -- around its inserts). Keyed on the GUC and NOT on new.source_module: that
+  -- column is client-writable — `grant insert on finance.expected` covers every
+  -- column — so trusting it would let any finance.manage holder forge
+  -- `source_module = 'quotes'` and file money under a derived-only category,
+  -- the very thing entries_guard() makes impossible. It would also let them
+  -- charge another module's drift badge and forge its "open the source" link.
+  if finance.is_posting() then
+    return new;
   end if;
   -- an UPDATE that leaves the category where it is has nothing to re-check:
   -- a legacy row whose category has since been archived stays editable
@@ -4944,22 +4976,9 @@ begin
      and (new.category, new.direction) is not distinct from (old.category, old.direction) then
     return new;
   end if;
-  select owned_by_module, active into c
-  from finance.categories where kind = v_kind and key = new.category;
-  if not found then
-    return new;                    -- the composite FK rejects it a moment from now
-  end if;
-  -- A module may plan money under a category IT owns (quotes → 'events'); no
-  -- one may plan money under another module's, and a hand-written row may not
-  -- claim a module-owned category at all.
-  if c.owned_by_module is not null
-     and coalesce(new.source_module, '') <> c.owned_by_module then
-    raise exception 'הקטגוריה "%" נרשמת אוטומטית על ידי מודול (%) — לא ניתן להזין אותה ידנית',
-      new.category, c.owned_by_module;
-  end if;
-  if not c.active then
-    raise exception 'הקטגוריה "%" בארכיון — לא ניתן לרשום אליה צפי חדש', new.category;
-  end if;
+  -- Same two rules as the entries side, from the same function, so the taxonomy
+  -- keeps owning them: archived → no new money, module-owned → module writes it.
+  perform finance.assert_category_writable(v_kind, new.category);
   return new;
 end; $$;
 

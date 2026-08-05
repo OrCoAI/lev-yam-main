@@ -244,12 +244,15 @@ select set_config('levyam.finance_posting', '', true);
 insert into finance.entries (id, kind, category, amount, entry_date, note, created_by)
 values ('bbbbbbbb-0000-0000-0000-000000000002', 'income', 'other', 50, current_date,
         'rls-test manual', 'aaaaaaaa-0000-0000-0000-000000000001');
--- carries its provenance because 'events' is a quotes-owned category, and since
--- 54's finance.expected_guard() only the owning module may plan money under one
--- — which is also how such a row really comes into being
+-- 'events' is a quotes-OWNED category, so this row is written the only way such
+-- a row is legitimately written: behind the posting GUC, exactly as
+-- quotes.plan_money_for_quote() does it. Provenance alone is not enough and must
+-- not be — source_module is client-writable (see the forging assertion below).
+select set_config('levyam.finance_posting', 'on', true);
 insert into finance.expected (id, direction, category, amount, note, source_module, source_ref)
 values ('bbbbbbbb-0000-0000-0000-000000000003', 'in', 'events', 500, 'rls-test expected',
         'quotes', 'rls-test-quote:seed');
+select set_config('levyam.finance_posting', '', true);
 -- an archived category, to prove the guard blocks NEW money under it (54)
 insert into finance.categories (kind, key, label_he, label_ar, active, sort)
 values ('expense', 'rls_archived', 'בדיקה ארכיון', 'اختبار أرشيف', false, 995);
@@ -564,12 +567,29 @@ select pg_temp.assert_raises('manager: ARCHIVED category rejects a new expectati
 select pg_temp.assert_raises('manager: MODULE-OWNED category rejects a hand-written expectation',
   $q$ insert into finance.expected (direction, category, amount, note)
       values ('in','events', 5, 'rls-test cat') $q$, 'מודול');
--- but the owning module may plan money under its own category, or the quotes
--- module could never file the deposit it exists to track
-select pg_temp.assert_ok('manager: the OWNING module may file under its own category',
+-- ...and CLAIMING to be the module does not help. `grant insert on
+-- finance.expected` covers every column, so source_module is client-writable:
+-- an earlier revision of expected_guard() keyed its carve-out on that column,
+-- which let any finance.manage holder forge provenance, file money under a
+-- derived-only category, charge another module's drift badge and forge its
+-- "open the source" link. Only the posting GUC may open that door.
+select pg_temp.assert_raises('manager: ...and cannot get in by FORGING source_module',
   $q$ insert into finance.expected (direction, category, amount, note, source_module, source_ref)
-      values ('in','events', 5, 'rls-test cat', 'quotes', 'rls-test-quote:guard') $q$);
-delete from finance.expected where source_ref = 'rls-test-quote:guard';
+      values ('in','events', 5, 'rls-test cat', 'quotes', 'rls-test-quote:forged') $q$, 'מודול');
+select pg_temp.assert_rows('manager: the forged expectation really was not written',
+  $q$ select 1 from finance.expected where source_ref = 'rls-test-quote:forged' $q$, 0);
+-- expected_guard() cannot read new.kind (GENERATED STORED columns are computed
+-- AFTER before-row triggers), so it re-derives direction→kind. If that copy ever
+-- diverges from the column's own expression, the guard looks up a (kind, key)
+-- pair that matches no category, takes the "not found" path and fails OPEN —
+-- silently, while the composite FK still passes on the real kind. Pin them.
+insert into finance.expected (direction, category, amount, note)
+values ('in','bookings', 1, 'rls-test kindmap'), ('out','suppliers', 1, 'rls-test kindmap');
+select pg_temp.assert_rows('the generated kind matches the mapping expected_guard() derives',
+  $q$ select 1 from finance.expected
+      where note = 'rls-test kindmap'
+        and kind = case direction when 'in' then 'income' else 'expense' end $q$, 2);
+delete from finance.expected where note = 'rls-test kindmap';
 -- the UPDATE carve-out: an edit that leaves the category where it is skips the
 -- check entirely, so a row under a category archived later stays editable
 -- (archiving must not freeze history); MOVING one into an archived category is
@@ -1178,11 +1198,15 @@ select pg_temp.seed_actor();  -- back to the default actor
 --  problems POS cannot solve (an overdue deposit is not a POS failure).
 --  The shell names no module: the DATA decides which tiles badge.
 -- ---------------------------------------------------------------------
--- an expectation created by the quotes module, overdue -> quotes owns it
+-- an expectation created by the quotes module, overdue -> quotes owns it.
+-- Behind the GUC, because 'events' is quotes-owned and expected_guard() trusts
+-- nothing else (the seam test above proves the real planner does the same).
+select set_config('levyam.finance_posting', 'on', true);
 insert into finance.expected
   (direction, category, amount, due_date, reason, status, source_module, source_ref)
 values ('in', 'events', 4000, current_date - 20, 'deposit', 'open',
         'quotes', 'rls-test-quote:deposit');
+select set_config('levyam.finance_posting', '', true);
 -- a hand-created one belongs to nobody but finance. The reason carries an
 -- rls-test marker so the assertion below identifies THIS row: run against a
 -- tier that holds real data (staging, via the management API) a bare

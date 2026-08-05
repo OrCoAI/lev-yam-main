@@ -124,8 +124,11 @@ export default function ExpectedTab({
     }
     setFulfillId(null)
     setError(null)
-    await load()
+    // kicked off BEFORE awaiting the list re-read: the two reads are independent,
+    // and the reconciliation scan is the slower of them (~45ms), so waiting for
+    // the list first just added its round trip to the user's wait
     onMoneyChanged()
+    await load()
   }
 
   async function cancel(r: FinanceExpected) {
@@ -147,8 +150,11 @@ export default function ExpectedTab({
       setError(ft.cancelDenied)
       return
     }
-    await load()
+    // kicked off BEFORE awaiting the list re-read: the two reads are independent,
+    // and the reconciliation scan is the slower of them (~45ms), so waiting for
+    // the list first just added its round trip to the user's wait
     onMoneyChanged()
+    await load()
   }
 
   function renderRow(r: FinanceExpected) {

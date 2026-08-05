@@ -321,7 +321,13 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
    breakdowns) stay one line; a .rl-formrow row is a plain block for inline
    forms. Full contract: docs/MODULE-TEMPLATE.md §3.
    Class-keyed on purpose — never key mobile CSS on translated label text. */
-.rl-lock { display: none; }
+/* `white-space` INHERITS, and .rl-lock lives inside .rl-actions (which is
+   nowrap, below) while being a full sentence rather than a button label. On a
+   phone it becomes display:block and the inherited nowrap forced it onto one
+   unbreakable line: measured 315px of text pushing the page to a 376px
+   scrollWidth at both 360px and 320px viewports — a horizontal scroll on the
+   most common phone widths. Reset it where the sentence is. */
+.rl-lock { display: none; white-space: normal; }
 /* The actions cell must stay a REAL table cell on desktop. `display: flex` (or
    grid, or block) on a <td> takes it out of the table's layout algorithm: the
    column stops sharing the row's height, so its bottom border sits at its own
@@ -374,7 +380,13 @@ a.finance-badge-link:hover { text-decoration: underline; }
 a.btn-ghost, a.btn-primary {
   text-decoration: none; display: inline-flex; align-items: center; justify-content: center;
 }
-.finance-fulfill { margin: 14px 0 4px; padding: 14px; border: 1px dashed var(--sea); border-radius: 12px; }
+/* The two inline money forms that open inside a list (record-payment and the
+   owner correction). One box, two accent colours — the colour is the only thing
+   that differs, and .finance-correction used to be a byte-copy of this rule. */
+.finance-fulfill, .finance-correction {
+  margin: 14px 0 4px; padding: 14px; border: 1px dashed; border-radius: var(--radius);
+}
+.finance-fulfill { border-color: var(--sea); }
 
 /* ---------- reconciliation: badges, banner, drift list (PR B) ----------
    The count is the alert — nothing here is dismissible, so the styling leans on
@@ -414,7 +426,7 @@ a.btn-ghost, a.btn-primary {
 /* ---------- owner correction form (finance.override) ----------
    Visually set apart from the normal entry form: this posts against a
    module-owned row, which nothing else in the app can do. */
-.finance-correction { margin: 14px 0 4px; padding: 14px; border: 1px dashed var(--warn); border-radius: 12px; }
+.finance-correction { border-color: var(--warn); }
 .finance-correction-title { font-weight: 700; margin: 0 0 4px; }
 .finance-correction-now {
   display: flex; align-items: baseline; justify-content: space-between; gap: 10px;

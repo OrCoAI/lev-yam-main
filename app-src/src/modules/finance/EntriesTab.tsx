@@ -44,6 +44,7 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
   // the actions column exists for either capability: manage edits manual rows,
   // override corrects module-posted ones
   const showActions = canManage || canOverride
+  const colSpan = showActions ? 7 : 6
   // remounts EntryForm after a successful insert — the fields must not keep
   // their just-saved values (a second submit would duplicate the entry)
   const [formEpoch, setFormEpoch] = useState(0)
@@ -155,7 +156,13 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
       return
     }
     if (editing?.id === id) cancelEdit()
-    await load(false, true) // the deleted row may be pages down; stay there
+    // splice it out instead of re-reading: we know exactly which row went, and a
+    // keepWindow reload would re-fetch every loaded page (500+ rows after a few
+    // "load more" presses) and blank the table to delete one row we can already
+    // identify. The window shrinks by one rather than pulling a row in from
+    // beyond it — same as the old page-1 reset did, at zero requests.
+    setEntries((prev) => prev.filter((r) => r.id !== id))
+    offsetRef.current = Math.max(0, offsetRef.current - 1)
   }
 
   return (
@@ -289,7 +296,7 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
                       "which number am I fixing?" is never a guess */}
                   {correcting === e.id && (
                     <tr className="rl-formrow">
-                      <td colSpan={showActions ? 7 : 6}>
+                      <td colSpan={colSpan}>
                         <CorrectionForm
                           entryId={e.id}
                           onCancel={() => setCorrecting(null)}
@@ -308,7 +315,7 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
               })}
               {entries.length === 0 && (
                 <tr>
-                  <td colSpan={showActions ? 7 : 6} className="muted">
+                  <td colSpan={colSpan} className="muted">
                     {kindFilter === 'all' ? ft.noEntries : ft.noEntriesFiltered}
                   </td>
                 </tr>

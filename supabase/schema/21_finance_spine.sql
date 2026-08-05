@@ -71,6 +71,19 @@ create index if not exists finance_entries_event_idx  on finance.entries (event_
 --     provenance is rejected — a client cannot forge, edit, or erase a posted
 --     fact (the same "the DB is the law" stance as signed contracts).
 -- ---------------------------------------------------------------------
+-- The GUC has exactly one reader, here, so the string that decides whether
+-- EVERY money guard is bypassed is written once. Hand-copying
+-- `current_setting('levyam.finance_posting', true)` into each guard is one typo
+-- away from a guard that never fires — and a misspelled GUC name reads as ''
+-- and fails OPEN, which is the worst possible direction for this particular
+-- condition to fail in.
+create or replace function finance.is_posting()
+returns boolean language sql stable as $$
+  select coalesce(current_setting('levyam.finance_posting', true), '') = 'on';
+$$;
+comment on function finance.is_posting() is
+  'True inside a module posting function. The one reader of levyam.finance_posting.';
+
 -- finance.entries_guard() and its trigger are authored in
 -- 54_finance_categories.sql — ONE definition, because the one-writer rule it
 -- enforces now reads finance.categories.owned_by_module instead of a literal

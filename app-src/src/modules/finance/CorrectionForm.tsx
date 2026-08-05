@@ -21,7 +21,6 @@ interface Preview {
   category: string
   entry_date: string
   current_total: number
-  pos_date: string | null
 }
 
 export default function CorrectionForm({
@@ -80,8 +79,11 @@ export default function CorrectionForm({
   const target = Number(correct)
   const delta = Number.isFinite(target) ? target - preview.current_total : 0
 
+  // no `card`: .finance-correction is the box (same as .finance-fulfill, its
+  // sibling inline form), and `card` only added a background and shadow under it
+  // while having three of its own properties overridden
   return (
-    <div className="card finance-form finance-correction">
+    <div className="finance-form finance-correction">
       <p className="finance-correction-title">{ft.correctionTitle}</p>
       <p className="muted field-hint">{ft.correctionExplain}</p>
 

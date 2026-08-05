@@ -141,6 +141,14 @@ bilingual is ever a retrofit.*
             built *from* the schema files is exactly why this survived
       - [ ] **Set `disable_signup = true`** on prod and staging — every account is created by
             invite, so open signup buys nothing and was the first link in the chain above
+- [ ] **The topbar overflows below ~370px** — found 2026-08-05 while measuring the finance
+      tables at phone widths, and **pre-existing** (no topbar/brand rule has changed since):
+      `.brand` (94px) + `.topbar-right` (268px: email, language toggle, Face ID, logout) + 40px
+      padding needs ~402px, so at 360px and 320px the whole page gets a horizontal scroll
+      (`documentElement.scrollWidth` 376 vs 360). 360px is a very common phone width — iPhone
+      SE, Galaxy S8/S9 — and mobile-first is a platform invariant. Likely fix: drop `.user-email`
+      to an avatar/initials at the phone breakpoint (the email is already shown in the users
+      module), or move the secondary actions behind a menu
 - [x] POS: map `pos.html` features → module design under `app-src/src/modules/pos/`
       (against the spines: `pos.close_day()` posts to finance; bills carry optional `event_id`)
       — **full migration plan: [plans/pos-module.md](plans/pos-module.md)** (kickoff

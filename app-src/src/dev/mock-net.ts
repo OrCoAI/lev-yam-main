@@ -73,6 +73,17 @@ const db: Record<string, Row[]> = {
 }
 let seq = 100
 
+// stands in for core.modules — ONE list, read both by my_modules and by the
+// reconciliation mock's ownership check (55 guards source_module against this
+// table, so the mock must too or preview badges a tile the DB would not)
+const MODULES = [
+  { key: 'users', label: 'Users & Permissions', icon: '🔐', sort: 10 },
+  { key: 'pos', label: 'קופה', icon: '🧾', sort: 20 },
+  { key: 'finance', label: 'כספים', icon: '💰', sort: 30 },
+  { key: 'quotes', label: 'הצעות מחיר', icon: '📋', sort: 40 },
+]
+const MODULE_KEYS: string[] = MODULES.map((m) => m.key)
+
 const json = (body: unknown, status = 200) =>
   new Response(body === undefined ? null : JSON.stringify(body), {
     status,
@@ -291,13 +302,7 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise
         })),
       })
     }
-    if (rpc[1] === 'my_modules')
-      return json([
-        { key: 'users', label: 'Users & Permissions', icon: '🔐', sort: 10 },
-        { key: 'pos', label: 'קופה', icon: '🧾', sort: 20 },
-        { key: 'finance', label: 'כספים', icon: '💰', sort: 30 },
-        { key: 'quotes', label: 'הצעות מחיר', icon: '📋', sort: 40 },
-      ])
+    if (rpc[1] === 'my_modules') return json(MODULES)
     if (rpc[1] === 'record_payment') {
       // mirror finance.record_payment: post the entry + fulfill the expectation
       const body = (await req.json()) as Row
@@ -413,15 +418,21 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise
       }
       return json(null)
     }
-    // finance.reconciliation / _count — the preview harness computes the same
-    // three checks over its fixtures, so the badges, banner and reconcile tab
-    // are all exercisable in ?preview without a database.
+    // finance.reconciliation / reconciliation_counts — the preview harness
+    // computes the same FOUR checks over its fixtures, so the badges, banner and
+    // reconcile tab are all exercisable in ?preview without a database. Every
+    // rule below must mirror 55_finance_reconciliation.sql; a mock that is more
+    // permissive than the DB makes a ?preview pass meaningless.
     if (rpc[1] === 'reconciliation' || rpc[1] === 'reconciliation_counts') {
       const num = (v: unknown) => Number(v) || 0
       // magnitude, mirroring 55's day_drift.total — a signed sum would add
       // revenue legs to cost legs and cancel a real +100/−100 drift to "0"
       const driftTotal = (legs: { delta: number }[]) =>
         legs.reduce((s, x) => s + Math.abs(x.delta), 0)
+      // mirrors 55's `case when source_module is not null and <> 'finance' and
+      // exists (select 1 from core.modules ...)`
+      const ownerModules = (m: unknown): string[] =>
+        typeof m === 'string' && m !== 'finance' && MODULE_KEYS.includes(m) ? [m] : []
       const today = new Date().toISOString().slice(0, 10)
       const since = new Date(Date.now() - 90 * 864e5).toISOString().slice(0, 10)
       const legsFor = (day: string) => {
@@ -459,8 +470,10 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise
           expected_id: r.id, direction: r.direction, category: r.category, amount: num(r.amount),
           due_date: r.due_date, reason: r.reason, days_overdue: daysOverdue, fix: 'record_payment',
           source_module: r.source_module ?? null, source_ref: r.source_ref ?? null,
-          // the module that created the expectation owns chasing it
-          modules: r.source_module && r.source_module !== 'finance' ? [r.source_module] : [] })
+          // the module that created the expectation owns chasing it — checked
+          // against core.modules exactly as the SQL does, so a retired or
+          // misspelled provenance cannot badge a tile that does not exist
+          modules: ownerModules(r.source_module) })
       }
       // 2) recompute_drift — compare a booked day's legs against the books
       for (const d of days.sort().reverse()) {

@@ -88,7 +88,14 @@ export default function ReconcileTab({
             </tr>
           </thead>
           <tbody>
-            {data.items.map((item) => (
+            {data.items.map((item) => {
+              // resolved ONCE per row: computing it twice (guard + href) is what
+              // forced an `as string` cast on the second call
+              const src =
+                item.fix === 'record_payment'
+                  ? sourceHref(item.source_module, item.source_ref)
+                  : null
+              return (
               <tr
                 key={itemKey(item)}
                 className={`finance-recon-${item.severity}`}
@@ -141,11 +148,8 @@ export default function ReconcileTab({
                     <>
                       {/* the thing that CAUSED it: a deposit that never arrived
                           belongs to the signed quote behind it */}
-                      {sourceLink(item.source_module, item.source_ref) && (
-                        <Link
-                          className="btn-ghost btn-sm"
-                          to={sourceLink(item.source_module, item.source_ref) as string}
-                        >
+                      {src && (
+                        <Link className="btn-ghost btn-sm" to={src}>
                           {ft.reconOpenSource}
                         </Link>
                       )}
@@ -163,17 +167,14 @@ export default function ReconcileTab({
                   )}
                 </td>
               </tr>
-            ))}
+              )
+            })}
           </tbody>
         </table>
       </div>
     </div>
   )
 }
-
-/** Where did this item come from? Only quotes-sourced expectations resolve
- *  today; a hand-created one has no page to open and simply shows no link. */
-const sourceLink = (module: string | null, ref: string | null) => sourceHref(module, ref)
 
 const itemKey = (i: DriftItem) =>
   i.type === 'overdue_expected' ? `${i.type}:${i.expected_id}` : `${i.type}:${i.business_date}`
