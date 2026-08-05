@@ -1136,9 +1136,12 @@ insert into finance.expected
   (direction, category, amount, due_date, reason, status, source_module, source_ref)
 values ('in', 'events', 4000, current_date - 20, 'deposit', 'open',
         'quotes', 'rls-test-quote:deposit');
--- a hand-created one belongs to nobody but finance
+-- a hand-created one belongs to nobody but finance. The reason carries an
+-- rls-test marker so the assertion below identifies THIS row: run against a
+-- tier that holds real data (staging, via the management API) a bare
+-- 'supplier' also matches the real overdue supplier bill sitting there.
 insert into finance.expected (direction, category, amount, due_date, reason, status)
-values ('out', 'suppliers', 900, current_date - 5, 'supplier', 'open');
+values ('out', 'suppliers', 900, current_date - 5, 'rls-test supplier', 'open');
 select pg_temp.assert_rows('badges: a quotes-sourced overdue expectation is owned by quotes',
   $q$ select 1 from finance.reconciliation_items('2099-01-01') r
       where r.item->>'expected_id' = (select id::text from finance.expected
@@ -1146,7 +1149,7 @@ select pg_temp.assert_rows('badges: a quotes-sourced overdue expectation is owne
         and r.modules = array['quotes'] $q$, 1);
 select pg_temp.assert_rows('badges: a hand-created expectation is owned by no module',
   $q$ select 1 from finance.reconciliation_items('2099-01-01') r
-      where r.item->>'reason' = 'supplier' and r.modules = '{}'::text[] $q$, 1);
+      where r.item->>'reason' = 'rls-test supplier' and r.modules = '{}'::text[] $q$, 1);
 select pg_temp.assert_rows('badges: POS items are owned by pos',
   $q$ select 1 where not exists (
         select 1 from finance.reconciliation_items('2099-01-01') r
@@ -1158,7 +1161,7 @@ select pg_temp.assert_rows('badges: no overdue expectation is ever charged to po
         select 1 from finance.reconciliation_items('2099-01-01') r
         where r.item->>'type' = 'overdue_expected' and 'pos' = any(r.modules)) $q$, 1);
 delete from finance.expected where source_ref = 'rls-test-quote:deposit';
-delete from finance.expected where reason = 'supplier' and amount = 900;
+delete from finance.expected where reason = 'rls-test supplier';
 
 -- unfreezing lets the day resume, and the correction still stands
 delete from pos.day_pins where business_date = '2099-06-06';
