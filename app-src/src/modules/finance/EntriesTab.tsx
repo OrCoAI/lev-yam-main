@@ -62,20 +62,26 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
   const offsetRef = useRef(0)
 
   const load = useCallback(
-    async (append = false) => {
+    // `keepWindow` re-reads every page the user has already pulled in instead
+    // of snapping back to the newest PAGE_SIZE. A correction posts its offset
+    // row on the ORIGINAL entry's date, so on a long ledger both the corrected
+    // row and the new one sit outside page 1 — resetting there makes a
+    // successful correction look like it did nothing at all.
+    async (append = false, keepWindow = false) => {
       const id = ++loadIdRef.current
       if (append) setLoadingMore(true)
       else {
         setLoading(true)
-        offsetRef.current = 0
+        if (!keepWindow) offsetRef.current = 0
       }
       const offset = append ? offsetRef.current : 0
+      const limit = append || !keepWindow ? PAGE_SIZE : Math.max(offsetRef.current, PAGE_SIZE)
       let query = finance().from('entries').select('*')
       if (kindFilter !== 'all') query = query.eq('kind', kindFilter)
       const { data, error } = await query
         .order('entry_date', { ascending: false })
         .order('created_at', { ascending: false })
-        .range(offset, offset + PAGE_SIZE - 1)
+        .range(offset, offset + limit - 1)
       if (id !== loadIdRef.current) return // a newer load superseded this one
       if (error) {
         setError(error.message)
@@ -83,7 +89,9 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
         const rows = (data as FinanceEntry[] | null) ?? []
         setEntries((prev) => (append ? [...prev, ...rows] : rows))
         offsetRef.current = offset + rows.length
-        setHasMore(rows.length === PAGE_SIZE)
+        // a short read means the ledger ended — compare against what was ASKED
+        // for, which is the whole re-read window when keepWindow is on
+        setHasMore(rows.length === limit)
         setError(null)
       }
       setLoading(false)
@@ -119,6 +127,7 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
   }
 
   async function save(payload: EntryPayload) {
+    const wasEdit = editing !== null // cancelEdit() below clears it
     setBusy(true)
     const res = editing
       ? await finance().from('entries').update(payload).eq('id', editing.id)
@@ -131,7 +140,9 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
     cancelEdit()
     setFormEpoch((n) => n + 1)
     if (isPhone) setFormOpen(false) // land back on the list — the saved row is the feedback
-    await load()
+    // an INSERT lands at the top of the list, where the form already put the
+    // user; an EDIT keeps whatever page the edited row was on
+    await load(false, wasEdit)
   }
 
   async function remove(id: string) {
@@ -144,7 +155,7 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
       return
     }
     if (editing?.id === id) cancelEdit()
-    await load()
+    await load(false, true) // the deleted row may be pages down; stay there
   }
 
   return (
@@ -284,7 +295,9 @@ export default function EntriesTab({ canManage }: { canManage: boolean }) {
                           onCancel={() => setCorrecting(null)}
                           onDone={() => {
                             setCorrecting(null)
-                            void load()
+                            // keep the loaded window: the correction lands on
+                            // the corrected row's date, not at the top
+                            void load(false, true)
                           }}
                         />
                       </td>

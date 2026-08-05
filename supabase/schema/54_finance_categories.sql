@@ -165,7 +165,17 @@ alter table finance.categories add constraint finance_categories_labels_check
 -- Both rules a category can impose on a manual write live here, so the taxonomy
 -- owns them rather than each writing table re-deriving one of them:
 --   * owned_by_module  → a module posting function is the one writer
---   * active = false   → archived; readable history, but no NEW money filed here
+--   * active = false   → archived; readable history, but no new MANUAL entry
+--
+-- Scope, precisely: this runs from finance.entries_guard(), which every posting
+-- function short-circuits via the levyam.finance_posting GUC. So archiving does
+-- NOT retroactively block finance.record_payment() from fulfilling an
+-- expectation already open under the category — that money was planned before
+-- the archive and refusing it would strand it, with no way to file it correctly.
+-- It also does not reach a NEW finance.expected row: the composite FK constrains
+-- the category to one that exists, not to one that is still active (the pickers
+-- only offer active, non-module categories, so this is a direct-API gap, not a
+-- UI one). Tracked in docs/modules/finance.md.
 -- Existence/kind-correctness is NOT this function's job — the composite FK
 -- already rejects those, and duplicating it here would just fail differently.
 create or replace function finance.assert_category_writable(p_kind text, p_key text)

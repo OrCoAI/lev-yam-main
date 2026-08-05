@@ -22,7 +22,6 @@ interface Preview {
   entry_date: string
   current_total: number
   pos_date: string | null
-  pos_pinned: boolean
 }
 
 export default function CorrectionForm({

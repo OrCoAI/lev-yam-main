@@ -144,9 +144,11 @@ begin
   return jsonb_build_object(
     'target', t.target, 'kind', t.kind, 'category', t.category,
     'entry_date', t.entry_date, 'current_total', t.current_total,
-    -- so the form can warn that saving will also freeze the day
-    'pos_date', t.pos_date,
-    'pos_pinned', t.pos_date is not null and pos.day_is_pinned(t.pos_date));
+    -- which POS day the target belongs to, if any. Deliberately NOT a
+    -- pinned/frozen flag: §4 dropped the auto-pin, so posting a correction
+    -- freezes nothing and the form has no such warning to make. Pinning is its
+    -- own explicit action on the Reconcile tab.
+    'pos_date', t.pos_date);
 end; $$;
 
 -- ---------------------------------------------------------------------

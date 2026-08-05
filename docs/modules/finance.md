@@ -12,7 +12,19 @@ touching schema, permissions, or the events/finance spine graduates to a `docs/p
 
 ## Open bugs
 
-- (none logged)
+- Archiving a category does not stop a **new `finance.expected` row** from being created
+  under it via the API. `finance.assert_category_writable()` runs from
+  `finance.entries_guard()`, and `finance.expected` has no equivalent guard — only the
+  composite FK, which checks that the category *exists*, not that it is still active. Not
+  reachable from the UI (`pickableCategories` offers active, non-module categories only),
+  and not a privilege boundary (anyone who can do it already holds `finance.manage` and
+  could file the money under an active category instead) — so it is data hygiene, not
+  security. Closing it means an insert/update trigger on `finance.expected` that mirrors
+  the entries guard, including how a module-created expectation is allowed to keep using
+  its own module-owned category. Found by `/code-review high`, 2026-08-05.
+  *Not* a bug, by decision, and documented at both call sites: archiving does not block
+  `record_payment()` from fulfilling an expectation **already open** under the category.
+  That money was planned before the archive; refusing it would strand it.
 
 ## Open feature ideas
 

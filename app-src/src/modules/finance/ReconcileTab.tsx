@@ -180,10 +180,14 @@ const itemKey = (i: DriftItem) =>
 
 const when = (i: DriftItem) => (i.type === 'overdue_expected' ? i.due_date : i.business_date)
 
+/** The one number in the amount column. It is NOT the same quantity for every
+ *  item — an unposted day shows the takings that never reached the books, a
+ *  drifted or frozen day shows how much money sits in the wrong place across
+ *  all four legs (revenue AND cost). The per-item detail line says which. */
 function money(i: DriftItem) {
   if (i.type === 'unposted_day') return i.revenue
   if (i.type === 'overdue_expected') return i.amount
-  return i.total_delta // recompute_drift and pinned both report a leg delta
+  return i.total_delta // recompute_drift and pinned both report a leg magnitude
 }
 
 function title(ft: FinanceDict, i: DriftItem) {
@@ -199,8 +203,8 @@ function detail(ft: FinanceDict, i: DriftItem) {
   if (i.type === 'pinned')
     // A frozen day that has started accumulating money outside the books is a
     // different situation from one that is simply frozen — say which. Keyed on
-    // `legs`, exactly as the SQL sets severity: `total_delta` would call a
-    // cancelling drift (+100 cash / −100 card) "costing nothing".
+    // `legs`, exactly as the SQL sets severity, because the legs are what
+    // "drifted" means; no roll-up of them can be the thing this switches on.
     return i.legs === null
       ? ft.reconPinnedDetail(i.reason)
       : ft.reconPinnedStaleDetail(i.reason) + legSummary(i.legs)

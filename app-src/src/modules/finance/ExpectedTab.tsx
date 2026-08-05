@@ -56,14 +56,25 @@ export default function ExpectedTab({
   const [fulfillId, setFulfillId] = useState<string | null>(null)
   const focusRef = useRef<HTMLTableRowElement | null>(null)
 
-  // Scroll the focused row into view once the list has rendered, then hand the
-  // focus back so it does not re-fire on every later render of this tab.
+  // Scroll to the focused row ONCE per focusId, after the list has rendered.
+  // Guarded by a ref rather than by the effect deps: `loading` flips on every
+  // later load() (recording a payment triggers one), and re-running the effect
+  // would yank the viewport back to this row while the user has moved on.
+  const scrolledToRef = useRef<string | null>(null)
   useEffect(() => {
-    if (!focusId || loading) return
+    if (!focusId || loading || scrolledToRef.current === focusId) return
+    scrolledToRef.current = focusId
     focusRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [focusId, loading])
+
+  // ...and clear the highlight 2.5s later. Its own effect, keyed ONLY on
+  // focusId: sharing the one above would let any re-run cancel the pending
+  // timer in cleanup and leave the row marked forever.
+  useEffect(() => {
+    if (!focusId) return
     const t = setTimeout(() => onFocusHandled?.(), 2500)
     return () => clearTimeout(t)
-  }, [focusId, loading, onFocusHandled])
+  }, [focusId, onFocusHandled])
 
   const load = useCallback(async () => {
     setLoading(true)

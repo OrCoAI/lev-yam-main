@@ -968,6 +968,24 @@ select pos.post_day('2099-05-05'::date);
 select pg_temp.assert_rows('recon: re-posting clears the drift',
   $q$ select 1 from finance.reconciliation_items('2099-01-01') r
       where r.item->>'business_date' = '2099-05-05' $q$, 0);
+-- A drift whose legs CANCEL is still a drift: the same money moved from cash to
+-- card and the books did not follow. The day is now grand_total 700 / card 300,
+-- booked as cash 400 + card 300; paying 600 of it by card makes the legs
+-- -300 cash / +300 card. total_delta is a MAGNITUDE precisely so this reports
+-- 600 rather than the "0" a signed roll-up would give it.
+select set_config('levyam.suppress_repost', 'on', true);
+update pos.pos_bills set card_paid = 600 where id = 'rls-unposted-day';
+select set_config('levyam.suppress_repost', '', true);
+select pg_temp.assert_rows('recon: legs that cancel are still reported as drift',
+  $q$ select 1 from finance.reconciliation_items('2099-01-01') r
+      where r.item->>'type' = 'recompute_drift' and r.item->>'business_date' = '2099-05-05' $q$, 1);
+select pg_temp.assert_num('recon: and its amount is the money that moved, not the net',
+  (select (r.item->>'total_delta')::numeric from finance.reconciliation_items('2099-01-01') r
+   where r.item->>'type' = 'recompute_drift' and r.item->>'business_date' = '2099-05-05'), 600);
+select pos.post_day('2099-05-05'::date);
+select pg_temp.assert_rows('recon: re-posting clears the cancelling drift too',
+  $q$ select 1 from finance.reconciliation_items('2099-01-01') r
+      where r.item->>'business_date' = '2099-05-05' $q$, 0);
 
 -- ---------------------------------------------------------------------
 --  56_finance_override (PR C) — the owner correction and the day pin.

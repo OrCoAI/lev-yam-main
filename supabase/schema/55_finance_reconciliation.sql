@@ -284,7 +284,13 @@ language sql stable security definer set search_path = finance, pos, core as $$
     select ld.d,
            jsonb_agg(jsonb_build_object('leg', ld.leg, 'delta', ld.delta))
              filter (where ld.delta <> 0) as legs,
-           coalesce(sum(ld.delta), 0) as total
+           -- MAGNITUDE: how much money is in the wrong place, summed over the
+           -- legs. Not a net and not a P&L — a signed sum would add revenue
+           -- legs (cash/card) to cost legs (food/labor), which carry the same
+           -- sign here but the opposite meaning, and would report a drift of
+           -- +100 cash / -100 card as "0", i.e. nothing wrong. The per-leg
+           -- breakdown next to it in the UI carries the direction.
+           coalesce(sum(abs(ld.delta)), 0) as total
     from leg_delta ld group by ld.d
   )
   -- 1) days with real money that were never written to the books
@@ -314,8 +320,10 @@ language sql stable security definer set search_path = finance, pos, core as $$
            'type', 'recompute_drift', 'severity', 'high', 'business_date', d.d,
            'legs', d.legs, 'total_delta', d.total, 'fix', 'post_day')
   from day_drift d
-  -- non-null iff at least one leg drifted; `total <> 0` would MISS a day whose
-  -- legs cancel out (+100 cash / −100 card), which is exactly a real drift
+  -- non-null iff at least one leg drifted — the direct signal. Keyed on the
+  -- legs and not on the total on purpose: the legs are what "drifted" MEANS,
+  -- so this check cannot be broken by a later change to how `total` is rolled
+  -- up (a signed one used to report +100 cash / −100 card as "0")
   where d.legs is not null
     -- BOOKED days only — leg_delta now spans every day, so an unposted day would
     -- otherwise surface here as well as in check 1

@@ -418,6 +418,10 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise
     // are all exercisable in ?preview without a database.
     if (rpc[1] === 'reconciliation' || rpc[1] === 'reconciliation_counts') {
       const num = (v: unknown) => Number(v) || 0
+      // magnitude, mirroring 55's day_drift.total — a signed sum would add
+      // revenue legs to cost legs and cancel a real +100/−100 drift to "0"
+      const driftTotal = (legs: { delta: number }[]) =>
+        legs.reduce((s, x) => s + Math.abs(x.delta), 0)
       const today = new Date().toISOString().slice(0, 10)
       const since = new Date(Date.now() - 90 * 864e5).toISOString().slice(0, 10)
       const legsFor = (day: string) => {
@@ -474,7 +478,7 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise
         const pinned = db.day_pins.some((p) => p.business_date === d)
         if (legs.length && !pinned)
           items.push({ type: 'recompute_drift', severity: 'high', business_date: d,
-            legs, total_delta: legs.reduce((s, x) => s + x.delta, 0), fix: 'post_day',
+            legs, total_delta: driftTotal(legs), fix: 'post_day',
             modules: ['pos'] })
       }
       // 4) pinned days — always listed, severity rises only once money has
@@ -494,7 +498,7 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise
         items.push({ type: 'pinned', severity: legs.length ? 'medium' : 'low',
           business_date: d, reason: p.reason, pinned_at: p.pinned_at,
           legs: legs.length ? legs : null,
-          total_delta: legs.reduce((s, x) => s + x.delta, 0), fix: 'unpin', modules: ['pos'] })
+          total_delta: driftTotal(legs), fix: 'unpin', modules: ['pos'] })
       }
       // the badge counts what needs action — 'low' is listed, never counted
       const live = items.filter((i) => i.severity !== 'low')
@@ -550,7 +554,6 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise
         return json({
           target, kind: anchor.kind, category: anchor.category, entry_date: anchor.entry_date,
           current_total: current, pos_date: posDate,
-          pos_pinned: !!posDate && db.day_pins.some((p) => p.business_date === posDate),
         })
 
       const amount = Number(body.p_amount)

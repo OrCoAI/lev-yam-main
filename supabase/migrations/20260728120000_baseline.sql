@@ -4846,7 +4846,17 @@ alter table finance.categories add constraint finance_categories_labels_check
 -- Both rules a category can impose on a manual write live here, so the taxonomy
 -- owns them rather than each writing table re-deriving one of them:
 --   * owned_by_module  → a module posting function is the one writer
---   * active = false   → archived; readable history, but no NEW money filed here
+--   * active = false   → archived; readable history, but no new MANUAL entry
+--
+-- Scope, precisely: this runs from finance.entries_guard(), which every posting
+-- function short-circuits via the levyam.finance_posting GUC. So archiving does
+-- NOT retroactively block finance.record_payment() from fulfilling an
+-- expectation already open under the category — that money was planned before
+-- the archive and refusing it would strand it, with no way to file it correctly.
+-- It also does not reach a NEW finance.expected row: the composite FK constrains
+-- the category to one that exists, not to one that is still active (the pickers
+-- only offer active, non-module categories, so this is a direct-API gap, not a
+-- UI one). Tracked in docs/modules/finance.md.
 -- Existence/kind-correctness is NOT this function's job — the composite FK
 -- already rejects those, and duplicating it here would just fail differently.
 create or replace function finance.assert_category_writable(p_kind text, p_key text)
@@ -5280,7 +5290,13 @@ language sql stable security definer set search_path = finance, pos, core as $$
     select ld.d,
            jsonb_agg(jsonb_build_object('leg', ld.leg, 'delta', ld.delta))
              filter (where ld.delta <> 0) as legs,
-           coalesce(sum(ld.delta), 0) as total
+           -- MAGNITUDE: how much money is in the wrong place, summed over the
+           -- legs. Not a net and not a P&L — a signed sum would add revenue
+           -- legs (cash/card) to cost legs (food/labor), which carry the same
+           -- sign here but the opposite meaning, and would report a drift of
+           -- +100 cash / -100 card as "0", i.e. nothing wrong. The per-leg
+           -- breakdown next to it in the UI carries the direction.
+           coalesce(sum(abs(ld.delta)), 0) as total
     from leg_delta ld group by ld.d
   )
   -- 1) days with real money that were never written to the books
@@ -5310,8 +5326,10 @@ language sql stable security definer set search_path = finance, pos, core as $$
            'type', 'recompute_drift', 'severity', 'high', 'business_date', d.d,
            'legs', d.legs, 'total_delta', d.total, 'fix', 'post_day')
   from day_drift d
-  -- non-null iff at least one leg drifted; `total <> 0` would MISS a day whose
-  -- legs cancel out (+100 cash / −100 card), which is exactly a real drift
+  -- non-null iff at least one leg drifted — the direct signal. Keyed on the
+  -- legs and not on the total on purpose: the legs are what "drifted" MEANS,
+  -- so this check cannot be broken by a later change to how `total` is rolled
+  -- up (a signed one used to report +100 cash / −100 card as "0")
   where d.legs is not null
     -- BOOKED days only — leg_delta now spans every day, so an unposted day would
     -- otherwise surface here as well as in check 1
@@ -5614,9 +5632,11 @@ begin
   return jsonb_build_object(
     'target', t.target, 'kind', t.kind, 'category', t.category,
     'entry_date', t.entry_date, 'current_total', t.current_total,
-    -- so the form can warn that saving will also freeze the day
-    'pos_date', t.pos_date,
-    'pos_pinned', t.pos_date is not null and pos.day_is_pinned(t.pos_date));
+    -- which POS day the target belongs to, if any. Deliberately NOT a
+    -- pinned/frozen flag: §4 dropped the auto-pin, so posting a correction
+    -- freezes nothing and the form has no such warning to make. Pinning is its
+    -- own explicit action on the Reconcile tab.
+    'pos_date', t.pos_date);
 end; $$;
 
 -- ---------------------------------------------------------------------

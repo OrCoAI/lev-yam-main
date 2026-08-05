@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useCan, PERM } from '../../lib/permissions'
 import CategoriesTab from './CategoriesTab'
 import EntriesTab from './EntriesTab'
@@ -33,6 +33,9 @@ export default function FinanceModule() {
   // Expected tab can scroll to it and mark it — otherwise "go record the
   // payment" drops you in an unsorted list to find it again yourself
   const [focusExpected, setFocusExpected] = useState<string | null>(null)
+  // stable identity: ExpectedTab's clear-the-highlight timer keys on it, and an
+  // inline arrow would re-arm that timer on every render of this module
+  const clearFocusExpected = useCallback(() => setFocusExpected(null), [])
   const reloadRecon = recon.reload
   useEffect(() => {
     if (tab === 'recon') void reloadRecon()
@@ -92,7 +95,7 @@ export default function FinanceModule() {
           canManage={canManage}
           onMoneyChanged={reloadRecon}
           focusId={focusExpected}
-          onFocusHandled={() => setFocusExpected(null)}
+          onFocusHandled={clearFocusExpected}
         />
       )}
       {tab === 'transfers' && <TransfersTab canManage={canManage} />}
