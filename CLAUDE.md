@@ -42,9 +42,19 @@ finishing, tick completed tasks and add discovered ones.
   and the `data-i18n` keys — don't hardcode a single language.
 - **Fonts are self-hosted** woff2 subsets in `fonts/` (Heebo + Assistant, HE/Latin splits). No
   external font CDN calls — keep it that way.
-- **Analytics:** the marketing site sends Dynatrace RUM business events and a Meta Pixel
-  `Contact` event from WhatsApp CTA clicks (`js/app.js`). FAQ opens and language switches go to
-  Dynatrace only — intentionally **not** to Meta. Preserve that split.
+- **Analytics — three vendors, deliberately unequal scopes.** The marketing site sends Dynatrace
+  RUM business events and a Meta Pixel `Contact` event from WhatsApp CTA clicks (`js/app.js`).
+  FAQ opens and language switches go to Dynatrace only — intentionally **not** to Meta.
+  **Google Analytics 4** (`G-VWL45MKK76`, added 2026-08-11) carries **no hand-written events** — it
+  is deliberately not wired into `js/app.js`'s `sendBizEvent`/`sendMetaEvent` dispatch. It still
+  receives `page_view` plus `scroll` and outbound `click` (so: the ~12 `wa.me` CTAs) automatically,
+  via GA4 **Enhanced Measurement** — a data-stream setting in the GA console, left ON intentionally
+  (decided 2026-08-11). So GA's CTA data comes from that setting, not from repo code; adding an
+  explicit `gtag('event', …)` is still a deliberate decision, not a default.
+  **Tier separation for GA is console-side, not code-side:** `staging.levyam.com` serves this exact
+  `index.html` with the same measurement ID, so staging is excluded via an internal-traffic/hostname
+  filter in GA → Admin. Don't "fix" that with a hostname guard in the snippet — a domain change
+  would silently kill prod collection.
 - **Contact details** must stay consistent everywhere: WhatsApp `972506669138`,
   email `info@levyam.com`. There are ~12 WhatsApp CTAs on the marketing page.
 
