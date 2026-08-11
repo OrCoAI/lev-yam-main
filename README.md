@@ -38,6 +38,9 @@ Single-page bilingual (Hebrew + Levantine Arabic, RTL) site.
   (`whatsapp_cta`, `service_interest`, `contact_intent`, `language_switch`, `faq_open`)
 - **Marketing:** Meta Pixel `3961552923978842` — base `PageView` plus a standard
   `Contact` event fired from every WhatsApp CTA click
+- **Google Analytics 4:** `G-VWL45MKK76` — no hand-written events by design; page views,
+  scroll and outbound clicks arrive via GA4 Enhanced Measurement. Staging is excluded by a
+  hostname filter in the GA console, not in code
 
 Styles: [`css/styles.css`](css/styles.css) · Logic: [`js/app.js`](js/app.js)
 
