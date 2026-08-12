@@ -173,3 +173,50 @@ seams, keep the reading column quiet. All reused from `styles.css`, never re-imp
 - GA4 DebugView shows `page_view` + `whatsapp_click` with the correct `page_slug` from a
   test click on the sample page and on the homepage.
 - `CNAME` survives the deploy; `404.html` still routes `/app/*` deep links.
+
+## Close-out (2026-08-12)
+
+**Shipped:** everything in Scope (0.0–0.8) plus the redesign — `/stories/` renders as one
+visual system with the homepage (shared `.hero-topbar`/`.primary-nav`/`.header-social`/
+`.nav-toggle`/`.mobile-nav`, `.wave-divider`, `.section-title`, `.site-footer`, the
+`--band-blue-glow` contact-band gradient), verbatim, not re-implemented. `stories/dugma/`
+(+ Arabic twin) is the permanent noindex template smoke-test; the hub is live in its
+documented empty state until real stories are written (out of scope here, per Scope §
+"Out of scope"). All four pre-commit gate steps ran clean; PR #42, merged, deployed to
+staging then production, both smoke-checked green.
+
+**No schema/permission changes** — this track is entirely static-site (`index.html`,
+`stories/`, `robots.txt`, `sitemap.xml`, `js/`, `css/`) plus the deploy workflow; it touches
+no Supabase schema, RLS, or `core.permissions`.
+
+**Decisions made beyond the original scope:**
+- The redesign itself (blue band + waves, homepage chrome reused verbatim) — Or's call
+  after reviewing the first cut on localhost and judging it didn't read as "one website."
+  See "Redesign (2026-08-11)" and "Unification pass" above for the governing choices.
+- `/code-review high` and `/security-review` now run **concurrently** rather than
+  sequentially (both are independent read-only findings-passes over the same diff) —
+  folded into `CLAUDE.md`'s gate description alongside this work.
+- Staging verification promoted from optional to **mandatory** before any deploy-surface
+  diff merges to `main` — also folded into `CLAUDE.md`, and exercised for real on this PR
+  (staging.levyam.com smoke-checked, Or signed off, then merged).
+- The pre-commit gate's `/verify` step is now a checked-in project skill
+  (`.claude/skills/verify/`) backed by `scripts/verify/screenshot.mjs`, replacing the
+  pattern of hand-rolling a fresh Playwright/CDP script every session.
+
+**Deliberately left out** (logged in "Follow-ups" above, not gate blockers): chrome
+stamping/verification across the four underscore templates, a shared hamburger-drawer
+module, shared card-hover tokens, hub-card `srcset`, the pre-existing `404.html` router
+dropping `location.search` on `/app` deep links (platform-side fix), and a
+`deploy.yml` smoke-list generated from the allowlist instead of hand-mirrored.
+
+**Alignment verdict:**
+- `docs/VISION.md` — held. The redesign strengthens this: content that shares the
+  homepage's furniture reads as part of the social-business venue's own voice, not a
+  bolted-on SEO play, which is what the facts guardrail (`/facts.txt`-only, `[חסר]` over
+  invention) was already protecting.
+- `docs/ARCHITECTURE.md` invariant 5 (HE+AR everywhere user-facing) — held, and its scope
+  was clarified rather than drifted: `llms.txt`/`/facts.txt` are machine-readable crawler
+  surfaces and are recorded as a deliberate exemption (see the invariant-5 note above),
+  not a silent gap.
+- No conflict surfaced against either doc during the redesign or the gate; nothing was
+  worked around.
