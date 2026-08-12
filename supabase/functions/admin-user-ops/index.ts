@@ -46,8 +46,10 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 import * as http from '../_shared/http.ts'
 import { errorFacts, traced } from '../_shared/otel.ts'
 
+// See the note in admin-invite on why staging.levyam.com is listed.
 const ALLOWED_ORIGINS = new Set([
   'http://localhost:5173',
+  'https://staging.levyam.com',
   'https://levyam.com',
   'https://www.levyam.com',
 ])
