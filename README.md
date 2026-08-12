@@ -38,6 +38,14 @@ Single-page bilingual (Hebrew + Levantine Arabic, RTL) site.
   (`whatsapp_cta`, `service_interest`, `contact_intent`, `language_switch`, `faq_open`)
 - **Marketing:** Meta Pixel `3961552923978842` — base `PageView` plus a standard
   `Contact` event fired from every WhatsApp CTA click
+- **Google Analytics 4:** `G-VWL45MKK76` — page views, scroll and outbound clicks arrive via
+  GA4 Enhanced Measurement, plus one hand-written event: `whatsapp_click`, fired from every
+  WhatsApp CTA with the `page_slug` it came from (added 2026-08-11 with `/stories/`). Staging is
+  excluded by a hostname filter in the GA console, not in code
+
+The Meta Pixel and GA4 bootstraps live in [`js/vendor-tags.js`](js/vendor-tags.js) so their IDs
+exist in one place; the WhatsApp CTA fan-out to all three vendors is
+[`js/wa-track.js`](js/wa-track.js), shared by the homepage and every `/stories/` page.
 
 Styles: [`css/styles.css`](css/styles.css) · Logic: [`js/app.js`](js/app.js)
 

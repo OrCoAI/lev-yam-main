@@ -66,7 +66,9 @@
   <div id="summary"></div>
   <div id="results"></div>
   <div id="call-log"></div>
-
+  <!-- Same script order as the real pages: wa-track.js defines window.LevYamTrack,
+       which app.js reads at parse time for the WhatsApp CTA fan-out. -->
+  <script src="../js/wa-track.js"></script>
   <script src="../js/app.js"></script>
   <script>
     /* ── tiny test runner ──────────────────────────────────────────────── */

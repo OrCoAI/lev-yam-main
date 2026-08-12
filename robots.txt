@@ -1,3 +1,11 @@
+# Crawlable by everyone, including AI crawlers (GPTBot, ClaudeBot, anthropic-ai,
+# PerplexityBot, Google-Extended) — being quotable in AI answers is the point, so
+# no bot-specific blocks belong here.
+#
+# The two Disallow lines are the internal surfaces: the staff POS page and the staff
+# platform. That's crawler etiquette, not security — login + RLS are the actual gate
+# (docs/ARCHITECTURE.md, invariant "What robots.txt is not").
+
 User-agent: *
 Allow: /
 Disallow: /pos.html

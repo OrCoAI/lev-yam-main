@@ -8,6 +8,9 @@
   <title>לב ים | מרחב יזמות עסקית חברתית על קו המים</title>
   <meta name="description" content="מרחב ליזמות עסקית חברתית המבוסס על שותפות, פשטות וקבלה.">
 
+  <!-- Read by scripts/gen-stories-index.mjs for the homepage's <lastmod>. -->
+  <meta name="levyam:updated" content="2026-08-11">
+
   <meta property="og:title" content="לב ים | מרחב יזמות עסקית חברתית על קו המים">
   <meta property="og:description" content="מרחב ליזמות עסקית חברתית המבוסס על שותפות, פשטות וקבלה.">
   <meta property="og:image" content="https://levyam.com/img/logo/logo-full.png">
@@ -31,22 +34,15 @@
   <!-- ═══ DYNATRACE RUM TAG ═══ -->
   <script type="text/javascript" src="https://js-cdn.dynatracelabs.com/jstag/14868fa4215/bf37083dis/716e4cb7cadaf3f3_complete.js" crossorigin="anonymous"></script>
 
-  <!-- ═══ META PIXEL ═══ -->
-  <script>
-    !function(f,b,e,v,n,t,s)
-    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-    n.queue=[];t=b.createElement(e);t.async=!0;
-    t.src=v;s=b.getElementsByTagName(e)[0];
-    s.parentNode.insertBefore(t,s)}(window, document,'script',
-    'https://connect.facebook.net/en_US/fbevents.js');
-    fbq('init', '3961552923978842');
-    fbq('track', 'PageView');
-  </script>
+  <!-- Meta Pixel, no-JS fallback -->
   <noscript><img height="1" width="1" style="display:none"
     src="https://www.facebook.com/tr?id=3961552923978842&ev=PageView&noscript=1"/></noscript>
-  <!-- ═══ END META PIXEL ═══ -->
+
+  <!-- ═══ META PIXEL + GA4 ═══
+       Both bootstraps live in js/vendor-tags.js so the pixel ID and the GA4
+       measurement ID exist in one place instead of once per page. The <noscript>
+       pixel above must stay inline to work at all. -->
+  <script src="/js/vendor-tags.js" async></script>
 
   <script>
     (function () {
@@ -101,24 +97,37 @@
   }
   </script>
 
+  <!-- EventVenue is a LocalBusiness subtype, so this replaces (rather than joins)
+       the previous bare LocalBusiness block — two business entities on one page
+       would compete. It also fixes the old block's image, which pointed at
+       /assets/og-image.jpg, a path that has never existed in this repo. -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "LocalBusiness",
-    "name": "לב ים",
-    "image": "https://levyam.com/assets/og-image.jpg",
+    "@type": "EventVenue",
+    "name": "לב ים | Lev Yam",
+    "url": "https://levyam.com",
+    "telephone": "+972-50-666-9138",
+    "email": "info@levyam.com",
+    "image": "https://levyam.com/img/logo/logo-full.png",
     "address": {
       "@type": "PostalAddress",
-      "addressLocality": "ג׳יסר א-זרקא",
-      "addressCountry": "IL"
+      "addressLocality": "ג'סר א-זרקא",
+      "addressRegion": "חוף הכרמל",
+      "addressCountry": "IL",
+      "streetAddress": "כפר הדייגים"
     },
-    "url": "https://levyam.com",
-    "telephone": "+972-50-6669138",
-    "email": "info@levyam.com"
+    "geo": { "@type": "GeoCoordinates", "latitude": 32.536803, "longitude": 34.902106 },
+    "maximumAttendeeCapacity": 50,
+    "sameAs": [
+      "https://www.instagram.com/levyam_",
+      "https://m.facebook.com/profile.php?id=61585790351617",
+      "https://maps.app.goo.gl/fFtCZYwK1KEcmFud6"
+    ]
   }
   </script>
 </head>
-<body>
+<body data-page-slug="home">
 
   <a class="skip-link" href="#main-content" data-i18n="skip_link">דלג לתוכן הראשי</a>
 
@@ -137,6 +146,7 @@
             <li><a href="#services" data-i18n="nav_services">מה קורה בלב ים</a></li>
             <li><a href="#why" data-i18n="nav_why">למה לב ים</a></li>
             <li><a href="#gallery" data-i18n="nav_gallery">גלריה</a></li>
+            <li><a href="/stories/" data-i18n="nav_stories" data-i18n-href="nav_stories_href">סיפורים</a></li>
             <li><a href="#faq" data-i18n="nav_faq">שאלות ותשובות</a></li>
             <li><a href="#contact" data-i18n="nav_contact">צור קשר</a></li>
           </ul>
@@ -181,6 +191,7 @@
           <li><a href="#services" data-i18n="nav_services">מה קורה בלב ים</a></li>
           <li><a href="#why" data-i18n="nav_why">למה לב ים</a></li>
           <li><a href="#gallery" data-i18n="nav_gallery">גלריה</a></li>
+          <li><a href="/stories/" data-i18n="nav_stories" data-i18n-href="nav_stories_href">סיפורים</a></li>
           <li><a href="#faq" data-i18n="nav_faq">שאלות ותשובות</a></li>
           <li><a href="#contact" data-i18n="nav_contact">צור קשר</a></li>
         </ul>
@@ -666,6 +677,9 @@
     </svg>
   </a>
 
+  <!-- wa-track.js first: js/app.js reads window.LevYamTrack at parse time, and
+       deferred scripts execute in document order. -->
+  <script src="js/wa-track.js" defer></script>
   <script src="js/app.js" defer></script>
 </body>
 </html>

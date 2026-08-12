@@ -1,0 +1,498 @@
+/* ═══ /stories/ pages ═══════════════════════════════════════════════════════
+   Layered on top of css/styles.css, which supplies the design tokens, fonts,
+   .container/.container-narrow, .btn, .faq-item, .wa-float and .skip-link.
+   Only what the stories surface adds lives here.
+
+   Design spec: docs/plans/content-engine-phase0.md (§ redesign, 2026-08-11).
+   Principles: one visual system with the homepage, carried by the homepage's
+   own furniture at the seams — the blue band (header + hub arrival), the
+   .wave-divider zigzags, the .contact-style CTA band, and .site-footer, all
+   reused from styles.css, never re-implemented. Between the seams the reading
+   surface stays quiet cream: article headings in ink, blue-deep reserved for
+   navigational titles (card titles, related links, breadcrumb hovers), orange
+   = action only; photography leads and text sits on white/cream below it —
+   never text-over-photo; date is the only card metadata; zero JS beyond
+   js/stories.js + js/wa-track.js.
+
+   Both languages are RTL; everything below uses logical properties, so an
+   English tree under /stories/en/ would work unchanged. Mobile-first. */
+
+:root {
+  /* leading */
+  --story-leading:       1.7;    /* body */
+  --story-leading-lede:  1.6;
+  --story-leading-tight: 1.2;    /* multi-line titles */
+  /* measure: running-text cap inside .container-narrow; figures span the full 760 */
+  --story-measure:       40rem;  /* Hebrew-tuned — 760px raw is too wide for short words */
+  /* scale — sits inside the homepage ladder; nothing outranks the homepage hero */
+  --story-title:    clamp(2rem, 1.5rem + 2.2vw, 3.4rem);       /* article H1, w800 */
+  --story-featured: clamp(1.5rem, 1.25rem + 1.2vw, 2.2rem);    /* hub featured title, w700 */
+  --story-card:     var(--text-lead);                          /* grid card title, w600 */
+  --story-lede:     clamp(1.2rem, 1.05rem + 0.55vw, 1.5rem);   /* answer-first lede, w500 */
+  --story-h2:       clamp(1.3rem, 1.1rem + 0.8vw, 1.7rem);     /* in-article h2, w700 */
+  --story-body:     clamp(1.0625rem, 1rem + 0.3vw, 1.1875rem); /* 17→19px */
+  --story-caption:  0.85rem;
+  --story-meta:     0.8125rem;   /* dates/bylines */
+}
+
+/* Arabic renders in the system stack (styles.css swaps --font-*) and needs
+   taller leading; this block is the ENTIRE per-language typographic delta. */
+html[lang='ar'] {
+  --story-leading: 1.85;
+  --story-leading-lede: 1.75;
+  --story-leading-tight: 1.3;
+}
+html[lang='ar'] .story-title { letter-spacing: 0; }
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+
+/* The homepage header, verbatim: .hero-topbar / .logo / .primary-nav /
+   .header-social / .nav-toggle / .mobile-nav all come from styles.css — same
+   markup, same breakpoints (hamburger ≤960px, floating fixed logo ≥961px).
+   The homepage overlays that bar on the hero video; .story-header gives the
+   same absolutely-positioned bar a Lev Yam-blue box to fill. Drawer JS lives
+   in js/stories.js (story pages don't load app.js). Not sticky — the
+   homepage's isn't; the .wa-float is the persistent CTA. */
+.story-header {
+  position: relative;
+  z-index: 20;
+  block-size: var(--topbar-h); /* the box .hero-topbar (absolute) fills */
+  background: var(--color-blue);
+}
+
+/* Language toggle options are anchors here (one URL per language), not the
+   homepage's buttons — same classes, one display fix. */
+.story-header .lang-opt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Shared section rhythm ──────────────────────────────────────────────── */
+
+.story {
+  padding-block: var(--space-5) var(--space-7);
+}
+
+.breadcrumbs {
+  font-size: 0.85rem;
+  color: var(--color-ink-soft);
+  margin-block-end: var(--space-4);
+}
+
+.breadcrumbs ol {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.breadcrumbs li + li::before {
+  content: '›'; /* bidi-mirrored: renders ‹ in RTL */
+  margin-inline-end: var(--space-2);
+  color: var(--color-line);
+}
+
+.breadcrumbs a { color: var(--color-ink-soft); }
+
+.breadcrumbs a:hover,
+.breadcrumbs a:focus-visible {
+  color: var(--color-blue-deep);
+  text-decoration: underline;
+}
+
+.breadcrumbs [aria-current='page'] { color: var(--color-ink); }
+
+/* ── Hub ────────────────────────────────────────────────────────────────── */
+
+/* Arrival band: the header's blue continues through the hub title, closed by
+   the orange zigzag — a homepage section, verbatim (.section-title supplies
+   the centered title + orange underline; scoped cream like .services'). */
+.hub-hero {
+  background: var(--color-blue);
+  text-align: center;
+  padding-block: var(--space-4) var(--space-6);
+}
+
+/* Cream at reduced opacity is always derived from the token (as the card-media
+   tint below) — hand-baked rgba literals would survive a brand palette change. */
+.hub-hero .breadcrumbs,
+.hub-hero .breadcrumbs a { color: color-mix(in srgb, var(--color-cream) 75%, transparent); }
+.hub-hero .breadcrumbs ol { justify-content: center; }
+
+.hub-hero .breadcrumbs a:hover,
+.hub-hero .breadcrumbs a:focus-visible { color: var(--color-white); }
+
+.hub-hero .breadcrumbs [aria-current='page'] { color: var(--color-cream); }
+.hub-hero .breadcrumbs li + li::before { color: color-mix(in srgb, var(--color-cream) 40%, transparent); }
+
+.hub-hero .section-title { color: var(--color-cream); }
+
+.hub-standfirst {
+  font-size: var(--text-lead);
+  color: color-mix(in srgb, var(--color-cream) 85%, transparent);
+  line-height: var(--story-leading-lede);
+  max-inline-size: var(--container-narrow);
+  margin: 0 auto;
+}
+
+/* The hub deliberately does NOT carry .story: article typography (.story h2's
+   2.5em margins, .story p's body size) must never reach the card <h2>/<p>s. */
+.story-hub { padding-block: var(--space-6) var(--space-7); }
+
+.container-hub { max-inline-size: 1200px; }
+
+.story-grid {
+  margin-block-end: var(--space-6);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  column-gap: var(--space-4);
+  row-gap: var(--space-5);
+}
+
+/* Featured card — also spans the empty-state li, the grid's only child then. */
+.story-grid > li:first-child { grid-column: 1 / -1; }
+
+.story-grid-empty p {
+  margin: 0;
+  padding: var(--space-4);
+  color: var(--color-ink-soft);
+  text-align: center;
+}
+
+.story-card {
+  display: flex;
+  flex-direction: column;
+  block-size: 100%;
+  background: var(--color-white);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.story-card:focus-visible {
+  outline: 3px solid var(--color-orange);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .story-card { transition: box-shadow 0.2s ease, transform 0.2s ease; } /* = .service-card */
+  .story-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+}
+
+.story-card-media {
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  /* load tint while the photo arrives, as .service-media */
+  background: color-mix(in srgb, var(--color-blue) 18%, var(--color-cream));
+}
+
+.story-card-media img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+.story-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  flex: 1;
+}
+
+.story-card-title {
+  font-size: var(--story-card);
+  font-weight: 600;
+  color: var(--color-blue-deep);
+  line-height: var(--story-leading-tight);
+  padding-block-end: 0.4rem;
+  position: relative;
+}
+
+/* start-anchored underline-grow, the .service-body h3 idiom */
+.story-card-title::after {
+  content: '';
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline-start: 0;
+  inline-size: 24px;
+  block-size: 2px;
+  background: var(--color-blue);
+  border-radius: var(--radius-pill);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .story-card-title::after { transition: inline-size 0.25s ease; }
+  .story-card:hover .story-card-title::after,
+  .story-card:focus-visible .story-card-title::after { inline-size: 44px; }
+}
+
+.story-card-desc {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--color-ink-soft);
+  line-height: 1.5; /* floor protects Arabic descenders inside the clamp */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.story-card-date {
+  margin-block-start: auto;
+  font-size: var(--story-meta);
+  color: var(--color-ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Featured deltas — same markup, first li only. Stacked 3:2 on phones,
+   horizontal photo/text split ≥820px (a stacked 16:9 at 1200px would push the
+   whole grid below the fold). Title stays on white either way. */
+.story-grid > li:first-child .story-card-media { aspect-ratio: 3 / 2; }
+.story-grid > li:first-child .story-card-title {
+  font-size: var(--story-featured);
+  font-weight: 700;
+}
+.story-grid > li:first-child .story-card-desc {
+  -webkit-line-clamp: 3;
+  font-size: var(--text-base);
+}
+.story-grid > li:first-child .story-card-body {
+  padding: clamp(1.5rem, 3vw, 2.25rem);
+}
+/* The grid cards pin the date to the card bottom via margin auto; on the
+   featured card that auto margin would swallow the space justify-content
+   means to center — hold the block together instead. */
+.story-grid > li:first-child .story-card-date { margin-block-start: var(--space-3); }
+
+@media (min-width: 820px) {
+  .story-grid > li:first-child .story-card {
+    display: grid;
+    grid-template-columns: 3fr 2fr;
+    align-items: stretch;
+  }
+  .story-grid > li:first-child .story-card-media {
+    aspect-ratio: auto;
+    min-block-size: 340px;
+    block-size: 100%;
+  }
+  .story-grid > li:first-child .story-card-body { justify-content: center; }
+}
+
+/* ── Story page ─────────────────────────────────────────────────────────── */
+
+/* Contained-wide hero (not viewport-bleed): aligns with the container edges,
+   2:1 desktop, taller 3:2 + edge-to-edge below 640px so portraits survive.
+   The hero img is the LCP — eager, fetchpriority=high, preloaded from <head>. */
+.story-hero {
+  max-inline-size: 1100px;
+  margin: 0 auto var(--space-5);
+  padding-inline: clamp(1rem, 4vw, 2rem);
+}
+
+.story-hero img {
+  inline-size: 100%;
+  block-size: auto;
+  aspect-ratio: 2 / 1;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+@media (max-width: 640px) {
+  .story-hero { padding-inline: 0; }
+  .story-hero img {
+    aspect-ratio: 3 / 2;
+    border-radius: 0;
+  }
+}
+
+.story-title {
+  font-size: var(--story-title);
+  font-weight: 800;
+  line-height: var(--story-leading-tight);
+  letter-spacing: -0.01em; /* zeroed for Arabic in the lang block above */
+  text-wrap: balance;
+  margin: 0 0 var(--space-4);
+}
+
+/* The answer-first lede — a typographic statement closed by an orange rule,
+   NOT a box. The doctrine transfers verbatim: the first two sentences fully
+   answer the query, one fact per sentence. */
+.story .story-lede p {
+  margin: 0;
+  font-size: var(--story-lede);
+  font-weight: 500;
+  color: var(--color-ink);
+  line-height: var(--story-leading-lede);
+  max-inline-size: var(--story-measure);
+  text-wrap: pretty;
+}
+
+.story .story-lede::after {
+  content: '';
+  display: block;
+  inline-size: 48px;
+  block-size: 3px;
+  background: var(--color-orange);
+  border-radius: var(--radius-pill);
+  margin-block-start: var(--space-4);
+}
+
+.story .story-byline {
+  font-size: 0.9rem;
+  color: var(--color-ink-soft);
+  font-variant-numeric: tabular-nums;
+  margin-block: var(--space-3) var(--space-6);
+}
+
+.story .story-byline-name {
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+/* Body typography. Running text is capped at the reading measure; figures,
+   FAQ, CTA and related links span the full narrow container. */
+.story .container-narrow > :is(p, h2, ul, ol) {
+  max-inline-size: var(--story-measure);
+}
+
+.story p,
+.story li {
+  font-size: var(--story-body);
+  line-height: var(--story-leading);
+}
+
+.story p { margin: 0 0 1.25em; }
+
+.story h2 {
+  font-size: var(--story-h2);
+  font-weight: 700;
+  line-height: var(--story-leading-tight);
+  margin-block: 2.5em 0.6em; /* asymmetric: binds each heading to its section */
+}
+
+/* Prose links: blue-deep + underline. Never orange — orange is action-only. */
+.story p a {
+  color: var(--color-blue-deep);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Figures are beats — clearly more space than paragraphs get. */
+.story-figure { margin-block: var(--space-6); }
+
+.story-figure img {
+  inline-size: 100%;
+  block-size: auto;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Never italics — neither script has them. */
+.story-figure figcaption {
+  margin-block-start: var(--space-2);
+  font-size: var(--story-caption);
+  color: var(--color-ink-soft);
+  line-height: 1.55;
+}
+
+/* Full-width breakout: edge-to-edge under 1100px viewports, capped at 1100px
+   and centered above. At most ONE per story. On classic-scrollbar platforms
+   100vw includes the scrollbar, so the photo's outer ~8px per side are clipped
+   by the body's overflow-x: hidden — invisible on an edge-to-edge photo, but
+   the caption needs its own inline padding to keep text off both the clipped
+   zone and the phone screen edge. */
+.story-figure--wide {
+  inline-size: min(100vw, 1100px);
+  position: relative;
+  inset-inline-start: 50%;
+  margin-inline-start: calc(min(100vw, 1100px) / -2);
+}
+
+.story-figure--wide figcaption {
+  padding-inline: clamp(1rem, 4vw, 2rem); /* the .story-hero padding scale */
+}
+
+@media (max-width: 640px) {
+  .story-figure--wide img { border-radius: 0; }
+}
+
+/* Self-hosted video: native controls, poster required, nothing loads until
+   tapped. No custom overlay, no autoplay. Ink background pillarboxes any
+   non-16:9 clip gracefully. */
+.story-video video {
+  inline-size: 100%;
+  block-size: auto;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  background: var(--color-ink);
+}
+
+.story-faq { margin-block-end: var(--space-5); }
+
+/* ── CTA band ───────────────────────────────────────────────────────────── */
+
+/* The homepage contact-band language: blue→blue-deep with the warm top glow,
+   centered white text, orange action. Full-bleed, after the reading column —
+   every page closes wave-divider--blue → this band → .site-footer, exactly
+   the homepage's own ending. */
+.story-cta {
+  background: var(--band-blue-glow); /* the homepage .contact ground, shared token */
+  text-align: center;
+  padding-block: var(--space-6) var(--space-7);
+}
+
+/* The section-mark motif. Markup carries .footer-logo too, which supplies the
+   drop-shadow treatment; this only centers and resizes it. */
+.story-cta-mark {
+  display: block;
+  margin-inline: auto;
+  margin-block-end: var(--space-3);
+  inline-size: 40px;
+}
+
+.story-cta-text {
+  margin: 0 auto var(--space-4);
+  font-size: var(--text-lead);
+  color: var(--color-cream);
+  max-inline-size: var(--container-narrow);
+}
+
+.story-cta .btn {
+  min-block-size: 48px; /* comfortable thumb target */
+}
+
+/* ── Related links (text cards — no photo grid by design) ───────────────── */
+
+.story-links ul {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.story-links a {
+  display: block;
+  padding: var(--space-3);
+  background: var(--color-white);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  color: var(--color-blue-deep);
+  font-weight: 500;
+}
+
+.story-links a:hover,
+.story-links a:focus-visible {
+  border-color: var(--color-blue);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Footer ─────────────────────────────────────────────────────────────── */
+
+/* The footer IS the homepage footer: .site-footer/.footer-* markup and styles
+   come verbatim from styles.css (with per-language text baked into the HTML —
+   story pages run no i18n layer). Nothing to add here. */

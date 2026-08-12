@@ -5,8 +5,10 @@
 import {
   adminUsersFixture,
   contractsFixture,
+  financeCategoriesFixture,
   financeEntriesFixture,
   financeExpectedFixture,
+  financeTransfersFixture,
   ownerSecretsFixture,
   permissionRowsFixture,
   permissionsFixture,
@@ -54,6 +56,7 @@ const db: Record<string, Row[]> = {
   contracts: contractsFixture.map((r) => ({ ...r })),
   settings: [{ ...settingsFixture }],
   owner_secrets: [{ ...ownerSecretsFixture }],
+  categories: financeCategoriesFixture.map((r) => ({ ...r })),
   entries: financeEntriesFixture.map((r) => ({ ...r })),
   expected: financeExpectedFixture.map((r) => ({ ...r })),
   roles: rolesFixture.map((r) => ({ ...r })),
@@ -64,8 +67,22 @@ const db: Record<string, Row[]> = {
   pos_tables: posTablesFixture.map((r) => ({ ...r })),
   pos_bills: posBillsFixture.map((r) => ({ ...r })),
   pos_expenses: posExpensesFixture.map((r) => ({ ...r })),
+  // starts empty: a pin is something the owner does, not a seeded state
+  day_pins: [],
+  transfers: financeTransfersFixture.map((r) => ({ ...r })),
 }
 let seq = 100
+
+// stands in for core.modules — ONE list, read both by my_modules and by the
+// reconciliation mock's ownership check (55 guards source_module against this
+// table, so the mock must too or preview badges a tile the DB would not)
+const MODULES = [
+  { key: 'users', label: 'Users & Permissions', icon: '🔐', sort: 10 },
+  { key: 'pos', label: 'קופה', icon: '🧾', sort: 20 },
+  { key: 'finance', label: 'כספים', icon: '💰', sort: 30 },
+  { key: 'quotes', label: 'הצעות מחיר', icon: '📋', sort: 40 },
+]
+const MODULE_KEYS: string[] = MODULES.map((m) => m.key)
 
 const json = (body: unknown, status = 200) =>
   new Response(body === undefined ? null : JSON.stringify(body), {
@@ -171,6 +188,9 @@ async function handleRest(table: string, req: Request, params: URLSearchParams):
         created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
       },
       pos_expenses: { note: null, created_by: null, created_at: new Date().toISOString() },
+      day_pins: { reason: '', pinned_by: null, pinned_at: new Date().toISOString() },
+      transfers: { note: null, created_by: null,
+        created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
     }
     const row: Row = {
       id: `00000000-0000-4000-8000-${String(++seq).padStart(12, '0')}`,
@@ -282,13 +302,7 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise
         })),
       })
     }
-    if (rpc[1] === 'my_modules')
-      return json([
-        { key: 'users', label: 'Users & Permissions', icon: '🔐', sort: 10 },
-        { key: 'pos', label: 'קופה', icon: '🧾', sort: 20 },
-        { key: 'finance', label: 'כספים', icon: '💰', sort: 30 },
-        { key: 'quotes', label: 'הצעות מחיר', icon: '📋', sort: 40 },
-      ])
+    if (rpc[1] === 'my_modules') return json(MODULES)
     if (rpc[1] === 'record_payment') {
       // mirror finance.record_payment: post the entry + fulfill the expectation
       const body = (await req.json()) as Row
@@ -404,10 +418,187 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise
       }
       return json(null)
     }
+    // finance.reconciliation / reconciliation_counts — the preview harness
+    // computes the same FOUR checks over its fixtures, so the badges, banner and
+    // reconcile tab are all exercisable in ?preview without a database. Every
+    // rule below must mirror 55_finance_reconciliation.sql; a mock that is more
+    // permissive than the DB makes a ?preview pass meaningless.
+    if (rpc[1] === 'reconciliation' || rpc[1] === 'reconciliation_counts') {
+      const num = (v: unknown) => Number(v) || 0
+      // magnitude, mirroring 55's day_drift.total — a signed sum would add
+      // revenue legs to cost legs and cancel a real +100/−100 drift to "0"
+      const driftTotal = (legs: { delta: number }[]) =>
+        legs.reduce((s, x) => s + Math.abs(x.delta), 0)
+      // mirrors 55's `case when source_module is not null and <> 'finance' and
+      // exists (select 1 from core.modules ...)`
+      const ownerModules = (m: unknown): string[] =>
+        typeof m === 'string' && m !== 'finance' && MODULE_KEYS.includes(m) ? [m] : []
+      const today = new Date().toISOString().slice(0, 10)
+      const since = new Date(Date.now() - 90 * 864e5).toISOString().slice(0, 10)
+      const legsFor = (day: string) => {
+        const bills = db.pos_bills.filter(
+          (b) => b.status === 'paid' && String(b.paid_at).slice(0, 10) === day)
+        const card = bills.reduce((s, b) => s + Math.min(num(b.card_paid), num(b.grand_total)), 0)
+        const cash = bills.reduce(
+          (s, b) => s + num(b.grand_total) - Math.min(num(b.card_paid), num(b.grand_total)), 0)
+        const exps = db.pos_expenses.filter((e) => e.business_date === day)
+        return {
+          cash, card,
+          food: exps.filter((e) => e.kind === 'food').reduce((s, e) => s + num(e.amount), 0),
+          labor: exps.filter((e) => e.kind === 'labor').reduce((s, e) => s + num(e.amount), 0),
+        }
+      }
+      const isPosted = (day: string) =>
+        db.entries.some((e) => e.source_module === 'pos' && String(e.source_ref).startsWith(`pos:${day}:`))
+      const days = [...new Set(db.pos_bills
+        .filter((b) => b.status === 'paid' && String(b.paid_at).slice(0, 10) >= since)
+        .map((b) => String(b.paid_at).slice(0, 10)))]
+
+      const items: Record<string, unknown>[] = []
+      for (const d of days.sort().reverse()) {
+        const l = legsFor(d)
+        const total = l.cash + l.card + l.food + l.labor
+        if (!isPosted(d) && total !== 0)
+          items.push({ type: 'unposted_day', severity: 'high', business_date: d, ...l,
+            revenue: l.cash + l.card, fix: 'post_day', modules: ['pos'] })
+      }
+      for (const r of db.expected) {
+        if (r.status !== 'open' || !r.due_date || String(r.due_date) >= today) continue
+        const daysOverdue = Math.round(
+          (Date.parse(today) - Date.parse(String(r.due_date))) / 864e5)
+        items.push({ type: 'overdue_expected', severity: daysOverdue > 30 ? 'high' : 'medium',
+          expected_id: r.id, direction: r.direction, category: r.category, amount: num(r.amount),
+          due_date: r.due_date, reason: r.reason, days_overdue: daysOverdue, fix: 'record_payment',
+          source_module: r.source_module ?? null, source_ref: r.source_ref ?? null,
+          // the module that created the expectation owns chasing it — checked
+          // against core.modules exactly as the SQL does, so a retired or
+          // misspelled provenance cannot badge a tile that does not exist
+          modules: ownerModules(r.source_module) })
+      }
+      // 2) recompute_drift — compare a booked day's legs against the books
+      for (const d of days.sort().reverse()) {
+        if (!isPosted(d)) continue
+        const l = legsFor(d)
+        const bookedFor = (leg: string) =>
+          db.entries
+            .filter((e) => e.source_module === 'pos' &&
+              String(e.source_ref).split(':')[2] === leg &&
+              String(e.entry_date) === d)
+            .reduce((sum, e) => sum + num(e.amount), 0)
+        const legs = (['cash', 'card', 'food', 'labor'] as const)
+          .map((leg) => ({ leg, delta: (l[leg] as number) - bookedFor(leg) }))
+          .filter((x) => x.delta !== 0)
+        const pinned = db.day_pins.some((p) => p.business_date === d)
+        if (legs.length && !pinned)
+          items.push({ type: 'recompute_drift', severity: 'high', business_date: d,
+            legs, total_delta: driftTotal(legs), fix: 'post_day',
+            modules: ['pos'] })
+      }
+      // 4) pinned days — always listed, severity rises only once money has
+      //    started piling up behind the freeze (mirrors 55's check 4)
+      for (const p of db.day_pins) {
+        const d = String(p.business_date)
+        const l = legsFor(d)
+        const bookedFor = (leg: string) =>
+          db.entries
+            .filter((e) => e.source_module === 'pos' &&
+              String(e.source_ref).split(':')[2] === leg &&
+              String(e.entry_date) === d)
+            .reduce((sum, e) => sum + num(e.amount), 0)
+        const legs = (['cash', 'card', 'food', 'labor'] as const)
+          .map((leg) => ({ leg, delta: (l[leg] as number) - bookedFor(leg) }))
+          .filter((x) => x.delta !== 0)
+        items.push({ type: 'pinned', severity: legs.length ? 'medium' : 'low',
+          business_date: d, reason: p.reason, pinned_at: p.pinned_at,
+          legs: legs.length ? legs : null,
+          total_delta: driftTotal(legs), fix: 'unpin', modules: ['pos'] })
+      }
+      // the badge counts what needs action — 'low' is listed, never counted
+      const live = items.filter((i) => i.severity !== 'low')
+      if (rpc[1] === 'reconciliation_counts') {
+        // module key -> count, plus finance = the full actionable total
+        const counts: Record<string, number> = { finance: live.length }
+        for (const i of live)
+          for (const m of (i.modules as string[] | undefined) ?? [])
+            counts[m] = (counts[m] ?? 0) + 1
+        return json(counts)
+      }
+      return json({ since, generated_at: new Date().toISOString(), count: live.length, items })
+    }
+    // pos.day_status — posted / auto-corrected / frozen, for the day report
+    if (rpc[1] === 'day_status') {
+      const { p_date } = (await req.json()) as { p_date: string }
+      const refs = db.entries.filter(
+        (e) => e.source_module === 'pos' && String(e.source_ref).startsWith(`pos:${p_date}:`))
+      const pin = db.day_pins.find((p) => p.business_date === p_date)
+      return json({
+        posted: refs.length > 0,
+        corrected: refs.some((e) => /:r\d+$/.test(String(e.source_ref))),
+        pinned: !!pin,
+        pin_reason: pin ? pin.reason : null,
+      })
+    }
+    // finance.correction_preview / post_correction — the owner override.
+    // Mirrors 56: the target of a POS leg is the WHOLE leg (original + every
+    // re-post correction + every override already applied), not the one row.
+    if (rpc[1] === 'correction_preview' || rpc[1] === 'post_correction') {
+      const body = (await req.json()) as { p_entry: string; p_amount?: number; p_reason?: string }
+      const e = db.entries.find((r) => r.id === body.p_entry)
+      if (!e) return json({ message: 'לא נמצאה תנועה לתיקון' }, 400)
+      const ref = String(e.source_ref)
+      const target =
+        e.source_module === 'override' ? ref.replace(/^override:/, '').replace(/:c\d+$/, '')
+        : e.source_module === 'pos' && ref.startsWith('pos:') ? ref.split(':').slice(0, 3).join(':')
+        : `entry:${e.id}`
+      const anchor = target.startsWith('entry:')
+        ? db.entries.find((r) => r.id === target.slice(6))
+        : db.entries.find((r) => r.source_module === 'pos' && r.source_ref === target)
+      if (!anchor) return json({ message: 'לא נמצאה התנועה המקורית לתיקון' }, 400)
+      const inTarget = (r: Row) =>
+        (target.startsWith('entry:')
+          ? r.id === anchor.id
+          : r.source_module === 'pos' &&
+            (r.source_ref === target || String(r.source_ref).startsWith(`${target}:r`))) ||
+        (r.source_module === 'override' && String(r.source_ref).startsWith(`override:${target}:c`))
+      const current = db.entries.filter(inTarget).reduce((s, r) => s + (Number(r.amount) || 0), 0)
+      const posDate = target.startsWith('pos:') ? target.split(':')[1] : null
+
+      if (rpc[1] === 'correction_preview')
+        return json({
+          target, kind: anchor.kind, category: anchor.category, entry_date: anchor.entry_date,
+          current_total: current, pos_date: posDate,
+        })
+
+      const amount = Number(body.p_amount)
+      const reason = String(body.p_reason ?? '').trim()
+      if (!reason) return json({ message: 'תיקון חייב לכלול סיבה' }, 400)
+      if (!Number.isFinite(amount) || amount < 0)
+        return json({ message: 'סכום התיקון חייב להיות אפס או יותר' }, 400)
+      const delta = amount - current
+      if (delta === 0) return json({ message: `הסכום כבר ${current}, אין מה לתקן` }, 400)
+      const n = db.entries.filter(
+        (r) => r.source_module === 'override' &&
+          String(r.source_ref).startsWith(`override:${target}:c`)).length
+      db.entries.push({
+        id: `00000000-0000-4000-8000-${String(++seq).padStart(12, '0')}`,
+        kind: anchor.kind, category: anchor.category, amount: delta, payment_method: null,
+        entry_date: anchor.entry_date, note: `תיקון בעלים: ${reason}`,
+        source_module: 'override', source_ref: `override:${target}:c${n + 1}`,
+        event_id: anchor.event_id ?? null,
+        created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+      })
+      // deliberately NO auto-pin — see 56_finance_override.sql §4
+      return json({ entry_id: null, target, previous_total: current, new_total: amount, delta,
+        pos_date: posDate })
+    }
     if (rpc[1] === 'close_day') {
       // mirror pos.close_day: post day-summary legs into finance entries, idempotent
       const body = (await req.json()) as { p_date: string }
       const day = body.p_date
+      // a frozen day is refused by pos.post_day() in the real DB — mirror it, or
+      // the pinned-day refusal "passes" in ?preview and only fails on Postgres
+      if (db.day_pins.some((p) => p.business_date === day))
+        return json({ message: `היום ${day} נעול לאחר תיקון של הבעלים — יש לבטל את הנעילה לפני רישום מחדש` }, 400)
       const bills = db.pos_bills.filter((b) => b.status === 'paid' && String(b.paid_at).slice(0, 10) === day)
       const num = (v: unknown) => Number(v) || 0
       const card = bills.reduce((s, b) => s + Math.min(num(b.card_paid), num(b.grand_total)), 0)

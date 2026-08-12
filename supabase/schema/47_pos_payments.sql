@@ -365,86 +365,14 @@ end; $$;
 --     permission check (PR E's automatic re-post calls it), and
 --     pos.close_day() is the thin permission-checked manual entry point.
 -- ---------------------------------------------------------------------
-create or replace function pos.post_day(p_date date)
-returns jsonb language plpgsql security definer
-set search_path = pos, finance, core as $$
-declare
-  v_cash  numeric; v_card numeric; v_food numeric; v_labor numeric;
-  leg record;
-  posted jsonb := '[]'::jsonb;
-  v_current numeric; v_n int; v_delta numeric; v_ref text; v_entry uuid;
-begin
-  -- Revenue for the day, net of tips, from BOTH payment sources:
-  --   * new bills record pos_payments rows — sum (amount − tip_part) by method,
-  --     attributed to the day the payment was TAKEN (a deposit counts when taken).
-  --   * LEGACY bills (closed before split-payments shipped) have NO payment rows;
-  --     their money lives only on the bill. Fall back to the pre-PR-C grammar:
-  --     card = least(card_paid, grand_total), cash = the rest of grand_total —
-  --     which nets tips out at the grand-total level and reproduces the numbers
-  --     those days were originally posted with. Without this second source,
-  --     re-posting any historical day recomputes its revenue as ~0 and the
-  --     auto re-post (48) wipes it from the books on the next expense edit.
-  select coalesce(sum(amount - tip_part) filter (where method = 'cash'), 0),
-         coalesce(sum(amount - tip_part) filter (where method = 'card'), 0)
-    into v_cash, v_card
-  from pos.pos_payments
-  where (taken_at at time zone 'Asia/Jerusalem')::date = p_date;
-
-  select v_cash + coalesce(sum(grand_total - least(card_paid, grand_total)), 0),
-         v_card + coalesce(sum(least(card_paid, grand_total)), 0)
-    into v_cash, v_card
-  from pos.pos_bills b
-  where b.status = 'paid'
-    and (b.paid_at at time zone 'Asia/Jerusalem')::date = p_date
-    and not exists (select 1 from pos.pos_payments p where p.bill_id = b.id);
-
-  select coalesce(sum(amount) filter (where kind = 'food'), 0),
-         coalesce(sum(amount) filter (where kind = 'labor'), 0)
-    into v_food, v_labor
-  from pos.pos_expenses where business_date = p_date;
-
-  perform set_config('levyam.finance_posting', 'on', true);
-  for leg in
-    select * from (values
-      ('cash',  'income',  'pos',       v_cash),
-      ('card',  'income',  'pos',       v_card),
-      ('food',  'expense', 'pos_food',  v_food),
-      ('labor', 'expense', 'pos_labor', v_labor)
-    ) as t(leg, kind, category, amount)
-  loop
-    v_ref := 'pos:' || p_date || ':' || leg.leg;
-    select coalesce(sum(amount), 0), count(*) into v_current, v_n
-    from finance.entries
-    where source_module = 'pos'
-      and (source_ref = v_ref or source_ref like v_ref || ':r%');
-
-    v_delta := leg.amount - v_current;
-    if v_delta = 0 then continue; end if;
-
-    insert into finance.entries
-      (kind, category, amount, payment_method, entry_date, note, source_module, source_ref)
-    values (
-      leg.kind, leg.category, v_delta,
-      case leg.leg when 'cash' then 'cash' when 'card' then 'grow' else null end,
-      p_date,
-      case when v_n = 0 then 'סגירת יום ' || to_char(p_date, 'DD.MM')
-           else 'תיקון סגירת יום ' || to_char(p_date, 'DD.MM') end,
-      'pos',
-      case when v_n = 0 then v_ref else v_ref || ':r' || (v_n + 1) end
-    )
-    returning id into v_entry;
-
-    posted = posted || jsonb_build_object(
-      'leg', leg.leg, 'amount', v_delta, 'entry_id', v_entry,
-      'correction', v_n > 0);
-  end loop;
-  perform set_config('levyam.finance_posting', '', true);
-
-  return jsonb_build_object(
-    'date', p_date,
-    'cash', v_cash, 'card', v_card, 'food', v_food, 'labor', v_labor,
-    'posted', posted);
-end; $$;
+-- pos.post_day() is authored in 55_finance_reconciliation.sql and ONLY there.
+-- It used to live here, carrying its own copy of the four leg definitions and
+-- the two-source legacy revenue read. 55 lifted that computation into
+-- pos.day_expected_legs() so the source_ref grammar and the leg list have one
+-- author, and PR C then added the pinned-day refusal to post_day itself. A copy
+-- left here would be restored by any re-run of this file — and that copy would
+-- happily overwrite an owner correction on a pinned day, which is exactly the
+-- failure the pin exists to prevent.
 
 create or replace function pos.close_day(p_date date)
 returns jsonb language plpgsql security definer set search_path = pos, core as $$
@@ -524,7 +452,8 @@ end; $$;
 -- ---------------------------------------------------------------------
 --  6) Grants — functions are EXECUTE-to-PUBLIC by default; revoke first,
 --     then grant only to authenticated (see PR B: this bit us once).
---     post_day is internal: no role may call it directly.
+--     post_day's revoke moved to 55 alongside its definition — revoking a
+--     function this file no longer creates would fail on a fresh install.
 -- ---------------------------------------------------------------------
 revoke all on function pos.bill_is_open(text)                                   from public, anon;
 revoke all on function pos.add_payment(text, text, numeric, text)               from public, anon;
@@ -533,7 +462,6 @@ revoke all on function pos.void_payment(bigint)                                 
 revoke all on function pos.void_item(text, text, numeric, numeric, boolean, text) from public, anon;
 revoke all on function pos.open_payments()                                      from public, anon;
 revoke all on function pos.pos_close_table(jsonb, jsonb, jsonb)                 from public, anon;
-revoke all on function pos.post_day(date)                                       from public, anon, authenticated;
 revoke all on function pos.close_day(date)                                      from public, anon;
 
 grant execute on function pos.add_payment(text, text, numeric, text)               to authenticated;

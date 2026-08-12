@@ -191,7 +191,12 @@ flexible"* — maps to specific structural choices:
 2. Anon/publishable keys only in the browser and repo; service-role only in Edge Functions.
 3. No PII, secrets, or signatures in this (public) repo — including generated documents.
 4. Business invariants (uniqueness, immutability, one-way stamps) enforced in Postgres.
-5. Both languages (HE + AR) for anything user-facing; RTL correct in both.
+5. Both languages (HE + AR) for anything user-facing; RTL correct in both. This binds the public
+   marketing site too, including `/stories/`: a story page ships only when its Arabic twin exists
+   (confirmed 2026-08-11, over a content plan that proposed Hebrew-first phasing —
+   [plans/content-engine-phase0.md](plans/content-engine-phase0.md)). Where the platform swaps
+   text client-side, the public story pages use one URL per language plus `hreflang`; both
+   satisfy this rule.
 6. Public content tables carry a visibility flag; public means *chosen*, internal means *marked*.
 7. Live tools (`pos.html`, the local quotes app) keep working until their module replacement
    proves parity in real use.

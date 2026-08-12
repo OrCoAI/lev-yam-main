@@ -58,6 +58,7 @@ const dict = {
   'launcher.sub': { he: 'בחרו מודול כדי להתחיל', ar: 'اختاروا وحدة للبدء' },
   'launcher.open': { he: 'פתח ←', ar: 'افتح ←' },
   'launcher.soon': { he: 'בקרוב', ar: 'قريبًا' },
+  'launcher.driftTitle': { he: 'הספרים לא מעודכנים — לחצו לפרטים', ar: 'الدفاتر غير محدّثة — اضغطوا للتفاصيل' },
   // one-line tile descriptions — every launcher button says what's inside it
   'launcher.desc.users': { he: 'משתמשים, תפקידים והרשאות', ar: 'مستخدمون، أدوار وصلاحيات' },
   'launcher.desc.finance': { he: 'תנועות, צפי ודוח כספי', ar: 'حركات، متوقّع وتقرير مالي' },
@@ -128,21 +129,31 @@ export function makeDictHook<T>(he: T, ar: T): () => T {
   }
 }
 
+/** A row that carries its own bilingual label plus a slug to fall back on —
+ *  the shape used by every keyed taxonomy in the DB (`core.roles`,
+ *  `finance.categories`). */
+export interface DbLabelled {
+  key: string
+  label_he?: string | null
+  label_ar?: string | null
+}
+
+/** The one place the bilingual-DB-label fallback rule is written: prefer the
+ *  active language's label, then the slug. Owner renames show immediately in
+ *  both languages. Kept as a plain function so callers that already have `lang`
+ *  (or are outside React) can use it too. */
+export function pickDbLabel(lang: Lang, row: DbLabelled): string {
+  return (lang === 'he' ? row.label_he : row.label_ar) || row.key
+}
+
 /** Display name for a role, anywhere a role is shown (header badge, users-tab
- *  chips, matrix headers, per-user lens…). The role's own bilingual DB label
- *  (`label_he`/`label_ar`) is the single source of truth for every role —
- *  built-in and custom alike — so an owner rename shows immediately in both
- *  languages; the key is the last-resort fallback. Stable per language, so it's
- *  safe in dependency arrays. */
+ *  chips, matrix headers, per-user lens…). The role's own bilingual DB label is
+ *  the single source of truth for every role — built-in and custom alike.
+ *  Stable per language, so it's safe in dependency arrays. */
 // eslint-disable-next-line react-refresh/only-export-components
-export function useRoleName(): (
-  role: { key: string; label_he?: string | null; label_ar?: string | null },
-) => string {
+export function useRoleName(): (role: DbLabelled) => string {
   const { lang } = useI18n()
-  return useMemo(
-    () => (role) => (lang === 'he' ? role.label_he : role.label_ar) || role.key,
-    [lang],
-  )
+  return useMemo(() => (role) => pickDbLabel(lang, role), [lang])
 }
 
 /** The one-tap language switch, shown in the topbar and on the login card. */

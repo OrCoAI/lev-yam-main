@@ -5,6 +5,8 @@
     clear, accessible language with conversational tone in body copy and
     tighter, MSA-leaning phrasing for headings and labels.                  */
 const LevYamI18n = (function () {
+  // Cross-surface contract: js/stories.js writes this same key on story-page
+  // load so the choice carries between /stories/ and here. Rename both or neither.
   const STORAGE_KEY = 'lev-yam-lang';
   const PHONE = '972506669138';
 
@@ -22,6 +24,8 @@ const LevYamI18n = (function () {
       nav_services: 'מה קורה בלב ים',
       nav_why: 'למה לב ים',
       nav_gallery: 'גלריה',
+      nav_stories: 'סיפורים',
+      nav_stories_href: '/stories/',
       nav_faq: 'שאלות ותשובות',
       nav_contact: 'צור קשר',
 
@@ -182,6 +186,8 @@ const LevYamI18n = (function () {
       nav_services: 'ماذا يجري في ليف يام',
       nav_why: 'لماذا ليف يام',
       nav_gallery: 'معرض الصور',
+      nav_stories: 'حكايات',
+      nav_stories_href: '/stories/ar/',
       nav_faq: 'أسئلة وأجوبة',
       nav_contact: 'تواصلوا معنا',
 
@@ -341,7 +347,9 @@ const LevYamI18n = (function () {
     return translations.he[key] != null ? translations.he[key] : '';
   }
 
-  const ATTR_LIST = ['aria-label', 'alt', 'title', 'placeholder'];
+  // 'href' is here for the סיפורים / حكايات nav link, which points at a different
+  // URL per language (/stories/ vs /stories/ar/) rather than a different label.
+  const ATTR_LIST = ['aria-label', 'alt', 'title', 'placeholder', 'href'];
 
   function applyTranslations() {
     const dict = translations[currentLang] || translations.he;
@@ -844,20 +852,33 @@ const LevYamI18n = (function () {
   document.addEventListener('scroll', stopPulse, { passive: true });
 })();
 
-/* ── Dynatrace Business Events ──────────────────────────────────────────── */
+/* ── Analytics: Dynatrace business events, Meta Pixel, GA4 ──────────────── */
 (function () {
-  function sendBizEvent(type, attrs) {
+  // Shared WhatsApp-CTA senders live in js/wa-track.js, loaded just before this
+  // file and also used by the /stories/ pages. Everything below it — service
+  // interest, contact intent, language switch, FAQ opens — is homepage-only and
+  // Dynatrace-only, and deliberately does NOT go to Meta or GA4.
+  var track = window.LevYamTrack;
+
+  // Service interest, contact intent, language switch and FAQ opens go to
+  // Dynatrace and nowhere else, so they must NOT depend on js/wa-track.js having
+  // loaded — only the three-vendor WhatsApp fan-out genuinely needs it. Hence a
+  // local fallback sender rather than bailing out of the whole block.
+  var sendBizEvent = (track && track.bizEvent) || function (type, attrs) {
     if (window.dynatrace && typeof window.dynatrace.sendBizEvent === 'function') {
       window.dynatrace.sendBizEvent(type, attrs);
     }
-  }
+  };
 
-  // Meta Pixel — fires a standard event only when the pixel has loaded
-  function sendMetaEvent(name, attrs) {
-    if (typeof window.fbq === 'function') {
-      window.fbq('track', name, attrs);
-    }
-  }
+  // The same independence applies to the click listener itself: with
+  // wa-track.js missing (blocked, 404), the WhatsApp click still registers and
+  // degrades to the Dynatrace-only events instead of disappearing entirely.
+  var onWhatsAppClick = (track && track.onWhatsAppClick) || function (handler) {
+    document.addEventListener('click', function (e) {
+      var link = e.target && e.target.closest && e.target.closest('a[href*="wa.me"]');
+      if (link) handler(link);
+    });
+  };
 
   // Maps data-i18n-wa key → whatsapp_cta source name
   var WA_KEY_SOURCE = {
@@ -889,25 +910,22 @@ const LevYamI18n = (function () {
     wa_msg_dream:  'dream'
   };
 
-  document.addEventListener('click', function (e) {
-    var link = e.target && e.target.closest && e.target.closest('a[href*="wa.me"]');
-    if (!link) return;
-
+  onWhatsAppClick(function (link) {
     var waKey  = link.getAttribute('data-i18n-wa') || '';
     var source = link.getAttribute('data-bizevent-source') || WA_KEY_SOURCE[waKey] || 'general';
     var lang   = LevYamI18n.lang;
 
-    sendBizEvent('levyam.whatsapp_cta', {
-      'event.source': source,
-      'event.lang':   lang
-    });
-
-    // Meta Pixel: a WhatsApp click is a Contact/lead conversion
-    sendMetaEvent('Contact', {
-      content_name: source,
-      content_category: 'whatsapp_cta',
-      locale: lang
-    });
+    if (track) {
+      // Dynatrace bizevent + Meta Contact conversion + GA4 whatsapp_click
+      track.whatsappClick({ source: source, lang: lang });
+    } else {
+      // Degraded path: wa-track.js missing — keep the Dynatrace event alive.
+      sendBizEvent('levyam.whatsapp_cta', {
+        'event.source':    source,
+        'event.lang':      lang,
+        'event.page_slug': document.body.getAttribute('data-page-slug') || 'unknown'
+      });
+    }
 
     var service = SERVICE_KEYS[waKey];
     if (service) {

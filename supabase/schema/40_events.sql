@@ -357,6 +357,14 @@ begin
   v_deposit := case when coalesce(q.deposit_pct, 0) > 0
                     then round(q.final_price * q.deposit_pct / 100, 2) else 0 end;
 
+  -- Declare this a posting function for the duration of the two inserts, the
+  -- same contract finance.record_payment() and pos.post_day() follow. Required
+  -- since 54's finance.expected_guard(): 'events' is a quotes-OWNED category,
+  -- so a write to it is only legitimate from here — and the guard must decide
+  -- that from the GUC, never from the row's own source_module, which any
+  -- finance.manage holder could set to 'quotes' themselves.
+  perform set_config('levyam.finance_posting', 'on', true);
+
   if v_deposit > 0 then
     insert into finance.expected
       (direction, category, amount, due_date, reason, event_id, source_module, source_ref)
@@ -372,6 +380,10 @@ begin
             v_event, 'quotes', q.id::text || ':balance')
     on conflict (source_module, source_ref) where source_module is not null do nothing;
   end if;
+
+  -- back off immediately: the GUC is transaction-local, and leaving it on would
+  -- hand the rest of this transaction a free pass through both money guards
+  perform set_config('levyam.finance_posting', '', true);
 end; $$;
 
 -- Runs AFTER the existing quotes_contracts_confirm trigger (alphabetical

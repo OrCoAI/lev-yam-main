@@ -27,3 +27,11 @@ export function signedAmount(kind: 'income' | 'expense', amount: number) {
   const net = kind === 'income' ? amount : -amount
   return `${net >= 0 ? '+' : '−'}${Math.abs(net).toLocaleString('he-IL')} ₪`
 }
+
+// Plain money, same locale convention as signedAmount — used where there is no
+// income/expense sign to carry (reconciliation amounts). Kept here so the whole
+// module rounds identically; a drift tool that disagrees with the books it
+// audits is worse than no drift tool.
+export function amount(n: number | undefined) {
+  return `${Number(n ?? 0).toLocaleString('he-IL')} ₪`
+}

@@ -2,13 +2,22 @@
 <html lang="he" dir="rtl">
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#2c92bf" />
     <meta name="robots" content="noindex" />
-    <title>לב ים</title>
+    <title>לב ים | הדף לא נמצא · الصفحة غير موجودة</title>
+
     <script>
       // GitHub Pages serves this site-root 404 for ANY unknown path (it does not
       // consult per-directory 404s). Deep links / refreshes into the staff platform
       // (/app/*) are handed to the SPA with the route preserved in ?p=, which app-src's
       // index.html decodes on boot. Everything else falls back to the marketing home.
+      //
+      // KEEP THIS SCRIPT FIRST IN <head>, and never add a <link rel="stylesheet">
+      // above it: a parser-inserted synchronous script cannot execute while a
+      // stylesheet is still pending, so any blocking CSS before this block would
+      // make every platform deep link wait on it before redirecting. (That is
+      // also why this page styles itself with the inline <style> below.)
       (function () {
         var path = window.location.pathname
         if (path === '/app' || path.indexOf('/app/') === 0) {
@@ -19,6 +28,85 @@
         }
       })()
     </script>
+
+    <link rel="icon" href="/img/logo/logo-mark.png" type="image/png" />
+
+    <!--
+      Inline, not the site stylesheets: with JS on, one of the two branches above
+      always redirects, so the markup below is only ever painted for a visitor with
+      JS disabled. Pulling 62 KB of css/styles.css + css/stories.css to style a page
+      almost nobody sees would be pure loss on every 404 and every /app deep link.
+    -->
+    <style>
+      /* Same token NAMES as css/styles.css so a palette change's grep for
+         --color-* finds these copies; values must match styles.css. */
+      :root {
+        --color-ink: #1a3340;
+        --color-ink-soft: #4a6571;
+        --color-cream: #fff7ea;
+        --color-line: #e8d9b8;
+        --color-blue-deep: #1f6f93;
+        --color-orange: #f49834;
+      }
+      body {
+        margin: 0;
+        padding: 2rem 1rem 3rem;
+        background: var(--color-cream);
+        color: var(--color-ink);
+        /* system-ui only: this page loads no stylesheet, so the self-hosted
+           brand fonts (declared in css/styles.css) can never resolve here. */
+        font-family: system-ui, sans-serif;
+        line-height: 1.65;
+      }
+      main { max-width: 40rem; margin-inline: auto; }
+      h1 { font-size: clamp(1.8rem, 1.4rem + 2vw, 2.6rem); line-height: 1.15; margin: 0 0 1.5rem; }
+      .answer {
+        background: #fff;
+        border-inline-start: 4px solid var(--color-orange);
+        border-radius: 14px;
+        padding: 1.5rem;
+        margin-block-end: 1.5rem;
+        box-shadow: 0 2px 8px rgba(26, 51, 64, 0.06);
+      }
+      .answer p { margin: 0 0 0.75rem; }
+      .answer p:last-child { margin-block-end: 0; }
+      ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
+      a {
+        display: block;
+        padding: 1rem;
+        background: #fff;
+        border: 1px solid var(--color-line);
+        border-radius: 6px;
+        color: var(--color-blue-deep);
+        text-decoration: none;
+        font-weight: 500;
+      }
+      a:hover, a:focus-visible { border-color: #2c92bf; }
+      footer { margin-block-start: 2.5rem; color: var(--color-ink-soft); font-size: 0.85rem; text-align: center; }
+    </style>
   </head>
-  <body></body>
+
+  <body>
+    <main>
+      <h1><span lang="he">הדף לא נמצא</span> · <span lang="ar">الصفحة غير موجودة</span></h1>
+
+      <div class="answer">
+        <p lang="he">הכתובת הזו לא קיימת באתר של לב ים. אפשר לחזור לדף הבית או לעבור לסיפורים.</p>
+        <p lang="ar">هذا العنوان غير موجود في موقع ليف يام. يمكنكم العودة إلى الصفحة الرئيسية أو الانتقال إلى الحكايات.</p>
+      </div>
+
+      <nav aria-label="קישורים / روابط">
+        <ul>
+          <li><a href="/">לב ים — דף הבית · ليف يام — الصفحة الرئيسية</a></li>
+          <li><a href="/stories/">סיפורים</a></li>
+          <li><a href="/stories/ar/">حكايات</a></li>
+          <li><a href="https://wa.me/972506669138" target="_blank" rel="noopener">וואטסאפ · واتساب</a></li>
+        </ul>
+      </nav>
+
+      <footer>
+        <p><span lang="he">לב ים · כפר הדייגים, ג'סר א-זרקא</span> · <span lang="ar">ليف يام · قرية الصيادين، جسر الزرقاء</span></p>
+      </footer>
+    </main>
+  </body>
 </html>

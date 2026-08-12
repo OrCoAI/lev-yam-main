@@ -191,6 +191,7 @@ const styles = {
   stServed: { fontSize: 11, fontWeight: 800, padding: '2px 8px', borderRadius: 8, background: '#eef3ee', color: '#6b7d70' },
   dayBookedBadge: { margin: '10px 18px 0', padding: '10px 12px', borderRadius: 12, background: '#e7f5ee', color: '#2f7d57', fontSize: 13, fontWeight: 800, textAlign: 'center' },
   dayBookedCorrected: { background: '#fef0e0', color: '#a9791b' },
+  dayPinnedBadge: { background: '#eceaf6', color: '#5b4b8a' },
   kitchenHead: { display: 'flex', gap: 4, flexShrink: 0, alignItems: 'center' },
   fireBtn: { width: '100%', padding: 11, marginBottom: 8, borderRadius: 12, border: 'none', background: SUN, color: '#fff', fontSize: 15, fontWeight: 800, cursor: 'pointer', boxShadow: '0 3px 12px rgba(232,131,58,.25)' },
   fireBtnDone: { background: '#eef3ee', color: '#2f7d57', boxShadow: 'none', cursor: 'default' },

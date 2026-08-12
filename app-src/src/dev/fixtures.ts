@@ -295,6 +295,11 @@ export const permissionsFixture = [
   'users.delete',
   'finance.view',
   'finance.manage',
+  // owner-only in the DB; the preview session is the owner, and without these
+  // the correction (±) button and the Categories tab never render in ?preview —
+  // which is exactly the surface that most needs eyes on it
+  'finance.categories',
+  'finance.override',
   'pos.view',
   'pos.order',
   'pos.kitchen',
@@ -357,6 +362,55 @@ export const posExpensesFixture = [
 // -3 days: always inside the report's default '7 days' preset (and 'this
 // month' except the first days of a month) so the POS legs + reversal demo show
 const posDay = iso(-3)
+// Mirrors the 54_finance_categories.sql seed — the preview harness needs the
+// taxonomy as data now that the entries form reads its options from the DB.
+// finance.transfers (57) — money changing pocket. Kept OUT of the entries
+// fixture on purpose: nothing that sums income or expense may see a transfer.
+export const financeTransfersFixture = [
+  {
+    id: '00000000-0000-4000-8000-0000000f0001',
+    amount: 2000,
+    from_method: 'cash',
+    to_method: 'bank',
+    transfer_date: iso(-9),
+    note: 'הפקדה שבועית',
+    created_by: '00000000-0000-4000-8000-00000000dead',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+]
+
+export const financeCategoriesFixture = [
+  ...([
+    ['expense', 'equipment', 'ציוד', 'معدات', null, 10],
+    ['expense', 'inventory', 'מלאי', 'مخزون', null, 20],
+    ['expense', 'maintenance', 'תחזוקה', 'صيانة', null, 30],
+    ['expense', 'suppliers', 'ספקים', 'موردون', null, 40],
+    ['expense', 'marketing', 'שיווק', 'تسويق', null, 50],
+    ['expense', 'rent', 'שכירות', 'إيجار', null, 60],
+    ['expense', 'utilities', 'חשמל ומים', 'كهرباء ومياه', null, 70],
+    ['expense', 'insurance', 'ביטוח', 'تأمين', null, 80],
+    ['expense', 'taxes', 'מסים ומע״מ', 'ضرائب وقيمة مضافة', null, 90],
+    ['expense', 'payment_fees', 'עמלות סליקה ובנק', 'عمولات الدفع والبنك', null, 100],
+    ['expense', 'salaries', 'משכורות', 'رواتب', null, 110],
+    ['expense', 'or_prati', 'אור פרטי', 'أور خاص', null, 120],
+    ['expense', 'nimer', 'נימר', 'نمر', null, 130],
+    ['expense', 'event_costs', 'עלויות אירועים', 'تكاليف المناسبات', null, 140],
+    ['expense', 'pos_food', 'POS — מזון', 'POS — طعام', 'pos', 200],
+    ['expense', 'pos_labor', 'POS — שכר יומי', 'POS — أجر يومي', 'pos', 210],
+    ['income', 'bookings', 'הזמנות', 'حجوزات', null, 10],
+    ['income', 'donations', 'תרומות ומענקים', 'تبرعات ومنح', null, 20],
+    ['income', 'other', 'אחר', 'أخرى', null, 30],
+    ['income', 'makrer', 'מקרר ושתייה', 'برّاد ومشروبات', null, 40],
+    ['income', 'events', 'אירועים', 'مناسبات', 'quotes', 200],
+    ['income', 'pos', 'POS — יום מכירות', 'POS — يوم مبيعات', 'pos', 210],
+  ] as const),
+].map(([kind, key, label_he, label_ar, owned_by_module, sort], i) => ({
+  id: `00000000-0000-4000-8000-0000000c${String(i).padStart(4, '0')}`,
+  kind, key, label_he, label_ar, owned_by_module, active: true, sort,
+  updated_at: `${iso(-30)}T09:00:00Z`, updated_by: null,
+}))
+
 export const financeEntriesFixture = [
   {
     id: '00000000-0000-4000-8000-00000000f001',
@@ -475,7 +529,9 @@ const grant = (role: string, permKey: string) => ({ role_id: `role-${role}`, per
 
 // ordered by module then action — the UI groups on module transitions
 export const permissionRowsFixture = [
+  permRow('finance.categories', 'עריכת קטגוריות'),
   permRow('finance.manage', 'ניהול כספים'),
+  permRow('finance.override', 'תיקון בעלים ונעילת ימים'),
   permRow('finance.view', 'צפייה בכספים'),
   permRow('pos.order', 'הזמנות'),
   permRow('pos.view', 'צפייה בקופה'),

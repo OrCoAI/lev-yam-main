@@ -36,6 +36,12 @@ jobs:
       - name: Migration baseline drift check
         run: node supabase/tests/build-baseline.mjs
 
+      # sitemap.xml and the /stories/ hubs are generated. The deploy regenerates
+      # them anyway, so this can't break production — it fails the branch so a
+      # stale committed copy (what local dev and code review read) gets noticed.
+      - name: Stories sitemap/hub drift check
+        run: node scripts/gen-stories-index.mjs --check
+
       - name: Typecheck + build platform
         working-directory: app-src
         env:

@@ -1045,14 +1045,12 @@ create table if not exists finance.entries (
   created_at     timestamptz not null default now(),
   updated_at     timestamptz not null default now(),
 
-  constraint finance_entries_kind_check check (kind in ('income','expense')),
-  constraint finance_entries_category_check check (
-    (kind = 'expense' and category in
-      ('equipment','inventory','maintenance','marketing','salaries','or_prati','nimer','suppliers'))
-    or
-    (kind = 'income' and category in
-      ('events','bookings','makrer','other'))
-  )
+  constraint finance_entries_kind_check check (kind in ('income','expense'))
+  -- NO category CHECK here. The taxonomy is DATA since 54_finance_categories.sql
+  -- (finance.categories + a composite FK on (kind, category)). A CHECK re-declared
+  -- here would be re-added by any re-run of this file and would then reject every
+  -- category the owner has added since — and unlike `create or replace`, an added
+  -- constraint is not something a later file can own the absence of.
 );
 
 -- Idempotent add for databases created before payment_method existed.
@@ -1062,18 +1060,10 @@ do $$ begin
     check (payment_method is null or payment_method in ('cash','private','grow','bank'));
 exception when duplicate_object then null; end $$;
 
--- Idempotent replace: category taxonomy updated to the venue's real categories
--- (was a placeholder set: rent/utilities/insurance/... — never matched real usage).
--- NOT VALID so it doesn't choke re-running this on a live DB that already has
--- rows under the old category names; it still applies to every new insert/update.
-alter table finance.entries drop constraint if exists finance_entries_category_check;
-alter table finance.entries add constraint finance_entries_category_check check (
-  (kind = 'expense' and category in
-    ('equipment','inventory','maintenance','marketing','salaries','or_prati','nimer','suppliers'))
-  or
-  (kind = 'income' and category in
-    ('events','bookings','makrer','other'))
-) not valid;
+-- The category taxonomy used to be re-declared here as a CHECK constraint. It is
+-- now owner-editable data — see 54_finance_categories.sql, which owns the list,
+-- the HE/AR labels, the one-writer (`owned_by_module`) rule, and the FK that
+-- enforces all of it. Nothing about categories belongs in this file any more.
 
 create index if not exists finance_entries_date_idx on finance.entries (entry_date desc);
 create index if not exists finance_entries_kind_idx on finance.entries (kind);
@@ -1247,18 +1237,11 @@ alter table finance.entries drop constraint if exists finance_entries_amount_che
 alter table finance.entries add constraint finance_entries_amount_check
   check (amount <> 0 and (source_module is not null or amount > 0));
 
--- Category taxonomy + the derived-only POS categories (NOT VALID like the
--- original: re-runs never choke on historical rows, new writes are enforced).
-alter table finance.entries drop constraint if exists finance_entries_category_check;
-alter table finance.entries add constraint finance_entries_category_check check (
-  (kind = 'expense' and category in
-    ('equipment','inventory','maintenance','marketing','salaries','or_prati','nimer','suppliers',
-     'pos_food','pos_labor'))                      -- derived-only: pos.close_day()
-  or
-  (kind = 'income' and category in
-    ('events','bookings','makrer','other',
-     'pos'))                                       -- derived-only: pos.close_day()
-) not valid;
+-- The category taxonomy (and the derived-only POS categories) used to be a CHECK
+-- constraint re-declared here. Superseded by 54_finance_categories.sql: the list
+-- is data, and `finance.categories.owned_by_module` — not a literal — is what
+-- makes a category derived-only. Re-declaring it here would resurrect a stale
+-- taxonomy on any re-run of this file.
 
 -- One posting per source fact — modules can re-run their posting functions
 -- forever without double-counting (same philosophy as every file in this folder).
@@ -1276,44 +1259,25 @@ create index if not exists finance_entries_event_idx  on finance.entries (event_
 --     provenance is rejected — a client cannot forge, edit, or erase a posted
 --     fact (the same "the DB is the law" stance as signed contracts).
 -- ---------------------------------------------------------------------
-create or replace function finance.entries_guard()
-returns trigger language plpgsql as $$
-declare
-  posting boolean := coalesce(current_setting('levyam.finance_posting', true), '') = 'on';
-  -- one writer per category (docs §3b): these are module-written only.
-  -- Mirrored for the form UI in app-src/src/modules/finance/categories.ts (DERIVED_ONLY).
-  derived_only text[] := array['events','pos','pos_food','pos_labor'];
-begin
-  if posting then
-    return coalesce(new, old);
-  end if;
-  if tg_op = 'INSERT' then
-    if new.source_module is not null then
-      raise exception 'רישום ממקור מודול (%.%) נכתב רק דרך פונקציית הרישום של אותו מודול', new.source_module, new.source_ref;
-    end if;
-    if new.category = any (derived_only) then
-      raise exception 'הקטגוריה "%" נרשמת אוטומטית על ידי מודול — לא ניתן להזין אותה ידנית', new.category;
-    end if;
-    return new;
-  end if;
-  if old.source_module is not null then
-    raise exception 'רישום שנוצר על ידי מודול (%) אינו ניתן לעריכה או מחיקה — תיקון נרשם כתנועת היפוך מאותו מודול', old.source_module;
-  end if;
-  if tg_op = 'UPDATE' and new.source_module is not null then
-    raise exception 'לא ניתן להפוך רישום ידני לרישום ממקור מודול';
-  end if;
-  -- legacy manual rows in a now-derived category stay editable, but a manual row
-  -- cannot MOVE into a derived-only category
-  if tg_op = 'UPDATE' and new.category = any (derived_only) and new.category is distinct from old.category then
-    raise exception 'הקטגוריה "%" נרשמת אוטומטית על ידי מודול — לא ניתן להזין אותה ידנית', new.category;
-  end if;
-  return coalesce(new, old);
-end; $$;
+-- The GUC has exactly one reader, here, so the string that decides whether
+-- EVERY money guard is bypassed is written once. Hand-copying
+-- `current_setting('levyam.finance_posting', true)` into each guard is one typo
+-- away from a guard that never fires — and a misspelled GUC name reads as ''
+-- and fails OPEN, which is the worst possible direction for this particular
+-- condition to fail in.
+create or replace function finance.is_posting()
+returns boolean language sql stable as $$
+  select coalesce(current_setting('levyam.finance_posting', true), '') = 'on';
+$$;
+comment on function finance.is_posting() is
+  'True inside a module posting function. The one reader of levyam.finance_posting.';
 
-drop trigger if exists finance_entries_guard on finance.entries;
-create trigger finance_entries_guard
-  before insert or update or delete on finance.entries
-  for each row execute function finance.entries_guard();
+-- finance.entries_guard() and its trigger are authored in
+-- 54_finance_categories.sql — ONE definition, because the one-writer rule it
+-- enforces now reads finance.categories.owned_by_module instead of a literal
+-- array. Keeping a copy here meant a re-run of this file silently restored the
+-- old four-slug array: newly added module categories would stop being protected
+-- while the old ones kept working, which looks like it works.
 
 -- ---------------------------------------------------------------------
 --  3) finance.expected — money that SHOULD move (docs §3c)
@@ -1385,6 +1349,16 @@ begin
   end if;
   if exp.status <> 'open' then
     raise exception 'הצפי כבר במצב % — רק צפי פתוח ניתן לרישום', exp.status;
+  end if;
+  -- A fulfilment is money ARRIVING, so it is positive. Validated here because
+  -- this function posts behind the GUC with non-null provenance, and
+  -- finance_entries_amount_check only requires `amount > 0` for provenance-LESS
+  -- rows (module reversals must be able to go negative). Without this, an
+  -- unvalidated p_amount was the one client-reachable way to write a negative
+  -- entry — i.e. to make income disappear from the books through a path the
+  -- manual-entry form could never take.
+  if coalesce(p_amount, exp.amount) <= 0 then
+    raise exception 'סכום התשלום חייב להיות חיובי';
   end if;
 
   perform set_config('levyam.finance_posting', 'on', true);
@@ -2185,6 +2159,14 @@ begin
   v_deposit := case when coalesce(q.deposit_pct, 0) > 0
                     then round(q.final_price * q.deposit_pct / 100, 2) else 0 end;
 
+  -- Declare this a posting function for the duration of the two inserts, the
+  -- same contract finance.record_payment() and pos.post_day() follow. Required
+  -- since 54's finance.expected_guard(): 'events' is a quotes-OWNED category,
+  -- so a write to it is only legitimate from here — and the guard must decide
+  -- that from the GUC, never from the row's own source_module, which any
+  -- finance.manage holder could set to 'quotes' themselves.
+  perform set_config('levyam.finance_posting', 'on', true);
+
   if v_deposit > 0 then
     insert into finance.expected
       (direction, category, amount, due_date, reason, event_id, source_module, source_ref)
@@ -2200,6 +2182,10 @@ begin
             v_event, 'quotes', q.id::text || ':balance')
     on conflict (source_module, source_ref) where source_module is not null do nothing;
   end if;
+
+  -- back off immediately: the GUC is transaction-local, and leaving it on would
+  -- hand the rest of this transaction a free pass through both money guards
+  perform set_config('levyam.finance_posting', '', true);
 end; $$;
 
 -- Runs AFTER the existing quotes_contracts_confirm trigger (alphabetical
@@ -3795,86 +3781,14 @@ end; $$;
 --     permission check (PR E's automatic re-post calls it), and
 --     pos.close_day() is the thin permission-checked manual entry point.
 -- ---------------------------------------------------------------------
-create or replace function pos.post_day(p_date date)
-returns jsonb language plpgsql security definer
-set search_path = pos, finance, core as $$
-declare
-  v_cash  numeric; v_card numeric; v_food numeric; v_labor numeric;
-  leg record;
-  posted jsonb := '[]'::jsonb;
-  v_current numeric; v_n int; v_delta numeric; v_ref text; v_entry uuid;
-begin
-  -- Revenue for the day, net of tips, from BOTH payment sources:
-  --   * new bills record pos_payments rows — sum (amount − tip_part) by method,
-  --     attributed to the day the payment was TAKEN (a deposit counts when taken).
-  --   * LEGACY bills (closed before split-payments shipped) have NO payment rows;
-  --     their money lives only on the bill. Fall back to the pre-PR-C grammar:
-  --     card = least(card_paid, grand_total), cash = the rest of grand_total —
-  --     which nets tips out at the grand-total level and reproduces the numbers
-  --     those days were originally posted with. Without this second source,
-  --     re-posting any historical day recomputes its revenue as ~0 and the
-  --     auto re-post (48) wipes it from the books on the next expense edit.
-  select coalesce(sum(amount - tip_part) filter (where method = 'cash'), 0),
-         coalesce(sum(amount - tip_part) filter (where method = 'card'), 0)
-    into v_cash, v_card
-  from pos.pos_payments
-  where (taken_at at time zone 'Asia/Jerusalem')::date = p_date;
-
-  select v_cash + coalesce(sum(grand_total - least(card_paid, grand_total)), 0),
-         v_card + coalesce(sum(least(card_paid, grand_total)), 0)
-    into v_cash, v_card
-  from pos.pos_bills b
-  where b.status = 'paid'
-    and (b.paid_at at time zone 'Asia/Jerusalem')::date = p_date
-    and not exists (select 1 from pos.pos_payments p where p.bill_id = b.id);
-
-  select coalesce(sum(amount) filter (where kind = 'food'), 0),
-         coalesce(sum(amount) filter (where kind = 'labor'), 0)
-    into v_food, v_labor
-  from pos.pos_expenses where business_date = p_date;
-
-  perform set_config('levyam.finance_posting', 'on', true);
-  for leg in
-    select * from (values
-      ('cash',  'income',  'pos',       v_cash),
-      ('card',  'income',  'pos',       v_card),
-      ('food',  'expense', 'pos_food',  v_food),
-      ('labor', 'expense', 'pos_labor', v_labor)
-    ) as t(leg, kind, category, amount)
-  loop
-    v_ref := 'pos:' || p_date || ':' || leg.leg;
-    select coalesce(sum(amount), 0), count(*) into v_current, v_n
-    from finance.entries
-    where source_module = 'pos'
-      and (source_ref = v_ref or source_ref like v_ref || ':r%');
-
-    v_delta := leg.amount - v_current;
-    if v_delta = 0 then continue; end if;
-
-    insert into finance.entries
-      (kind, category, amount, payment_method, entry_date, note, source_module, source_ref)
-    values (
-      leg.kind, leg.category, v_delta,
-      case leg.leg when 'cash' then 'cash' when 'card' then 'grow' else null end,
-      p_date,
-      case when v_n = 0 then 'סגירת יום ' || to_char(p_date, 'DD.MM')
-           else 'תיקון סגירת יום ' || to_char(p_date, 'DD.MM') end,
-      'pos',
-      case when v_n = 0 then v_ref else v_ref || ':r' || (v_n + 1) end
-    )
-    returning id into v_entry;
-
-    posted = posted || jsonb_build_object(
-      'leg', leg.leg, 'amount', v_delta, 'entry_id', v_entry,
-      'correction', v_n > 0);
-  end loop;
-  perform set_config('levyam.finance_posting', '', true);
-
-  return jsonb_build_object(
-    'date', p_date,
-    'cash', v_cash, 'card', v_card, 'food', v_food, 'labor', v_labor,
-    'posted', posted);
-end; $$;
+-- pos.post_day() is authored in 55_finance_reconciliation.sql and ONLY there.
+-- It used to live here, carrying its own copy of the four leg definitions and
+-- the two-source legacy revenue read. 55 lifted that computation into
+-- pos.day_expected_legs() so the source_ref grammar and the leg list have one
+-- author, and PR C then added the pinned-day refusal to post_day itself. A copy
+-- left here would be restored by any re-run of this file — and that copy would
+-- happily overwrite an owner correction on a pinned day, which is exactly the
+-- failure the pin exists to prevent.
 
 create or replace function pos.close_day(p_date date)
 returns jsonb language plpgsql security definer set search_path = pos, core as $$
@@ -3954,7 +3868,8 @@ end; $$;
 -- ---------------------------------------------------------------------
 --  6) Grants — functions are EXECUTE-to-PUBLIC by default; revoke first,
 --     then grant only to authenticated (see PR B: this bit us once).
---     post_day is internal: no role may call it directly.
+--     post_day's revoke moved to 55 alongside its definition — revoking a
+--     function this file no longer creates would fail on a fresh install.
 -- ---------------------------------------------------------------------
 revoke all on function pos.bill_is_open(text)                                   from public, anon;
 revoke all on function pos.add_payment(text, text, numeric, text)               from public, anon;
@@ -3963,7 +3878,6 @@ revoke all on function pos.void_payment(bigint)                                 
 revoke all on function pos.void_item(text, text, numeric, numeric, boolean, text) from public, anon;
 revoke all on function pos.open_payments()                                      from public, anon;
 revoke all on function pos.pos_close_table(jsonb, jsonb, jsonb)                 from public, anon;
-revoke all on function pos.post_day(date)                                       from public, anon, authenticated;
 revoke all on function pos.close_day(date)                                      from public, anon;
 
 grant execute on function pos.add_payment(text, text, numeric, text)               to authenticated;
@@ -3989,6 +3903,14 @@ grant execute on function pos.close_day(date)                                   
 --
 --  Re-runnable; apply in the Supabase SQL editor after 47.
 --  Plan: docs/plans/pos-day-lifecycle.md
+--
+--  AMENDED by PR C of the finance books-integrity initiative
+--  (docs/plans/finance-books-integrity.md): a day can now be PINNED, which
+--  stops the automatic re-post from overwriting an owner correction. The pin
+--  table lives here rather than in 56_finance_override.sql for two reasons —
+--  it belongs next to the re-post logic that honours it, and 55's
+--  reconciliation reads it, so a file numbered after 55 could not create it
+--  without breaking a fresh install.
 -- =====================================================================
 
 -- ---------------------------------------------------------------------
@@ -4007,13 +3929,48 @@ returns boolean language sql stable security definer set search_path = pos, fina
     where source_module = 'pos' and source_ref like pos.day_ref_prefix(p_date) || '%');
 $$;
 
+-- ---------------------------------------------------------------------
+--  1b) PINS — "stop recomputing this day" (PR C of finance books-integrity).
+--
+--  An owner correction deliberately parts the books from what POS would
+--  recompute. Without a pin, the next edit to any of the day's bills,
+--  payments or expenses fires the trigger below and the correcting delta is
+--  written straight back out — so "the owner can override anything" would be
+--  a feature that quietly does not work. A pin freezes the day: the automatic
+--  re-post skips it, and pos.post_day() refuses it outright.
+--
+--  A pin is deliberately VISIBLE, never silent: finance.reconciliation()
+--  (55) lists every pinned day so one frozen months ago cannot decay into
+--  invisible drift.
+-- ---------------------------------------------------------------------
+create table if not exists pos.day_pins (
+  business_date date primary key,
+  reason        text not null default '',
+  pinned_by     uuid default auth.uid() references auth.users(id),
+  pinned_at     timestamptz not null default now()
+);
+
+-- Internal, same posture as day_is_posted: called by the trigger path (running
+-- as whichever staff member edited an expense, who holds no finance permission)
+-- and by the definer-rights reconciliation report. Revoked from every client.
+create or replace function pos.day_is_pinned(p_date date)
+returns boolean language sql stable security definer set search_path = pos as $$
+  select exists (select 1 from pos.day_pins where business_date = p_date);
+$$;
+
 -- Re-post a day, but only if it has already been booked (the first post is a
 -- deliberate manual act). post_day writes only the delta, so this is a no-op
 -- when nothing changed.
+--
+-- A pinned day is skipped SILENTLY — that is precisely what the pin asks for,
+-- and this runs inside a trigger on someone else's expense edit: raising here
+-- would abort an unrelated write by a staff member who cannot even see the
+-- books. The loud refusal belongs on the manual path, and lives in
+-- pos.post_day() (55) so every caller gets it by default.
 create or replace function pos.repost_if_posted(p_date date)
 returns void language plpgsql security definer set search_path = pos, finance, core as $$
 begin
-  if p_date is not null and pos.day_is_posted(p_date) then
+  if p_date is not null and pos.day_is_posted(p_date) and not pos.day_is_pinned(p_date) then
     perform pos.post_day(p_date);
   end if;
 end; $$;
@@ -4084,14 +4041,19 @@ for each row when (
 -- ---------------------------------------------------------------------
 create or replace function pos.day_status(p_date date)
 returns jsonb language plpgsql security definer set search_path = pos, finance, core as $$
+declare v_pin pos.day_pins%rowtype;
 begin
   perform pos.require('pos.reports');
+  select * into v_pin from pos.day_pins where business_date = p_date;
   return jsonb_build_object(
     'posted', pos.day_is_posted(p_date),
     -- corrections carry a ':r<n>' suffix on the source_ref (post_day)
     'corrected', exists (
       select 1 from finance.entries
-      where source_module = 'pos' and source_ref like pos.day_ref_prefix(p_date) || '%:r%'));
+      where source_module = 'pos' and source_ref like pos.day_ref_prefix(p_date) || '%:r%'),
+    -- pinned: the books hold an owner correction and POS must stop recomputing
+    'pinned', v_pin.business_date is not null,
+    'pin_reason', v_pin.reason);
 end; $$;
 
 -- ---------------------------------------------------------------------
@@ -4101,10 +4063,40 @@ end; $$;
 -- ---------------------------------------------------------------------
 revoke all on function pos.day_ref_prefix(date)    from public, anon, authenticated;
 revoke all on function pos.day_is_posted(date)     from public, anon, authenticated;
+revoke all on function pos.day_is_pinned(date)     from public, anon, authenticated;
 revoke all on function pos.repost_if_posted(date)  from public, anon, authenticated;
 revoke all on function pos.autorepost()            from public, anon, authenticated;
 revoke all on function pos.day_status(date)        from public, anon;
 grant  execute on function pos.day_status(date)    to authenticated;
+
+-- ---------------------------------------------------------------------
+--  5) Pins — RLS + grants.
+--     Read: anyone who can already see the day's money, from either side
+--     (a POS manager reading the day report, or a finance reader looking at
+--     the reconciliation list) — a pin is never a secret.
+--     Write: finance.override only (owner), seeded in 56_finance_override.sql.
+--     The permission key is just a string here, so this file stays applicable
+--     before 56 has run — the policy simply denies until the seed lands.
+-- ---------------------------------------------------------------------
+alter table pos.day_pins enable row level security;
+
+drop policy if exists "pos_day_pins_read"  on pos.day_pins;
+drop policy if exists "pos_day_pins_write" on pos.day_pins;
+
+-- (select …) wrapper = one InitPlan eval per statement, not per row (MODULE-TEMPLATE.md §1)
+create policy "pos_day_pins_read" on pos.day_pins for select to authenticated
+  using ((select core.has_permission('pos.reports') or core.has_permission('finance.view')));
+create policy "pos_day_pins_write" on pos.day_pins for all to authenticated
+  using ((select core.has_permission('finance.override')))
+  with check ((select core.has_permission('finance.override')));
+
+revoke all on pos.day_pins from anon, authenticated;
+-- business_date/reason only: pinned_by and pinned_at are stamped by their
+-- defaults, and a client that could write them could forge who froze a day.
+grant select on pos.day_pins to authenticated;
+grant insert (business_date, reason) on pos.day_pins to authenticated;
+grant update (reason)                on pos.day_pins to authenticated;
+grant delete on pos.day_pins to authenticated;
 
 -- =====================================================================
 -- schema/49_pos_kitchen.sql
@@ -4718,6 +4710,1250 @@ begin
   end loop;
   perform set_config('levyam.suppress_repost', '', true);
 end; $$;
+
+-- =====================================================================
+-- schema/54_finance_categories.sql
+-- =====================================================================
+-- =====================================================================
+--  54_finance_categories.sql — finance categories-as-data (PR A of the
+--  finance books-integrity initiative).
+--
+--  The category taxonomy stops being a hardcoded CHECK constraint declared
+--  three times across two files (20_finance.sql inline + re-declared, then
+--  21_finance_spine.sql again for the POS categories) and mirrored a fourth
+--  time client-side in app-src/src/modules/finance/categories.ts. It becomes
+--  owner-editable rows, and this table is the single source of truth for:
+--
+--    * which categories exist, per kind, and their HE/AR labels;
+--    * which of them are DERIVED-ONLY — `owned_by_module` non-null means a
+--      module posting function is the one writer and humans are locked out.
+--      finance.entries_guard() now reads that column instead of carrying its
+--      own array literal.
+--
+--  It also closes a real hole: finance.expected.category was free text with
+--  no constraint at all, so plan and actual could name different categories
+--  for the same money. Both tables now carry a composite FK that enforces
+--  the category exists AND matches the row's income/expense sense.
+--
+--  Re-runnable; apply after 53. Plan: docs/plans/finance-books-integrity.md
+-- =====================================================================
+
+-- ---------------------------------------------------------------------
+--  1) The table
+--     (kind, key) is the natural key — a surrogate id keeps the FKs below
+--     composite while still allowing the same slug under both kinds later
+--     (an 'other' expense as well as an 'other' income).
+-- ---------------------------------------------------------------------
+create table if not exists finance.categories (
+  id              uuid primary key default gen_random_uuid(),
+  kind            text not null check (kind in ('income','expense')),
+  key             text not null,                       -- stable slug; posting functions reference it
+  label_he        text not null,
+  label_ar        text not null,
+  owned_by_module text references core.modules(key) on update cascade,
+  active          boolean not null default true,       -- archived: hidden from pickers, history stays valid
+  sort            int not null default 0,
+  updated_at      timestamptz not null default now(),
+  updated_by      text,
+  unique (kind, key)
+  -- The label and slug CHECKs are added AFTER the adopt step below, NOT VALID —
+  -- see the comment there. Declaring them inline would let a single malformed
+  -- legacy row abort the whole migration on a live ledger.
+);
+
+-- No extra index: unique (kind, key) already serves the FK checks and the guard
+-- lookup, and the only app query is an unfiltered `order by kind, sort` over a
+-- table that holds dozens of rows. A partial `where active` index could not
+-- serve it anyway.
+
+-- Audit stamp from the JWT, same pattern as pos.menu (51_pos_menu.sql).
+create or replace function finance.touch_category_actor()
+returns trigger language plpgsql security definer set search_path = finance, public as $$
+begin
+  new.updated_at := now();
+  new.updated_by := coalesce(auth.jwt()->>'email', 'לא ידוע');
+  return new;
+end; $$;
+revoke all on function finance.touch_category_actor() from public;
+
+drop trigger if exists finance_categories_touch on finance.categories;
+create trigger finance_categories_touch before insert or update on finance.categories
+for each row execute function finance.touch_category_actor();
+
+-- ---------------------------------------------------------------------
+--  2) Seed — every category valid today (so no historical row is orphaned
+--     by the FKs below), plus the real-world gaps confirmed by the owner at
+--     kickoff: rent, utilities, insurance, taxes, payment fees, event costs
+--     and donations. Labels carry over verbatim from the module dictionary
+--     (app-src/src/modules/finance/i18n.ts) so nothing renames itself.
+--
+--     'makrer' keeps its slug (history references it) but gets a clearer label:
+--     it reads as מקרר / برّاد — the fridge — i.e. drinks income, which is still
+--     live, so it seeds ACTIVE. The slug is deliberately NOT renamed; renaming a
+--     key would silently re-file every historical row under it.
+--
+--     Note the seeds use ON CONFLICT DO NOTHING throughout: re-running this file
+--     must never stomp a label the owner has since edited in the admin UI.
+-- ---------------------------------------------------------------------
+insert into finance.categories (kind, key, label_he, label_ar, owned_by_module, active, sort) values
+  -- expenses — operations
+  ('expense', 'equipment',     'ציוד',                 'معدات',                    null,     true,  10),
+  ('expense', 'inventory',     'מלאי',                 'مخزون',                    null,     true,  20),
+  ('expense', 'maintenance',   'תחזוקה',               'صيانة',                    null,     true,  30),
+  ('expense', 'suppliers',     'ספקים',                'موردون',                   null,     true,  40),
+  ('expense', 'marketing',     'שיווק',                'تسويق',                    null,     true,  50),
+  -- expenses — overhead (new)
+  ('expense', 'rent',          'שכירות',               'إيجار',                    null,     true,  60),
+  ('expense', 'utilities',     'חשמל ומים',            'كهرباء ومياه',             null,     true,  70),
+  ('expense', 'insurance',     'ביטוח',                'تأمين',                    null,     true,  80),
+  ('expense', 'taxes',         'מסים ומע״מ',           'ضرائب وقيمة مضافة',        null,     true,  90),
+  ('expense', 'payment_fees',  'עמלות סליקה ובנק',     'عمولات الدفع والبنك',      null,     true, 100),
+  -- expenses — people
+  ('expense', 'salaries',      'משכורות',              'رواتب',                    null,     true, 110),
+  ('expense', 'or_prati',      'אור פרטי',             'أور خاص',                  null,     true, 120),
+  ('expense', 'nimer',         'נימר',                 'نمر',                      null,     true, 130),
+  -- expenses — events (new)
+  ('expense', 'event_costs',   'עלויות אירועים',       'تكاليف المناسبات',         null,     true, 140),
+  -- expenses — module-written
+  ('expense', 'pos_food',      'POS — מזון',           'POS — طعام',               'pos',    true, 200),
+  ('expense', 'pos_labor',     'POS — שכר יומי',       'POS — أجر يومي',           'pos',    true, 210),
+  -- income
+  ('income',  'bookings',      'הזמנות',               'حجوزات',                   null,     true,  10),
+  ('income',  'donations',     'תרומות ומענקים',       'تبرعات ومنح',              null,     true,  20),
+  ('income',  'other',         'אחר',                  'أخرى',                     null,     true,  30),
+  ('income',  'makrer',        'מקרר ושתייה',          'برّاد ومشروبات',           null,     true,  40),
+  -- income — module-written
+  ('income',  'events',        'אירועים',              'مناسبات',                  'quotes', true, 200),
+  ('income',  'pos',           'POS — יום מכירות',     'POS — يوم مبيعات',         'pos',    true, 210)
+on conflict (kind, key) do nothing;
+
+-- ---------------------------------------------------------------------
+--  3) Adopt orphans BEFORE the FKs land.
+--     20_finance.sql shipped a placeholder taxonomy first (rent/utilities/
+--     insurance/…) and replaced it with a NOT VALID constraint precisely so
+--     live rows under retired names would survive. Those rows are still out
+--     there. Anything referenced by a real row and not named above is
+--     adopted as an INACTIVE category, so the FK resolves and history is
+--     preserved — but nobody can file new money under it.
+--
+--     Idempotent: a second run finds nothing left to adopt.
+-- ---------------------------------------------------------------------
+--     Labels fall back to a placeholder when the legacy slug is blank:
+--     finance.expected.category was unconstrained free text (the very hole this
+--     file closes), so '' is possible and must not abort the migration.
+insert into finance.categories (kind, key, label_he, label_ar, active, sort)
+select s.kind,
+       s.category,
+       coalesce(nullif(btrim(s.category), ''), '(קטגוריה ללא שם)'),
+       coalesce(nullif(btrim(s.category), ''), '(فئة بلا اسم)'),
+       false, 900
+from (
+  select kind, category from finance.entries
+  union
+  select case direction when 'in' then 'income' else 'expense' end, category
+  from finance.expected
+) s
+where not exists (
+  select 1 from finance.categories c where c.kind = s.kind and c.key = s.category);
+
+-- Both invariants land AFTER the adopt step and NOT VALID on purpose: a retired
+-- legacy slug in some old prod row must not be able to fail this whole file, but
+-- everything created from here on is held to them.
+--   * key    — permanent (column grants make it non-updatable) and referenced by
+--              posting functions, so its shape is an invariant, not a form hint.
+--   * labels — ARCHITECTURE §7.5: anything user-facing exists in BOTH languages.
+--              The admin form checks this too; this is the guard that holds.
+alter table finance.categories drop constraint if exists finance_categories_key_check;
+alter table finance.categories add constraint finance_categories_key_check
+  check (key ~ '^[a-z][a-z0-9_]*$') not valid;
+
+alter table finance.categories drop constraint if exists finance_categories_labels_check;
+alter table finance.categories add constraint finance_categories_labels_check
+  check (btrim(label_he) <> '' and btrim(label_ar) <> '') not valid;
+
+-- ---------------------------------------------------------------------
+--  4) One-writer-per-category, read from the table instead of a literal.
+--     SECURITY DEFINER so the guard resolves ownership regardless of the
+--     writer's read permissions (a finance.manage holder who somehow lacks
+--     finance.view must still be blocked from a derived category, not
+--     silently waved through because the lookup returned no row).
+-- ---------------------------------------------------------------------
+-- Both rules a category can impose on a manual write live here, so the taxonomy
+-- owns them rather than each writing table re-deriving one of them:
+--   * owned_by_module  → a module posting function is the one writer
+--   * active = false   → archived; readable history, but no new MANUAL entry
+--
+-- Scope, precisely: this runs from finance.entries_guard(), which every posting
+-- function short-circuits via the levyam.finance_posting GUC. The PLAN side has
+-- its own guard below (finance.expected_guard), so a new expectation cannot be
+-- filed under an archived category either. What archiving deliberately does NOT
+-- do is block finance.record_payment() from fulfilling an expectation ALREADY
+-- open under the category — that money was planned before the archive, and
+-- refusing it would strand it with nowhere valid to file it.
+-- Existence/kind-correctness is NOT this function's job — the composite FK
+-- already rejects those, and duplicating it here would just fail differently.
+create or replace function finance.assert_category_writable(p_kind text, p_key text)
+returns void language plpgsql stable security definer set search_path = finance, public as $$
+declare c record;
+begin
+  select owned_by_module, active into c
+  from finance.categories where kind = p_kind and key = p_key;
+  if not found then
+    return;                       -- the FK will reject it a moment from now
+  end if;
+  if c.owned_by_module is not null then
+    raise exception 'הקטגוריה "%" נרשמת אוטומטית על ידי מודול (%) — לא ניתן להזין אותה ידנית', p_key, c.owned_by_module;
+  end if;
+  if not c.active then
+    raise exception 'הקטגוריה "%" בארכיון — לא ניתן לרשום אליה תנועות חדשות', p_key;
+  end if;
+end; $$;
+-- revoking from `authenticated` alone leaves the implicit PUBLIC grant in
+-- place — the escalation shape this repo has already been bitten by twice.
+revoke all on function finance.assert_category_writable(text, text) from public;
+grant execute on function finance.assert_category_writable(text, text) to authenticated;
+
+-- Authored here and ONLY here (21_finance_spine.sql's copy was retired with the
+-- literal it carried) — the one-writer rule is data now, so a stale second copy
+-- would protect the old slugs and silently miss every category added since.
+create or replace function finance.entries_guard()
+returns trigger language plpgsql as $$
+begin
+  if finance.is_posting() then      -- one reader, see 21_finance_spine.sql
+    return coalesce(new, old);
+  end if;
+  if tg_op = 'INSERT' then
+    if new.source_module is not null then
+      raise exception 'רישום ממקור מודול (%.%) נכתב רק דרך פונקציית הרישום של אותו מודול', new.source_module, new.source_ref;
+    end if;
+    perform finance.assert_category_writable(new.kind, new.category);
+    return new;
+  end if;
+  if old.source_module is not null then
+    raise exception 'רישום שנוצר על ידי מודול (%) אינו ניתן לעריכה או מחיקה — תיקון נרשם כתנועת היפוך מאותו מודול', old.source_module;
+  end if;
+  if tg_op = 'UPDATE' and new.source_module is not null then
+    raise exception 'לא ניתן להפוך רישום ידני לרישום ממקור מודול';
+  end if;
+  -- a legacy manual row whose category has since become module-owned or archived
+  -- stays editable (fix its amount, its note); it just cannot MOVE into one
+  if tg_op = 'UPDATE'
+     and (new.category, new.kind) is distinct from (old.category, old.kind) then
+    perform finance.assert_category_writable(new.kind, new.category);
+  end if;
+  return coalesce(new, old);
+end; $$;
+
+drop trigger if exists finance_entries_guard on finance.entries;
+create trigger finance_entries_guard
+  before insert or update or delete on finance.entries
+  for each row execute function finance.entries_guard();
+
+-- The same two rules on the PLAN side. Without this, `active = false` only ever
+-- meant "no new manual ENTRY": a new finance.expected row could still be filed
+-- under an archived category through the API, and would then post an entry
+-- under it on fulfilment (record_payment runs behind the posting GUC, so the
+-- entries guard never sees it). The UI never offered that — pickableCategories
+-- lists active, non-module categories only — which is exactly why it needed to
+-- be enforced in the database rather than left to the client.
+--
+-- Invoker rights, like entries_guard: the rules live in
+-- finance.assert_category_writable(), which is already SECURITY DEFINER and so
+-- can read the taxonomy for a caller who cannot.
+create or replace function finance.expected_guard()
+returns trigger language plpgsql as $$
+declare
+  -- NOT new.kind: that column is GENERATED STORED, and Postgres computes
+  -- generated columns AFTER before-row triggers, so it is still null here. The
+  -- mapping is therefore duplicated from the column's own expression below —
+  -- pinned by an rls_matrix assertion, because if the two ever diverge this
+  -- guard looks up a kind that matches no category and fails OPEN.
+  -- NULL on DELETE, where `new` does not exist; only the DELETE branch runs then.
+  v_kind text := case new.direction when 'in' then 'income' else 'expense' end;
+begin
+  -- A posting function is writing (quotes.plan_money_for_quote sets the GUC
+  -- around its inserts). Keyed on the GUC and NOT on new.source_module: that
+  -- column is client-writable — `grant insert on finance.expected` covers every
+  -- column — so trusting it would let any finance.manage holder forge
+  -- `source_module = 'quotes'` and file money under a derived-only category,
+  -- the very thing entries_guard() makes impossible. It would also let them
+  -- charge another module's drift badge and forge its "open the source" link.
+  if finance.is_posting() then
+    return coalesce(new, old);
+  end if;
+  -- A DELETE erases provenance just as effectively as re-tagging it, and it is
+  -- the motion entries_guard() blocks on the ledger side. Without it a manager
+  -- could delete a quotes-planned deposit — destroying the module's record of
+  -- money it is owed AND silently clearing that expectation's overdue drift
+  -- item, so the books stop reporting a problem that still exists. Cancelling
+  -- is the supported way to retire one (status = 'cancelled'), which is what
+  -- both the UI and quotes itself do; it keeps the row and its history.
+  if tg_op = 'DELETE' then
+    if old.source_module is not null then
+      raise exception 'צפי ממקור מודול (%) אינו ניתן למחיקה — יש לבטל אותו במקום זאת',
+        old.source_module;
+    end if;
+    return old;
+  end if;
+  -- PROVENANCE IS MODULE-WRITTEN ONLY, the same rule entries_guard() enforces
+  -- one screen up. Leaving it off the plan side left a laundering path into the
+  -- ledger: finance.record_payment() copies the expectation's own source_module
+  -- into the entry it posts, behind the GUC, so a finance.manage holder (manager,
+  -- not owner) could insert an expectation tagged 'override' — the provenance
+  -- PR C mints for owner-only corrections — fulfil it, and end up with a ledger
+  -- row badged "תיקון בעלים" carrying their own note and amount. Worse, that row
+  -- is then beyond repair: correction_target() unwraps 'expected:<uuid>' and
+  -- casts split_part(...,2) to date, so the owner's own correction tool throws on
+  -- exactly these rows. Nothing in the app inserts finance.expected at all (the
+  -- only client write is ExpectedTab's status='cancelled'), so this costs no
+  -- legitimate flow.
+  if tg_op = 'INSERT' and new.source_module is not null then
+    raise exception 'צפי ממקור מודול (%) נכתב רק דרך פונקציית הרישום של אותו מודול',
+      new.source_module;
+  end if;
+  if tg_op = 'UPDATE' and new.source_module is distinct from old.source_module then
+    raise exception 'לא ניתן לשנות את מקור הצפי';
+  end if;
+  -- an UPDATE that leaves the category where it is has nothing to re-check:
+  -- a legacy row whose category has since been archived stays editable
+  if tg_op = 'UPDATE'
+     and (new.category, new.direction) is not distinct from (old.category, old.direction) then
+    return new;
+  end if;
+  -- Same two rules as the entries side, from the same function, so the taxonomy
+  -- keeps owning them: archived → no new money, module-owned → module writes it.
+  perform finance.assert_category_writable(v_kind, new.category);
+  return new;
+end; $$;
+
+drop trigger if exists finance_expected_guard on finance.expected;
+create trigger finance_expected_guard
+  before insert or update or delete on finance.expected
+  for each row execute function finance.expected_guard();
+
+-- ---------------------------------------------------------------------
+--  5) Retire the CHECK constraints; the table is the taxonomy now.
+--     FKs are composite so they enforce kind-correctness too: an 'income'
+--     row cannot claim an expense category. Added NOT VALID — the adopt step
+--     above covers everything real, but a NOT VALID add never takes the
+--     full-table lock a validating add would on a live prod ledger.
+-- ---------------------------------------------------------------------
+--     No ON UPDATE CASCADE on either FK: `key` is not client-updatable (see the
+--     column grants below), so a slug can only change by deliberate migration —
+--     and there it should fail loudly rather than silently re-file history.
+--     Postgres also rejects ON UPDATE CASCADE outright on an FK containing a
+--     generated column, which finance.expected's does.
+--     drop-then-add (not a duplicate_object DO block) so re-running this file
+--     converges on the definition here instead of keeping an older one.
+alter table finance.entries drop constraint if exists finance_entries_category_check;
+
+alter table finance.entries drop constraint if exists finance_entries_category_fk;
+alter table finance.entries add constraint finance_entries_category_fk
+  foreign key (kind, category) references finance.categories (kind, key) not valid;
+
+-- finance.expected keys money by direction ('in'/'out'), not kind. A stored
+-- generated column maps it, so the same composite FK applies and the category
+-- can no longer disagree with the direction. (Verified on PG locally: a
+-- generated column is usable as an FK referencing column, and an 'in' row
+-- pointing at an expense category is rejected.)
+alter table finance.expected add column if not exists kind text
+  generated always as (case direction when 'in' then 'income' else 'expense' end) stored;
+
+alter table finance.expected drop constraint if exists finance_expected_category_fk;
+alter table finance.expected add constraint finance_expected_category_fk
+  foreign key (kind, category) references finance.categories (kind, key) not valid;
+
+-- Deletion protection comes free with the FKs above (NO ACTION): a category
+-- with any entry or expectation cannot be deleted — archive it instead.
+--
+-- Both FKs are checked from the REFERENCING side whenever a category row is
+-- deleted, which scans finance.entries / finance.expected. entries had only a
+-- 2-value (kind) index and expected's generated `kind` had none, so that check
+-- would seq-scan a growing ledger. The entries index also serves finance.report's
+-- per-category aggregation.
+create index if not exists finance_entries_category_idx  on finance.entries  (kind, category);
+create index if not exists finance_expected_category_idx on finance.expected (kind, category);
+
+-- ---------------------------------------------------------------------
+--  6) RLS + grants.
+--     Anyone who can see finance reads the taxonomy (the entries form needs
+--     it); only finance.categories writes. Column-level grants are the real
+--     guard on owned_by_module: module ownership is declared by the module
+--     in this file, never by the admin UI, and `kind`/`key` are immutable
+--     after creation because renaming a slug would silently re-file history.
+-- ---------------------------------------------------------------------
+alter table finance.categories enable row level security;
+
+revoke all on finance.categories from anon, authenticated;
+grant select on finance.categories to authenticated;
+grant insert (kind, key, label_he, label_ar, active, sort) on finance.categories to authenticated;
+grant update (label_he, label_ar, active, sort)            on finance.categories to authenticated;
+grant delete on finance.categories to authenticated;
+
+drop policy if exists "finance_categories_read"  on finance.categories;
+drop policy if exists "finance_categories_write" on finance.categories;
+
+-- (select …) wrapper = one InitPlan eval per statement, not per row (MODULE-TEMPLATE.md §1)
+create policy "finance_categories_read" on finance.categories for select to authenticated
+  using ((select core.has_permission('finance.view')));
+create policy "finance_categories_write" on finance.categories for all to authenticated
+  using ((select core.has_permission('finance.categories')))
+  with check ((select core.has_permission('finance.categories')));
+
+-- ---------------------------------------------------------------------
+--  SEED DATA — permission (idempotent)
+--  Owner-only, deliberately tighter than pos.menu (owner+manager): editing
+--  the taxonomy reshapes every historical report, not just tomorrow's prices.
+-- ---------------------------------------------------------------------
+insert into core.permissions (key, module, action, label) values
+  ('finance.categories', 'finance', 'categories', 'עריכת קטגוריות הכנסה והוצאה')
+on conflict (key) do nothing;
+
+insert into core.role_permissions (role_id, permission_id)
+select r.id, p.id from core.roles r, core.permissions p
+where r.key = 'owner' and p.key = 'finance.categories'
+on conflict do nothing;
+
+-- =====================================================================
+-- schema/55_finance_reconciliation.sql
+-- =====================================================================
+-- =====================================================================
+--  55_finance_reconciliation.sql — "are the books aligned?" (PR B of the
+--  finance books-integrity initiative).
+--
+--  The first write of a POS day to the books is a deliberate manual act
+--  (pos.close_day). If nobody presses it, the revenue simply is not in the
+--  books and NOTHING says so. That already happened in production: the first
+--  week of July 2026 was never posted and was found by hand during the POS
+--  parity trial. This file makes that state visible instead of silent.
+--
+--  Four checks, all computed live (never a stored/dismissible flag — an
+--  alert you can dismiss is an alert that lies):
+--    1. unposted_day    — a day with real money that was never written
+--    2. recompute_drift — a booked day whose recomputation differs from the
+--                         books, i.e. the auto re-post (48) failed or was bypassed
+--    3. overdue_expected— finance.expected still open past its due_date
+--    4. pinned          — (PR C) a day the owner froze. Listed so the freeze
+--                         stays visible; 'low' while it costs nothing,
+--                         'medium' once money starts piling up outside it.
+--
+--  Each item carries the action that resolves it, so the UI never has to
+--  encode "what do I do about this".
+--
+--  PERFORMANCE NOTE (measured, /simplify 2026-08-03): the first cut of this
+--  file asked the question one day at a time — a per-day function call inside
+--  a lateral, plus pos.day_is_posted() in a WHERE that the planner pushed down
+--  into the union arms so it ran once per BILL rather than once per day. On 90
+--  days of realistic volume that was 3,602 day_is_posted() calls and ~718ms per
+--  request, on the hot path of a launcher badge. Everything below is therefore
+--  SET-BASED: three grouped passes over the POS sources, one grouped pass over
+--  the booked entries, joined. Same answers, ~45ms.
+--
+--  Re-runnable; apply after 54. Plan: docs/plans/finance-books-integrity.md
+-- =====================================================================
+
+-- ---------------------------------------------------------------------
+--  1) The four legs a day WOULD post, computed without writing anything.
+--
+--     Lifted out of pos.post_day (47) so the two can never disagree: post_day
+--     now consumes this, which keeps the leg definitions and the two-source
+--     legacy revenue read authored in one place.
+--
+--     INTERNAL: security definer with NO permission check, revoked from every
+--     client role — exactly like pos.post_day itself. It must be callable both
+--     by the auto re-post trigger (which runs as whichever staff member edited
+--     an expense) and by the reconciliation report (which runs for a finance
+--     reader who may hold no POS permissions at all), so gating it on either
+--     module's permission would break one of the two callers. The gate lives on
+--     the public entry points. Deviation from the plan's standing rule
+--     ("invoker, or definer WITH a has_permission check") recorded there.
+--
+--     Single-day shape, for post_day. The reconciliation report deliberately
+--     does NOT call this per day — see the performance note above.
+-- ---------------------------------------------------------------------
+create or replace function pos.day_expected_legs(p_date date)
+returns table (leg text, kind text, category text, amount numeric)
+language plpgsql stable security definer set search_path = pos, finance, core as $$
+declare
+  v_cash numeric; v_card numeric; v_food numeric; v_labor numeric;
+begin
+  -- Revenue for the day, net of tips, from BOTH payment sources:
+  --   * new bills record pos_payments rows — sum (amount − tip_part) by method,
+  --     attributed to the day the payment was TAKEN (a deposit counts when taken).
+  --   * LEGACY bills (closed before split-payments shipped) have NO payment rows;
+  --     their money lives only on the bill. Fall back to the pre-PR-C grammar:
+  --     card = least(card_paid, grand_total), cash = the rest of grand_total —
+  --     which nets tips out at the grand-total level and reproduces the numbers
+  --     those days were originally posted with. Without this second source,
+  --     re-posting any historical day recomputes its revenue as ~0 and the
+  --     auto re-post (48) wipes it from the books on the next expense edit.
+  select coalesce(sum(p.amount - p.tip_part) filter (where p.method = 'cash'), 0),
+         coalesce(sum(p.amount - p.tip_part) filter (where p.method = 'card'), 0)
+    into v_cash, v_card
+  from pos.pos_payments p
+  where (p.taken_at at time zone 'Asia/Jerusalem')::date = p_date;
+
+  select v_cash + coalesce(sum(b.grand_total - least(b.card_paid, b.grand_total)), 0),
+         v_card + coalesce(sum(least(b.card_paid, b.grand_total)), 0)
+    into v_cash, v_card
+  from pos.pos_bills b
+  where b.status = 'paid'
+    and (b.paid_at at time zone 'Asia/Jerusalem')::date = p_date
+    and not exists (select 1 from pos.pos_payments p where p.bill_id = b.id);
+
+  select coalesce(sum(e.amount) filter (where e.kind = 'food'), 0),
+         coalesce(sum(e.amount) filter (where e.kind = 'labor'), 0)
+    into v_food, v_labor
+  from pos.pos_expenses e where e.business_date = p_date;
+
+  return query select * from (values
+    ('cash',  'income',  'pos',       v_cash),
+    ('card',  'income',  'pos',       v_card),
+    ('food',  'expense', 'pos_food',  v_food),
+    ('labor', 'expense', 'pos_labor', v_labor)
+  ) as t(leg, kind, category, amount);
+end; $$;
+
+revoke all on function pos.day_expected_legs(date) from public;
+
+-- The READER half of the source_ref grammar whose writer half is
+-- pos.day_ref_prefix() (48): 'pos:<date>:<leg>[:r<n>]' — segment 3 is the leg.
+-- Declared next to its counterpart's contract so the format has exactly two
+-- named sites instead of a literal re-spelled at every comparison.
+create or replace function pos.day_ref_leg(p_ref text)
+returns text language sql immutable as $$ select split_part(p_ref, ':', 3); $$;
+-- Pure string function over the caller's own argument, so a PUBLIC grant leaks
+-- nothing — revoked anyway to match its writer half (day_ref_prefix, 48) and the
+-- standing rule for this initiative. Every exception to that rule is one more
+-- judgement call at the next review; the repo has shipped this bug twice.
+revoke all on function pos.day_ref_leg(text) from public;
+
+-- ---------------------------------------------------------------------
+--  2) post_day now consumes the extracted computation instead of carrying
+--     its own copy. Behaviour is unchanged — same legs, same order, same
+--     source_ref grammar — which matters because pos.day_is_posted() and the
+--     auto re-post both match against that grammar and would stop matching
+--     history if it drifted by a single character.
+--
+--     Authored HERE and only here: 47_pos_payments.sql used to carry a copy,
+--     which a re-run of that file would restore — silently reinstating a
+--     post_day with no pinned-day refusal.
+-- ---------------------------------------------------------------------
+create or replace function pos.post_day(p_date date)
+returns jsonb language plpgsql security definer
+set search_path = pos, finance, core as $$
+declare
+  leg record;
+  posted jsonb := '[]'::jsonb;
+  amounts jsonb := '{}'::jsonb;   -- the cash/card/food/labor summary the close-day screen reads
+  v_current numeric; v_n int; v_delta numeric; v_ref text; v_entry uuid;
+begin
+  -- A pinned day holds an owner correction (PR C). Refusing here rather than in
+  -- pos.close_day() means every caller — the manual close, the reconciliation
+  -- tab's fix button, anything added later — inherits the protection by
+  -- default. The trigger path never reaches this: pos.repost_if_posted() (48)
+  -- checks the pin first and skips silently, because it runs inside someone
+  -- else's expense edit and must not abort it.
+  if pos.day_is_pinned(p_date) then
+    raise exception 'היום % נעול לאחר תיקון של הבעלים — יש לבטל את הנעילה לפני רישום מחדש', to_char(p_date, 'DD.MM.YYYY');
+  end if;
+
+  perform set_config('levyam.finance_posting', 'on', true);
+  for leg in select * from pos.day_expected_legs(p_date)
+  loop
+    -- built from the legs themselves, so a fifth leg would appear automatically
+    amounts := amounts || jsonb_build_object(leg.leg, leg.amount);
+
+    v_ref := pos.day_ref_prefix(p_date) || leg.leg;
+    select coalesce(sum(amount), 0), count(*) into v_current, v_n
+    from finance.entries
+    where source_module = 'pos'
+      and (source_ref = v_ref or source_ref like v_ref || ':r%');
+
+    v_delta := leg.amount - v_current;
+    if v_delta = 0 then continue; end if;
+
+    insert into finance.entries
+      (kind, category, amount, payment_method, entry_date, note, source_module, source_ref)
+    values (
+      leg.kind, leg.category, v_delta,
+      case leg.leg when 'cash' then 'cash' when 'card' then 'grow' else null end,
+      p_date,
+      case when v_n = 0 then 'סגירת יום ' || to_char(p_date, 'DD.MM')
+           else 'תיקון סגירת יום ' || to_char(p_date, 'DD.MM') end,
+      'pos',
+      case when v_n = 0 then v_ref else v_ref || ':r' || (v_n + 1) end
+    )
+    returning id into v_entry;
+
+    posted = posted || jsonb_build_object(
+      'leg', leg.leg, 'amount', v_delta, 'entry_id', v_entry,
+      'correction', v_n > 0);
+  end loop;
+  perform set_config('levyam.finance_posting', '', true);
+
+  return jsonb_build_object('date', p_date, 'posted', posted) || amounts;
+end; $$;
+
+-- post_day is internal: no role may call it directly. The revoke lives with the
+-- definition, which is this file — 47's grants block notes why it moved.
+revoke all on function pos.post_day(date) from public, anon, authenticated;
+
+-- ---------------------------------------------------------------------
+--  3) The drift items, as ROWS.
+--
+--     Internal (no permission check, revoked from clients) so the two public
+--     entry points below can share it: reconciliation() aggregates it to
+--     jsonb, reconciliation_counts() counts it without ever building a payload.
+--     That is what makes the badge query genuinely cheap rather than "the full
+--     report with its result thrown away".
+-- ---------------------------------------------------------------------
+--     `severity` is a real output column, not something the count has to dig
+--     back out of the jsonb: pinned days are listed but must NOT light the
+--     badge (a pin is a deliberate state, not a problem, and a badge that
+--     never clears is one nobody reads). reconciliation_counts() filters on it.
+--     `modules` names who OWNS each item, so the launcher can badge that tile.
+-- ---------------------------------------------------------------------
+-- DROP first, not just `create or replace`: this function's OUT parameters
+-- have changed twice now (severity, then modules), and Postgres refuses to
+-- replace a function whose result row type differs — 42P13. Without this the
+-- file applies cleanly to a fresh database and FAILS on every existing one,
+-- which is the only place it actually matters. Nothing depends on it in the
+-- catalog (string-bodied functions record no dependency), and the two callers
+-- are recreated below in the same file.
+drop function if exists finance.reconciliation_items(date);
+
+create function finance.reconciliation_items(p_since date)
+returns table (sort_key text, severity text, modules text[], item jsonb)
+language sql stable security definer set search_path = finance, pos, core as $$
+  with
+  -- sargable bounds: compare the raw timestamp against Jerusalem midnight so
+  -- the existing timestamptz indexes are usable (an `(x at time zone …)::date`
+  -- predicate is an expression over the column and can never be)
+  bounds as (select (p_since::timestamp at time zone 'Asia/Jerusalem') as from_ts),
+  pay as (
+    select (p.taken_at at time zone 'Asia/Jerusalem')::date as d,
+           coalesce(sum(p.amount - p.tip_part) filter (where p.method = 'cash'), 0) as cash,
+           coalesce(sum(p.amount - p.tip_part) filter (where p.method = 'card'), 0) as card
+    from pos.pos_payments p, bounds where p.taken_at >= bounds.from_ts group by 1
+  ),
+  legacy as (
+    select (b.paid_at at time zone 'Asia/Jerusalem')::date as d,
+           coalesce(sum(b.grand_total - least(b.card_paid, b.grand_total)), 0) as cash,
+           coalesce(sum(least(b.card_paid, b.grand_total)), 0) as card
+    from pos.pos_bills b, bounds
+    where b.status = 'paid' and b.paid_at >= bounds.from_ts
+      and not exists (select 1 from pos.pos_payments p where p.bill_id = b.id)
+    group by 1
+  ),
+  spend as (
+    select e.business_date as d,
+           coalesce(sum(e.amount) filter (where e.kind = 'food'), 0) as food,
+           coalesce(sum(e.amount) filter (where e.kind = 'labor'), 0) as labor
+    from pos.pos_expenses e where e.business_date >= p_since group by 1
+  ),
+  -- what the books already hold per day and leg, in one pass (no per-day
+  -- correlated subquery, no LIKE on source_ref — the day comes from entry_date)
+  booked as (
+    select entry_date as d, pos.day_ref_leg(source_ref) as leg, sum(amount) as amt
+    from finance.entries
+    where source_module = 'pos' and entry_date >= p_since
+      -- ONLY day-close postings. source_module='pos' is not sufficient: a
+      -- finance.expected row carrying source_module='pos' would be fulfilled by
+      -- record_payment() as 'expected:<uuid>', which parses to an empty leg,
+      -- adds its date to posted_days, and turns a genuinely unposted day into a
+      -- bogus four-leg drift item. Unreachable today (only quotes writes
+      -- expectations) — pinned here so it stays that way.
+      and source_ref like pos.day_ref_prefix(entry_date) || '%'
+    group by 1, 2
+  ),
+  all_days as (
+    select d from pay union select d from legacy
+    union select d from spend union select d from booked
+  ),
+  expected as (
+    select a.d,
+           coalesce(pay.cash, 0) + coalesce(legacy.cash, 0) as cash,
+           coalesce(pay.card, 0) + coalesce(legacy.card, 0) as card,
+           coalesce(spend.food, 0)  as food,
+           coalesce(spend.labor, 0) as labor
+    from all_days a
+    left join pay    on pay.d = a.d
+    left join legacy on legacy.d = a.d
+    left join spend  on spend.d = a.d
+  ),
+  posted_days as (select distinct d from booked),
+  -- Per-leg comparison for EVERY day in the window, booked or not. It is
+  -- deliberately not restricted to booked days: check 4 needs the deltas of a
+  -- day that is pinned but was never posted, where `booked` holds nothing and
+  -- the delta is therefore the day's entire takings. Check 2 applies the
+  -- "booked" restriction itself.
+  leg_delta as (
+    select e.d, l.leg,
+           (case l.leg when 'cash' then e.cash when 'card' then e.card
+                       when 'food' then e.food else e.labor end)
+           - coalesce(b.amt, 0) as delta
+    from expected e
+    cross join (values ('cash'), ('card'), ('food'), ('labor')) as l(leg)
+    left join booked b on b.d = e.d and b.leg = l.leg
+  ),
+  -- rolled up per day: read by check 2 (unpinned ⇒ drift) and by check 4
+  -- (pinned ⇒ how far the owner's correction currently holds the day apart)
+  day_drift as (
+    select ld.d,
+           jsonb_agg(jsonb_build_object('leg', ld.leg, 'delta', ld.delta))
+             filter (where ld.delta <> 0) as legs,
+           -- MAGNITUDE: how much money is in the wrong place, summed over the
+           -- legs. Not a net and not a P&L — a signed sum would add revenue
+           -- legs (cash/card) to cost legs (food/labor), which carry the same
+           -- sign here but the opposite meaning, and would report a drift of
+           -- +100 cash / -100 card as "0", i.e. nothing wrong. The per-leg
+           -- breakdown next to it in the UI carries the direction.
+           coalesce(sum(abs(ld.delta)), 0) as total
+    from leg_delta ld group by ld.d
+  )
+  -- 1) days with real money that were never written to the books
+  select 'a:' || e.d, 'high', array['pos'], jsonb_build_object(
+           'type', 'unposted_day', 'severity', 'high', 'business_date', e.d,
+           'cash', e.cash, 'card', e.card, 'food', e.food, 'labor', e.labor,
+           'revenue', e.cash + e.card, 'fix', 'post_day')
+  from expected e
+  where not exists (select 1 from posted_days pd where pd.d = e.d)
+    -- TODAY IS NOT LATE. Posting a day is the deliberate end-of-service act, so
+    -- the day currently being served has not failed to be posted — it simply is
+    -- not over. Without this bound the first paid bill of every service lit both
+    -- launcher badges red and the banner, and offered a one-click "post to
+    -- books" that would have written a PARTIAL day into the ledger and left the
+    -- rest of the service to arrive as re-post deltas. The alarm has to mean
+    -- something, or it gets ignored on the day it is real.
+    and e.d < (now() at time zone 'Asia/Jerusalem')::date
+    -- a day whose money all nets to zero is not "unposted", it is empty
+    and (e.cash + e.card + e.food + e.labor) <> 0
+    -- ...and a PINNED day is not "unposted" either, it is frozen. Reporting it
+    -- here would offer a "post to books" button that pos.post_day() refuses by
+    -- design: the fix could never succeed, the item could never clear, and both
+    -- launcher badges would stay lit forever. Check 4 reports it instead.
+    and not exists (select 1 from pos.day_pins p where p.business_date = e.d)
+
+  union all
+  -- 2) a BOOKED day that no longer matches its recomputation. Should always be
+  --    empty: the auto re-post (48) writes the correcting delta on every change.
+  --    A non-zero here means that trigger failed or was bypassed.
+  --    PINNED days are excluded and reported by branch 4 instead: on a pinned
+  --    day the books are SUPPOSED to differ from the recomputation — that is
+  --    what the owner's correction did — so listing it here would offer a "post
+  --    to books" button that un-does the very correction the pin protects.
+  select 'b:' || d.d, 'high', array['pos'], jsonb_build_object(
+           'type', 'recompute_drift', 'severity', 'high', 'business_date', d.d,
+           'legs', d.legs, 'total_delta', d.total, 'fix', 'post_day')
+  from day_drift d
+  -- non-null iff at least one leg drifted — the direct signal. Keyed on the
+  -- legs and not on the total on purpose: the legs are what "drifted" MEANS,
+  -- so this check cannot be broken by a later change to how `total` is rolled
+  -- up (a signed one used to report +100 cash / −100 card as "0")
+  where d.legs is not null
+    -- BOOKED days only — leg_delta now spans every day, so an unposted day would
+    -- otherwise surface here as well as in check 1
+    and exists (select 1 from posted_days pd where pd.d = d.d)
+    and not exists (select 1 from pos.day_pins p where p.business_date = d.d)
+
+  union all
+  -- 3) money that should have moved and did not
+  select 'c:' || to_char(x.due_date, 'YYYY-MM-DD') || ':' || x.id,
+         case when x.due_date < current_date - 30 then 'high' else 'medium' end,
+         -- the module that CREATED this expectation owns it: a deposit from a
+         -- signed quote is the quotes module's problem to chase, even though
+         -- the payment itself is recorded in finance. Guarded by core.modules
+         -- so a retired or misspelled provenance can never badge a tile that
+         -- does not exist; a hand-created expectation belongs to nobody but
+         -- finance and yields an empty array.
+         case when x.source_module is not null and x.source_module <> 'finance'
+                   and exists (select 1 from core.modules m where m.key = x.source_module)
+              then array[x.source_module] else '{}'::text[] end,
+         jsonb_build_object(
+           'type', 'overdue_expected',
+           'severity', case when x.due_date < current_date - 30 then 'high' else 'medium' end,
+           'expected_id', x.id, 'direction', x.direction, 'category', x.category,
+           'amount', x.amount, 'due_date', x.due_date, 'reason', x.reason,
+           'days_overdue', current_date - x.due_date, 'fix', 'record_payment',
+           -- provenance travels with the item so the UI can link to the thing
+           -- that CAUSED it (the signed quote behind an overdue deposit),
+           -- rather than only to the place where it gets paid
+           'source_module', x.source_module, 'source_ref', x.source_ref)
+  from finance.expected x
+  where x.status = 'open' and x.due_date is not null and x.due_date < current_date
+
+  union all
+  -- 4) every pinned day, always (PR C). A pin freezes the WHOLE day: POS has
+  --    stopped writing it to the books entirely, so anything entered on that
+  --    day afterwards — a food cost, a late payment — never lands. Listed even
+  --    when nothing has accumulated yet, because the freeze itself is the live
+  --    invisible state and a day pinned months ago must not quietly become
+  --    permanent.
+  --
+  --    Severity is therefore NOT constant. 'low' while the books still match
+  --    the recomputation (the pin is costing nothing, so it must not light a
+  --    badge that then never clears); 'medium' the moment real money starts
+  --    piling up outside the books, which is a genuine problem again. A day
+  --    pinned before it was ever posted lands here too, and its delta is the
+  --    day's whole takings — hence leg_delta spanning unbooked days as well.
+  --
+  --    Deliberately NOT bounded by p_since — same reasoning as open
+  --    expectations. There are a handful of pins ever, and one made last year
+  --    is exactly the one worth remembering. `legs` is therefore best-effort:
+  --    non-null only for pins inside the scanned window, null outside it.
+  select 'd:' || p.business_date,
+         case when d.legs is null then 'low' else 'medium' end,
+         array['pos'],
+         jsonb_build_object(
+           'type', 'pinned',
+           'severity', case when d.legs is null then 'low' else 'medium' end,
+           'business_date', p.business_date,
+           'reason', p.reason, 'pinned_at', p.pinned_at,
+           'legs', d.legs, 'total_delta', coalesce(d.total, 0), 'fix', 'unpin')
+  from pos.day_pins p
+  left join day_drift d on d.d = p.business_date;
+$$;
+
+revoke all on function finance.reconciliation_items(date) from public;
+
+-- ---------------------------------------------------------------------
+--  4) The two public entry points.
+--
+--     SECURITY DEFINER with an explicit finance.view check — a deliberate
+--     departure from finance.report()/event_pnl(), which are invoker-rights.
+--     Those read only finance.entries, which every finance.view holder can
+--     already see. These must read pos.pos_payments / pos_bills / pos_expenses
+--     to know whether a day's money exists at all, and under invoker rights a
+--     finance reader without POS permissions would see zero POS rows and be
+--     told the books are perfectly aligned — the single worst answer this
+--     function could give. So they read with definer rights and gate explicitly
+--     on the permission that should govern them.
+--
+--     p_since bounds the POS scan (the ledger only grows); open expectations
+--     are never bounded — an overdue deposit from last year is still overdue.
+-- ---------------------------------------------------------------------
+create or replace function finance.reconciliation(p_since date default null)
+returns jsonb language plpgsql stable security definer
+set search_path = finance, pos, core as $$
+declare
+  v_since date := coalesce(p_since, current_date - 90);
+  v_items jsonb;
+  v_count int;
+begin
+  if not core.has_permission('finance.view') then
+    raise exception 'permission denied';
+  end if;
+  -- `count` is the ACTIONABLE count (what the badges show), not items length:
+  -- pinned days are listed but are not a problem to be fixed. The UI decides
+  -- "all clear" from items being empty, never from count.
+  select coalesce(jsonb_agg(item order by sort_key), '[]'::jsonb),
+         count(*) filter (where severity <> 'low')
+    into v_items, v_count from finance.reconciliation_items(v_since);
+  -- v_count is the same number reconciliation_counts() reports under 'finance'
+  return jsonb_build_object(
+    'since', v_since, 'generated_at', now(),
+    'count', v_count, 'items', v_items);
+end; $$;
+
+-- Genuinely count-only: shares the item query but never builds the payload.
+--
+-- Returns a MAP of module key → count, not a single number, so the launcher can
+-- badge whichever tile owns the problem. Every item names the module
+-- responsible for it (reconciliation_items.modules): an unposted day is POS's,
+-- an overdue deposit from a signed quote is the quotes module's to chase. The
+-- 'finance' entry is always the full actionable total — the books are finance's
+-- business whoever caused the drift.
+--
+-- The shell must not have to know which modules exist (ARCHITECTURE.md), so the
+-- DATA decides which tiles light up: a future module that posts to finance gets
+-- a badge by writing its own provenance, with no shell change at all.
+--
+-- Counts what needs ACTION — pinned days that cost nothing (severity 'low') are
+-- excluded, or the badge would sit permanently lit on a state the owner chose.
+drop function if exists finance.reconciliation_count(date);
+
+create or replace function finance.reconciliation_counts(p_since date default null)
+returns jsonb language plpgsql stable security definer
+set search_path = finance, pos, core as $$
+declare
+  v_since date := coalesce(p_since, current_date - 90);
+  v_out jsonb;
+begin
+  if not core.has_permission('finance.view') then
+    raise exception 'permission denied';
+  end if;
+  -- materialized: referenced twice below, and the scan must happen once
+  with it as materialized (
+    select modules from finance.reconciliation_items(v_since) where severity <> 'low'
+  ),
+  per_module as (
+    select m as key, count(*) as n
+    from it cross join lateral unnest(it.modules) as m
+    group by m
+  )
+  select coalesce((select jsonb_object_agg(key, n) from per_module), '{}'::jsonb)
+         || jsonb_build_object('finance', (select count(*) from it))
+    into v_out;
+  return v_out;
+end; $$;
+
+-- revoking from `authenticated` alone leaves the implicit PUBLIC grant in place
+revoke all on function finance.reconciliation(date) from public;
+revoke all on function finance.reconciliation_counts(date) from public;
+grant execute on function finance.reconciliation(date) to authenticated;
+grant execute on function finance.reconciliation_counts(date) to authenticated;
+
+-- =====================================================================
+-- schema/56_finance_override.sql
+-- =====================================================================
+-- =====================================================================
+--  56_finance_override.sql — the owner's last word (PR C of the finance
+--  books-integrity initiative).
+--
+--  Or's brief: "ability to override everything by the owner". Today the
+--  opposite is true — finance.entries_guard() blocks every client edit and
+--  delete of a row carrying provenance, for everyone including the owner, and
+--  that guard is a deliberate architecture invariant (ARCHITECTURE.md §7.4).
+--  When reality and a module disagree (a cash count that will not match, a POS
+--  day that cannot be recomputed correctly), there is currently no way out.
+--
+--  This file gives the owner the last word WITHOUT weakening the invariant:
+--  the correction is ADDITIVE. The original posting is never touched, never
+--  hidden, and stays exactly as the module wrote it; a second row carrying
+--  source_module = 'override' moves the total to whatever the owner says. Both
+--  rows are visible in the ledger, so the books explain themselves.
+--
+--  The delta is computed HERE, from what the books actually hold, never sent
+--  by the client — same stance as pos.post_day(). The owner states the correct
+--  TOTAL; the server works out what to add.
+--
+--  Pinning is SEPARATE and deliberate (pos.day_pins, 48). The plan expected a
+--  correction to imply a pin; testing showed it must not — an additive
+--  correction is already immune to the auto re-post, while a pin freezes the
+--  whole day and would swallow every cost entered afterwards. See §4 below.
+--
+--  Re-runnable; apply after 55. Plan: docs/plans/finance-books-integrity.md
+-- =====================================================================
+
+-- ---------------------------------------------------------------------
+--  1) The override source_ref grammar: 'override:<target>:c<n>'
+--
+--     <target> is what is being corrected, and is itself one of:
+--       'pos:<date>:<leg>'  — a POS day leg (the SAME string pos.post_day
+--                             writes, so the two agree by construction)
+--       'entry:<uuid>'      — any other single entry
+--
+--     <n> makes repeat corrections distinct, which the posting unique index
+--     on (source_module, source_ref, kind, category) requires — the same
+--     device post_day uses for its ':r<n>' corrections.
+--
+--     The reader below is the counterpart to that format, declared next to
+--     it: correcting a correction must resolve back to the ORIGINAL target,
+--     never nest. <target> contains colons of its own, so this strips the
+--     wrapper rather than splitting on ':'.
+-- ---------------------------------------------------------------------
+create or replace function finance.override_ref_target(p_ref text)
+returns text language sql immutable as $$
+  select regexp_replace(regexp_replace(p_ref, '^override:', ''), ':c[0-9]+$', '');
+$$;
+-- Pure string function over the caller's own argument — revoked to match the
+-- standing rule for this initiative rather than because it leaks anything.
+revoke all on function finance.override_ref_target(text) from public;
+
+-- ---------------------------------------------------------------------
+--  2) What does correcting THIS entry actually mean?
+--
+--     Resolves the row the owner clicked to its correction target, and to the
+--     total the books currently hold for that target — which is emphatically
+--     not "the amount on that row":
+--
+--       * a POS leg is the sum of its original posting, every ':r<n>'
+--         auto-correction the re-post has written since, and every override
+--         already applied to it. Correcting only the one row the owner
+--         happened to click would be undone by the next re-post.
+--       * a correction row resolves to whatever IT corrects, so a second
+--         override adjusts the same target instead of stacking a new one.
+--
+--     INTERNAL: security definer, no permission check, revoked from every
+--     client — the two callers below gate themselves. It reads the whole
+--     ledger to total a target, so it must never be client-callable.
+-- ---------------------------------------------------------------------
+create or replace function finance.correction_target(p_entry uuid)
+returns table (target text, kind text, category text, entry_date date,
+               event_id uuid, current_total numeric, pos_date date)
+language plpgsql stable security definer set search_path = finance, pos, core as $$
+declare
+  e        finance.entries%rowtype;
+  anchor   finance.entries%rowtype;
+  v_target text;
+  v_pos    date;
+begin
+  select * into e from finance.entries where id = p_entry;
+  if not found then
+    raise exception 'לא נמצאה תנועה לתיקון';
+  end if;
+
+  if e.source_module = 'override' then
+    v_target := finance.override_ref_target(e.source_ref);
+  elsif e.source_module = 'pos'
+        and e.source_ref like pos.day_ref_prefix(e.entry_date) || '%' then
+    v_target := pos.day_ref_prefix(e.entry_date) || pos.day_ref_leg(e.source_ref);
+  else
+    v_target := 'entry:' || e.id;
+  end if;
+
+  -- The anchor supplies kind/category/date/event: a correction must land in the
+  -- same bucket and the same reporting period as the number it corrects, or the
+  -- original month stays wrong and only the lifetime total comes out right.
+  if v_target like 'entry:%' then
+    select * into anchor from finance.entries
+    where id = substring(v_target from 7)::uuid;
+  else
+    v_pos := split_part(v_target, ':', 2)::date;
+    select * into anchor from finance.entries
+    where source_module = 'pos' and source_ref = v_target;
+  end if;
+  if not found then
+    raise exception 'לא נמצאה התנועה המקורית (%) לתיקון', v_target;
+  end if;
+
+  return query
+  select v_target, anchor.kind, anchor.category, anchor.entry_date, anchor.event_id,
+         coalesce((
+           select sum(x.amount) from finance.entries x
+           where -- the target's own postings: one row for an entry target, the
+                 -- whole leg incl. ':r<n>' re-post corrections for a POS target
+                 (v_target like 'entry:%' and x.id = anchor.id)
+              or (v_target not like 'entry:%' and x.source_module = 'pos'
+                  and (x.source_ref = v_target or x.source_ref like v_target || ':r%'))
+              -- plus every override already applied to it
+              or (x.source_module = 'override'
+                  and x.source_ref like 'override:' || v_target || ':c%')
+         ), 0),
+         v_pos;
+end; $$;
+
+revoke all on function finance.correction_target(uuid) from public;
+
+-- ---------------------------------------------------------------------
+--  3) Preview — what the correction form needs before the owner types.
+--     The client must not compute the current total itself: for a POS leg it
+--     is spread over rows the ledger page has not necessarily loaded.
+-- ---------------------------------------------------------------------
+create or replace function finance.correction_preview(p_entry uuid)
+returns jsonb language plpgsql stable security definer
+set search_path = finance, pos, core as $$
+declare t record;
+begin
+  if not core.has_permission('finance.override') then
+    raise exception 'permission denied';
+  end if;
+  select * into t from finance.correction_target(p_entry);
+  return jsonb_build_object(
+    'target', t.target, 'kind', t.kind, 'category', t.category,
+    'entry_date', t.entry_date, 'current_total', t.current_total,
+    -- which POS day the target belongs to, if any. Deliberately NOT a
+    -- pinned/frozen flag: §4 dropped the auto-pin, so posting a correction
+    -- freezes nothing and the form has no such warning to make. Pinning is its
+    -- own explicit action on the Reconcile tab.
+    'pos_date', t.pos_date);
+end; $$;
+
+-- ---------------------------------------------------------------------
+--  4) Post the correction.
+--
+--     SECURITY DEFINER by necessity: it writes a row carrying provenance, so
+--     it must set the posting GUC that finance.entries_guard() checks. It
+--     therefore gates on finance.override on entry, and the PUBLIC execute
+--     grant is revoked explicitly below — revoking from `authenticated` alone
+--     leaves PUBLIC in place, the escalation shape this repo has shipped twice.
+-- ---------------------------------------------------------------------
+create or replace function finance.post_correction(
+  p_entry  uuid,
+  p_amount numeric,        -- the CORRECT TOTAL for the target, not a delta
+  p_reason text
+) returns jsonb
+language plpgsql security definer set search_path = finance, pos, core as $$
+declare
+  t        record;
+  v_reason text := btrim(coalesce(p_reason, ''));
+  v_delta  numeric;
+  v_n      int;
+  v_ref    text;
+  v_entry  uuid;
+begin
+  if not core.has_permission('finance.override') then
+    raise exception 'permission denied';
+  end if;
+  -- An override with no stated reason is an unauditable number. The whole
+  -- justification for allowing it at all is that it stays explainable.
+  if v_reason = '' then
+    raise exception 'תיקון חייב לכלול סיבה';
+  end if;
+  if p_amount is null or p_amount < 0 then
+    raise exception 'סכום התיקון חייב להיות אפס או יותר';
+  end if;
+
+  select * into t from finance.correction_target(p_entry);
+
+  v_delta := p_amount - t.current_total;
+  if v_delta = 0 then
+    raise exception 'הסכום כבר %, אין מה לתקן', t.current_total;
+  end if;
+
+  select count(*) into v_n from finance.entries
+  where source_module = 'override'
+    and source_ref like 'override:' || t.target || ':c%';
+  v_ref := 'override:' || t.target || ':c' || (v_n + 1);
+
+  perform set_config('levyam.finance_posting', 'on', true);
+  insert into finance.entries
+    (kind, category, amount, payment_method, entry_date, note, source_module, source_ref, event_id)
+  values (
+    t.kind, t.category, v_delta,
+    null,                 -- a correction moves the books, not a drawer
+    t.entry_date,         -- same period as the number it corrects
+    'תיקון בעלים: ' || v_reason,
+    'override', v_ref, t.event_id
+  )
+  returning id into v_entry;
+  perform set_config('levyam.finance_posting', '', true);
+
+  -- NO automatic pin. The plan specified one here, on the premise that the
+  -- auto re-post would otherwise overwrite the correction — that premise is
+  -- false for an ADDITIVE correction, and the difference was measured, not
+  -- assumed (see the deviation note in the plan's §3):
+  --
+  --   pos.post_day() computes a leg's current value from `source_module = 'pos'`
+  --   rows only. An override row is invisible to it, so re-posting writes the
+  --   pos-side delta and leaves the correction standing. A day corrected to 150,
+  --   then given another ₪100 of takings, re-posts to 300 pos + (−50) = 250 —
+  --   which is the right answer: the correction records a known discrepancy,
+  --   not a permanent ceiling.
+  --
+  -- Auto-pinning would have been strictly harmful: a pin freezes the WHOLE day,
+  -- so every food cost, labour cost and late payment entered afterwards would
+  -- silently never reach the books. Pinning stays an explicit owner action for
+  -- when freezing is the actual intent (a closed period, a disputed day).
+
+  return jsonb_build_object(
+    'entry_id', v_entry, 'target', t.target,
+    'previous_total', t.current_total, 'new_total', p_amount, 'delta', v_delta,
+    'pos_date', t.pos_date);
+end; $$;
+
+revoke all on function finance.correction_preview(uuid)            from public;
+revoke all on function finance.post_correction(uuid, numeric, text) from public;
+grant execute on function finance.correction_preview(uuid)            to authenticated;
+grant execute on function finance.post_correction(uuid, numeric, text) to authenticated;
+
+-- ---------------------------------------------------------------------
+--  SEED DATA — permission (idempotent)
+--  Owner-only. This is the one key that can move a module-posted number, and
+--  the pin it implies stops POS from ever recomputing that day again.
+-- ---------------------------------------------------------------------
+insert into core.permissions (key, module, action, label) values
+  ('finance.override', 'finance', 'override', 'תיקון בעלים ונעילת ימים')
+on conflict (key) do nothing;
+
+insert into core.role_permissions (role_id, permission_id)
+select r.id, p.id from core.roles r, core.permissions p
+where r.key = 'owner' and p.key = 'finance.override'
+on conflict do nothing;
+
+-- =====================================================================
+-- schema/57_finance_transfers.sql
+-- =====================================================================
+-- =====================================================================
+--  57_finance_transfers.sql — cash↔bank movement (PR D of the finance
+--  books-integrity initiative, and the last of the four).
+--
+--  Moving ₪2,000 from the drawer to the bank is neither income nor expense:
+--  the business is no richer or poorer, the money just changed pocket. Today
+--  it has nowhere to live, so it either goes unrecorded — and then the cash
+--  count never reconciles — or it gets filed as an expense and understates
+--  the profit by its full amount.
+--
+--  WHY ITS OWN TABLE, not a third `kind` on finance.entries: a non-income,
+--  non-expense row inside finance.entries would land inside every existing
+--  sum, filter and report branch — finance.report(), finance.event_pnl(),
+--  pos.post_day()'s two-source revenue read, the entries_guard provenance
+--  rules, and now the four reconciliation checks in 55. That is the exact
+--  shape of the change that once recomputed legacy POS days to zero and wiped
+--  their income (see docs/plans/pos-operations-v2.md close-out). A separate
+--  table cannot break a query that does not read it, and nothing that sums
+--  income or expense reads this one.
+--
+--  Deliberately NOT here: a running cash-on-hand balance. That needs an
+--  opening balance per method and a rule for which POS takings land in the
+--  drawer, which is its own initiative — this file only records the movement.
+--
+--  Re-runnable; apply after 56. Plan: docs/plans/finance-books-integrity.md
+-- =====================================================================
+
+create table if not exists finance.transfers (
+  id            uuid primary key default gen_random_uuid(),
+  amount        numeric(12,2) not null check (amount > 0),
+  from_method   text not null,
+  to_method     text not null,
+  transfer_date date not null default current_date,
+  note          text,
+  created_by    uuid not null default auth.uid() references auth.users(id),
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now(),
+
+  -- same four methods finance.entries.payment_method allows (20_finance.sql).
+  -- Kept as a CHECK rather than a lookup table: unlike categories, this list is
+  -- not owner-editable — a new payment method means new code in the POS close
+  -- and the report breakdown, so it is a schema change by nature.
+  constraint finance_transfers_from_check
+    check (from_method in ('cash','private','grow','bank')),
+  constraint finance_transfers_to_check
+    check (to_method   in ('cash','private','grow','bank')),
+  -- a transfer to the same pocket is a typo, and it would read as real
+  -- movement in every future balance view
+  constraint finance_transfers_distinct_check check (from_method <> to_method)
+);
+
+create index if not exists finance_transfers_date_idx
+  on finance.transfers (transfer_date desc);
+
+drop trigger if exists finance_transfers_touch on finance.transfers;
+create trigger finance_transfers_touch
+  before update on finance.transfers
+  for each row execute function finance.set_updated_at();
+
+-- ---------------------------------------------------------------------
+--  RLS — mirrors finance.entries exactly: view to read, manage to write.
+--  No provenance and no guard: a transfer is always a human statement about
+--  money the human moved. No module posts one, so there is nothing for
+--  entries_guard's one-writer rule to protect.
+-- ---------------------------------------------------------------------
+alter table finance.transfers enable row level security;
+
+drop policy if exists "finance_transfers_select" on finance.transfers;
+drop policy if exists "finance_transfers_write"  on finance.transfers;
+
+-- (select …) wrapper = one InitPlan eval per statement, not per row (MODULE-TEMPLATE.md §1)
+create policy "finance_transfers_select" on finance.transfers for select to authenticated
+  using ((select core.has_permission('finance.view')));
+create policy "finance_transfers_write" on finance.transfers for all to authenticated
+  using ((select core.has_permission('finance.manage')))
+  with check ((select core.has_permission('finance.manage')));
+
+-- created_by is stamped from the JWT default and must not be client-writable:
+-- a client that could set it could attribute its own transfer to someone else.
+revoke all on finance.transfers from anon, authenticated;
+grant select on finance.transfers to authenticated;
+grant insert (amount, from_method, to_method, transfer_date, note)
+  on finance.transfers to authenticated;
+grant update (amount, from_method, to_method, transfer_date, note)
+  on finance.transfers to authenticated;
+grant delete on finance.transfers to authenticated;
+
+-- No new permission: a transfer is ordinary money handling, the same
+-- finance.view / finance.manage pair that governs entries and expectations.
 
 -- End bootstrap window (added by build-baseline.mjs):
 reset levyam.bootstrap;

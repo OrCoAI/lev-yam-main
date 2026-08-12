@@ -1,16 +1,24 @@
-import { Fragment, useCallback, useEffect, useState } from 'react'
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import { finance } from '../../lib/supabase'
-import type { FinanceExpected, FinancePaymentMethod } from '../../types'
+import type { FinanceExpected, FinanceKind, FinancePaymentMethod } from '../../types'
 import { useRowDisclosure } from '../../lib/useRowDisclosure'
-import { PAYMENT_METHODS } from './categories'
+import { PAYMENT_METHODS, useCategoryName } from './categories'
 import DateField from './DateField'
+import ErrorNotice from './ErrorNotice'
 import { shortDate, todayStr } from './format'
 import { useFT, type FinanceDict } from './i18n'
 import { sourceHref } from './provenance'
 import SourceBadge from './SourceBadge'
 
-function expectedTitle(ft: FinanceDict, r: FinanceExpected) {
-  return ft.reasonLabels[r.reason] ?? (r.reason || (ft.categoryLabels[r.category] ?? r.category))
+function expectedTitle(
+  ft: FinanceDict,
+  categoryName: (kind: FinanceKind, key: string) => string,
+  r: FinanceExpected,
+) {
+  // direction is the expectation's income/expense sense — the categories table
+  // is keyed by kind, so map it before looking the label up
+  const kind: FinanceKind = r.direction === 'in' ? 'income' : 'expense'
+  return ft.reasonLabels[r.reason] ?? (r.reason || categoryName(kind, r.category))
 }
 
 type FulfillValues = {
@@ -20,8 +28,25 @@ type FulfillValues = {
   note: string
 }
 
-export default function ExpectedTab({ canManage }: { canManage: boolean }) {
+export default function ExpectedTab({
+  canManage,
+  onMoneyChanged,
+  focusId,
+  onFocusHandled,
+}: {
+  canManage: boolean
+  /** an expectation the user was sent to from the Reconcile tab: scroll to it
+   *  and mark it, so "go record the payment" lands on the right row instead of
+   *  dropping them into a list to search again */
+  focusId?: string | null
+  onFocusHandled?: () => void
+  /** fulfilling or cancelling an expectation changes the overdue drift check,
+   *  so the module's reconciliation read has to be refreshed — otherwise the
+   *  banner and the Reconcile tab keep showing the pre-change count */
+  onMoneyChanged: () => void
+}) {
   const ft = useFT()
+  const categoryName = useCategoryName()
   const { rowProps } = useRowDisclosure()
   const [rows, setRows] = useState<FinanceExpected[]>([])
   const [loading, setLoading] = useState(true)
@@ -29,6 +54,34 @@ export default function ExpectedTab({ canManage }: { canManage: boolean }) {
   const [busy, setBusy] = useState(false)
   const [showClosed, setShowClosed] = useState(false)
   const [fulfillId, setFulfillId] = useState<string | null>(null)
+  const focusRef = useRef<HTMLTableRowElement | null>(null)
+
+  // Scroll to the focused row and start its un-highlight timer TOGETHER, once
+  // per focusId, and only once the list has actually rendered.
+  //
+  // Both halves are load-gated on purpose. An earlier split armed the 2.5s timer
+  // on mount while the scroll waited for `loading`: on a slow fetch the focus was
+  // cleared before the row existed, so the user got neither the scroll nor the
+  // highlight — precisely the "dropped into an unsorted list" failure this prop
+  // exists to prevent.
+  //
+  // Guarded by a ref rather than by the deps, because `loading` flips on every
+  // later load() (recording a payment triggers one) and re-running would yank the
+  // viewport back to a row the user has moved on from.
+  const handledRef = useRef<string | null>(null)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => {
+    if (!focusId || loading || handledRef.current === focusId) return
+    handledRef.current = focusId
+    focusRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    // deliberately NOT cleaned up on dep change: React runs cleanup on every
+    // re-run, and any later load() flips `loading` — clearing a pending timer
+    // there would leave the row highlighted forever. Unmount-only, below.
+    timerRef.current = setTimeout(() => onFocusHandled?.(), 2500)
+  }, [focusId, loading, onFocusHandled])
+  useEffect(() => () => {
+    if (timerRef.current) clearTimeout(timerRef.current)
+  }, [])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -78,6 +131,10 @@ export default function ExpectedTab({ canManage }: { canManage: boolean }) {
     }
     setFulfillId(null)
     setError(null)
+    // kicked off BEFORE awaiting the list re-read: the two reads are independent,
+    // and the reconciliation scan is the slower of them (~45ms), so waiting for
+    // the list first just added its round trip to the user's wait
+    onMoneyChanged()
     await load()
   }
 
@@ -100,13 +157,22 @@ export default function ExpectedTab({ canManage }: { canManage: boolean }) {
       setError(ft.cancelDenied)
       return
     }
+    // kicked off BEFORE awaiting the list re-read: the two reads are independent,
+    // and the reconciliation scan is the slower of them (~45ms), so waiting for
+    // the list first just added its round trip to the user's wait
+    onMoneyChanged()
     await load()
   }
 
   function renderRow(r: FinanceExpected) {
     const overdue = r.status === 'open' && !!r.due_date && r.due_date < today
     return (
-      <tr key={r.id} {...rowProps(r.id)}>
+      <tr
+        key={r.id}
+        ref={r.id === focusId ? focusRef : undefined}
+        className={r.id === focusId ? 'finance-row-focus' : undefined}
+        {...rowProps(r.id)}
+      >
         <td className="rl-lead" title={r.due_date ?? undefined}>
           {r.due_date ? shortDate(r.due_date) : '—'}
           {overdue && <span className="finance-badge finance-badge-warn">{ft.overdue}</span>}
@@ -118,7 +184,7 @@ export default function ExpectedTab({ canManage }: { canManage: boolean }) {
           {r.direction === 'in' ? ft.expectedIn : ft.expectedOut}
         </td>
         <td className="rl-main">
-          {expectedTitle(ft, r)}
+          {expectedTitle(ft, categoryName, r)}
           <SourceBadge
             module={r.source_module}
             sourceRef={r.source_ref}
@@ -178,11 +244,7 @@ export default function ExpectedTab({ canManage }: { canManage: boolean }) {
         </div>
       </div>
 
-      {error && (
-        <div className="error">
-          {ft.errorPrefix} {error}
-        </div>
-      )}
+      {error && <ErrorNotice error={error} />}
 
       {loading ? (
         <div className="muted">{ft.loadingExpected}</div>
@@ -261,6 +323,7 @@ function FulfillForm({
   onCancel: () => void
 }) {
   const ft = useFT()
+  const categoryName = useCategoryName()
   const [amount, setAmount] = useState(String(row.amount))
   const [method, setMethod] = useState<FinancePaymentMethod>('cash')
   const [date, setDate] = useState(todayStr())
@@ -288,7 +351,7 @@ function FulfillForm({
   return (
     <div className="finance-form finance-fulfill">
       <div className="muted">
-        {ft.recordPaymentTitle} — {expectedTitle(ft, row)} (
+        {ft.recordPaymentTitle} — {expectedTitle(ft, categoryName, row)} (
         <span dir="ltr">{Number(row.amount).toLocaleString('he-IL')} ₪</span> {ft.expectedSuffix})
       </div>
       {invalid && <div className="error">{ft.invalidAmount}</div>}

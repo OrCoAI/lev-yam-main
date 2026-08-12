@@ -30,8 +30,10 @@ destination. Everything else is the module's own UI.
      a posting function that sets the `levyam.finance_posting` GUC and carries provenance
      (`source_module`/`source_ref`, optional `event_id`); pick the granularity in the plan
      (quotes: per payment via `finance.expected`; POS: per-day summary at `close_day`).
-     Any category the module posts becomes **derived-only** — remove it from manual entry
-     in the finance UI, or the same money gets typed twice.
+     Any category the module posts becomes **derived-only** — insert a
+     `finance.categories` row with `owned_by_module = '<module>'` (see
+     `54_finance_categories.sql`). The DB guard and the finance UI both derive from that
+     column, so there is no UI literal to edit; without it the same money gets typed twice.
 
 ## 1. Database — `supabase/schema/NN_<module>.sql`
 
