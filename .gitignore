@@ -6,8 +6,13 @@
 .vscode/
 .idea/
 
-# Claude Code agent state
-.claude/
+# Claude Code agent state — settings/local state stays untracked; the verify
+# skill ships with the repo since CLAUDE.md's gate depends on it for everyone.
+# (.claude/* + negation, not a bare .claude/ — git can't re-include a path
+# inside an already-excluded parent directory.)
+.claude/*
+!.claude/skills/
+!.claude/skills/**
 
 # Platform build (app-src/) — Node deps, build output, and local env
 node_modules/
@@ -23,6 +28,10 @@ _site/
 # Local secrets — NEVER commit. Kept at repo root (outside app-src/ and the
 # deploy allowlist in .github/workflows/deploy.yml), so it is not published.
 .secrets/
+
+# Private strategy docs — the repo is PUBLIC. Internal marketing/content
+# strategy is read locally by Claude Code and never pushed.
+docs/internal/
 
 # Supabase CLI local artifacts (cache, branch state) — not source
 supabase/.temp/

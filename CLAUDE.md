@@ -42,21 +42,51 @@ finishing, tick completed tasks and add discovered ones.
   and the `data-i18n` keys — don't hardcode a single language.
 - **Fonts are self-hosted** woff2 subsets in `fonts/` (Heebo + Assistant, HE/Latin splits). No
   external font CDN calls — keep it that way.
-- **Analytics — three vendors, deliberately unequal scopes.** The marketing site sends Dynatrace
-  RUM business events and a Meta Pixel `Contact` event from WhatsApp CTA clicks (`js/app.js`).
-  FAQ opens and language switches go to Dynatrace only — intentionally **not** to Meta.
-  **Google Analytics 4** (`G-VWL45MKK76`, added 2026-08-11) carries **no hand-written events** — it
-  is deliberately not wired into `js/app.js`'s `sendBizEvent`/`sendMetaEvent` dispatch. It still
-  receives `page_view` plus `scroll` and outbound `click` (so: the ~12 `wa.me` CTAs) automatically,
-  via GA4 **Enhanced Measurement** — a data-stream setting in the GA console, left ON intentionally
-  (decided 2026-08-11). So GA's CTA data comes from that setting, not from repo code; adding an
-  explicit `gtag('event', …)` is still a deliberate decision, not a default.
+- **Analytics — three vendors, deliberately unequal scopes.** A WhatsApp CTA click fans out to all
+  three through `js/wa-track.js` (`LevYamTrack.whatsappClick`), the one file shared by the homepage
+  (`js/app.js`) and every `/stories/` page (`js/stories.js`): Dynatrace `levyam.whatsapp_cta`, Meta
+  Pixel `Contact`, and **GA4 `whatsapp_click`** carrying `page_slug` (`home`, `story-hub`, or the
+  story slug — from `<body data-page-slug>`). Everything else — service interest, contact intent,
+  FAQ opens, language switches — is homepage-only and goes to **Dynatrace alone**, intentionally
+  not to Meta or GA4. Each sender no-ops when its vendor script hasn't loaded.
+  **GA4** is `G-VWL45MKK76` (added 2026-08-11). Its **Enhanced Measurement** stays ON, so `page_view`,
+  `scroll` and an automatic outbound `click` on the same `wa.me` links arrive without repo code;
+  `whatsapp_click` sits next to that as the named, per-page event and is the one marked as a key
+  event in the GA4 UI. *(This reverses the original "GA4 carries no hand-written events" decision —
+  reversed deliberately 2026-08-11 with the `/stories/` build, because per-page CTA attribution is
+  what the story pages are measured by. Adding any **further** `gtag('event', …)` is still a
+  deliberate decision, not a default.)*
   **Tier separation for GA is console-side, not code-side:** `staging.levyam.com` serves this exact
   `index.html` with the same measurement ID, so staging is excluded via an internal-traffic/hostname
   filter in GA → Admin. Don't "fix" that with a hostname guard in the snippet — a domain change
   would silently kill prod collection.
 - **Contact details** must stay consistent everywhere: WhatsApp `972506669138`,
   email `info@levyam.com`. There are ~12 WhatsApp CTAs on the marketing page.
+
+### Stories section (`stories/`, served at `/stories/`)
+
+Answer-first content pages, one per query cluster. Plan:
+[docs/plans/content-engine-phase0.md](docs/plans/content-engine-phase0.md).
+
+- **A page is a pair.** `stories/<slug>/index.html` (Hebrew) **and** `stories/ar/<slug>/index.html`
+  (Arabic), same English kebab-case slug, cross-linked with reciprocal `hreflang`. Neither ships
+  alone — that's `docs/ARCHITECTURE.md` invariant 5. Copy `stories/_template.html` and
+  `stories/_template.ar.html`; underscore-prefixed files are never served or scanned.
+- **`FACTS.md` (served as `/facts.txt`) is the only fact source**, together with what's already on
+  levyam.com. Anything else → `[חסר: ...]` / `[مفقود: ...]`, never invented. A quote attributed to a
+  real person is verified with them first. **No prices anywhere in the repo, in any file** — inquiry
+  by WhatsApp only.
+- **Story pages load `js/stories.js`, never `js/app.js`.** `app.js` is homepage-only behaviour built
+  around a client-side language swap (one URL, either language); story pages use the opposite
+  model — one URL per language, paired by `hreflang`. (It would also erase their SEO metadata:
+  `applyTranslations` rewrites `document.title` and the description/og meta unconditionally.)
+  Asset paths are root-absolute (`/css/…`) because the Arabic tree sits a directory deeper.
+- **`sitemap.xml` and both hubs are generated**, not hand-edited: `node scripts/gen-stories-index.mjs`
+  (edit `stories/_hub.html` / `_hub.ar.html`, never `stories/index.html`). The deploy runs it before
+  assembly so production is always right; `ci.yml` runs `--check` so a stale committed copy fails
+  the branch. The generator also **enforces the twin rule** — a page missing its other language
+  fails the build. A page carrying `<meta name="robots" content="noindex">` — like the `dugma`
+  sample — is excluded from the sitemap and the hub, and logged as skipped.
 
 ### Platform (`app-src/`, served at `/app`)
 - **Stack:** Vite + React 18 + TypeScript + react-router. Dev points at the **local Supabase
@@ -146,7 +176,9 @@ an existing module, without waiting to be asked:
    this session to confirm by hand, plus the local environment to test them in: the exact
    command(s) to run (e.g. `python3 -m http.server 8080` for static pages/`pos.html`, `cd
    app-src && npm run dev` for the platform) and, per item, what to open/click to see it
-   working. Wait for the user's confirmation before moving on to the gate.
+   working. Wait for the user's confirmation before moving on to the gate. (This is the
+   same localhost-confirmation contract as the gate's step zero below, which also covers
+   initiative work — screenshots first, then the user's sign-off.)
 5. The pre-commit quality gate below still applies in full — it is never optional, kickoff
    or no kickoff.
 
@@ -157,29 +189,83 @@ the full kickoff process above instead; it has grown into an initiative. See
 
 ## Pre-commit quality gate (MANDATORY)
 
-**No commit happens until all of these pass**, in this order, on the pending diff. Run each
-review skill at **high effort** (`high`) using the most capable Claude model available —
-never a lighter model or a lower effort level to save time. Fix every finding (or get the
-user's explicit sign-off to skip one) and re-run the step until it comes back clean:
+**Step zero — UI confirmed on localhost before the gate starts (decided 2026-08-11).**
+For any diff with user-visible UI changes — marketing site, `/stories/`, or the platform —
+the gate does not begin until the change is confirmed on localhost, in this order:
 
-1. **`/simplify`** — reuse/simplification/efficiency cleanups on the changed code.
-2. **`/code-review high`** — correctness-bug hunt on the diff; all findings resolved.
-3. **`/security-review`** — security review of the pending changes; all findings resolved.
-4. **`/verify`** — drive the affected flow end-to-end in the real app (localhost browser),
+1. Claude verifies the change visually first with headless-Chrome screenshots at both
+   viewports (390px mobile + 1280px desktop; see the screenshot workflow notes).
+2. Claude gives the user the exact serve command (`python3 -m http.server 8080` for
+   static pages, `cd app-src && npm run dev` for the platform) and, per change, what to
+   open/click to see it working.
+3. The user confirms it looks right. **Only then does the gate below run.**
+
+Rationale: the gate is several high-effort passes; a UI change rejected after the
+gate means running the whole gate twice. This generalizes step 4 of the lighter bug-fix
+flow above to every UI diff, initiatives included. Diffs with no user-visible UI surface
+skip step zero and go straight to the gate.
+
+**No commit happens until all of these pass**, on the pending diff. Run each review skill at
+**high effort** (`high`) using the most capable Claude model available — never a lighter
+model or a lower effort level to save time. Fix every finding (or get the user's explicit
+sign-off to skip one) and re-run the step until it comes back clean:
+
+1. **`/simplify`** — reuse/simplification/efficiency cleanups on the changed code. Runs
+   first and alone: it applies fixes directly to the working tree, so steps 2–3 must review
+   the diff it produces, not the one before it.
+2. **`/code-review high`** + **`/security-review`** — run **concurrently** (decided
+   2026-08-12): both are read-only findings-passes over the same post-simplify diff with no
+   dependency on each other, so serializing them only cost time. Collect findings from both
+   before fixing anything; if a fix for one touches code the other already cleared, re-run
+   that one too. All findings from both resolved before moving on.
+3. **`/verify`** — drive the affected flow end-to-end in the real app (localhost browser),
    not just typecheck/build. Skip only for diffs with no runtime surface (docs-only).
    For any diff touching `supabase/`, `/verify` also includes running
    `supabase/tests/rls_matrix.sql` to a green `RLS MATRIX: ALL ASSERTIONS PASSED`
    (transaction-wrapped, rolls itself back — prod-safe), extended first with
-   assertions for whatever the diff added or changed.
+   assertions for whatever the diff added or changed. Runs last: it needs the final code.
+   Backed by the `verify` project skill (`.claude/skills/verify/`) and
+   `scripts/verify/screenshot.mjs` (decided 2026-08-12) — use them instead of hand-rolling a
+   new Playwright/CDP script per session.
 
 **Diff-class scaling (decided 2026-07-11):** for diffs with **no runtime or schema
-surface** (docs-only), run steps 1–3 **inline** — the reviewing model does each pass
-itself, no agent fan-out — the same carve-out step 4 already has. The full multi-agent
+surface** (docs-only), run steps 1–2 **inline** — the reviewing model does each pass
+itself, no agent fan-out — the same carve-out step 3 already has. The full multi-agent
 gate at high effort stays mandatory for any diff touching `app-src/`, `supabase/`, any
 file in `deploy.yml`'s site allowlist, or `.github/workflows/`.
 
 This gate applies to **every** commit — `main` deploys straight to production, so the gate is
 the last check before prod. A commit with an unrun or failing gate step is a process violation.
+
+## Staging verification (MANDATORY before merging to main)
+
+**Decided 2026-08-12.** Staging stops being an optional tier and becomes a required stop for
+anything that ships to end users — marketing pages through internal platform modules alike —
+since `main` deploys straight to production and the pre-commit gate only verifies the diff
+locally, never the actual deployed artifact.
+
+**Applies to:** the same scope as the gate's full multi-agent tier — any diff touching the
+deploy allowlist in `scripts/assemble-site.sh`, `app-src/`, `supabase/`, or
+`.github/workflows/`. **Does not apply to:** diffs with no deployed surface (`docs/`,
+`CLAUDE.md`, `tests/` harnesses) — `assemble-site.sh` never ships them, so staging would be
+identical before and after; there is nothing to verify.
+
+Process, after the pre-commit gate passes on the branch and before merging to `main`:
+
+1. Bring the branch up to date with `main`, then push it onto `staging` (merge or
+   fast-forward, never force-push) to trigger `deploy-staging.yml`. **Pre-authorized:** do
+   this without asking each time — `staging` never touches production and the whole tier is
+   noindexed. If `staging` is already mid-verification for a different branch, sequence
+   behind it rather than overwriting.
+2. Wait for the deploy to finish, then smoke-check the deployed routes.
+3. Give the user the live `staging.levyam.com` URL and exactly what to click through per
+   change — the same click-list pattern as the localhost UI-confirmation step, but against
+   the real deployed build and the real `lev-yam-staging` Supabase project.
+4. **Wait for the user's explicit sign-off on staging.** Only then does the branch merge to
+   `main`.
+
+This sits between the pre-commit gate and the merge: the gate verifies the diff locally;
+staging verifies the actual deployed artifact before it goes live.
 
 ## Roadmap item close-out (MANDATORY)
 
@@ -202,20 +288,24 @@ When a roadmap item is finished, it is not done until it is closed out:
 Push to `main`. The GitHub Action `.github/workflows/deploy.yml` builds the platform
 (`app-src` → `/app`), bundles it with the static marketing site, and publishes to GitHub Pages
 (levyam.com). `main` deploys **straight to production** — verify first against the **local
-Supabase stack** (`supabase start && supabase db reset`, then `cd app-src && npm run dev`) or the
-**staging tier** (`lev-yam-staging` / `staging.levyam.com`, Cloudflare Pages). Local dev and the
-`/verify` gate must **never** run against prod. Full setup:
+Supabase stack** (`supabase start && supabase db reset`, then `cd app-src && npm run dev`),
+then, for qualifying diffs, the **staging tier** (`lev-yam-staging` / `staging.levyam.com`,
+Cloudflare Pages) — see "Staging verification" above, **mandatory**, not just available. Local
+dev and the `/verify` gate must **never** run against prod. Full setup:
 [docs/plans/platform-staging-environment.md](docs/plans/platform-staging-environment.md).
 
-- **The site is assembled from an explicit allowlist** in `deploy.yml` (specific root files +
-  `css/js/img/fonts` + built `/app`). A new public page or asset folder **must be added
-  there**, or it 404s in production while working locally. `docs/`, `tests/`, and `supabase/`
-  are deliberately not deployed (the repo is public; the *site* only serves what's listed).
-- After deploying, the workflow **smoke-checks** `/`, `/app/`, and `/pos.html` (expects 200).
+- **The site is assembled from an explicit allowlist** in `scripts/assemble-site.sh` — the single
+  copy, called by `deploy.yml` (prod) and by `scripts/build-site.sh` (staging), so the two tiers
+  can't drift. A new public page or asset folder **must be added there**, or it 404s in production
+  while working locally. `docs/`, `tests/`, and `supabase/` are deliberately not deployed (the repo
+  is public; the *site* only serves what's listed).
+- After deploying, the workflow **smoke-checks** `/`, `/app/`, `/pos.html`, `/stories/`,
+  `/stories/ar/`, `/robots.txt`, `/sitemap.xml`, `/llms.txt` and `/facts.txt` (expects 200).
 - **Staging tier:** pushing the **`staging`** branch triggers `.github/workflows/deploy-staging.yml`,
   which builds against the `lev-yam-staging` Supabase project and deploys to **`staging.levyam.com`**
-  (Cloudflare Pages, whole-site noindex). Intended flow: feature branch → `staging` (test on
-  staging.levyam.com) → `main` (prod); keep `staging` in sync with `main`. Only `main`+`staging`
+  (Cloudflare Pages, whole-site noindex). Required flow for qualifying diffs (see "Staging
+  verification" above): feature branch → `staging` (test on staging.levyam.com, user
+  sign-off) → `main` (prod); keep `staging` in sync with `main`. Only `main`+`staging`
   are long-lived branches. Cloudflare token/account are repo Actions secrets; the staging
   `VITE_*` values are hard-coded in that workflow (they're the anon/publishable pair — not the
   prod `VITE_*` secrets).

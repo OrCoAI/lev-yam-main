@@ -85,8 +85,19 @@
   --leading-tight: 1.15;
   --leading-body:  1.65;
 
-  /* Header height */
-  --header-h: 72px;
+  /* Header height — the topbar box; stories' .story-header band must match */
+  --topbar-h: 96px;
+
+  /* The blue contact-band ground (warm top glow over blue→deep). Shared by
+     .contact here and the stories pages' .story-cta closing band. */
+  --band-blue-glow:
+    radial-gradient(ellipse 70% 55% at 50% 0%,
+      rgba(244, 152, 52, 0.18) 0%,
+      rgba(244, 152, 52, 0.05) 40%,
+      transparent 70%),
+    linear-gradient(180deg,
+      var(--color-blue) 0%,
+      var(--color-blue-deep) 100%);
 }
 
 /* ── Arabic font stack (Heebo/Assistant cover Hebrew + Latin only) ───── */
@@ -333,7 +344,7 @@ p:last-child {
   display: flex;
   align-items: center;
   gap: var(--space-4);
-  block-size: 96px;
+  block-size: var(--topbar-h);
   padding-inline: var(--space-5);
   background: linear-gradient(to bottom,
     rgba(12, 26, 36, 0.55) 0%,
@@ -1303,14 +1314,7 @@ p:last-child {
 /* ── Contact ─────────────────────────────────────────────────────────── */
 .contact {
   position: relative;
-  background:
-    radial-gradient(ellipse 70% 55% at 50% 0%,
-      rgba(244, 152, 52, 0.18) 0%,
-      rgba(244, 152, 52, 0.05) 40%,
-      transparent 70%),
-    linear-gradient(180deg,
-      var(--color-blue) 0%,
-      var(--color-blue-deep) 100%);
+  background: var(--band-blue-glow);
   overflow: hidden;
 }
 
@@ -1899,10 +1903,6 @@ p:last-child {
 
 /* ── Responsive: Mobile nav breakpoint (≤960px) ──────────────────────── */
 @media (max-width: 960px) {
-  :root {
-    --header-h: 56px;
-  }
-
   .hero-topbar {
     justify-content: space-between;
   }

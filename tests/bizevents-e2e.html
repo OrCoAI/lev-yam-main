@@ -36,7 +36,9 @@
     <a id="t-team"   href="https://wa.me/1" data-i18n-wa="wa_msg_team">team</a>
     <a class="wa-float" href="https://wa.me/1"></a>
   </div>
-
+  <!-- Same script order as the real pages: wa-track.js defines window.LevYamTrack,
+       which app.js reads at parse time for the WhatsApp CTA fan-out. -->
+  <script src="../js/wa-track.js"></script>
   <script src="../js/app.js"></script>
   <script>
     var RUN_ID = 'e2e-' + Date.now();
