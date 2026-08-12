@@ -1,6 +1,6 @@
 # Bluebox observability — edge-function tracing
 
-**Status:** kickoff (2026-08-03) — aligned with owner, no instrumentation code yet
+**Status:** in implementation (2026-08-12) — all kickoff blockers resolved, scope locked
 **Branch:** `bluebox-observability`
 **Roadmap home:** Phase 1.5 — Platform hardening (new item **H8**; see [ROADMAP.md](../ROADMAP.md))
 
@@ -114,26 +114,54 @@ during an incident.
 **No conflict with the vision.** But it should be understood as paying down infrastructure debt
 ahead of Phase 2 — not as progress toward the dream itself.
 
-## Open questions / blockers
+## Owner decisions — 2026-08-12
 
-1. **Ingest token — BLOCKING.** Only available in the owner's Bluebox workspace UI. Nothing can
-   be wired or verified without it. It must be set as a Supabase secret, not committed.
-2. **Deno OTel mechanism — needs verification before code.** Supabase Edge Runtime is Deno-based;
-   recent versions ship built-in OTel support, which would be far cleaner than bundling
-   `@opentelemetry/*` via npm specifiers into every function. **To be confirmed against the
-   deployed runtime version before choosing an approach** — not assumed.
-3. **Staging cannot verify this yet.** Per the staging close-out, deploying edge functions to
-   `lev-yam-staging` is an **explicitly deferred follow-up** — staging has no edge functions at
-   all. So the normal "staging first, then prod" path is unavailable for exactly this surface.
-   Either that deferred task gets done first (preferred), or verification happens against the
-   local Supabase stack and then straight to prod (weaker). **Owner decision required.**
-   Note: `supabase functions deploy` fails with an opaque `Effect.tryPromise` error on this
-   machine — use `--use-api`.
-4. **Skills are invisible to the repo.** The four Bluebox skills installed by
-   `bluebox setup local-repos` live in `.claude/`, which is git-ignored (`.gitignore:10`). They
-   exist on one machine and vanish on `git clone`. If Bluebox is to be a project pillar rather
-   than one person's local tool, this needs a decision: commit the skills, document an install
-   step, or accept it as local-only. **Owner decision required.**
+| Question | Decision |
+|---|---|
+| Telemetry level | **Traces + sanitized logs.** Log records *are* exported to Bluebox, but carry error **class/code only** — never message text. Metrics deferred (edge isolates make per-invocation metric flush the most fragile signal for the least value here). |
+| Verification path | **Staging first.** The deferred "deploy edge functions to `lev-yam-staging`" task is pulled into this initiative as a hard dependency, per the mandatory staging-verification rule in `CLAUDE.md`. |
+| Ingest token | Set by the owner via `supabase secrets set` on **both** the staging and prod projects. Never seen by the agent, never in a tracked file. |
+
+## Blocker resolution
+
+1. **Ingest token** — process settled (owner sets it directly on both projects; see above).
+2. **Deno OTel mechanism — RESOLVED 2026-08-12 by probing a running local stack**, not by
+   reading docs. Both prior assumptions turned out to be wrong, in opposite directions:
+   - The runtime is `supabase-edge-runtime-1.74.1 (compatible with Deno v2.1.4)`. **`Deno.telemetry`
+     is `undefined` and `OTEL_DENO` is unset** — Deno 2's built-in OTel is *not* exposed by the
+     Supabase edge runtime. So the feared auto-instrumentation-captures-everything default is not
+     a risk here; there is simply nothing to opt out of.
+   - Contrary to published claims that the OTel npm packages "fail to initialize" under Supabase
+     Edge, they **work** — via `npm:` specifiers at **exact version pins**. A span and a log record
+     were built, encoded, and delivered to a local sink as `application/x-protobuf` end to end.
+   - **Version pins are load-bearing.** Bare major constraints (`npm:@opentelemetry/api@1`) fail
+     with `Could not find constraint … in the list of packages`, and
+     `@opentelemetry/semantic-conventions` and `@opentelemetry/core` fail to resolve *even pinned*.
+     Attribute keys are therefore written as string literals rather than imported semconv
+     constants — which also satisfies the skill's minimize-dependencies rule.
+   - **`forceFlush()` resolving does NOT prove delivery.** The OTLP exporter swallows transport
+     failures; a flush against a dead port resolved cleanly while nothing arrived. Delivery must
+     be confirmed at the receiving end, never from the sender's return value.
+3. **Staging edge functions — NOT ACTUALLY A BLOCKER; the kickoff was wrong.** This plan claimed
+   "staging has NO edge functions at all", citing the `DEFERRED` line in
+   [platform-staging-environment.md](platform-staging-environment.md). That line was superseded
+   the same day by that plan's own *"Completed after the first close-out pass (2026-07-28)"*
+   section: all three functions were deployed with `--use-api` and have been **ACTIVE on
+   `lev-yam-staging` since 2026-07-28**. Verified against the live project on 2026-08-12 via the
+   management API, not by re-reading the doc. So staging-first verification has no prerequisite
+   work — this is a redeploy, not a first deploy.
+
+   **Lesson worth keeping:** a plan that quotes another plan's status inherits it at the moment of
+   writing and never updates. Check the live system, not the sibling doc.
+
+   **Config drift found while checking (fixed by this initiative's redeploy):** staging's
+   `admin-invite` was running `verify_jwt=true` while prod runs `false` — so the Supabase gateway
+   was rejecting unauthenticated calls before the function's own auth logic ran, and staging was
+   *not* faithfully mirroring prod on exactly the path this diff instruments. Both other functions
+   already matched. Redeploy all three with `--no-verify-jwt`.
+4. **Skills in the repo — RESOLVED.** Committed on this branch (`b387ba4`). The `.gitignore` rule
+   later widened to `!.claude/skills/**` when `main`'s verify-skill rule merged in, so a new skill
+   is now tracked automatically instead of needing its own negation line.
 
 ## Rollout
 
@@ -149,5 +177,21 @@ ahead of Phase 2 — not as progress toward the dream itself.
 ## Follow-ups discovered
 
 - `ARCHITECTURE.md` has no observability/telemetry section — add one once this lands.
-- Deploying edge functions to staging (inherited from the staging close-out) is now a
-  **dependency** of safe verification here, not just a nice-to-have.
+- **Nothing in CI type-checks `supabase/functions/`.** `ci.yml` covers `app-src` only, and
+  `supabase functions deploy` transpiles without type checking — so the hand-written structural
+  types in `_shared/otel.ts` (`Span`, `Providers`) have no automated guard. They were verified by
+  hand against the real SDK during the gate, but a future edit is unprotected. Adding `deno check`
+  to `ci.yml` was deliberately kept out of this diff: it may surface pre-existing type errors in
+  the other functions, and turning CI red on an unrelated axis mid-initiative is scope creep.
+- **Provider init is awaited before the handler runs** (`otel.ts`), so a cold isolate pays the
+  module-load cost serially in front of the request instead of alongside it. Parallelising the
+  imports captured most of the win; moving init fully off the critical path needs `startSpan`'s
+  `startTime` plumbed through, and was judged too risky to add late in a file where three subtle
+  lifecycle bugs had already been found.
+- **`levyam.action` records an *attempted* action, before authentication.** Any alert built on it
+  must also filter `levyam.outcome`, or rejected probes read as real privileged traffic. Documented
+  in `supabase/README.md`; worth revisiting if it proves noisy in practice.
+- **The origin gate is a CSRF boundary, not an auth one.** `Origin` is forgeable outside a browser,
+  so a determined caller can still reach the traced path on the pre-auth `passkey-verify` actions
+  and make us do an OTLP round trip. Real mitigation would be rate limiting on
+  `login/options` — out of scope here, but it is the remaining amplification vector.
