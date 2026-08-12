@@ -228,6 +228,15 @@ decisions: [plans/pos-operations-v2.md](plans/pos-operations-v2.md).*
 questions: [plans/platform-hardening.md](plans/platform-hardening.md). The audit's #1
 item — the anon `pos_*` surface — is the POS cut-over task above, not repeated here.*
 
+**Closing out both phases (kickoff 2026-08-12):** the remaining open items in Phase 1 *and*
+Phase 1.5 are being finished as one batch — plan:
+[plans/phase1-closeout.md](plans/phase1-closeout.md). Its kickoff audit found **four roadmap
+entries that were factually wrong** (the topbar diagnosis, H6's prescribed fix, the
+`rls_matrix`-on-prod blocker, and a prod audit script that does not exist) plus a destructive
+`supabase db push` trap; the corrections and the owner's decisions are recorded there and
+written back into the entries below as each ships. Sequence: ops → topbar → prod audit →
+finance money integrity → doc rewrites → **H9**.
+
 - [x] **H1** RLS regression suite (`supabase/tests/rls_matrix.sql`: per-role can/can't
       matrix) + `PERM` ↔ `core.permissions` drift check in `ci.yml` AND `deploy.yml`
       *(done 2026-07-16 — PR #11 of [plans/users-permissions-suite.md](plans/users-permissions-suite.md);
@@ -277,6 +286,20 @@ item — the anon `pos_*` surface — is the POS cut-over task above, not repeat
       hole in `passkey-verify`'s origin gate, a staging/prod `verify_jwt` drift, and the
       missing `staging.levyam.com` origin that left the staging tier unable to exercise
       these functions at all.)*
+- [ ] **H9** Observability coverage — everything *watched*, not just collected (kickoff
+      2026-08-12, follows directly from H8's close-out gaps): continuous uptime + CTA-dead
+      alerting on the marketing funnel, Dynatrace RUM + JS error reporting on `/app` (the
+      platform UI currently emits nothing), reconciliation-as-monitor cron + grant-drift
+      probe through the H8 OTel plumbing, `traceparent` correlation app→edge, deploy
+      verification in Bluebox, dashboards-as-code via dtctl. Owner decisions: `/app` RUM
+      only (`pos.html` dark until migration); alerts live inside Dynatrace/Bluebox, no
+      external channel; phased PRs. Also absorbs H8's open follow-ups (`deno check` in CI,
+      `login/options` rate limit) and two owner-added dev-loop practices (2026-08-12):
+      production insight wired into the IDE workflow (Dynatrace MCP in `.mcp.json`,
+      mandatory production-context step) and instrumentation-by-default for every new
+      surface (MODULE-TEMPLATE.md observability checklist — telemetry ships in the same
+      PR as the feature). Plan:
+      [plans/observability-coverage.md](plans/observability-coverage.md)
 - [x] **H7** Hygiene batch — nine small repo/UX/ops items; **8 of 9 done** (3 with
       H3/H5 on 2026-07-15, 5 more on 2026-07-16 via PR #11 of
       [plans/users-permissions-suite.md](plans/users-permissions-suite.md): storage
