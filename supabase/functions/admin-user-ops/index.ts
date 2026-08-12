@@ -44,6 +44,7 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import * as http from '../_shared/http.ts'
+import { errorFacts, traced } from '../_shared/otel.ts'
 
 const ALLOWED_ORIGINS = new Set([
   'http://localhost:5173',
@@ -122,124 +123,175 @@ Deno.serve(async (req) => {
   const origin = req.headers.get('origin')
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors(origin) })
 
-  try {
-    if (!origin || !ALLOWED_ORIGINS.has(origin)) return json({ error: 'origin_not_allowed' }, 403, origin)
-    if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, origin)
+  // Pre-flight rejects stay OUTSIDE the telemetry wrapper — see the same note in
+  // admin-invite: each traced request costs an awaited OTLP round trip, and
+  // `Origin` filters scanners and cross-origin pages, not a determined caller.
+  if (!origin || !ALLOWED_ORIGINS.has(origin)) return json({ error: 'origin_not_allowed' }, 403, origin)
+  if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, origin)
 
-    const body = await req.json()
-    const action: unknown = body.action
-    // typeof on both: a JSON array like ["<uuid>"] would slip past the
-    // `userId === caller.id` self-check while still stringifying into a working
-    // GoTrue URL — harmless today (owner-only, and the outcome is a no-op) but
-    // it makes the self guard mean what it says.
-    const userId: unknown = body.user_id
-    if (!isAction(action) || typeof userId !== 'string' || !userId) {
-      return json({ error: 'missing_fields' }, 400, origin)
+  // Telemetry wrapper (roadmap H8). The platform's highest-privilege surface, so
+  // the allow-list matters most here: `report` accepts a fixed field set and the
+  // wrapper sanitizes every value, which is why no target email, password, or
+  // error text can reach a span. `outcome` is derived from the response status.
+  // See ../_shared/otel.ts.
+  return traced('admin-user-ops', req, async (report) => {
+    // An expected refusal: the code recorded is the same short machine string
+    // already returned to the client, never a message. Outcome follows the status.
+    const deny = (code: string, statusCode: number) => {
+      report({ error_code: code })
+      return json({ error: code }, statusCode, origin)
     }
-    const policy = POLICY[action]
-
-    const caller = await requireUser(admin, req, origin)
-
-    // authorization verdict first — nothing about the target is revealed below to
-    // a caller who isn't allowed to act at all. 'users.password' and
-    // 'users.delete' are both owner-only seeds but kept separate, so password
-    // rights don't ride on delete rights or vice-versa.
-    const { data: allowed, error: permErr } = await db.rpc('has_permission_for', {
-      target_user: caller.id,
-      perm_key: policy.perm,
-    })
-    if (permErr || !allowed) return json({ error: 'forbidden' }, 403, origin)
-
-    if (!policy.allowSelf && userId === caller.id) return json({ error: 'self_forbidden' }, 400, origin)
-    // validate the new password before any lookup — cheap reject, no target probe.
-    // typeof guard so a non-string JSON value can't slip past the length floor.
-    const newPassword: unknown = body.password
-    if (
-      action === 'set_password' &&
-      (typeof newPassword !== 'string' || newPassword.length < MIN_PASSWORD_LEN)
-    ) {
-      return json({ error: 'weak_password' }, 400, origin)
+    // A GoTrue/DB write that failed unexpectedly. `detail` still reaches the
+    // caller unchanged; only the code reaches the span. No `step` argument —
+    // each of these lives in a different action branch, and `levyam.action`
+    // already distinguishes them.
+    const failed = (err: { message?: string; code?: unknown }) => {
+      report({ error_code: err.code })
+      return json({ error: 'update_failed', detail: err.message }, 500, origin)
     }
-
-    // target lookup and the lockout check both concern the target user and
-    // neither depends on the other — run them together (same shape as
-    // admin-invite), still after the auth verdict above. The lockout check is
-    // for the two actions that can remove an active admin: for delete the DB's
-    // row-level guard is the real enforcement (this is the friendly error);
-    // for deactivate this IS the enforcement — a ban never touches a guarded
-    // table. Other actions skip it (null) — none of them can remove an admin.
-    const needsSurvives = NEEDS_SURVIVES.has(action)
-    const [{ data: target, error: getErr }, survives] = await Promise.all([
-      admin.auth.admin.getUserById(userId),
-      needsSurvives ? db.rpc('users_manage_survives_without', { p_user: userId }) : Promise.resolve(null),
-    ])
-    if (getErr || !target?.user) return json({ error: 'user_not_found' }, 404, origin)
-    if (needsSurvives) {
-      if (survives!.error) return json({ error: 'server_error' }, 500, origin)
-      if (!survives!.data) return json({ error: 'last_admin' }, 400, origin)
-    }
-    // one precondition, declared per action: confirming or mailing an address
-    // requires there to be one.
-    if (policy.needsEmail && !target.user.email) return json({ error: 'no_email' }, 400, origin)
-
-    if (action === 'delete') {
-      const { error: delErr } = await admin.auth.admin.deleteUser(userId)
-      if (delErr) {
-        // Expected DB rejections: the row-level last-admin guard (its bilingual
-        // message names users.manage; possible if the pre-check raced a
-        // concurrent role change), or FK NO ACTION from finance/quotes/events
-        // created_by → the account has work history and must be deactivated
-        // instead. Anything that matches neither is an unexpected failure — 500
-        // it rather than telling the owner "has records" (a retryable transient
-        // error would otherwise read as a permanent, wrong reason).
-        const msg = delErr.message ?? ''
-        const code = msg.includes('users.manage')
-          ? 'last_admin'
-          : /foreign key|violates|constraint/i.test(msg)
-            ? 'has_records'
-            : 'server_error'
-        return json({ error: code, detail: msg }, code === 'server_error' ? 500 : 409, origin)
+    try {
+      const body = await req.json()
+      const action: unknown = body.action
+      // typeof on both: a JSON array like ["<uuid>"] would slip past the
+      // `userId === caller.id` self-check while still stringifying into a working
+      // GoTrue URL — harmless today (owner-only, and the outcome is a no-op) but
+      // it makes the self guard mean what it says.
+      const userId: unknown = body.user_id
+      if (!isAction(action) || typeof userId !== 'string' || !userId) {
+        return deny('missing_fields', 400)
       }
-    } else if (action === 'deactivate' || action === 'reactivate') {
-      const { error: banErr } = await admin.auth.admin.updateUserById(userId, {
-        ban_duration: action === 'deactivate' ? BAN_FOREVER : 'none',
+      const policy = POLICY[action]
+      // action + permission are both already in hand, so recording them costs no
+      // extra query. They are what makes a span answer "which privileged
+      // operation, checked against which permission" without naming anyone.
+      report({ action, permission: policy.perm })
+
+      const caller = await requireUser(admin, req, origin)
+
+      // authorization verdict first — nothing about the target is revealed below to
+      // a caller who isn't allowed to act at all. 'users.password' and
+      // 'users.delete' are both owner-only seeds but kept separate, so password
+      // rights don't ride on delete rights or vice-versa.
+      const { data: allowed, error: permErr } = await db.rpc('has_permission_for', {
+        target_user: caller.id,
+        perm_key: policy.perm,
       })
-      if (banErr) return json({ error: 'update_failed', detail: banErr.message }, 500, origin)
-    } else if (action === 'set_password') {
-      // validated a string ≥ MIN_PASSWORD_LEN above.
-      // email_confirm rides along: an owner-typed password is worthless if GoTrue
-      // still refuses the sign-in as email_not_confirmed.
-      const { error: pwErr } = await admin.auth.admin.updateUserById(userId, {
-        password: newPassword as string,
-        ...confirmIfNeeded(target.user),
+      if (permErr || !allowed) return deny('forbidden', 403)
+
+      if (!policy.allowSelf && userId === caller.id) return deny('self_forbidden', 400)
+      // validate the new password before any lookup — cheap reject, no target probe.
+      // typeof guard so a non-string JSON value can't slip past the length floor.
+      const newPassword: unknown = body.password
+      if (
+        action === 'set_password' &&
+        (typeof newPassword !== 'string' || newPassword.length < MIN_PASSWORD_LEN)
+      ) {
+        return deny('weak_password', 400)
+      }
+
+      // target lookup and the lockout check both concern the target user and
+      // neither depends on the other — run them together (same shape as
+      // admin-invite), still after the auth verdict above. The lockout check is
+      // for the two actions that can remove an active admin: for delete the DB's
+      // row-level guard is the real enforcement (this is the friendly error);
+      // for deactivate this IS the enforcement — a ban never touches a guarded
+      // table. Other actions skip it (null) — none of them can remove an admin.
+      const needsSurvives = NEEDS_SURVIVES.has(action)
+      const [{ data: target, error: getErr }, survives] = await Promise.all([
+        admin.auth.admin.getUserById(userId),
+        needsSurvives ? db.rpc('users_manage_survives_without', { p_user: userId }) : Promise.resolve(null),
+      ])
+      if (getErr || !target?.user) return deny('user_not_found', 404)
+      if (needsSurvives) {
+        if (survives!.error) {
+          report({ step: 'survives_check', error_code: survives!.error.code })
+          return json({ error: 'server_error' }, 500, origin)
+        }
+        if (!survives!.data) return deny('last_admin', 400)
+      }
+      // one precondition, declared per action: confirming or mailing an address
+      // requires there to be one.
+      if (policy.needsEmail && !target.user.email) return deny('no_email', 400)
+
+      if (action === 'delete') {
+        const { error: delErr } = await admin.auth.admin.deleteUser(userId)
+        if (delErr) {
+          // Expected DB rejections: the row-level last-admin guard (its bilingual
+          // message names users.manage; possible if the pre-check raced a
+          // concurrent role change), or FK NO ACTION from finance/quotes/events
+          // created_by → the account has work history and must be deactivated
+          // instead. Anything that matches neither is an unexpected failure — 500
+          // it rather than telling the owner "has records" (a retryable transient
+          // error would otherwise read as a permanent, wrong reason).
+          const msg = delErr.message ?? ''
+          const code = msg.includes('users.manage')
+            ? 'last_admin'
+            : /foreign key|violates|constraint/i.test(msg)
+              ? 'has_records'
+              : 'server_error'
+          // last_admin/has_records are the guards working as designed (409);
+          // only the unmatched case is a real fault worth alerting on.
+          if (code === 'server_error') {
+            report({ step: 'delete_user', error_code: delErr.code })
+          } else {
+            report({ error_code: code })
+          }
+          return json({ error: code, detail: msg }, code === 'server_error' ? 500 : 409, origin)
+        }
+      } else if (action === 'deactivate' || action === 'reactivate') {
+        const { error: banErr } = await admin.auth.admin.updateUserById(userId, {
+          ban_duration: action === 'deactivate' ? BAN_FOREVER : 'none',
+        })
+        if (banErr) return failed(banErr)
+      } else if (action === 'set_password') {
+        // validated a string ≥ MIN_PASSWORD_LEN above.
+        // email_confirm rides along: an owner-typed password is worthless if GoTrue
+        // still refuses the sign-in as email_not_confirmed.
+        const { error: pwErr } = await admin.auth.admin.updateUserById(userId, {
+          password: newPassword as string,
+          ...confirmIfNeeded(target.user),
+        })
+        if (pwErr) return failed(pwErr)
+      } else if (action === 'confirm_email') {
+        // credentials untouched — this only vouches for the address (policy.needsEmail
+        // already guaranteed there is one).
+        const { error: confErr } = await admin.auth.admin.updateUserById(userId, confirmIfNeeded(target.user))
+        if (confErr) return failed(confErr)
+      } else {
+        // send_reset — mail the standard recovery link to the target's own address.
+        const { error: resetErr } = await anon.auth.resetPasswordForEmail(target.user.email!, {
+          redirectTo: `${origin}/app/reset-password`,
+        })
+        if (resetErr) return failed(resetErr)
+      }
+
+      // audit with the real actor — the GoTrue admin API acts on its own
+      // connection, so the levyam.audit_actor mechanism can't cover these.
+      const { error: auditErr } = await db.rpc('admin_audit_user_event', {
+        p_actor: caller.id,
+        p_action: `user.${action}`,
+        p_data: { user_id: userId, email: target.user.email },
       })
-      if (pwErr) return json({ error: 'update_failed', detail: pwErr.message }, 500, origin)
-    } else if (action === 'confirm_email') {
-      // credentials untouched — this only vouches for the address (policy.needsEmail
-      // already guaranteed there is one).
-      const { error: confErr } = await admin.auth.admin.updateUserById(userId, confirmIfNeeded(target.user))
-      if (confErr) return json({ error: 'update_failed', detail: confErr.message }, 500, origin)
-    } else {
-      // send_reset — mail the standard recovery link to the target's own address.
-      const { error: resetErr } = await anon.auth.resetPasswordForEmail(target.user.email!, {
-        redirectTo: `${origin}/app/reset-password`,
-      })
-      if (resetErr) return json({ error: 'update_failed', detail: resetErr.message }, 500, origin)
+      // Unchanged: still non-fatal, still logged in full to Supabase's own logs.
+      // A silently-missing audit trail on the privileged surface is exactly the
+      // kind of thing that should be visible in Bluebox — and it is the one case
+      // where the status genuinely lies: the request returns 200 because the
+      // action DID succeed, so `outcome` must be forced rather than derived.
+      if (auditErr) {
+        console.error('admin-user-ops audit write failed:', auditErr)
+        report({ outcome: 'error', step: 'audit_write', error_code: auditErr.code })
+      }
+
+      return json({ done: true, action, user_id: userId }, 200, origin)
+    } catch (e) {
+      // requireUser throws its 401 Response as control flow — a refusal, not a
+      // fault, and its status already says so.
+      if (e instanceof Response) return e
+      // Unchanged: the full error still goes to Supabase's own function logs.
+      // Only its class/code is exported to Bluebox.
+      console.error('admin-user-ops error:', e)
+      report(errorFacts(e))
+      return json({ error: 'server_error' }, 500, origin)
     }
-
-    // audit with the real actor — the GoTrue admin API acts on its own
-    // connection, so the levyam.audit_actor mechanism can't cover these.
-    const { error: auditErr } = await db.rpc('admin_audit_user_event', {
-      p_actor: caller.id,
-      p_action: `user.${action}`,
-      p_data: { user_id: userId, email: target.user.email },
-    })
-    if (auditErr) console.error('admin-user-ops audit write failed:', auditErr)
-
-    return json({ done: true, action, user_id: userId }, 200, origin)
-  } catch (e) {
-    if (e instanceof Response) return e
-    console.error('admin-user-ops error:', e)
-    return json({ error: 'server_error' }, 500, origin)
-  }
+  })
 })

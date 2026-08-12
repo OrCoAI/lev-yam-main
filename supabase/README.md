@@ -124,6 +124,55 @@ Then `cp app-src/.env.example app-src/.env.local` (already points at the local s
 - The **service-role key is secret** — only ever used inside Supabase **Edge Functions**
   (`functions/`), never in the client bundle, repo, or `.env` that gets committed.
 
+## Edge Function telemetry (Bluebox / OpenTelemetry)
+
+The three Edge Functions emit OpenTelemetry **traces + sanitized logs** to the Bluebox
+environment (roadmap **H8**; design in
+[docs/plans/bluebox-observability.md](../docs/plans/bluebox-observability.md), helper in
+`functions/_shared/otel.ts`).
+
+**It is off unless configured.** With no telemetry secrets set, the OTel packages are never
+even imported and the functions behave exactly as they did before H8 — so a fresh project,
+a local stack, or a rolled-back token all degrade to "no telemetry", never to an error.
+
+| Secret | Purpose |
+|---|---|
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | Bluebox OTLP base URL (SDK appends `/v1/traces`, `/v1/logs`) |
+| `OTEL_EXPORTER_OTLP_HEADERS` | `Authorization=Api-Token <token>` — **secret**, same class as the service-role key |
+| `OTEL_ENVIRONMENT` | `staging` / `prod` — becomes `deployment.environment` |
+| `OTEL_VCS_REVISION` | Commit SHA the deploy was built from; omitted from spans if unset |
+
+Set them per project — never in a committed file (the repo is public):
+
+```bash
+supabase secrets set --project-ref <ref> \
+  OTEL_EXPORTER_OTLP_ENDPOINT='https://<env>.live.dynatrace.com/api/v2/otlp' \
+  OTEL_EXPORTER_OTLP_HEADERS='Authorization=Api-Token <token>' \
+  OTEL_ENVIRONMENT='staging' \
+  OTEL_VCS_REVISION="$(git rev-parse HEAD)"
+```
+
+For local work, put the same keys in `supabase/functions/.env` (git-ignored) and pass
+`--env-file supabase/functions/.env` to `supabase functions serve`.
+
+**What a span may carry is an allow-list, not a deny-list** — action, step, permission key,
+outcome, error *class* and a charset-restricted error *code*, duration, HTTP method/status.
+Never an email, password, token, WebAuthn credential, or any error message text (an invite error
+message embeds the invitee's address). The allow-list is enforced in the wrapper, not by call-site
+discipline: `report()` accepts a fixed field type, and `sanitize()` gates every value — including
+the span name — on a charset that excludes `@`, whitespace and quotes. Extending it is a
+deliberate decision — see architecture invariant 3.
+
+**Reading the spans — two things that will mislead you if you don't know them:**
+
+- **`levyam.action` is what was *attempted*, not what was authorized.** It is reported before the
+  caller is authenticated, so an unauthenticated request can produce a span labelled
+  `admin-user-ops delete` / `users.delete`. That's deliberate — an attempted privileged action is
+  worth seeing — but **any alert or dashboard filtering on `levyam.action` must also filter
+  `levyam.outcome`**, or a burst of rejected probes reads as real delete traffic.
+- **Requests rejected before the wrapper are not traced at all** (bad `Origin`, wrong method).
+  Absence of a span is not absence of traffic; Supabase's own request logs have those.
+
 ## Permission keys
 
 Format `<module>.<action>` — e.g. `pos.view`, `pos.refund`, `users.manage`. Adding a capability

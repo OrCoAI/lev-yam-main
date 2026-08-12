@@ -6,10 +6,14 @@
 .vscode/
 .idea/
 
-# Claude Code agent state — settings/local state stays untracked; the verify
-# skill ships with the repo since CLAUDE.md's gate depends on it for everyone.
+# Claude Code agent state — settings/local state stays untracked; skills ship
+# with the repo. The gate depends on the verify skill for everyone, and the
+# Bluebox skills are part of the platform's observability workflow (roadmap H8,
+# docs/plans/bluebox-observability.md) — both must survive `git clone`.
 # (.claude/* + negation, not a bare .claude/ — git can't re-include a path
-# inside an already-excluded parent directory.)
+# inside an already-excluded parent directory. The `**` form means a new skill
+# is tracked automatically rather than needing its own negation line.)
+# Skills are vendor-generated guidance; verified token-free before tracking.
 .claude/*
 !.claude/skills/
 !.claude/skills/**
@@ -20,6 +24,11 @@ app-src/dist/
 .env
 .env.local
 .env.*.local
+
+# Bluebox OTel config template — generated per-repo by `bluebox setup local-repos`.
+# Token-free by design, but it carries an OTLP endpoint and is machine-generated,
+# not source. The repo is public; keep it local.
+.env.otel.bluebox-template
 
 # Assembled site (scripts/build-site.sh) + Cloudflare local state — build output
 _site/

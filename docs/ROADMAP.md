@@ -266,6 +266,15 @@ item — the anon `pos_*` surface — is the POS cut-over task above, not repeat
       posting GUC without the one-writer check, so a manager can land a row in a module-owned
       category that is then permanently un-editable. Call the
       `finance.assert_category_writable()` hook PR A added (`54_finance_categories.sql`).
+- [ ] **H8** Platform observability — Bluebox/OTel tracing on the three Supabase edge
+      functions (`admin-invite`, `admin-user-ops`, `passkey-verify`), the only server-side
+      code the platform owns (today the platform has no telemetry of its own; Dynatrace RUM
+      covers the marketing site only). Traces + **sanitized** log export: strict span
+      attribute allow-list and error *class* only, never message text, per architecture
+      invariant 3. Kickoff + plan:
+      [plans/bluebox-observability.md](plans/bluebox-observability.md)
+      *(kickoff 2026-08-03, owner-directed; scope confirmed 2026-08-12. Carries the deferred
+      staging edge-function deploy as a hard dependency — verification is staging-first.)*
 - [x] **H7** Hygiene batch — nine small repo/UX/ops items; **8 of 9 done** (3 with
       H3/H5 on 2026-07-15, 5 more on 2026-07-16 via PR #11 of
       [plans/users-permissions-suite.md](plans/users-permissions-suite.md): storage
