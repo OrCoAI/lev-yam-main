@@ -387,6 +387,36 @@ is bilingual HE/AR like the marketing site.*
 
 ---
 
+## Marketing site — organic reach (parallel track, 2026-08)
+
+*Not a platform module: this track lives entirely in the static site (`index.html`,
+`stories/`, `robots.txt`, `sitemap.xml`) and the deploy workflow. It runs alongside the
+platform phases and shares nothing but the repo and the deploy pipeline. The content
+strategy driving it is private and lives outside the repo.*
+
+- [x] **Phase 0 — stories section & SEO foundation**
+      ([plans/content-engine-phase0.md](plans/content-engine-phase0.md)): `/stories/`
+      template + bilingual hub, build-time sitemap + hub generator, `robots.txt`,
+      `llms.txt`, `FACTS.md`→`/facts.txt`, homepage `EventVenue` JSON-LD, GA4
+      `whatsapp_click` with `page_slug`
+- [ ] First real story pages (HE + AR twins, one query cluster each) — written in
+      dedicated sessions, each gated on Or's tone + facts review before commit
+- [ ] Fill the `[חסר]` markers in `FACTS.md` — seasonality (Nimer's fishing calendar,
+      needs Nimer), plus whatever the first content sessions surface as missing
+- [ ] Mark `whatsapp_click` as a key event in the GA4 UI (console-side, not repo)
+- [ ] *(Optional)* **Self-hosted Arabic webfont.** Arabic copy renders in a system stack —
+      `css/styles.css` switches `html[lang="ar"]` to `SF Arabic`/`Geeza Pro`/`Noto Sans Arabic`
+      deliberately, and the Heebo/Assistant `unicode-range`s exclude Arabic. That is a working
+      design decision, not a bug; revisit only if the system stack looks wrong next to Hebrew
+      pages now that whole pages are Arabic
+- [ ] **Make `js/app.js` metadata translation opt-in.** `applyTranslations` writes
+      `document.title` and four meta tags through hardcoded selectors, so it would erase any
+      page's own SEO metadata — the one part of its i18n layer that isn't `data-i18n*`-driven.
+      Harmless today (only `index.html` loads it), but it's why `/stories/` needed `js/stories.js`
+- [ ] English (`/stories/en/<slug>/`) — reserved in the URL structure, not built
+
+---
+
 ## Cross-cutting foundations (touched in every phase)
 
 - **Module template** (created in Phase 1, improved after): keep "new module" a ~1-hour task

@@ -53,17 +53,12 @@ jobs:
           npm ci
           npm run build
 
+      # The deploy allowlist lives in scripts/assemble-site.sh — the same script
+      # staging runs via scripts/build-site.sh, so the two tiers cannot drift.
+      # It also regenerates sitemap.xml + the /stories/ hubs, which is why no bot
+      # ever commits them to main (every commit here must pass the review gate).
       - name: Assemble site (static marketing + built /app)
-        run: |
-          mkdir -p _site
-          # static marketing site + the site-root 404 handler (served from root, as today).
-          # 404.html is what GitHub Pages serves for any unknown path; it routes /app/*
-          # deep links into the SPA and sends other unknown paths to the marketing home.
-          cp index.html survey-june.html pos.html robots.txt sitemap.xml CNAME 404.html _site/
-          cp -r css js img fonts _site/
-          # the built platform under /app
-          mkdir -p _site/app
-          cp -r app-src/dist/* _site/app/
+        run: bash scripts/assemble-site.sh prod
 
       - uses: actions/upload-pages-artifact@v5
         with:
@@ -79,20 +74,23 @@ jobs:
       - id: deployment
         uses: actions/deploy-pages@v5
 
-      # Fail loudly if production doesn't actually serve the three live surfaces.
-      # Retries cover CDN propagation right after the deploy completes.
+      # Fail loudly if production doesn't actually serve the live surfaces.
+      # Round-based retries: CDN propagation is one shared cause, so failures
+      # share one sleep per round instead of each path burning its own sleeps
+      # (9 paths × 3 × 10s serial worst-case would sit ~4.5 min before failing).
       - name: Smoke-check production
         run: |
-          for path in / /app/ /pos.html; do
-            url="https://levyam.com${path}"
-            for attempt in 1 2 3; do
-              code=$(curl -s -o /dev/null -w '%{http_code}' "$url")
-              [ "$code" = "200" ] && break
-              sleep 10
+          pending=(/ /app/ /pos.html /stories/ /stories/ar/ /robots.txt /sitemap.xml /llms.txt /facts.txt)
+          for round in 1 2 3; do
+            failed=()
+            for path in "${pending[@]}"; do
+              code=$(curl -s -o /dev/null -w '%{http_code}' "https://levyam.com${path}")
+              echo "${code}  https://levyam.com${path}  (round ${round})"
+              [ "$code" = "200" ] || failed+=("$path")
             done
-            echo "${code}  ${url}"
-            if [ "$code" != "200" ]; then
-              echo "::error::Smoke check failed: ${url} returned ${code}"
-              exit 1
-            fi
+            [ "${#failed[@]}" -eq 0 ] && exit 0
+            pending=("${failed[@]}")
+            [ "$round" -lt 3 ] && sleep 10
           done
+          echo "::error::Smoke check failed after 3 rounds: ${pending[*]}"
+          exit 1
