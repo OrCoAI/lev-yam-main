@@ -185,6 +185,39 @@ flexible"* — maps to specific structural choices:
   side by side until parity is proven (quotes → then POS), so flexibility never costs
   operational continuity.
 
+## 6b. Observability
+
+*Added 2026-08-12 with roadmap H8, which gave the platform its first telemetry of its own.*
+
+**Two environments, deliberately separate, both the owner's.** Dynatrace RUM + business events
+cover the **public marketing site** (`index.html`, `js/wa-track.js`, `/stories/`). The **Bluebox**
+environment holds **platform edge-function traces**. They are not merged; the Meta/GA4/Dynatrace
+split described in `CLAUDE.md` is untouched by platform telemetry.
+
+**What is instrumented:** the three Supabase Edge Functions — the only server-side code the
+platform owns. `app-src/` is deliberately **not** instrumented (it is a browser app; RUM already
+covers it, and an ingest token must never reach a `VITE_*` variable). Postgres is a managed
+service, not ours to instrument.
+
+**The rule telemetry lives under — invariant 3 applies to spans, not just the repo.** A span
+carries an **allow-list** of attributes, never a deny-list: action, step, permission key, outcome,
+error *class* and a charset-restricted error *code*, duration, HTTP method/status. Never an email,
+password, token, WebAuthn credential, or **any error message text** — an invite failure message
+embeds the invitee's address. This is enforced by the wrapper (`supabase/functions/_shared/otel.ts`),
+not by call-site discipline: `report()` accepts a fixed type and `sanitize()` gates every value,
+including the span name. Adding a field is a decision, not a convenience.
+
+**Telemetry is additive and never load-bearing.** With no `OTEL_*` secrets the SDK is never even
+imported and the functions behave exactly as before (invariant 7). A broken exporter degrades to
+"no telemetry", never to a failed request — but never *silently*: initialization and emit failures
+log once to Supabase's own function logs, because "no spans" and "no traffic" are otherwise
+indistinguishable.
+
+**Reading it:** `levyam.action` is what was *attempted*, recorded before authentication — any alert
+on it must also filter `levyam.outcome`. Requests rejected before the wrapper (bad `Origin`, wrong
+method) are not traced at all. Details and the operational runbook: `supabase/README.md`; design
+and decisions: [plans/bluebox-observability.md](plans/bluebox-observability.md).
+
 ## 7. Invariants — the rules that must never break
 
 1. RLS on every table; UI gating is never the only gate.
