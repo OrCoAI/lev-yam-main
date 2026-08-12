@@ -16,8 +16,14 @@ import * as http from '../_shared/http.ts'
 import { errorFacts, traced } from '../_shared/otel.ts'
 
 // Allowed browser origins — same allow-list as passkey-verify; add more if the app moves.
+// staging.levyam.com is the staging tier (Cloudflare Pages). It talks to the
+// SEPARATE lev-yam-staging Supabase project, so listing it here does not let the
+// staging site reach production data — the origin allow-list and the project are
+// independent boundaries. Without it, staging cannot exercise this function at
+// all, which is what the mandatory staging verification exists to do.
 const ALLOWED_ORIGINS = new Set([
   'http://localhost:5173',
+  'https://staging.levyam.com',
   'https://levyam.com',
   'https://www.levyam.com',
 ])
