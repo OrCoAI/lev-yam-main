@@ -27,8 +27,16 @@ const RP_NAME = 'לב ים'
 
 // Allowed browser origins → the WebAuthn Relying Party ID (a registrable suffix
 // of the origin host). Add more origins here if the app moves.
+//
+// staging maps to 'staging.levyam.com', deliberately NOT 'levyam.com'. Both are
+// valid registrable suffixes of the staging origin, but an RP ID of 'levyam.com'
+// would make a passkey enrolled on staging a working production credential —
+// staging is a test tier with synthetic users, so its credentials must not be
+// able to sign anyone in to prod. Scoping the RP ID to the staging host keeps
+// the two credential sets disjoint.
 const ORIGIN_RPID: Record<string, string> = {
   'http://localhost:5173': 'localhost',
+  'https://staging.levyam.com': 'staging.levyam.com',
   'https://levyam.com': 'levyam.com',
   'https://www.levyam.com': 'levyam.com',
 }
