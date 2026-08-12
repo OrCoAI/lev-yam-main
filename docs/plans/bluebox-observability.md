@@ -195,3 +195,70 @@ ahead of Phase 2 — not as progress toward the dream itself.
   so a determined caller can still reach the traced path on the pre-auth `passkey-verify` actions
   and make us do an OTLP round trip. Real mitigation would be rate limiting on
   `login/options` — out of scope here, but it is the remaining amplification vector.
+
+---
+
+## Close-out — 2026-08-12
+
+**Status: DONE and live on both tiers.** Prod spans confirmed in Bluebox carrying
+`vcs.ref.head.revision = 2eef8d2` (= `main`), `deployment.environment = prod`.
+
+### What shipped
+
+| | |
+|---|---|
+| `supabase/functions/_shared/otel.ts` | New. `traced(fnName, req, handler)` + `report(facts)`; OTLP/http-protobuf traces **and** sanitized log records; inert unless `OTEL_*` secrets exist |
+| `admin-invite`, `admin-user-ops`, `passkey-verify` | Wrapped; `deny()`/`failed()` helpers; `outcome` derived from HTTP status |
+| `supabase/README.md` | Secrets table, `supabase secrets set` recipe, and how to read the spans |
+| `docs/ARCHITECTURE.md` | New §6b Observability |
+| PRs | **#44** (instrumentation), **#45** (staging origin) |
+
+**Telemetry level delivered:** traces + sanitized logs (owner's choice). **Metrics deferred** —
+edge isolates make per-invocation metric flush the most fragile signal for the least value.
+
+### Decisions made along the way
+
+- **`outcome` is derived from the response status**, not reported by hand — call sites cannot
+  forget it. Explicit `report({outcome})` remains for the case where status genuinely lies
+  (`admin-user-ops` returns 200 when only the audit write failed).
+- **`step` was added** so `error_class` keeps meaning "class of a thrown error" instead of being a
+  dumping ground for ten hand-invented operation names (`InviteFailed`, `BanUpdateFailed`, …).
+- **The flush is awaited, bounded at 2s.** `EdgeRuntime.waitUntil` is present but measurably does
+  not hold the isolate open. If this ever lands on a hot path, the fix is a queue/collector.
+- **Pre-flight rejects are not traced** — cheapest requests to send, and each traced request costs
+  an OTLP round trip.
+- **The WebAuthn RP ID for staging is `staging.levyam.com`**, not `levyam.com`, so a passkey
+  enrolled on staging is not a working production credential.
+
+### Things found that were not part of the plan
+
+1. **The kickoff's own blocker was false.** "Staging has NO edge functions" — they had been ACTIVE
+   since 2026-07-28. The plan quoted a sibling plan's `DEFERRED` line superseded that same day.
+   *Check the live system, not the sibling doc.*
+2. **Prototype-pollution hole in `passkey-verify`'s origin gate** — `Origin: __proto__` /
+   `constructor` / `toString` passed the 403 and reached the unauthenticated
+   `webauthn_challenges` INSERT. Pre-existing; fixed (`Object.hasOwn`).
+3. **`verify_jwt` drift** — staging's `admin-invite` ran `true` vs prod's `false`.
+4. **`staging.levyam.com` was in no allow-list**, so the staging tier could not exercise these
+   functions at all — the gap the staging plan predicted and never closed.
+5. **Process violation, self-inflicted:** the staging-origin commit was made directly on the
+   `staging` branch (HEAD was left there after a merge), so it reached staging but never `main`,
+   and prod briefly ran different code from staging. Corrected via PR #45. *After merging into
+   `staging`, check out the feature branch before committing again.*
+
+### Alignment verdict
+
+- **`docs/ARCHITECTURE.md` — aligned, and now documented.** Invariant 3 was the governing
+  constraint and holds: verified not by inspection alone but by grepping captured OTLP payloads
+  and by Bluebox reading every field of every record — zero `@` characters after a real invite
+  typed a real address. Invariant 2 holds (the ingest token is treated as service-role class:
+  Supabase secrets only, never in the repo). Invariant 7 holds (additive; provably inert without
+  secrets). Invariants 1, 4, 5, 6 are N/A — no schema, no business logic, no user-facing text.
+  The one gap was that the doc had no observability section at all; §6b now closes it.
+- **`docs/VISION.md` — no conflict, but serves it only indirectly.** This builds nothing a staff
+  member, member, or guest will ever see. Its justification is Principle 7 (evolution, not
+  revolution) and the Phase 2–4 trajectory, where bookings and public ordering put outside users
+  on platform-owned server code for the first time. **Honest framing: infrastructure debt paid
+  down ahead of Phase 2, not progress toward the dream itself.**
+
+**No drift found; nothing to escalate under the conflict rule.**
