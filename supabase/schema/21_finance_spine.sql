@@ -133,6 +133,98 @@ create trigger finance_expected_touch
   for each row execute function finance.set_updated_at();
 
 -- ---------------------------------------------------------------------
+--  3b) Partial payments: how much of this expectation has actually arrived.
+-- ---------------------------------------------------------------------
+-- Before this column, record_payment() closed an expectation at ANY amount:
+-- ₪1 against a ₪5,000 deposit marked it fulfilled and the remaining ₪4,999
+-- silently left the plan — out of the open list, out of the open-expected
+-- total, and out of reconciliation's overdue check. The UI could only warn.
+alter table finance.expected
+  add column if not exists paid_amount numeric(12,2) not null default 0
+  check (paid_amount >= 0);
+
+-- Backfill from the LEDGER, not from `status`. The obvious version —
+-- `set paid_amount = amount where status = 'fulfilled'` — is wrong twice over:
+--   * it misses a row that was fulfilled under the old semantics and later
+--     RE-OPENED (reachable before H6 landed). That row keeps paid_amount = 0
+--     while its entry sits in the ledger, so "pay the remainder" posts the full
+--     amount a second time. The fixed bare ref used to make that collide on
+--     finance_entries_posting_uniq; with per-payment ':pN' refs the ref is fresh
+--     by construction, so that backstop is gone and the double-post is silent.
+--   * it fabricates money on a re-run: a row hand-set to 'fulfilled' with no
+--     entry behind it would be stamped as fully paid. Prod is off the migration
+--     pipeline and takes these files by hand, so a second application is the
+--     NORMAL path, not an edge case.
+-- Summing the entries actually posted against each expectation is true by
+-- construction and idempotent however many times it runs.
+do $$
+begin
+  perform set_config('levyam.finance_posting', 'on', true);
+  update finance.expected x
+     set paid_amount = coalesce((
+           select sum(e.amount) from finance.entries e
+            where e.source_module = coalesce(x.source_module, 'finance')
+              and e.source_ref like 'expected:' || x.id || '%'), 0)
+   where paid_amount = 0;
+  perform set_config('levyam.finance_posting', '', true);
+end $$;
+
+-- ---------------------------------------------------------------------
+--  3c) finance.audit_log — who overrode what, on the money plan.
+-- ---------------------------------------------------------------------
+-- The owner can rewrite a module-created expectation (owner decision,
+-- 2026-08-12): quotes gets the deposit wrong, the owner fixes it, and the
+-- books must not silently disagree with the signed quote. That power needs a
+-- record. Deliberately NOT core.audit_log: that one is identity-scoped and
+-- readable only by users.manage holders, whereas this must be visible to the
+-- people who read the books (finance.view). Trigger-written only — there is
+-- no client write policy, so a row cannot be forged or erased from the app.
+create table if not exists finance.audit_log (
+  id         bigint generated always as identity primary key,
+  at         timestamptz not null default now(),
+  actor      uuid default auth.uid() references auth.users(id),
+  action     text not null,                    -- 'UPDATE' | 'DELETE'
+  table_name text not null,
+  row_id     uuid,
+  row_before jsonb,
+  row_after  jsonb
+);
+create index if not exists finance_audit_log_at_idx  on finance.audit_log (at desc);
+create index if not exists finance_audit_log_row_idx on finance.audit_log (table_name, row_id);
+
+alter table finance.audit_log enable row level security;
+drop policy if exists finance_audit_log_select on finance.audit_log;
+create policy finance_audit_log_select on finance.audit_log
+  for select to authenticated using ((select core.has_permission('finance.view')));
+-- No insert/update/delete policy on purpose: the trigger below is SECURITY
+-- DEFINER and writes past RLS, so the log is append-only from the app's side.
+grant select on finance.audit_log to authenticated;
+
+-- Records every CLIENT edit (never a module posting) to a MODULE-SOURCED
+-- expectation. That is broader than just the owner override, deliberately: a
+-- manager cancelling a quotes-created deposit is exactly as consequential to
+-- the books as the owner rewriting its amount, and both are motions the module
+-- did not make. Manual expectations are ordinary editable data and are skipped,
+-- since logging them would bury the module-row events in noise.
+create or replace function finance.audit_expected_override()
+returns trigger language plpgsql security definer
+set search_path = finance, core, public as $$
+begin
+  if finance.is_posting() then return null; end if;
+  if coalesce(old.source_module, '') = '' then return null; end if;
+  insert into finance.audit_log (action, table_name, row_id, row_before, row_after)
+  values (tg_op, 'finance.expected', old.id, to_jsonb(old),
+          case tg_op when 'DELETE' then null else to_jsonb(new) end);
+  return null;
+end; $$;
+revoke all on function finance.audit_expected_override() from public;
+
+drop trigger if exists finance_expected_audit on finance.expected;
+create trigger finance_expected_audit
+  after update or delete on finance.expected
+  for each row execute function finance.audit_expected_override();
+
+-- ---------------------------------------------------------------------
 --  4) finance.record_payment — the one motion that turns plan into actual:
 --     posts the entry (with the expectation's provenance + event attribution)
 --     and marks the expectation fulfilled, atomically.
@@ -148,8 +240,13 @@ language plpgsql security definer
 set search_path = finance, core, public
 as $$
 declare
-  exp     finance.expected%rowtype;
-  v_entry uuid;
+  exp         finance.expected%rowtype;
+  v_entry     uuid;
+  v_amount    numeric(12,2);
+  v_remaining numeric(12,2);
+  v_paid      numeric(12,2);
+  v_seq       int;
+  v_kind      text;
 begin
   if not core.has_permission('finance.manage') then
     raise exception 'permission denied';
@@ -162,6 +259,11 @@ begin
   if exp.status <> 'open' then
     raise exception 'הצפי כבר במצב % — רק צפי פתוח ניתן לרישום', exp.status;
   end if;
+
+  -- PARTIAL PAYMENTS: default to what is still owed, not the full amount.
+  v_remaining := exp.amount - exp.paid_amount;
+  v_amount    := coalesce(p_amount, v_remaining);
+
   -- A fulfilment is money ARRIVING, so it is positive. Validated here because
   -- this function posts behind the GUC with non-null provenance, and
   -- finance_entries_amount_check only requires `amount > 0` for provenance-LESS
@@ -169,30 +271,71 @@ begin
   -- unvalidated p_amount was the one client-reachable way to write a negative
   -- entry — i.e. to make income disappear from the books through a path the
   -- manual-entry form could never take.
-  if coalesce(p_amount, exp.amount) <= 0 then
+  if v_amount <= 0 then
     raise exception 'סכום התשלום חייב להיות חיובי';
   end if;
+  if v_amount > v_remaining then
+    raise exception 'הסכום (%) גדול מהיתרה לתשלום (%) — לא ניתן לשלם מעבר לצפי',
+      v_amount, v_remaining;
+  end if;
+
+  -- H6, the reachable half. This function is SECURITY DEFINER, checks only
+  -- finance.manage, and posts exp.category BEHIND the GUC — where entries_guard
+  -- short-circuits. So without this check a manager could land a row in a
+  -- module-owned category, and that row is then permanently un-editable.
+  -- NOT assert_category_writable(): 'events' is owned_by_module='quotes' and
+  -- every quotes deposit is filed under it, so the blanket check would reject
+  -- the module's own primary money path. The rule is owner-vs-poster, and the
+  -- archived check is deliberately not applied (see 54's carve-out).
+  -- exp.kind is the row's own GENERATED column (54) — re-deriving the mapping
+  -- here would be a third copy, and expected_guard's comment records that a
+  -- diverging copy fails OPEN.
+  v_kind := exp.kind;
+  perform finance.assert_category_writer(v_kind, exp.category, coalesce(exp.source_module, 'finance'));
+
+  -- Each payment needs its own source_ref: finance_entries_posting_uniq is on
+  -- (source_module, source_ref, kind, category), so a second payment against a
+  -- fixed 'expected:<id>' would collide. Same device post_day uses for ':rN'
+  -- and override for ':cN'. Legacy rows carry the bare ref and are counted so
+  -- numbering never reuses one.
+  -- Scoped by source_module like every sibling (pos.post_day, record_override),
+  -- so finance_entries_posting_uniq (source_module, source_ref, …) can serve it
+  -- — without the leading column it degrades to a seq scan of the whole ledger.
+  -- One LIKE covers both grammars: a UUID is fixed-length, so the legacy bare
+  -- 'expected:<id>' is itself a prefix of 'expected:<id>:pN'.
+  select count(*) + 1 into v_seq
+    from finance.entries
+   where source_module = coalesce(exp.source_module, 'finance')
+     and source_ref like 'expected:' || exp.id || '%';
+
+  v_paid := exp.paid_amount + v_amount;
 
   perform set_config('levyam.finance_posting', 'on', true);
   insert into finance.entries
     (kind, category, amount, payment_method, entry_date, note, source_module, source_ref, event_id)
   values (
-    case exp.direction when 'in' then 'income' else 'expense' end,
+    v_kind,
     exp.category,
-    coalesce(p_amount, exp.amount),
+    v_amount,
     p_method,
     p_date,
     coalesce(p_note, nullif(exp.reason, '')),
     coalesce(exp.source_module, 'finance'),
-    'expected:' || exp.id,
+    'expected:' || exp.id || ':p' || v_seq,
     exp.event_id
   )
   returning id into v_entry;
-  perform set_config('levyam.finance_posting', '', true);
 
+  -- INSIDE the posting window, unlike before: this write sets fulfilled_by and
+  -- paid_amount, and the guard below only lets a module touch those on a
+  -- module-sourced row. (Whitelisting fulfilled_by for clients instead would
+  -- let one point it at an arbitrary entry.)
   update finance.expected
-  set status = 'fulfilled', fulfilled_by = v_entry
-  where id = exp.id;
+     set paid_amount  = v_paid,
+         status       = case when v_paid >= exp.amount then 'fulfilled' else 'open' end,
+         fulfilled_by = case when v_paid >= exp.amount then v_entry else fulfilled_by end
+   where id = exp.id;
+  perform set_config('levyam.finance_posting', '', true);
 
   return v_entry;
 end; $$;
@@ -215,14 +358,25 @@ as $$
     'expense', coalesce((select sum(amount) from e where kind = 'expense'), 0),
     'net',     coalesce((select sum(amount) from e where kind = 'income'), 0)
              - coalesce((select sum(amount) from e where kind = 'expense'), 0),
-    'expected_in_open',  coalesce((select sum(amount) from x where direction = 'in'  and status = 'open'), 0),
-    'expected_out_open', coalesce((select sum(amount) from x where direction = 'out' and status = 'open'), 0),
+    -- OUTSTANDING, not the original figure: a part-paid deposit is only still
+    -- expected for its remainder. Summing `amount` here would overstate the
+    -- event's open plan by everything already collected — the same defect
+    -- partial payments fixed on the expected tab and in reconciliation.
+    'expected_in_open',  coalesce((select sum(amount - paid_amount) from x where direction = 'in'  and status = 'open'), 0),
+    'expected_out_open', coalesce((select sum(amount - paid_amount) from x where direction = 'out' and status = 'open'), 0),
     'entries', coalesce((select jsonb_agg(jsonb_build_object(
         'id', id, 'kind', kind, 'category', category, 'amount', amount,
         'entry_date', entry_date, 'source_module', source_module, 'note', note
       ) order by entry_date) from e), '[]'::jsonb),
     'expected', coalesce((select jsonb_agg(jsonb_build_object(
-        'id', id, 'direction', direction, 'amount', amount, 'due_date', due_date,
+        -- `amount` keeps its original meaning here — what was PLANNED. This
+        -- array is not filtered by status, so emitting the remainder made a
+        -- fulfilled row read as 0 and a cancelled one as its full figure.
+        -- The outstanding view lives in expected_in_open/expected_out_open
+        -- above, which do filter on status.
+        'id', id, 'direction', direction, 'amount', amount,
+        'amount_paid', paid_amount, 'amount_outstanding', amount - paid_amount,
+        'status', status, 'due_date', due_date,
         'reason', reason, 'status', status
       ) order by due_date nulls last) from x), '[]'::jsonb)
   );

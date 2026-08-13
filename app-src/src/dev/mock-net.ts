@@ -309,24 +309,42 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise
       const exp = db.expected.find((r) => r.id === body.p_expected)
       if (!exp) return json({ message: 'expected payment not found' }, 400)
       if (exp.status !== 'open') return json({ message: `הצפי כבר במצב ${exp.status}` }, 400)
+      // Mirror record_payment's partial-payment arithmetic: default to the
+      // REMAINDER, reject an overpay, and keep the row open until it is settled.
+      const remaining = Number(exp.amount) - Number(exp.paid_amount ?? 0)
+      const paying = Number(body.p_amount ?? remaining)
+      if (paying <= 0) return json({ message: 'סכום התשלום חייב להיות חיובי' }, 400)
+      if (paying > remaining)
+        return json({ message: `הסכום (${paying}) גדול מהיתרה לתשלום (${remaining})` }, 400)
+      const paySeq =
+        db.entries.filter(
+          (e: Row) =>
+            typeof e.source_ref === 'string' &&
+            (e.source_ref === `expected:${exp.id}` ||
+              e.source_ref.startsWith(`expected:${exp.id}:p`)),
+        ).length + 1
       const entry: Row = {
         id: `00000000-0000-4000-8000-${String(++seq).padStart(12, '0')}`,
         kind: exp.direction === 'in' ? 'income' : 'expense',
         category: exp.category,
-        amount: body.p_amount ?? exp.amount,
+        amount: paying,
         payment_method: body.p_method ?? null,
         entry_date: body.p_date ?? new Date().toISOString().slice(0, 10),
         note: body.p_note ?? exp.reason,
         source_module: exp.source_module ?? 'finance',
-        source_ref: `expected:${exp.id}`,
+        source_ref: `expected:${exp.id}:p${paySeq}`,
         event_id: exp.event_id,
         created_by: user.id,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }
       db.entries.unshift(entry)
-      exp.status = 'fulfilled'
-      exp.fulfilled_by = entry.id
+      const paidTotal = Number(exp.paid_amount ?? 0) + paying
+      exp.paid_amount = paidTotal
+      if (paidTotal >= Number(exp.amount)) {
+        exp.status = 'fulfilled'
+        exp.fulfilled_by = entry.id
+      }
       return json(entry.id)
     }
     // ── POS RPCs — mirror the server behavior the module relies on ──
@@ -467,7 +485,12 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise
         const daysOverdue = Math.round(
           (Date.parse(today) - Date.parse(String(r.due_date))) / 864e5)
         items.push({ type: 'overdue_expected', severity: daysOverdue > 30 ? 'high' : 'medium',
-          expected_id: r.id, direction: r.direction, category: r.category, amount: num(r.amount),
+          expected_id: r.id, direction: r.direction, category: r.category,
+          // REMAINING, matching 55_finance_reconciliation.sql. Emitting the full
+          // figure here made the preview harness disagree with the real DB on
+          // exactly the part-paid fixture (e003: 1800 planned, 600 paid).
+          amount: num(r.amount) - num(r.paid_amount ?? 0),
+          amount_total: num(r.amount), amount_paid: num(r.paid_amount ?? 0),
           due_date: r.due_date, reason: r.reason, days_overdue: daysOverdue, fix: 'record_payment',
           source_module: r.source_module ?? null, source_ref: r.source_ref ?? null,
           // the module that created the expectation owns chasing it — checked

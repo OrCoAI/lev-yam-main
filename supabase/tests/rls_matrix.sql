@@ -626,6 +626,42 @@ select pg_temp.assert_ok('manager: but CAN cancel it, which is the supported pat
       where id = 'bbbbbbbb-0000-0000-0000-000000000003' $q$);
 update finance.expected set status = 'open'
  where id = 'bbbbbbbb-0000-0000-0000-000000000003';
+
+-- ── H6: a module-sourced expectation is MODULE-owned (2026-08-12) ──────
+-- Before this, any finance.manage holder could rewrite amount / due_date /
+-- reason / note / event_id / fulfilled_by on a QUOTES-planned expectation as
+-- long as they left the category alone — breaking the pairing with the signed
+-- quote, and (via fulfilled_by) pointing it at an arbitrary entry.
+select pg_temp.assert_raises('manager: cannot change a module expectation''s AMOUNT',
+  $q$ update finance.expected set amount = 999
+      where id = 'bbbbbbbb-0000-0000-0000-000000000003' $q$, 'רק את הסטטוס');
+select pg_temp.assert_raises('manager: ...nor its DUE DATE',
+  $q$ update finance.expected set due_date = current_date + 90
+      where id = 'bbbbbbbb-0000-0000-0000-000000000003' $q$, 'רק את הסטטוס');
+select pg_temp.assert_raises('manager: ...nor its REASON/NOTE',
+  $q$ update finance.expected set reason = 'hijacked', note = 'x'
+      where id = 'bbbbbbbb-0000-0000-0000-000000000003' $q$, 'רק את הסטטוס');
+select pg_temp.assert_raises('manager: ...nor point fulfilled_by at an arbitrary entry',
+  $q$ update finance.expected set fulfilled_by = 'bbbbbbbb-0000-0000-0000-00000000000e'
+      where id = 'bbbbbbbb-0000-0000-0000-000000000003' $q$, 'רק את הסטטוס');
+select pg_temp.assert_raises('manager: ...nor hand-set paid_amount to fake a payment',
+  $q$ update finance.expected set paid_amount = 500
+      where id = 'bbbbbbbb-0000-0000-0000-000000000003' $q$, 'רק את הסטטוס');
+-- source_ref is the quotes↔expectation PAIRING KEY, and the first version of
+-- this guard (a deny-list of ten named columns) left it editable. Repointing it
+-- detaches the expectation from its signed quote, redirects every UI source
+-- link, and makes plan_money_for_quote silently decline to plan the real one.
+-- The guard is now an allow-list, so this and every future column are covered.
+select pg_temp.assert_raises('manager: ...nor REPOINT source_ref at another quote',
+  $q$ update finance.expected set source_ref = 'rls-test-other-quote:deposit'
+      where id = 'bbbbbbbb-0000-0000-0000-000000000003' $q$, 'רק את הסטטוס');
+select pg_temp.assert_raises('manager: ...nor backdate created_at',
+  $q$ update finance.expected set created_at = now() - interval '5 years'
+      where id = 'bbbbbbbb-0000-0000-0000-000000000003' $q$, 'רק את הסטטוס');
+select pg_temp.assert_rows('manager: the module expectation is untouched after all of that',
+  $q$ select 1 from finance.expected
+      where id = 'bbbbbbbb-0000-0000-0000-000000000003'
+        and amount = 500 and paid_amount = 0 and reason <> 'hijacked' $q$, 1);
 -- a hand-created expectation carries no provenance and stays freely deletable
 select pg_temp.assert_ok('manager: a hand-created expectation is still deletable',
   $q$ delete from finance.expected where note = 'rls-test provenance-free' $q$);
@@ -819,6 +855,56 @@ select pg_temp.assert_rows('manager: admin_list_users() reports null for the unc
 --  OWNER — full control, but the DB guards still hold the line
 -- =====================================================================
 select pg_temp.become('aaaaaaaa-0000-0000-0000-000000000001');
+
+-- ── PARTIAL PAYMENTS + the owner override (2026-08-12) ────────────────
+-- Before this, record_payment() closed an expectation at ANY amount: ₪1
+-- against ₪500 marked it fulfilled and the rest vanished from the plan.
+select pg_temp.assert_ok('owner: a PARTIAL payment posts and leaves the expectation open',
+  $q$ select finance.record_payment('bbbbbbbb-0000-0000-0000-000000000003', 200) $q$);
+select pg_temp.assert_rows('owner: ...paid_amount accumulated, status still open',
+  $q$ select 1 from finance.expected
+      where id = 'bbbbbbbb-0000-0000-0000-000000000003'
+        and paid_amount = 200 and amount = 500 and status = 'open' $q$, 1);
+select pg_temp.assert_raises('owner: cannot pay MORE than the remaining balance',
+  $q$ select finance.record_payment('bbbbbbbb-0000-0000-0000-000000000003', 301) $q$,
+  'גדול מהיתרה');
+select pg_temp.assert_ok('owner: paying the remainder closes it',
+  $q$ select finance.record_payment('bbbbbbbb-0000-0000-0000-000000000003', 300) $q$);
+select pg_temp.assert_rows('owner: ...now fulfilled, fully paid, with fulfilled_by set',
+  $q$ select 1 from finance.expected
+      where id = 'bbbbbbbb-0000-0000-0000-000000000003'
+        and paid_amount = 500 and status = 'fulfilled' and fulfilled_by is not null $q$, 1);
+-- Each payment needs its own source_ref or the posting unique index collides.
+select pg_temp.assert_rows('owner: the two payments posted as separate :pN entries',
+  $q$ select 1 from finance.entries
+      where source_ref like 'expected:bbbbbbbb-0000-0000-0000-000000000003:p%' $q$, 2);
+select pg_temp.assert_rows('owner: ...and they sum to the expectation, not double it',
+  $q$ select 1 from finance.entries
+      where source_ref like 'expected:bbbbbbbb-0000-0000-0000-000000000003:p%'
+      having sum(amount) = 500 $q$, 1);
+
+-- The owner bypass on module-sourced rows, and its receipt.
+update finance.expected set status = 'open', paid_amount = 0
+ where id = 'bbbbbbbb-0000-0000-0000-000000000003';
+select pg_temp.assert_ok('owner: CAN rewrite a module-planned expectation (manager cannot)',
+  $q$ update finance.expected set amount = 750
+      where id = 'bbbbbbbb-0000-0000-0000-000000000003' $q$);
+select pg_temp.assert_rows('owner: ...and finance.audit_log recorded it with the actor',
+  $q$ select 1 from finance.audit_log
+      where table_name = 'finance.expected' and action = 'UPDATE'
+        and row_id = 'bbbbbbbb-0000-0000-0000-000000000003'
+        and actor = 'aaaaaaaa-0000-0000-0000-000000000001'
+        and (row_after->>'amount')::numeric = 750 $q$, 1);
+-- The audit log is append-only from the app's side: only `select` is granted
+-- and there is no write policy, so these are 42501 denials (assert_denied),
+-- not guard exceptions (assert_raises pins P0001).
+select pg_temp.assert_denied('owner: cannot forge a finance.audit_log row',
+  $q$ insert into finance.audit_log (action, table_name)
+      values ('UPDATE', 'finance.expected') $q$);
+select pg_temp.assert_denied('owner: cannot erase a finance.audit_log row',
+  $q$ delete from finance.audit_log
+      where row_id = 'bbbbbbbb-0000-0000-0000-000000000003' $q$);
+
 select pg_temp.assert_ok('owner: can create a custom role',
   $q$ insert into core.roles (key, label_he, sort)
       values ('rls-test-role', 'rls test', 900) $q$);

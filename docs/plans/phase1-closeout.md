@@ -308,6 +308,29 @@ expectation seeded behind the GUC at [:249-256](../../supabase/tests/rls_matrix.
 Then `node supabase/tests/build-baseline.mjs --write`. Prod (still off the pipeline) takes the
 `create or replace function` statements plus the new table/column by hand.
 
+**As-executed deviations (2026-08-12), each measured during the build:**
+
+- **`assert_category_writable()` could not be reused**, as predicted at kickoff. It answers
+  "may a *person* write here?" and says no for every module-owned category — correct for the
+  manual entry form, fatal inside `record_payment()`. Shipped as a sibling,
+  `finance.assert_category_writer(kind, key, module)`, asking the narrower owner-vs-poster
+  question, with the owner exempt and `active` deliberately not consulted.
+- **The separately-planned expectation re-open path was not built — the owner bypass subsumes
+  it.** Once the owner can edit a module-sourced row directly (and the audit records it),
+  "re-open after a correction" is just `status='open', paid_amount=0`. A dedicated function
+  would have been a second way to do the same thing, with its own permission surface. Pinned
+  by an `rls_matrix` assertion that performs exactly that reset.
+- **`finance.audit_log` records more than owner overrides.** It logs *every* client edit to a
+  module-sourced expectation, so a manager cancelling a quotes-created deposit is captured
+  too. Measured while testing (3 rows where 1 was expected) and kept deliberately: a
+  cancellation is as consequential to the books as an amount change, and both are motions the
+  owning module did not make. The function comment was corrected to say so.
+- **Bilingual exception messages are a repo-wide gap, not fixed here.** MODULE-TEMPLATE §1
+  requires HE+AR for guard messages, and these do surface in the UI via `ErrorNotice` — but
+  **0 of 69** `raise exception` messages in `supabase/schema/` contain Arabic. New messages
+  match the local Hebrew convention rather than making this file inconsistent with itself;
+  the discrepancy is logged as a follow-up below.
+
 ### E — Roadmap rewrites *(docs, folded into the last PR)*
 
 - [ ] **`rls_matrix` against prod** → replace with the honest statement: the destructive suite is
@@ -382,6 +405,27 @@ budgets. §C serves "staff and members work from phones" literally. No conflict.
   real control (`events.events` for anon, `finance.transfers`, `finance.categories`,
   `pos.day_pins`). A hand-run `grant update (kind) on finance.categories to authenticated` on
   prod would let staff reclassify income as expense and would **not** be caught.
+- **A 5th reconciliation check: plan-vs-ledger divergence.** Measured during §B: when the owner
+  reverses a payment with PR C's additive correction, the ledger nets to 0 but the expectation
+  still reads `fulfilled` / `paid_amount = <full>` and drops out of the open list and the
+  overdue check. The owner *can* reset it (audited), but nothing tells them to. Note the
+  divergence is **older and wider than `paid_amount`** — `status` and `fulfilled_by` have had
+  it since the spine landed, and deriving `paid_amount` would not fix it (correction rows carry
+  an `override:` ref, so an `expected:%` sum misses them). The right shape is **detection**, in
+  the file built for exactly that: assert `paid_amount` equals the sum of entries posted against
+  the expectation *including* corrections targeting them.
+- **`amount - paid_amount` is hand-written in 7 places** (`21` ×2, `40`, `55`, `ExpectedTab` ×2,
+  `mock-net`) — and was missed in an 8th (`event_pnl`) until a reviewer caught it. A
+  `generated always as (amount - paid_amount) stored` column would give one canonical field,
+  with house precedent in `finance.expected.kind`. Deferred only because generated columns are
+  NULL in BEFORE triggers and the new allow-list guard would need a matching exclusion.
+- **`finance.audit_log` diverges gratuitously from `core.audit_log`** — raw `tg_op` vs
+  `lower(tg_op)`, hardcoded schema-qualified `table_name` vs bare `tg_table_name`, and no
+  `levyam.audit_actor` service-role fallback (latent: no edge function writes finance today).
+  Align them before anything tries to read both.
+- **DB exception messages are Hebrew-only** — 0 of 69 in `supabase/schema/` carry Arabic,
+  though they surface to users through `ErrorNotice` and MODULE-TEMPLATE §1 requires HE+AR.
+  Either retrofit them or amend the rule to match reality; the current state is neither.
 - **The audit is one-directional** — it finds privileges live has that the files don't intend,
   never a `grant` that was never applied. That half shows up as a staff-facing "permission
   denied" instead.

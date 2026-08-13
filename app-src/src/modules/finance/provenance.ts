@@ -2,8 +2,15 @@
 // page that owns it — derived finance rows are immutable here by design, so
 // "edit" means going to the source module. Real ref formats (supabase/schema):
 //   pos.close_day():            'pos:<YYYY-MM-DD>:<leg>[:rN]'
-//   finance.record_payment():   'expected:<expected_uuid>'  (module = the
-//                               expectation's own source, e.g. 'quotes')
+//   finance.record_payment():   'expected:<expected_uuid>[:pN]'  (module = the
+//                               expectation's own source, e.g. 'quotes').
+//                               The ':pN' suffix arrived with partial payments —
+//                               one entry per payment, since the posting unique
+//                               index is on (source_module, source_ref, kind,
+//                               category). Rows posted before that carry the bare
+//                               form, so BOTH must resolve: requiring a bare UUID
+//                               after 'expected:' silently kills every quote link
+//                               on a part-paid deposit.
 //   quotes → finance.expected:  '<quote_uuid>:deposit' | '<quote_uuid>:balance'
 // Client-side parsing is the interim mechanism — the roadmap tracks moving
 // this into a DB view next to the posting functions that own the grammar.
@@ -13,6 +20,14 @@ import { posReportHref, REPORT_DATE_RE } from '../pos/logic'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const EXPECTED_PREFIX = 'expected:'
+
+/** The expectation id inside an 'expected:<uuid>[:pN]' ref, or null. Tolerates
+ *  both the pre- and post-partial-payments grammar. */
+function expectedId(ref: string): string | null {
+  if (!ref.startsWith(EXPECTED_PREFIX)) return null
+  const id = ref.slice(EXPECTED_PREFIX.length).replace(/:p\d+$/, '')
+  return UUID_RE.test(id) ? id : null
+}
 
 type ProvenanceRow = { source_module: string | null; source_ref: string | null }
 
@@ -27,9 +42,9 @@ export function useQuoteMap(rows: readonly ProvenanceRow[]): ReadonlyMap<string,
 
   const needed: string[] = []
   for (const r of rows) {
-    if (r.source_module !== 'quotes' || !r.source_ref?.startsWith(EXPECTED_PREFIX)) continue
-    const id = r.source_ref.slice(EXPECTED_PREFIX.length)
-    if (UUID_RE.test(id) && !requested.current.has(id)) needed.push(id)
+    if (r.source_module !== 'quotes' || !r.source_ref) continue
+    const id = expectedId(r.source_ref)
+    if (id && !requested.current.has(id)) needed.push(id)
   }
   const neededKey = needed.join(',')
 
@@ -84,7 +99,10 @@ export function sourceHref(
   }
   if (module === 'quotes') {
     if (ref.startsWith(EXPECTED_PREFIX)) {
-      const quoteId = quoteByExpected?.get(ref.slice(EXPECTED_PREFIX.length))
+      const expId = expectedId(ref)
+      // the map holds a quote UUID, not a route — it must be wrapped, or
+      // SourceBadge's <Link> resolves it RELATIVELY (/app/finance/<uuid>)
+      const quoteId = expId ? quoteByExpected?.get(expId) : undefined
       return quoteId ? `/quotes/${quoteId}` : null
     }
     const quoteId = ref.split(':')[0]
