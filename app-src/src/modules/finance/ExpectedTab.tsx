@@ -109,8 +109,11 @@ export default function ExpectedTab({
   let openIn = 0
   let openOut = 0
   for (const r of open) {
-    if (r.direction === 'in') openIn += Number(r.amount)
-    else openOut += Number(r.amount)
+    // What is still OUTSTANDING. Counting the full amount would overstate the
+    // open plan by everything already collected against part-paid rows.
+    const outstanding = Number(r.amount) - Number(r.paid_amount ?? 0)
+    if (r.direction === 'in') openIn += outstanding
+    else openOut += outstanding
   }
   // open-only lookup: a cancelled/fulfilled row closes its form on the next render
   const fulfillRow = fulfillId ? open.find((r) => r.id === fulfillId) : undefined
@@ -194,7 +197,24 @@ export default function ExpectedTab({
         <td
           className={`rl-amt finance-amount ${r.direction === 'in' ? 'finance-income' : 'finance-expense'}`}
         >
-          <span dir="ltr">{Number(r.amount).toLocaleString('he-IL')} ₪</span>
+          {/* Open rows show what is still OWED; closed rows show what the
+              expectation WAS. renderRow is shared with the history table, and
+              showing the remainder there rendered every settled row as 0 ₪. */}
+          <span dir="ltr">
+            {(r.status === 'open'
+              ? Number(r.amount) - Number(r.paid_amount ?? 0)
+              : Number(r.amount)
+            ).toLocaleString('he-IL')}{' '}
+            ₪
+          </span>
+          {Number(r.paid_amount ?? 0) > 0 && r.status === 'open' && (
+            <div className="muted" style={{ fontSize: '0.78rem', fontWeight: 400 }}>
+              {ft.paidOf(
+                Number(r.paid_amount ?? 0).toLocaleString('he-IL'),
+                Number(r.amount).toLocaleString('he-IL'),
+              )}
+            </div>
+          )}
         </td>
         <td className="rl-more" data-label={ft.colStatus}>
           {ft.statusLabels[r.status]}
@@ -324,27 +344,33 @@ function FulfillForm({
 }) {
   const ft = useFT()
   const categoryName = useCategoryName()
-  const [amount, setAmount] = useState(String(row.amount))
+  // Default to what is still OWED, not the original figure — paying a
+  // part-paid deposit "in full" means paying the remainder.
+  const remaining = Number(row.amount) - Number(row.paid_amount ?? 0)
+  const [amount, setAmount] = useState(String(remaining))
   const [method, setMethod] = useState<FinancePaymentMethod>('cash')
   const [date, setDate] = useState(todayStr())
   const [note, setNote] = useState('')
   const [invalid, setInvalid] = useState(false)
+  const [tooMuch, setTooMuch] = useState(false)
 
   function submit() {
     const n = Number(amount)
     if (!n || n <= 0) {
       setInvalid(true)
+      setTooMuch(false)
       return
     }
-    // record_payment closes the expectation whatever the amount — a partial
-    // payment must be a conscious choice (full partial-payment support is a
-    // roadmap follow-up)
-    if (
-      n !== Number(row.amount) &&
-      !window.confirm(ft.amountDiffers(Number(row.amount).toLocaleString('he-IL')))
-    )
+    // The server rejects this too (record_payment raises); checking here just
+    // saves a round trip and points at the field. Overpaying is now an error
+    // rather than the old silent "the whole expectation closes anyway".
+    if (n > remaining) {
+      setInvalid(false)
+      setTooMuch(true)
       return
+    }
     setInvalid(false)
+    setTooMuch(false)
     onSubmit({ amount: n, payment_method: method, date, note })
   }
 
@@ -354,7 +380,17 @@ function FulfillForm({
         {ft.recordPaymentTitle} — {expectedTitle(ft, categoryName, row)} (
         <span dir="ltr">{Number(row.amount).toLocaleString('he-IL')} ₪</span> {ft.expectedSuffix})
       </div>
+      {Number(row.paid_amount ?? 0) > 0 && (
+        <div className="muted">
+          {ft.paidOf(
+            Number(row.paid_amount ?? 0).toLocaleString('he-IL'),
+            Number(row.amount).toLocaleString('he-IL'),
+          )}{' '}
+          · {ft.remainingToPay}: <span dir="ltr">{remaining.toLocaleString('he-IL')} ₪</span>
+        </div>
+      )}
       {invalid && <div className="error">{ft.invalidAmount}</div>}
+      {tooMuch && <div className="error">{ft.overRemaining(remaining.toLocaleString('he-IL'))}</div>}
       <div className="field-row">
         <label className="field">
           <span className="field-label">{ft.amountShekel}</span>

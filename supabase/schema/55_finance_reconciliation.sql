@@ -355,7 +355,14 @@ language sql stable security definer set search_path = finance, pos, core as $$
            'type', 'overdue_expected',
            'severity', case when x.due_date < current_date - 30 then 'high' else 'medium' end,
            'expected_id', x.id, 'direction', x.direction, 'category', x.category,
-           'amount', x.amount, 'due_date', x.due_date, 'reason', x.reason,
+           -- what is STILL OWED, not the original figure: a part-paid deposit is
+           -- still overdue, but chasing it for the full amount would be wrong.
+           -- `amount_total`/`amount_paid` ride along for API consumers; the
+           -- ReconcileTab renders `amount` only, and DriftItem deliberately
+           -- declares just the fields it uses, so they are not in the TS type.
+           'amount', x.amount - x.paid_amount,
+           'amount_total', x.amount, 'amount_paid', x.paid_amount,
+           'due_date', x.due_date, 'reason', x.reason,
            'days_overdue', current_date - x.due_date, 'fix', 'record_payment',
            -- provenance travels with the item so the UI can link to the thing
            -- that CAUSED it (the signed quote behind an overdue deposit),

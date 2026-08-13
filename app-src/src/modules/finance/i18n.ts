@@ -88,8 +88,11 @@ const he = {
   recordPaymentTitle: 'רישום תשלום',
   expectedSuffix: 'צפוי',
   submitPayment: 'רשום תשלום',
-  amountDiffers: (expected: string) =>
-    `הסכום שונה מהצפי (${expected} ₪). הצפי ייסגר במלואו — להמשיך?`,
+  // Partial payments: the expectation now stays open until it is fully paid, so
+  // the old "this will close the whole thing — continue?" confirm is gone.
+  remainingToPay: 'יתרה לתשלום',
+  paidOf: (paid: string, total: string) => `שולם ${paid} ₪ מתוך ${total} ₪`,
+  overRemaining: (remaining: string) => `הסכום גדול מהיתרה לתשלום (${remaining} ₪)`,
 
   // report tab
   presetToday: 'היום',
@@ -276,8 +279,9 @@ const ar: typeof he = {
   recordPaymentTitle: 'تسجيل دفعة',
   expectedSuffix: 'متوقّع',
   submitPayment: 'تسجيل الدفعة',
-  amountDiffers: (expected: string) =>
-    `المبلغ مختلف عن المتوقّع (${expected} ₪). سيُغلق المتوقّع بالكامل — متابعة؟`,
+  remainingToPay: 'المتبقّي للدفع',
+  paidOf: (paid: string, total: string) => `دُفع ${paid} ₪ من ${total} ₪`,
+  overRemaining: (remaining: string) => `المبلغ أكبر من المتبقّي للدفع (${remaining} ₪)`,
 
   presetToday: 'اليوم',
   preset7: '7 أيام',

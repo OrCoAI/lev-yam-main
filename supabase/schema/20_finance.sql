@@ -139,6 +139,9 @@ create policy "finance_entries_delete" on finance.entries for delete to authenti
 -- ---------------------------------------------------------------------
 grant usage on schema finance to authenticated;
 grant select, insert, update, delete on finance.entries to authenticated;
+-- revoke-before-grant: PUBLIC holds EXECUTE by default on every new function,
+-- so a bare grant leaves this anon-callable (audit-grants.mjs, 2026-08-12).
+revoke all on function finance.report(date, date) from public;
 grant execute on function finance.report(date, date) to authenticated;
 
 -- =====================================================================

@@ -37,17 +37,22 @@ already have open.
 
 ```
 node scripts/verify/screenshot.mjs <url> <outPrefix> \
-  [--viewport mobile|desktop|both] [--js "<expr>"] [--wait ms] [--scale n]
+  [--viewport narrow|mobile|desktop|both] [--js "<expr>"] [--wait ms] [--scale n]
 ```
 
-- Defaults to **both** viewports (390px mobile, 1280px desktop) — mobile-first is a platform
+- Defaults to **both** = all three viewports (360px narrow, 390px mobile, 1280px desktop),
+  and prints `!! HORIZONTAL OVERFLOW` per viewport when the document scrolls sideways
+  (compared against the configured width — `window.innerWidth` is useless here, it grows to
+  fit overflowing content under mobile emulation) — mobile-first is a platform
   requirement, and `.rowline`-style disclosure UI behaves differently under 640px. Don't
   narrow to one viewport unless the diff is provably desktop- or mobile-only.
 - `--js` runs just before the capture and may return a Promise (it's awaited) — use it to
   click a button, fill a field, toggle language, or wait on async-rendered content.
 - Deliberately never uses `captureBeyondViewport` — on these RTL pages that shifts the
-  image and reads as an overflow bug that isn't real. To check *actual* overflow, use
-  `--js` to compare `document.documentElement.scrollWidth` against `clientWidth`.
+  image and reads as an overflow bug that isn't real. Real overflow is reported
+  automatically per shot (above); **don't hand-roll a `--js` check for it** — the obvious
+  `scrollWidth` vs `clientWidth`/`innerWidth` comparison silently never fires under mobile
+  emulation, because the layout viewport grows to fit the overflow.
 - **Read the PNGs it writes** (the Read tool renders images) — a screenshot nobody looked
   at didn't verify anything.
 

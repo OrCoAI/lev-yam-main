@@ -197,6 +197,45 @@ end; $$;
 revoke all on function finance.assert_category_writable(text, text) from public;
 grant execute on function finance.assert_category_writable(text, text) to authenticated;
 
+-- The one-writer rule for a MODULE that is posting, rather than for a human
+-- typing into the entries form. assert_category_writable() above answers "may a
+-- person write here?" and its answer is no for every module-owned category —
+-- correct for manual entry, wrong for record_payment(), because 'events' is
+-- owned by quotes and every quotes deposit posts under it. The question here is
+-- narrower: is this poster the module that OWNS the category?
+--
+-- Two deliberate differences from its sibling:
+--   * the owner (finance.override) is exempt — owner decision 2026-08-12: the
+--     owner may record a payment into any category, and finance.audit_log keeps
+--     the receipt;
+--   * `active` is NOT consulted. Archiving a category must never strand money
+--     that was already planned under it (the carve-out documented above).
+create or replace function finance.assert_category_writer(p_kind text, p_key text, p_module text)
+returns void language plpgsql stable security definer
+set search_path = finance, core, public as $$
+declare c record;
+begin
+  if core.has_permission('finance.override') then
+    return;
+  end if;
+  select owned_by_module into c
+  from finance.categories where kind = p_kind and key = p_key;
+  if not found then
+    return;                       -- the FK will reject it a moment from now
+  end if;
+  if c.owned_by_module is not null and c.owned_by_module is distinct from p_module then
+    raise exception 'הקטגוריה "%" שייכת למודול % — % אינו רשאי לרשום אליה',
+      p_key, c.owned_by_module, p_module;
+  end if;
+end; $$;
+-- No grant to `authenticated`, unlike its sibling: the only caller is
+-- record_payment(), which is SECURITY DEFINER and runs as the owner. `finance`
+-- is an API-exposed schema, so granting it would make this callable over
+-- PostgREST by any signed-in account — turning it into an oracle that leaks
+-- finance.categories.owned_by_module for arbitrary pairs and, by returning
+-- silently, whether the caller holds finance.override.
+revoke all on function finance.assert_category_writer(text, text, text) from public;
+
 -- Authored here and ONLY here (21_finance_spine.sql's copy was retired with the
 -- literal it carried) — the one-writer rule is data now, so a stale second copy
 -- would protect the old slugs and silently miss every category added since.
@@ -272,6 +311,11 @@ begin
   -- item, so the books stop reporting a problem that still exists. Cancelling
   -- is the supported way to retire one (status = 'cancelled'), which is what
   -- both the UI and quotes itself do; it keeps the row and its history.
+  -- NOTE this branch runs BEFORE the owner bypass below, so not even the owner
+  -- can delete a module-sourced expectation — deliberate, and the one place the
+  -- owner is not exempt. The owner's power is to CORRECT the books, not to erase
+  -- the fact that money was planned; cancelling records the same intent while
+  -- leaving the audit trail (and finance.audit_log's snapshot) intact.
   if tg_op = 'DELETE' then
     if old.source_module is not null then
       raise exception 'צפי ממקור מודול (%) אינו ניתן למחיקה — יש לבטל אותו במקום זאת',
@@ -297,6 +341,59 @@ begin
   end if;
   if tg_op = 'UPDATE' and new.source_module is distinct from old.source_module then
     raise exception 'לא ניתן לשנות את מקור הצפי';
+  end if;
+  -- H6 — MODULE-SOURCED ROWS ARE MODULE-OWNED (2026-08-12).
+  -- The gap this closes: the early-return below let any finance.manage holder
+  -- freely rewrite amount / due_date / reason / note / event_id / fulfilled_by /
+  -- paid_amount on a QUOTES-created expectation, as long as they left the
+  -- category alone — silently breaking the pairing with the signed quote, and
+  -- (via fulfilled_by) letting them point an expectation at an arbitrary entry.
+  --
+  -- The owner is exempt by owner decision: quotes can get a deposit wrong and
+  -- the owner must be able to correct it. Every such edit is recorded by
+  -- finance.audit_log (21_finance_spine.sql §3c), so the power is auditable
+  -- rather than absent. Managers may still move status — cancelling and
+  -- fulfilling are the supported motions and are what the UI does.
+  if tg_op = 'UPDATE' and old.source_module is not null then
+    if core.has_permission('finance.override') then
+      return new;                 -- owner override; the audit trigger records it
+    end if;
+    -- ALLOW-LIST, never a deny-list. The first version of this branch listed the
+    -- ten columns it protected, and was already wrong on the day it was written:
+    -- it missed `source_ref` — the quotes↔expectation pairing key. Because
+    -- `grant ... on finance.expected` is table-wide with no column grants, this
+    -- trigger is the ONLY gate, so a manager could repoint a quotes-planned
+    -- deposit at another quote's ref: the UI's source links follow it, and when
+    -- that other quote is signed, plan_money_for_quote's
+    -- `on conflict (source_module, source_ref) do nothing` silently declines to
+    -- plan it. Exactly the harm this guard exists to prevent.
+    -- Naming what MAY change means a column added by a future migration is
+    -- protected by default, and un-protecting one is a deliberate edit here.
+    --   * `kind` MUST be excluded: it is GENERATED STORED, and Postgres computes
+    --     generated columns AFTER before-row triggers, so new.kind is null here
+    --     against a populated old.kind — comparing it would reject every update.
+    --   * `updated_at` is excluded because same-timing triggers fire in name
+    --     order (…_guard before …_touch), so the guard still sees whatever the
+    --     client sent rather than the stamped value.
+    if to_jsonb(new) - 'status' - 'kind' - 'updated_at'
+       is distinct from
+       to_jsonb(old) - 'status' - 'kind' - 'updated_at' then
+      raise exception 'צפי ממקור מודול (%) — ניתן לעדכן רק את הסטטוס שלו', old.source_module;
+    end if;
+    -- ...and `status` alone is not a blank cheque. Marking a module expectation
+    -- 'fulfilled' by hand, with no money recorded, reproduces exactly the defect
+    -- partial payments was built to close — the row leaves the open list, the
+    -- open-expected total, event_pnl and reconciliation's overdue check, with
+    -- fulfilled_by null and no entry anywhere — just reached by a direct PATCH
+    -- instead of through record_payment(). Fulfilment means money arrived, so it
+    -- is allowed only once the money actually has. Cancelling stays free: it
+    -- retires an expectation without claiming anything was paid.
+    if new.status = 'fulfilled' and old.status <> 'fulfilled'
+       and new.paid_amount < new.amount then
+      raise exception 'צפי נסגר כ"שולם" רק דרך רישום תשלום — נרשמו % מתוך %',
+        new.paid_amount, new.amount;
+    end if;
+    return new;
   end if;
   -- an UPDATE that leaves the category where it is has nothing to re-check:
   -- a legacy row whose category has since been archived stays editable

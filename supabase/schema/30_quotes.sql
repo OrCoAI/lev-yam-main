@@ -330,7 +330,11 @@ grant select, update on quotes.owner_secrets to authenticated;
 -- The sequence is reachable only through next_quote_number()'s definer rights;
 -- a direct client nextval() would burn numbers past the permission check.
 revoke usage on sequence quotes.quote_number_seq from authenticated;
+-- revoke-before-grant: PUBLIC (which includes anon) holds EXECUTE by default on
+-- every new function (audit-grants.mjs, 2026-08-12).
+revoke all on function quotes.next_quote_number() from public;
 grant execute on function quotes.next_quote_number() to authenticated;
+revoke all on function quotes.auto_expire() from public;
 grant execute on function quotes.auto_expire() to authenticated;
 
 -- =====================================================================

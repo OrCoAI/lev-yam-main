@@ -69,15 +69,34 @@ bilingual is ever a retrofit.*
         `pos_food`, `pos_labor`) blocked for manual entry, "expected" tab *(done
         2026-07-10; one-writer-per-category is now also DB-enforced in `entries_guard`;
         verified end-to-end in the preview harness at phone width)*
-  - [ ] Finance follow-ups (discovered in the UI-pass review, 2026-07-09): **partial
-        payments** on `finance.expected` (`record_payment` closes the expectation at any
-        amount — needs remainder/split support; UI warns for now); a **reversal path** for
-        posted entries with no owning module (payments on hand-created expectations get
-        `source='finance'` and are immutable with no corrector); **server-side provenance
-        resolution** (2026-07-12 UX-pass review): the `source_ref` grammar is parsed
-        client-side in `modules/finance/provenance.ts` — when a second surface needs
-        entry→quote/POS links (events module, dashboards), move it into a DB view or
-        generated columns next to the posting functions that own the formats
+  - [x] **Partial payments** on `finance.expected` *(done 2026-08-12, plan
+        [phase1-closeout.md](plans/phase1-closeout.md) §B)* — `record_payment()` closed an
+        expectation at **any** amount, so ₪1 against a ₪5,000 deposit marked it paid and the
+        remaining ₪4,999 left the plan entirely (out of the open list, the open-expected
+        total, and reconciliation's overdue check). Now: `paid_amount` column, remainder
+        arithmetic, overpay rejected, one `expected:<id>:pN` entry per payment (the posting
+        unique index forbids reusing one ref), `quotes.settle_on_paid` settles only the
+        remainder, reconciliation reports what is still owed, and the UI shows
+        "paid X of Y · remaining Z" instead of the old are-you-sure confirm
+  - [x] **Reversal path** — *rewritten rather than ticked as specified.* The original entry
+        said payments on hand-created expectations are "immutable with no corrector"; that
+        stopped being true with PR C (2026-08-03), whose owner override reaches
+        `source='finance'` rows through `correction_target()`'s fallback and is already
+        exposed in `EntriesTab`. What was genuinely missing — the *plan* side never
+        re-opening after a correction — is closed by §B's owner bypass: the owner can reset
+        `status`/`paid_amount` directly and `finance.audit_log` records it, so no separate
+        reversal function was needed. **Still open, logged:** correction rows carry
+        `payment_method = null` by design, so a reversed cash payment leaves the `by_payment`
+        cash column overstated while the totals stay right
+  - [ ] **Server-side provenance resolution** — deferred with a concrete trigger rather than
+        an open-ended one (2026-08-12). The `source_ref` grammar is parsed client-side in
+        `modules/finance/provenance.ts`; finance is still its only consumer, through a single
+        shared helper, so the cost of moving it has not yet been paid back. **Do it when the
+        first surface OUTSIDE finance needs entry→quote/POS links** — the Phase 2 events
+        module or a dashboard — or when a fifth in-module consumer appears. Shape: a
+        `security_invoker` `finance.entries_resolved` view next to the posting functions that
+        own the formats, which also retires `useQuoteMap`'s extra round trip and the dev
+        mock's third copy of the grammar
   - [x] Finance UX pass (kickoff 2026-07-12, Or's brief; **done 2026-07-13, PR #6**) —
         [plans/finance-ux-pass.md](plans/finance-ux-pass.md): report tab drill-down
         (expandable breakdown rows → underlying entries), date-preset chips + kind
@@ -133,31 +152,55 @@ bilingual is ever a retrofit.*
       62 declared revokes now reports 0 drift on both. **Root cause is process:** prod is not on
       the migration pipeline and each PR only hand-applied the *new* objects it added, so a
       `grant`/`revoke`/`alter` added later against an existing object never ran there
-      - [ ] **Put prod on the migration pipeline** (or run `supabase db push` against it) —
-            until then every schema change needs a deliberate "does prod actually have this?"
-            check, and the same class of drift can recur silently
-      - [ ] **Make `rls_matrix` runnable against prod** — running it only against a stack built
-            *from* the schema files is exactly why the grant drift survived, but **attempted
-            2026-08-05 and it cannot run there as written**: the whole suite assumes the
-            `aaaaaaaa-0000-…-000{1..5}` actors from `supabase/seed.sql`, which exist only
-            locally and on staging. Against prod's real user table the user-lifecycle phase
-            walks into the genuine last-admin guard and aborts (`users.manage` is held by
-            exactly **one** prod account). It rolled back cleanly — verified 0 leftovers — but
-            the value is zero until the suite seeds its own actors instead of borrowing the
-            seed's. Until then, the prod check that *does* work is the grant/objects audit in
-            the deploy script
-      - [ ] **A second `users.manage` holder on prod** — exactly one account holds it today, so
-            losing that account means nobody can administer users. Surfaced by the above
-      - [ ] **Set `disable_signup = true`** on prod and staging — every account is created by
-            invite, so open signup buys nothing and was the first link in the chain above
-- [ ] **The topbar overflows below ~370px** — found 2026-08-05 while measuring the finance
-      tables at phone widths, and **pre-existing** (no topbar/brand rule has changed since):
-      `.brand` (94px) + `.topbar-right` (268px: email, language toggle, Face ID, logout) + 40px
-      padding needs ~402px, so at 360px and 320px the whole page gets a horizontal scroll
-      (`documentElement.scrollWidth` 376 vs 360). 360px is a very common phone width — iPhone
-      SE, Galaxy S8/S9 — and mobile-first is a platform invariant. Likely fix: drop `.user-email`
-      to an avatar/initials at the phone breakpoint (the email is already shown in the users
-      module), or move the secondary actions behind a menu
+      - [x] **A live grant audit exists and runs every deploy** *(2026-08-12,
+            [phase1-closeout.md](plans/phase1-closeout.md) §D)* — `supabase/tests/audit-grants.mjs`
+            replays every CREATE/GRANT/REVOKE/DROP/ALTER-SET-SCHEMA from `schema/*.sql` **in
+            order** and compares the result against the live catalog. Wired into `deploy.yml`
+            (gating) and `deploy-staging.yml` (advisory). **This is the item the entry below
+            used to point at as already existing — it did not.** On its first real run it found
+            a live hole: `authenticated` held **TRUNCATE** on all four `pos.pos_*` tables, and
+            TRUNCATE is not governed by RLS, so any signed-in staff account could have wiped
+            the billing history. Plus 15 anon-callable functions and 2 passkey objects. All
+            closed on both tiers; both now report 0 drift
+      - [ ] **Put prod on the migration pipeline** — deferred with the prerequisites named
+            (2026-08-12), because the obvious move is destructive: prod has never been linked,
+            so its migration ledger is empty and `supabase db push` would **replay the entire
+            baseline**, which re-creates the anon-writable POS surface the 2026-07-14 cut-over
+            closed ([10_pos.sql:250-263](../supabase/schema/10_pos.sql)) and re-seeds POS
+            permissions over live rows. Required first, in order: (1) a real schema diff
+            proving prod matches the baseline, (2) `supabase migration repair --status applied`
+            to stamp it **without executing it**, (3) connectivity from CI — the dev box cannot
+            reach the DB pooler. Until then §D's audit is the check that actually runs
+      - [x] ~~Make `rls_matrix` runnable against prod~~ — **dropped 2026-08-12, the premise was
+            wrong.** The entry claimed the suite borrows `supabase/seed.sql`'s actors; `seed.sql`
+            contains **zero** `aaaaaaaa-…` UUIDs and the suite has always seeded its own five
+            (`rls_matrix.sql:203-223`), so the stated fix was a no-op. The real blocker is that
+            the suite *deliberately* deletes real `users.manage` grants and every
+            `core.user_roles` row to stage global guard states — it is destructive **by design**
+            and belongs on local/staging only. Prod is verified by §D's audit instead
+      - [x] **A second `users.manage` holder on prod** *(2026-08-12)* — a dedicated break-glass
+            account was invited and granted `owner`; the guard now counts 2 unbanned holders.
+            (The address is deliberately not written down here: this repo is public, and
+            naming the highest-privilege account hands over the login target for free.)
+            **Note:** it is not a working break-glass until its email is confirmed — prod runs
+            `mailer_autoconfirm` OFF, so an unconfirmed account cannot sign in at all
+      - [x] **Set `disable_signup = true`** *(2026-08-12)* — applied to prod and staging and
+            probe-verified live (`422 signup_disabled`), with a control proving the password
+            grant still reaches GoTrue. `config.toml` given local parity. Behaviourally inert:
+            nothing calls `signUp`, and invites go through the service-role Admin API. The
+            audit now asserts this setting on every run, so it cannot silently revert
+- [x] **The topbar overflows below ~370px** *(fixed 2026-08-12,
+      [phase1-closeout.md](plans/phase1-closeout.md) §C)* — **the diagnosis above was wrong**
+      and is kept here as the record: `.user-email` was *already* `display:none` at ≤640px
+      (since 2026-07-01, before the bug was logged), so the proposed fix would have saved
+      nothing. The real 268px was sign-out 78 · passkey 58 · language 54 · role chip 54 · gaps.
+      Fixed by collapsing sign-out to the house `.btn-icon-label` pattern and hiding the role
+      chip at phone width — but the *actual* bug was structural: `.topbar-right` had no
+      `flex-wrap`, so a nowrap flex item's minimum size is its whole row and it could never
+      shrink. It now wraps, which means the next control added cannot re-open this.
+      **Root cause of the five-week miss:** `screenshot.mjs` shot 390px only, and 390 is
+      exactly the width it fit at. 360 is now in the default set, and every shot reports
+      horizontal overflow automatically
 - [x] POS: map `pos.html` features → module design under `app-src/src/modules/pos/`
       (against the spines: `pos.close_day()` posts to finance; bills carry optional `event_id`)
       — **full migration plan: [plans/pos-module.md](plans/pos-module.md)** (kickoff
@@ -228,6 +271,15 @@ decisions: [plans/pos-operations-v2.md](plans/pos-operations-v2.md).*
 questions: [plans/platform-hardening.md](plans/platform-hardening.md). The audit's #1
 item — the anon `pos_*` surface — is the POS cut-over task above, not repeated here.*
 
+**Closing out both phases (kickoff 2026-08-12):** the remaining open items in Phase 1 *and*
+Phase 1.5 are being finished as one batch — plan:
+[plans/phase1-closeout.md](plans/phase1-closeout.md). Its kickoff audit found **four roadmap
+entries that were factually wrong** (the topbar diagnosis, H6's prescribed fix, the
+`rls_matrix`-on-prod blocker, and a prod audit script that does not exist) plus a destructive
+`supabase db push` trap; the corrections and the owner's decisions are recorded there and
+written back into the entries below as each ships. Sequence: ops → topbar → prod audit →
+finance money integrity → doc rewrites → **H9**.
+
 - [x] **H1** RLS regression suite (`supabase/tests/rls_matrix.sql`: per-role can/can't
       matrix) + `PERM` ↔ `core.permissions` drift check in `ci.yml` AND `deploy.yml`
       *(done 2026-07-16 — PR #11 of [plans/users-permissions-suite.md](plans/users-permissions-suite.md);
@@ -259,13 +311,23 @@ item — the anon `pos_*` surface — is the POS cut-over task above, not repeat
       close-out: [plans/users-delete-deactivate.md](plans/users-delete-deactivate.md);
       also closed a live PUBLIC-execute privilege-escalation in `core` found by
       the gate)*
-- [ ] **H6** `finance.expected` module-row guard (status-only client transitions on
-      module-sourced expectations). **Must also cover `finance.record_payment()`** — PR A's
-      security review (2026-08-03) found the reachable bypass is there, not on the table: it
-      is SECURITY DEFINER, checks only `finance.manage`, and posts `exp.category` behind the
-      posting GUC without the one-writer check, so a manager can land a row in a module-owned
-      category that is then permanently un-editable. Call the
-      `finance.assert_category_writable()` hook PR A added (`54_finance_categories.sql`).
+- [x] **H6** `finance.expected` module-row guard *(done 2026-08-12,
+      [phase1-closeout.md](plans/phase1-closeout.md) §B)* — module-sourced expectations are now
+      status-only for `finance.manage` holders; amount / due_date / reason / note / event_id /
+      `fulfilled_by` / `paid_amount` are refused, closing a path that silently broke the pairing
+      with a signed quote (and, via `fulfilled_by`, let a manager point an expectation at an
+      arbitrary entry). `record_payment()`'s bypass is closed too.
+      **The prescribed fix could not be used as written:** calling
+      `finance.assert_category_writable()` there would have **rejected the quotes module's own
+      primary money path**, because the `events` category is `owned_by_module='quotes'` and every
+      quotes deposit posts under it. Resolved with the owner-vs-poster predicate
+      (`finance.assert_category_writer()`), which asks "is this poster the module that owns the
+      category?" rather than "may a human write here?", and deliberately does not consult
+      `active` (archiving must never strand already-planned money).
+      **Owner decision 2026-08-12:** the owner is exempt from both guards — quotes can get a
+      deposit wrong and the owner must be able to correct it — with every such edit recorded in
+      the new `finance.audit_log` (readable at `finance.view`, trigger-written, no client write
+      policy). That also subsumed the separately-planned expectation re-open path.
 - [x] **H8** Platform observability — Bluebox/OTel tracing on the three Supabase edge
       functions (`admin-invite`, `admin-user-ops`, `passkey-verify`), the only server-side
       code the platform owns. Traces + **sanitized** log export: span attributes are an
@@ -277,6 +339,20 @@ item — the anon `pos_*` surface — is the POS cut-over task above, not repeat
       hole in `passkey-verify`'s origin gate, a staging/prod `verify_jwt` drift, and the
       missing `staging.levyam.com` origin that left the staging tier unable to exercise
       these functions at all.)*
+- [ ] **H9** Observability coverage — everything *watched*, not just collected (kickoff
+      2026-08-12, follows directly from H8's close-out gaps): continuous uptime + CTA-dead
+      alerting on the marketing funnel, Dynatrace RUM + JS error reporting on `/app` (the
+      platform UI currently emits nothing), reconciliation-as-monitor cron + grant-drift
+      probe through the H8 OTel plumbing, `traceparent` correlation app→edge, deploy
+      verification in Bluebox, dashboards-as-code via dtctl. Owner decisions: `/app` RUM
+      only (`pos.html` dark until migration); alerts live inside Dynatrace/Bluebox, no
+      external channel; phased PRs. Also absorbs H8's open follow-ups (`deno check` in CI,
+      `login/options` rate limit) and two owner-added dev-loop practices (2026-08-12):
+      production insight wired into the IDE workflow (Dynatrace MCP in `.mcp.json`,
+      mandatory production-context step) and instrumentation-by-default for every new
+      surface (MODULE-TEMPLATE.md observability checklist — telemetry ships in the same
+      PR as the feature). Plan:
+      [plans/observability-coverage.md](plans/observability-coverage.md)
 - [x] **H7** Hygiene batch — nine small repo/UX/ops items; **8 of 9 done** (3 with
       H3/H5 on 2026-07-15, 5 more on 2026-07-16 via PR #11 of
       [plans/users-permissions-suite.md](plans/users-permissions-suite.md): storage
