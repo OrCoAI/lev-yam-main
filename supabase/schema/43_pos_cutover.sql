@@ -71,6 +71,29 @@ drop policy if exists "pos_expenses anon"   on pos.pos_expenses;
 
 revoke all on pos.pos_tables, pos.pos_bills, pos.pos_bill_items, pos.pos_expenses from anon;
 revoke all on pos.v_sales_daily, pos.v_item_sales, pos.v_category_sales, pos.v_sales_hourly from anon;
+-- ...and the same default-privilege leftovers for `authenticated`. These tables
+-- were born in `public`, where Supabase's default privileges grant ALL to
+-- anon/authenticated, and ACLs travel with the object through the `set schema`
+-- above. 44_initplan_sweep.sql:64 already cleared exactly these leftovers off
+-- the four v_sales_* VIEWS on 2026-07-15 — the TABLES twin was missed, and
+-- that is why this survived: TRUNCATE is NOT governed by RLS, so every policy
+-- below was bypassable and any signed-in staff account could wipe the billing
+-- history in one statement. Found live on prod + staging by
+-- supabase/tests/audit-grants.mjs 2026-08-12, revoked on both the same day.
+-- The privileges the app actually uses are granted in 42_pos_platform.sql.
+revoke truncate, trigger, references
+  on pos.pos_tables, pos.pos_bills, pos.pos_bill_items, pos.pos_expenses from authenticated;
+-- MAINTAIN is PG17+. Every tier is on 17 today (config.toml pins major_version 17;
+-- both cloud projects reported 17.6 on 2026-08-12), but naming it unguarded would
+-- make this whole file a syntax error on an older or restored instance — which
+-- would abort the migration and leave TRUNCATE granted. Failing open on the
+-- privilege is the one outcome this statement exists to prevent, so it is guarded.
+do $$
+begin
+  if current_setting('server_version_num')::int >= 170000 then
+    execute 'revoke maintain on pos.pos_tables, pos.pos_bills, pos.pos_bill_items, pos.pos_expenses from authenticated';
+  end if;
+end $$;
 
 -- ---------------------------------------------------------------------
 --  3) Drop the old public-schema RPCs (bodies hardcode public.pos_* —
@@ -448,9 +471,25 @@ drop function if exists pos.set_bill_closed_by();
 -- ---------------------------------------------------------------------
 --  9) Grants — authenticated only; anon has no path left into pos.*
 -- ---------------------------------------------------------------------
+-- revoke-before-grant on every function: Postgres grants EXECUTE to PUBLIC (which
+-- includes anon) on creation, so a bare grant leaves an anon path into pos.* —
+-- the very thing this cut-over closed at the table level. Found live on prod AND
+-- staging by supabase/tests/audit-grants.mjs on 2026-08-12, fixed on both.
+revoke all on function pos.pos_reopen_bill(text, int)      from public;
+revoke all on function pos.pos_mark_item(text, text, bool) from public;
+revoke all on function pos.pos_day_report(date)            from public;
+revoke all on function pos.range_report(date, date)        from public;
 grant execute on function pos.pos_close_table(jsonb, jsonb)   to authenticated;
 grant execute on function pos.pos_reopen_bill(text, int)      to authenticated;
 grant execute on function pos.pos_mark_item(text, text, bool) to authenticated;
 grant execute on function pos.pos_day_report(date)            to authenticated;
 grant execute on function pos.range_report(date, date)        to authenticated;
 grant execute on function pos.close_day(date)                 to authenticated;
+-- Internal helpers — reached only through the definer functions above, but kept
+-- executable by `authenticated` so no indirect non-definer call path can break.
+revoke all on function pos.require(text)                from public;
+grant execute on function pos.require(text)             to authenticated;
+revoke all on function pos.oh_charge(integer, integer)  from public;
+grant execute on function pos.oh_charge(integer, integer) to authenticated;
+revoke all on function pos.report_for_range(date, date) from public;
+grant execute on function pos.report_for_range(date, date) to authenticated;

@@ -144,6 +144,42 @@ Expected result: `.topbar-right` ~170px → fits 320, 360 and 390 with headroom.
 This is the cheap 80% of what "make `rls_matrix` runnable against prod" was reaching for, with
 none of its destructive DML.
 
+**What it found on its first real run (2026-08-12) — the item paid for itself immediately:**
+
+- 🔴 **`authenticated` held `TRUNCATE` + `TRIGGER` on all four `pos.pos_*` tables, on prod and
+  staging.** **TRUNCATE is not governed by RLS**, so every POS policy was bypassable: any
+  signed-in staff account could wipe the entire billing history in one statement.
+  `finance.entries` and `core.user_roles` were unaffected. **Root cause:** the tables were
+  created in `public`, where Supabase's default privileges grant ALL to `anon`/`authenticated`;
+  [43_pos_cutover.sql:38-47](../../supabase/schema/43_pos_cutover.sql#L38-L47) moved them to
+  schema `pos` and **ACLs travel with the object**. The cut-over revoked `anon` wholesale and
+  granted `authenticated` the four DML privileges it needed, but never revoked the four
+  inherited ones it did not. *Fixed on both tiers 2026-08-12 and written into `43_pos_cutover.sql`
+  §9b; verified `TRUNCATE`/`TRIGGER` now false while SELECT/INSERT/UPDATE survive.*
+- 🟠 **15 functions were `EXECUTE`-able by `PUBLIC` (i.e. anon)** because the files granted to
+  `authenticated` without first revoking Postgres's default — including the SECURITY DEFINER
+  `finance.record_payment`, `pos.pos_day_report`, `pos.range_report`, `quotes.next_quote_number`.
+  *Fixed on both tiers and in the files (revoke-before-grant next to each grant). Five of them
+  (`pos.require`, `pos.oh_charge`, `pos.report_for_range`, `finance.is_posting`,
+  `quotes.try_time`) had **no** explicit `authenticated` grant and lived only on the PUBLIC
+  default — a bare revoke would have broken them, so each got an explicit
+  `grant execute … to authenticated` in the same statement.*
+- 🟡 **14 trigger functions remain PUBLIC-executable** — deliberately deferred (owner decision):
+  they return `trigger` and error out when called directly. Tracked as a follow-up below.
+- ⬜ **"Staging is more permissive than prod" — RETRACTED 2026-08-12, this was a tool bug, not
+  drift.** The first version of `audit-grants.mjs` re-keyed schema-moved objects by *overwriting*
+  intent, so `42_pos_platform.sql`'s `authenticated` grants on the POS tables were clobbered by
+  `10_pos.sql`'s pre-move map and read as unintended. Re-checked after the ordered-replay rewrite:
+  prod and staging are **identical** and both match the files exactly (`pos_bill_items` SELECT ·
+  `pos_bills` SELECT+UPDATE · `pos_expenses` SELECT+INSERT+DELETE · `pos_tables` all four).
+  **The owner rejected the "fix" mid-session and was right to** — applying it would have revoked
+  working privileges from staging and broken POS there. Recorded because it is the sharpest
+  lesson of this item: *a new audit's first findings must be treated as suspect until the tool
+  itself is verified*, and a confident wrong answer from a security tool is worse than no tool.
+- 🟡 **`public.rls_auto_enable`** — a SECURITY DEFINER event-trigger function on prod that
+  appears in no schema file. Harmless in shape (event-trigger functions are not usefully
+  callable) but undeclared; worth adopting into the files or removing.
+
 ### B — Finance money integrity: H6 + owner override + partial payments *(PR 3, the large one)*
 
 Two SQL functions and one new table. **Edit `21_finance_spine.sql` and `54_finance_categories.sql`
@@ -331,6 +367,28 @@ budgets. §C serves "staff and members work from phones" literally. No conflict.
 
 ## Follow-ups (logged, not scope)
 
+- **15 functions still PUBLIC-executable by the schema files** (§D) — owner deferred; low risk
+  (14 are trigger functions that error when called directly), one sweep. Worth pairing with a
+  **ratchet**: an explicit allowlist of the known-deferred names in `audit-grants.mjs`, failing
+  on anything outside it, so the backlog stays unblocking but cannot quietly grow.
+- **`audit-grants.mjs` gates the prod deploy** — a management-API blip (exit 2) blocks shipping
+  an unrelated marketing change. Consider moving it to its own job or a scheduled run so the
+  signal goes red without coupling to the Pages publish.
+- **`screenshot.mjs` reports overflow but always exits 0** — enforcement lives in a CLAUDE.md
+  sentence, the same class of guarantee that failed for five weeks. An opt-in
+  `--assert-no-overflow` exit code (plus naming *which* element overflows) would turn the
+  symptom into an enforceable diagnosis.
+- **Column-level grants are not audited** (`pg_attribute.attacl`) — and the repo uses them as a
+  real control (`events.events` for anon, `finance.transfers`, `finance.categories`,
+  `pos.day_pins`). A hand-run `grant update (kind) on finance.categories to authenticated` on
+  prod would let staff reclassify income as expense and would **not** be caught.
+- **The audit is one-directional** — it finds privileges live has that the files don't intend,
+  never a `grant` that was never applied. That half shows up as a staff-facing "permission
+  denied" instead.
+- **`public.rls_auto_enable` is undeclared** (§D) — adopt into `supabase/schema/` or drop.
+- **Supabase's default privileges on `public` are a standing hazard** — anything created there
+  gets ALL granted to `anon`/`authenticated`, and the grant survives a later `set schema`. Any
+  future table born in `public` inherits the same TRUNCATE hole.
 - `payment_method` attribution on correction rows (§B residue above).
 - Full migration pipeline for prod — blocked on a schema-diff proof (§E).
 - Server-side provenance resolution — trigger named in §E.

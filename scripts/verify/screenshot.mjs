@@ -9,24 +9,37 @@
 //   node scripts/verify/screenshot.mjs <url> <outPrefix> [options]
 //
 // Options:
-//   --viewport mobile|desktop|both   default: both
+//   --viewport narrow|mobile|desktop|both   default: both (all three)
 //   --js "<expression>"              evaluated in-page before the shot; may
 //                                     return a Promise (awaited) — use for
 //                                     clicks, form fills, waiting on content
 //   --wait <ms>                      extra settle time after load, default 300
 //   --scale <n>                      deviceScaleFactor, default 1
 //
-// Writes <outPrefix>-mobile.png and/or <outPrefix>-desktop.png.
+// Writes <outPrefix>-narrow.png, <outPrefix>-mobile.png and/or <outPrefix>-desktop.png.
 //
 // Gotchas carried over from hand-run sessions (see the
 // reference-headless-chrome-screenshots memory this script formalizes):
 //   - captureBeyondViewport is deliberately never used — on these RTL pages
 //     it shifts the image and looks like an overflow bug that isn't there.
-//     To check real overflow, use --js measuring
-//     document.documentElement.scrollWidth vs clientWidth instead.
-//   - Always shoot BOTH viewports (mobile-first is a platform requirement,
+//     Real overflow is now measured automatically per shot (see below) rather
+//     than left to a hand-written --js expression.
+//   - Always shoot EVERY viewport (mobile-first is a platform requirement,
 //     and .rowline-style disclosure UI behaves differently under 640px) —
 //     hence --viewport defaults to "both" rather than requiring the flag.
+//   - 360px is in the default set since 2026-08-12. The topbar overflowed at
+//     360 for five weeks while every gate screenshot passed clean, because the
+//     only phone width shot was 390 — which is *exactly* the width the topbar
+//     fit at. A layout bug that hides between two device widths is invisible to
+//     a single-width check, so the narrow shot is not optional.
+//   - Each shot also compares documentElement.scrollWidth against the CONFIGURED
+//     viewport width (never window.innerWidth — under mobile emulation it grows
+//     to fit the overflow, so that comparison silently never fires) and
+//     prints a loud HORIZONTAL OVERFLOW warning. Deliberately a warning, not a
+//     failure: some pages legitimately contain horizontally-scrolling children
+//     (wide tables), and this measures the document, so a hard failure would
+//     produce false alarms. Read it — it is the check that would have caught
+//     the topbar bug on day one.
 
 import { spawn } from 'node:child_process';
 import { writeFileSync, mkdtempSync } from 'node:fs';
@@ -36,6 +49,9 @@ import { join } from 'node:path';
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 
 const VIEWPORTS = {
+  // 360 = Galaxy S8/S9 and the common Android floor; 390 = iPhone 12–15.
+  // Both are shot because layout bugs hide in the 30px between them.
+  narrow: { width: 360, height: 780, mobile: true },
   mobile: { width: 390, height: 844, mobile: true },
   desktop: { width: 1280, height: 800, mobile: false },
 };
@@ -43,7 +59,8 @@ const VIEWPORTS = {
 function parseArgs(argv) {
   const [url, outPrefix, ...rest] = argv;
   if (!url || !outPrefix) {
-    console.error('usage: node scripts/verify/screenshot.mjs <url> <outPrefix> [--viewport mobile|desktop|both] [--js "<expr>"] [--wait ms] [--scale n]');
+    // Viewport names come from VIEWPORTS so this can't go stale when one is added.
+    console.error(`usage: node scripts/verify/screenshot.mjs <url> <outPrefix> [--viewport ${Object.keys(VIEWPORTS).join('|')}|both] [--js "<expr>"] [--wait ms] [--scale n]`);
     process.exit(2);
   }
   const opts = { viewport: 'both', wait: 300, scale: 1, js: null };
@@ -154,17 +171,39 @@ async function shootViewport(port, opts, name, dims) {
     }
   }
 
+  // Measured on every shot, not left to a hand-written --js — see header.
+  // Compared against the viewport width we ASKED for, never window.innerWidth:
+  // under mobile:true emulation Chrome widens the layout viewport to fit
+  // overflowing content, so innerWidth grows with the overflow and
+  // `scrollWidth > innerWidth` is never true (measured: a 900px child at the
+  // 360px viewport reports innerWidth 900). That comparison looks right and
+  // silently never fires — the same "passes clean while broken" trap this
+  // check exists to catch.
+  const measured = await cdp.send('Runtime.evaluate', {
+    expression: 'document.documentElement.scrollWidth',
+    returnByValue: true,
+  });
+  const scrollWidth = measured.result?.value;
+  // Never let a failed measurement read as "no overflow": `undefined > 360` is
+  // false, which is silently-passing — the exact failure mode this check exists
+  // to prevent.
+  if (typeof scrollWidth !== 'number') {
+    throw new Error(`overflow measurement failed at ${name}: ${JSON.stringify(measured).slice(0, 200)}`);
+  }
+
   const { data } = await cdp.send('Page.captureScreenshot', { format: 'png' }); // captureBeyondViewport intentionally omitted — see header
   const outPath = `${opts.outPrefix}-${name}.png`;
   writeFileSync(outPath, Buffer.from(data, 'base64'));
   cdp.close();
   await fetch(`http://127.0.0.1:${port}/json/close/${target.id}`, { method: 'PUT' }).catch(() => {});
-  return outPath;
+  return { outPath, name, scrollWidth, viewportWidth: dims.width };
 }
 
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
-  const names = opts.viewport === 'both' ? ['mobile', 'desktop'] : [opts.viewport];
+  // VIEWPORTS is the single source of truth — a new width is shot by default
+  // without editing a second list (forgetting that is how 360 went unshot).
+  const names = opts.viewport === 'both' ? Object.keys(VIEWPORTS) : [opts.viewport];
   for (const n of names) {
     if (!VIEWPORTS[n]) { console.error(`unknown viewport: ${n}`); process.exit(2); }
   }
@@ -182,7 +221,15 @@ async function main() {
     for (const name of names) {
       written.push(await shootViewport(port, opts, name, VIEWPORTS[name]));
     }
-    for (const path of written) console.log(path);
+    for (const { outPath } of written) console.log(outPath);
+    for (const { name, scrollWidth, viewportWidth } of written) {
+      if (scrollWidth > viewportWidth) {
+        console.error(
+          `  !! HORIZONTAL OVERFLOW at ${name}: document scrollWidth ${scrollWidth} ` +
+            `> viewport ${viewportWidth} (+${scrollWidth - viewportWidth}px) — the page scrolls sideways.`,
+        );
+      }
+    }
   } finally {
     chrome.kill();
   }

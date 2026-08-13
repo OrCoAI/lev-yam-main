@@ -15,7 +15,9 @@ function RoleBadge() {
   // during a view-as preview the banner names the previewed user — showing the
   // admin's own role next to it would contradict what the screen renders
   if (preview || roles.length === 0) return null
-  return <span className="badge">{roleName(roles[0])}</span>
+  // `role-badge` is the hook the phone breakpoint hides — named for what it IS,
+  // so the rule can't silently swallow some future topbar `.badge`.
+  return <span className="badge role-badge">{roleName(roles[0])}</span>
 }
 
 export default function Layout() {
@@ -43,8 +45,16 @@ export default function Layout() {
           <RoleBadge />
           <LangToggle />
           <EnablePasskey />
-          <button className="btn-ghost" onClick={handleSignOut}>
-            {t('layout.signOut')}
+          <button
+            className="btn-ghost btn-icon-label"
+            onClick={handleSignOut}
+            title={t('layout.signOut')}
+            aria-label={t('layout.signOut')}
+          >
+            {/* door, not an arrow: both languages are RTL, so a directional
+                glyph would point the wrong way */}
+            <span aria-hidden="true">🚪</span>
+            <span className="btn-label">{t('layout.signOut')}</span>
           </button>
         </div>
       </header>

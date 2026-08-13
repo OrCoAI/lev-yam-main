@@ -247,5 +247,16 @@ create policy "finance_expected_write" on finance.expected for all to authentica
 --  Grants (RLS still gates every statement)
 -- ---------------------------------------------------------------------
 grant select, insert, update, delete on finance.expected to authenticated;
+-- Every `grant execute` below is preceded by a `revoke ... from public`: Postgres
+-- grants EXECUTE to PUBLIC (which includes anon) on every new function, so a bare
+-- grant leaves the function anon-callable. Found live on prod AND staging by
+-- supabase/tests/audit-grants.mjs on 2026-08-12 and fixed on both tiers.
+revoke all on function finance.record_payment(uuid, numeric, text, date, text) from public;
 grant execute on function finance.record_payment(uuid, numeric, text, date, text) to authenticated;
+revoke all on function finance.event_pnl(uuid) from public;
 grant execute on function finance.event_pnl(uuid) to authenticated;
+-- Internal helper: only ever called from inside other functions and guards, but
+-- it must stay executable by `authenticated` because the non-definer trigger
+-- guards call it as the invoking user. Revoke PUBLIC, grant authenticated back.
+revoke all on function finance.is_posting() from public;
+grant execute on function finance.is_posting() to authenticated;

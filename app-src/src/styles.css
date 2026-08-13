@@ -160,7 +160,14 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .brand-logo { height: 36px; width: auto; display: block; }
 .brand-name { font-family: var(--font-display); font-weight: 800; font-size: 1.15rem; line-height: 1; display: flex; align-items: baseline; gap: 7px; }
 .brand-sub { font-size: 0.68rem; font-weight: 600; color: var(--muted); }
-.topbar-right { display: flex; align-items: center; gap: 12px; }
+/* `flex-wrap: wrap` is the structural net, not decoration: a nowrap flex item's
+   automatic minimum size is its whole single-line width, so this cluster could
+   never shrink and HAD to push the document sideways once its contents outgrew
+   the row — that is the real 360px topbar bug, and hiding one more child each
+   time (the email, then the role chip) only postpones it until the next control
+   is added. With wrap, the worst case degrades to a two-row header instead of a
+   horizontally-scrolling page. */
+.topbar-right { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 12px; }
 .user-email { font-size: 0.85rem; }
 .content {
   flex: 1; max-width: 1040px; width: 100%; margin: 0 auto;
@@ -490,7 +497,13 @@ a.btn-ghost, a.btn-primary {
   .content { padding: 16px 14px; }
   .topbar { padding: 10px 14px; }
   .topbar-right { gap: 8px; }
+  /* The topbar has no room below ~370px: brand 94 + right 268 + 28 padding needs
+     ~390, so 360px phones (iPhone SE, Galaxy S8/S9) scrolled sideways. The email
+     was already hidden here; the role chip goes too — it's shown in the users
+     module and the launcher — and sign-out collapses to its icon via
+     .btn-icon-label below. */
   .user-email { display: none; }
+  .role-badge { display: none; }
   .brand-logo { height: 30px; }
   .brand-name { font-size: 1rem; }
   .page-title { font-size: 1.3rem; }

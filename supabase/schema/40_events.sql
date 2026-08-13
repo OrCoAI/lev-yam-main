@@ -495,7 +495,12 @@ end; $$;
 -- Internal helpers are not client-callable; the guarded backfill is.
 revoke execute on function quotes.project_quote(quotes.quotes) from public, authenticated, anon;
 revoke execute on function quotes.plan_money_for_quote(uuid)   from public, authenticated, anon;
+revoke execute on function quotes.backfill_events()             from public;
 grant  execute on function quotes.backfill_events() to authenticated;
+-- Internal helper used by the projection triggers; kept executable by
+-- `authenticated` because the non-definer triggers call it as the invoker.
+revoke all    on function quotes.try_time(text) from public;
+grant  execute on function quotes.try_time(text) to authenticated;
 
 -- =====================================================================
 --  SEED DATA (idempotent — safe to re-run)
