@@ -416,8 +416,10 @@ returns trigger language plpgsql security definer
 set search_path = quotes, finance, public
 as $$
 declare
-  exp     record;
-  v_entry uuid;
+  exp         record;
+  v_entry     uuid;
+  v_remaining numeric(12,2);
+  v_seq       int;
 begin
   if new.status = 'paid' and old.status is distinct from 'paid' then
     perform set_config('levyam.finance_posting', 'on', true);
@@ -429,21 +431,46 @@ begin
       order by due_date nulls last
       for update
     loop
-      v_entry := null;
+      -- Settle only what is still OWED. Before partial payments existed this
+      -- posted exp.amount unconditionally, so a deposit already part-paid
+      -- through record_payment() would post a second time at its FULL value
+      -- when the quote flipped to 'paid' — double-counting the income.
+      v_remaining := exp.amount - exp.paid_amount;
+      -- Already fully paid but still flagged open (an audited owner edit can
+      -- leave it that way): settle the STATUS and move on. Skipping outright
+      -- left it in the open list and reconciliation's overdue check forever,
+      -- reported as overdue for 0 ₪.
+      if v_remaining <= 0 then
+        update finance.expected set status = 'fulfilled' where id = exp.id;
+        continue;
+      end if;
+
+      -- Own ':pN' slot in the same grammar record_payment() uses, so a
+      -- settlement following a partial payment cannot collide with it.
+      select count(*) + 1 into v_seq
+        from finance.entries
+       where source_module = 'quotes'
+         and source_ref like 'expected:' || exp.id || '%';
+
       insert into finance.entries
         (kind, category, amount, entry_date, note, source_module, source_ref, event_id)
       values
-        ('income', exp.category, exp.amount, coalesce(new.paid_date, current_date),
+        ('income', exp.category, v_remaining, coalesce(new.paid_date, current_date),
          exp.reason || ' — ' || new.customer_name || ' (' || new.quote_number || ')',
-         'quotes', 'expected:' || exp.id, exp.event_id)
-      on conflict (source_module, source_ref, kind, category) where source_module is not null
-      do nothing
+         'quotes', 'expected:' || exp.id || ':p' || v_seq, exp.event_id)
+      -- No `on conflict do nothing` any more. With a counted ':pN' ref the value
+      -- is fresh by construction, so the conflict arm could only fire on a state
+      -- that entries_guard makes impossible — and its silent outcome was the bad
+      -- one: v_entry stays null, the expectation stays open, and a quote already
+      -- marked `paid` quietly has no income posted against it. Idempotency now
+      -- rests on `status = 'open'` plus the cursor's FOR UPDATE lock (both above)
+      -- and on the `continue when v_remaining <= 0` guard, so a genuine unique
+      -- violation here means a real invariant broke and must fail loudly —
+      -- matching how record_payment() treats the same impossible case.
       returning id into v_entry;
-      if v_entry is not null then
-        update finance.expected
-        set status = 'fulfilled', fulfilled_by = v_entry
-        where id = exp.id;
-      end if;
+      update finance.expected
+      set status = 'fulfilled', fulfilled_by = v_entry, paid_amount = exp.amount
+      where id = exp.id;
     end loop;
     perform set_config('levyam.finance_posting', '', true);
   end if;
@@ -495,7 +522,12 @@ end; $$;
 -- Internal helpers are not client-callable; the guarded backfill is.
 revoke execute on function quotes.project_quote(quotes.quotes) from public, authenticated, anon;
 revoke execute on function quotes.plan_money_for_quote(uuid)   from public, authenticated, anon;
+revoke execute on function quotes.backfill_events()             from public;
 grant  execute on function quotes.backfill_events() to authenticated;
+-- Internal helper used by the projection triggers; kept executable by
+-- `authenticated` because the non-definer triggers call it as the invoker.
+revoke all    on function quotes.try_time(text) from public;
+grant  execute on function quotes.try_time(text) to authenticated;
 
 -- =====================================================================
 --  SEED DATA (idempotent — safe to re-run)

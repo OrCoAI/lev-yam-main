@@ -5,7 +5,7 @@ import { useRowDisclosure } from '../../lib/useRowDisclosure'
 import { PAYMENT_METHODS, useCategoryName } from './categories'
 import DateField from './DateField'
 import ErrorNotice from './ErrorNotice'
-import { shortDate, todayStr } from './format'
+import { amount as fmtAmount, shortDate, todayStr } from './format'
 import { useFT, type FinanceDict } from './i18n'
 import { sourceHref } from './provenance'
 import SourceBadge from './SourceBadge'
@@ -26,6 +26,25 @@ type FulfillValues = {
   payment_method: FinancePaymentMethod
   date: string
   note: string
+  // Required by the server whenever amount exceeds the remainder; stamped
+  // into the posted entry's note so the books say why the extra is there.
+  overReason: string | null
+}
+
+// What is still OWED on a row. The `?? 0` matters: prod may not have the
+// column until the SQL is hand-applied (see types.ts), and a NaN here would
+// poison every sum and default it feeds.
+function outstanding(r: FinanceExpected) {
+  return Number(r.amount) - Number(r.paid_amount ?? 0)
+}
+
+// The "paid X of Y" sub-line, shared by the open row and the fulfil form.
+// The i18n template appends ₪ itself, so these stay bare locale numbers.
+function paidOfLabel(ft: FinanceDict, r: FinanceExpected) {
+  return ft.paidOf(
+    Number(r.paid_amount ?? 0).toLocaleString('he-IL'),
+    Number(r.amount).toLocaleString('he-IL'),
+  )
 }
 
 export default function ExpectedTab({
@@ -109,21 +128,37 @@ export default function ExpectedTab({
   let openIn = 0
   let openOut = 0
   for (const r of open) {
-    if (r.direction === 'in') openIn += Number(r.amount)
-    else openOut += Number(r.amount)
+    // Counting the full amount would overstate the open plan by everything
+    // already collected against part-paid rows.
+    if (r.direction === 'in') openIn += outstanding(r)
+    else openOut += outstanding(r)
   }
   // open-only lookup: a cancelled/fulfilled row closes its form on the next render
   const fulfillRow = fulfillId ? open.find((r) => r.id === fulfillId) : undefined
 
   async function submitFulfill(r: FinanceExpected, v: FulfillValues) {
     setBusy(true)
-    const { error } = await finance().rpc('record_payment', {
+    // p_over_reason is only sent when overpaying: PostgREST matches an RPC by
+    // its named-argument set, so an always-present extra argument would match
+    // NOTHING against a database still running the previous 5-parameter
+    // record_payment — and /app auto-deploys before the SQL is hand-applied to
+    // prod (the same skew window that makes types.ts's paid_amount optional).
+    const args: {
+      p_expected: string
+      p_amount: number
+      p_method: FinancePaymentMethod
+      p_date: string
+      p_note: string | null
+      p_over_reason?: string
+    } = {
       p_expected: r.id,
       p_amount: v.amount,
       p_method: v.payment_method,
       p_date: v.date,
       p_note: v.note.trim() || null,
-    })
+    }
+    if (v.overReason) args.p_over_reason = v.overReason
+    const { error } = await finance().rpc('record_payment', args)
     setBusy(false)
     if (error) {
       setError(error.message)
@@ -194,7 +229,15 @@ export default function ExpectedTab({
         <td
           className={`rl-amt finance-amount ${r.direction === 'in' ? 'finance-income' : 'finance-expense'}`}
         >
-          <span dir="ltr">{Number(r.amount).toLocaleString('he-IL')} ₪</span>
+          {/* Open rows show what is still OWED; closed rows show what the
+              expectation WAS. renderRow is shared with the history table, and
+              showing the remainder there rendered every settled row as 0 ₪. */}
+          <span dir="ltr">{fmtAmount(r.status === 'open' ? outstanding(r) : Number(r.amount))}</span>
+          {Number(r.paid_amount ?? 0) > 0 && r.status === 'open' && (
+            <div className="muted" style={{ fontSize: '0.78rem', fontWeight: 400 }}>
+              {paidOfLabel(ft, r)}
+            </div>
+          )}
         </td>
         <td className="rl-more" data-label={ft.colStatus}>
           {ft.statusLabels[r.status]}
@@ -236,11 +279,11 @@ export default function ExpectedTab({
       <div className="finance-summary">
         <div className="card finance-stat stat-income">
           <span className="muted">{ft.openExpectedIn}</span>
-          <strong className="finance-income">{openIn.toLocaleString('he-IL')} ₪</strong>
+          <strong className="finance-income">{fmtAmount(openIn)}</strong>
         </div>
         <div className="card finance-stat stat-expense">
           <span className="muted">{ft.openExpectedOut}</span>
-          <strong className="finance-expense">{openOut.toLocaleString('he-IL')} ₪</strong>
+          <strong className="finance-expense">{fmtAmount(openOut)}</strong>
         </div>
       </div>
 
@@ -324,37 +367,62 @@ function FulfillForm({
 }) {
   const ft = useFT()
   const categoryName = useCategoryName()
-  const [amount, setAmount] = useState(String(row.amount))
+  // Default to what is still OWED, not the original figure — paying a
+  // part-paid deposit "in full" means paying the remainder.
+  const remaining = outstanding(row)
+  const [amount, setAmount] = useState(String(remaining))
   const [method, setMethod] = useState<FinancePaymentMethod>('cash')
   const [date, setDate] = useState(todayStr())
   const [note, setNote] = useState('')
-  const [invalid, setInvalid] = useState(false)
+  const [overReason, setOverReason] = useState('')
+  const [submitError, setSubmitError] = useState<'invalid' | 'reasonMissing' | null>(null)
+  // Reactive, not submit-time: the reason box appears the moment the typed
+  // amount exceeds the remainder, so the requirement is visible before the
+  // user reaches the submit button. The server enforces the same rule.
+  // Compared at 2 decimals, matching the server's numeric(12,2): the raw float
+  // subtraction behind `remaining` can sit a hair off the true value, which
+  // would demand a reason for an exact-remainder payment (or skip the box for
+  // an amount the server then refuses without one).
+  const isOver = Math.round(Number(amount) * 100) > Math.round(remaining * 100)
 
   function submit() {
     const n = Number(amount)
     if (!n || n <= 0) {
-      setInvalid(true)
+      setSubmitError('invalid')
       return
     }
-    // record_payment closes the expectation whatever the amount — a partial
-    // payment must be a conscious choice (full partial-payment support is a
-    // roadmap follow-up)
-    if (
-      n !== Number(row.amount) &&
-      !window.confirm(ft.amountDiffers(Number(row.amount).toLocaleString('he-IL')))
-    )
+    if (isOver && !overReason.trim()) {
+      setSubmitError('reasonMissing')
       return
-    setInvalid(false)
-    onSubmit({ amount: n, payment_method: method, date, note })
+    }
+    setSubmitError(null)
+    onSubmit({
+      amount: n,
+      payment_method: method,
+      date,
+      note,
+      overReason: isOver ? overReason.trim() : null,
+    })
   }
 
   return (
     <div className="finance-form finance-fulfill">
       <div className="muted">
         {ft.recordPaymentTitle} — {expectedTitle(ft, categoryName, row)} (
-        <span dir="ltr">{Number(row.amount).toLocaleString('he-IL')} ₪</span> {ft.expectedSuffix})
+        <span dir="ltr">{fmtAmount(Number(row.amount))}</span> {ft.expectedSuffix})
       </div>
-      {invalid && <div className="error">{ft.invalidAmount}</div>}
+      {Number(row.paid_amount ?? 0) > 0 && (
+        <div className="muted">
+          {paidOfLabel(ft, row)} · {ft.remainingToPay}:{' '}
+          <span dir="ltr">{fmtAmount(remaining)}</span>
+        </div>
+      )}
+      {submitError === 'invalid' && <div className="error">{ft.invalidAmount}</div>}
+      {isOver && (
+        <div className={submitError === 'reasonMissing' ? 'error' : 'muted'}>
+          {ft.overpayNotice(remaining.toLocaleString('he-IL'))}
+        </div>
+      )}
       <div className="field-row">
         <label className="field">
           <span className="field-label">{ft.amountShekel}</span>
@@ -391,6 +459,16 @@ function FulfillForm({
         <span className="field-label">{ft.noteOptional}</span>
         <input type="text" value={note} onChange={(e) => setNote(e.target.value)} />
       </label>
+      {isOver && (
+        <label className="field">
+          <span className="field-label">{ft.overpayReasonLabel}</span>
+          <input
+            type="text"
+            value={overReason}
+            onChange={(e) => setOverReason(e.target.value)}
+          />
+        </label>
+      )}
       <div className="field-actions">
         <button className="btn-primary btn-block" disabled={busy} onClick={submit}>
           {ft.submitPayment}

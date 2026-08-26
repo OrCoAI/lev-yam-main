@@ -55,6 +55,15 @@ create policy passkeys_delete_own on core.passkeys for delete to authenticated
 -- Clients may read/delete their own passkeys; challenges get nothing.
 grant select, delete on core.passkeys to authenticated;
 -- (intentionally NO grant on core.webauthn_challenges for clients)
+-- ...and say so in SQL, not just in a comment. `00_core.sql` ends with
+-- `grant select on all tables in schema core to authenticated` — which is
+-- ORDER-DEPENDENT: on a fresh install it covers only what existed then, but
+-- re-running that file (which is how prod has always been maintained) sweeps up
+-- everything later files added, including this table. Found live on prod by
+-- supabase/tests/audit-grants.mjs 2026-08-12. Harmless today only because RLS is
+-- on with zero policies (default deny) — this revoke is the layer that should
+-- not have been relying on that.
+revoke all on core.webauthn_challenges from authenticated, anon;
 
 -- The passkey-verify Edge Function runs as service_role. BYPASSRLS skips policies
 -- but NOT table grants, and a custom schema isn't auto-granted — so grant explicitly.
@@ -72,4 +81,11 @@ set search_path = core, public
 as $$
   delete from core.webauthn_challenges where expires_at < now();
 $$;
+-- Created AFTER 00_core.sql's `revoke execute on all functions in schema core
+-- from public`, so that sweep never covered it — a fresh install leaves this
+-- SECURITY DEFINER function anon-executable. The blanket revoke only protects
+-- functions that already exist when it runs; every function added later needs
+-- its own. (Impact is low — it deletes only already-expired rows — but the
+-- pattern is exactly how the 2026-08-05 escalation happened.)
+revoke all on function core.purge_expired_challenges() from public, anon, authenticated;
 grant execute on function core.purge_expired_challenges() to service_role;

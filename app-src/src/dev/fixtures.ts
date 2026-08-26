@@ -451,7 +451,7 @@ export const financeEntriesFixture = [
 export const financeExpectedFixture = [
   {
     id: '00000000-0000-4000-8000-00000000e002',
-    direction: 'in', category: 'events', amount: 5880, due_date: iso(33),
+    direction: 'in', category: 'events', amount: 5880, paid_amount: 0, due_date: iso(33),
     reason: 'balance', event_id: null, source_module: 'quotes',
     source_ref: '00000000-0000-4000-8000-00000000c001:balance',
     status: 'open', fulfilled_by: null, note: 'יתרה — אירוע', created_by: null,
@@ -459,7 +459,7 @@ export const financeExpectedFixture = [
   },
   {
     id: '00000000-0000-4000-8000-00000000e003',
-    direction: 'in', category: 'events', amount: 1800, due_date: iso(-10),
+    direction: 'in', category: 'events', amount: 1800, paid_amount: 600, due_date: iso(-10),
     reason: 'deposit', event_id: null, source_module: 'quotes',
     source_ref: '00000000-0000-4000-8000-00000000c002:deposit',
     status: 'open', fulfilled_by: null, note: '', created_by: null,
@@ -467,7 +467,7 @@ export const financeExpectedFixture = [
   },
   {
     id: '00000000-0000-4000-8000-00000000e001',
-    direction: 'in', category: 'events', amount: 2520, due_date: iso(-7),
+    direction: 'in', category: 'events', amount: 2520, paid_amount: 2520, due_date: iso(-7),
     reason: 'deposit', event_id: null, source_module: 'quotes',
     source_ref: '00000000-0000-4000-8000-00000000c001:deposit',
     status: 'fulfilled', fulfilled_by: '00000000-0000-4000-8000-00000000f002', note: '',

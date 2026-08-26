@@ -355,7 +355,14 @@ language sql stable security definer set search_path = finance, pos, core as $$
            'type', 'overdue_expected',
            'severity', case when x.due_date < current_date - 30 then 'high' else 'medium' end,
            'expected_id', x.id, 'direction', x.direction, 'category', x.category,
-           'amount', x.amount, 'due_date', x.due_date, 'reason', x.reason,
+           -- what is STILL OWED, not the original figure: a part-paid deposit is
+           -- still overdue, but chasing it for the full amount would be wrong.
+           -- `amount_total`/`amount_paid` ride along for API consumers; the
+           -- ReconcileTab renders `amount` only, and DriftItem deliberately
+           -- declares just the fields it uses, so they are not in the TS type.
+           'amount', x.amount - x.paid_amount,
+           'amount_total', x.amount, 'amount_paid', x.paid_amount,
+           'due_date', x.due_date, 'reason', x.reason,
            'days_overdue', current_date - x.due_date, 'fix', 'record_payment',
            -- provenance travels with the item so the UI can link to the thing
            -- that CAUSED it (the signed quote behind an overdue deposit),
@@ -363,6 +370,11 @@ language sql stable security definer set search_path = finance, pos, core as $$
            'source_module', x.source_module, 'source_ref', x.source_ref)
   from finance.expected x
   where x.status = 'open' and x.due_date is not null and x.due_date < current_date
+    -- Nothing owed ⇒ not overdue. An open row can legitimately carry a zero
+    -- remainder (a fulfilled row re-opened status-only keeps paid_amount =
+    -- amount), and listing it here is unclearable through its own fix:
+    -- record_payment rejects amount <= 0 and demands an overpay reason above it.
+    and x.amount - x.paid_amount > 0
 
   union all
   -- 4) every pinned day, always (PR C). A pin freezes the WHOLE day: POS has

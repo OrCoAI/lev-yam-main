@@ -114,6 +114,12 @@ export interface FinanceExpected {
   direction: 'in' | 'out'
   category: FinanceCategory
   amount: number
+  /** How much of `amount` has actually been paid. Partial payments leave the
+   *  row `open` until this reaches `amount`; the remainder is what is owed.
+   *  Optional because `/app` can deploy before the column is hand-applied to
+   *  prod (prod is off the migration pipeline) — reads must tolerate its
+   *  absence or every amount on the tab renders NaN. */
+  paid_amount?: number
   due_date: string | null // 'YYYY-MM-DD'
   reason: string // 'deposit' | 'balance' | 'supplier' | free text
   event_id: string | null

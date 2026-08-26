@@ -21,21 +21,51 @@ touching schema, permissions, or the events/finance spine graduates to a `docs/p
 > [plans/finance-books-integrity.md](../plans/finance-books-integrity.md). The items below
 > are *not* covered by it and stay open here.
 
-- Partial payments on `finance.expected` — `record_payment` currently closes the
-  expectation at any amount; needs remainder/split support (carried over from the
-  2026-07-09 UI-pass review, see ROADMAP Phase 1 finance follow-ups)
-- Reversal path for posted entries with no owning module (hand-created expectations get
-  `source='finance'` and are immutable with no corrector today)
 - Server-side provenance resolution — `source_ref` parsing currently lives client-side in
   `modules/finance/provenance.ts`; move into a DB view/generated column once a second
-  surface (events module, dashboards) needs entry→quote/POS links
-- When `finance.expected` grows real receivables tracking (the partial-payments item
-  above), retire the quotes module's client-side-only `isWaitingPayment` derived status
-  (`modules/quotes/types.ts`, added 2026-07-13) in favor of it — right now it's a UI-only
-  stopgap (status + event_date, no due-date/deposit-vs-balance granularity) that will
-  become a second, drifting source of truth once real receivables land
+  surface (events module, dashboards) needs entry→quote/POS links. Deferred 2026-08-12 with
+  that trigger named explicitly; finance is still the only consumer, via one shared helper
+- Retire the quotes module's client-side-only `isWaitingPayment` derived status
+  (`modules/quotes/types.ts`, added 2026-07-13) now that `finance.expected` tracks real
+  receivables (`paid_amount`, 2026-08-12) — it is a UI-only stopgap (status + event_date, no
+  due-date/deposit-vs-balance granularity) and is now a second, drifting source of truth
+- Correction rows carry `payment_method = null` by design (`56_finance_override.sql`), so
+  reversing a cash payment leaves `finance.report`'s `by_payment` cash column overstated
+  while the totals stay right. Changing it alters `by_payment` semantics — needs a decision
 
 ## Done
+
+- **2026-08-26 — overpay allowed with a stated reason** (owner decision, from the staging
+  review of §B: "it is ok that the customer will pay more than it should, a box with
+  reasoning should pop up"). §B originally refused any payment above the remainder; prod's
+  own history disagreed (it already holds a real payment larger than its expectation —
+  figures deliberately not written here: this repo is public and the books are not). Now
+  `record_payment()` accepts an overpay **only** when a reason is given (new `p_over_reason`
+  param — the old 5-param signature is dropped, or PostgREST would see an ambiguous
+  overload), closes the expectation at the overpaid total, and stamps
+  `מעבר לצפי: <reason>` into the posted entry's note so the books say why. The fulfil form
+  shows the reason box reactively the moment the typed amount exceeds the remainder.
+- **2026-08-12 — partial payments, H6's guard, and the owner override.**
+  [plans/phase1-closeout.md](../plans/phase1-closeout.md) §B.
+  *Partial payments:* `record_payment()` closed an expectation at **any** amount — ₪1 against
+  a ₪5,000 deposit marked it paid and the remaining ₪4,999 disappeared from the plan side
+  (open list, open-expected total, and reconciliation's overdue check all stopped seeing it).
+  Now `finance.expected.paid_amount` tracks what has arrived, the form defaults to the
+  remainder, and each payment posts its own `expected:<id>:pN` entry —
+  a fixed ref would have collided on the posting unique index. `quotes.settle_on_paid` settles
+  only the remainder (it would otherwise double-post a part-paid deposit at full value when a
+  quote flips to `paid`), and reconciliation reports what is still owed.
+  *H6:* module-sourced expectations became status-only for `finance.manage` holders. The
+  prescribed fix (`assert_category_writable()` inside `record_payment`) would have **rejected
+  the quotes module's own money path** — `events` is `owned_by_module='quotes'` and every
+  quotes deposit files under it — so it landed as an owner-vs-poster predicate instead.
+  *Owner override:* the owner is exempt from both guards and every such edit is recorded in
+  the new `finance.audit_log` (readable at `finance.view`, trigger-written, no client write
+  policy, verified un-forgeable and un-erasable). That also replaced the separately-planned
+  expectation re-open path — the owner can simply reset the row, audited.
+  `provenance.ts` gained `:pN` tolerance in the same change: it required a bare UUID after
+  `expected:`, so the new grammar would have silently killed every quote link on a part-paid
+  deposit. 14 new `rls_matrix` assertions; suite green.
 
 - **2026-08-05 — `/code-review high` findings on the books-integrity branch.** Four fixed:
   the drift roll-up was a *signed* sum across all four legs (revenue + cost with the same

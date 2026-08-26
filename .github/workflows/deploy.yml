@@ -44,6 +44,22 @@ jobs:
       - name: Migration baseline drift check
         run: node supabase/tests/build-baseline.mjs
 
+      # The only check that asks the LIVE database anything. The two above are
+      # file-vs-file and cannot see the failure that actually happened twice:
+      # prod is off the migration pipeline, so a `grant`/`revoke` added later
+      # against an existing object never ran there. That is how `authenticated`
+      # kept TRUNCATE on the POS tables (RLS does not govern TRUNCATE) and how
+      # core.admin_assign_role stayed self-grantable until 2026-08-05.
+      # Skips with a warning when the token is absent so a fork or a secretless
+      # run still deploys; fails the deploy on real drift.
+      - name: Prod grant drift audit
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        # Single copy of the invocation, shared with deploy-staging.yml — same
+        # reason assemble-site.sh is shared: the two tiers must not drift in
+        # HOW they audit.
+        run: bash scripts/audit-grants-ci.sh teyxtdccsrkdpqnbfcga
+
       - name: Build platform (/app)
         working-directory: app-src
         env:

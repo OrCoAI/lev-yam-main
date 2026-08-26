@@ -88,8 +88,14 @@ const he = {
   recordPaymentTitle: 'רישום תשלום',
   expectedSuffix: 'צפוי',
   submitPayment: 'רשום תשלום',
-  amountDiffers: (expected: string) =>
-    `הסכום שונה מהצפי (${expected} ₪). הצפי ייסגר במלואו — להמשיך?`,
+  // Partial payments: the expectation now stays open until it is fully paid, so
+  // the old "this will close the whole thing — continue?" confirm is gone.
+  remainingToPay: 'יתרה לתשלום',
+  paidOf: (paid: string, total: string) => `שולם ${paid} ₪ מתוך ${total} ₪`,
+  // Overpay is allowed but must carry a reason (owner decision 2026-08-26).
+  overpayNotice: (remaining: string) =>
+    `הסכום גבוה מהיתרה לתשלום (${remaining} ₪) — תשלום מעבר לצפי מחייב נימוק`,
+  overpayReasonLabel: 'נימוק לתשלום מעבר לצפי',
 
   // report tab
   presetToday: 'היום',
@@ -276,8 +282,11 @@ const ar: typeof he = {
   recordPaymentTitle: 'تسجيل دفعة',
   expectedSuffix: 'متوقّع',
   submitPayment: 'تسجيل الدفعة',
-  amountDiffers: (expected: string) =>
-    `المبلغ مختلف عن المتوقّع (${expected} ₪). سيُغلق المتوقّع بالكامل — متابعة؟`,
+  remainingToPay: 'المتبقّي للدفع',
+  paidOf: (paid: string, total: string) => `دُفع ${paid} ₪ من ${total} ₪`,
+  overpayNotice: (remaining: string) =>
+    `المبلغ أعلى من المتبقّي للدفع (${remaining} ₪) — الدفع فوق المتوقّع يتطلّب تعليلًا`,
+  overpayReasonLabel: 'تعليل الدفع فوق المتوقّع',
 
   presetToday: 'اليوم',
   preset7: '7 أيام',

@@ -194,7 +194,11 @@ For any diff with user-visible UI changes — marketing site, `/stories/`, or th
 the gate does not begin until the change is confirmed on localhost, in this order:
 
 1. Claude verifies the change visually first with headless-Chrome screenshots at both
-   viewports (390px mobile + 1280px desktop; see the screenshot workflow notes).
+   viewports (360px narrow + 390px mobile + 1280px desktop; see the screenshot workflow
+   notes). The helper also reports horizontal overflow per viewport — a
+   `!! HORIZONTAL OVERFLOW` line is a finding, not noise. 360px joined the default set on
+   2026-08-12: the topbar overflowed there for five weeks while every gate screenshot passed
+   clean, because 390 is *exactly* the width it fit at.
 2. Claude gives the user the exact serve command (`python3 -m http.server 8080` for
    static pages, `cd app-src && npm run dev` for the platform) and, per change, what to
    open/click to see it working.
