@@ -1,6 +1,10 @@
 # Observability coverage — everything watched, not just collected
 
-*Kickoff 2026-08-12 · branch `observability-coverage` · roadmap item **H9** (Phase 1.5)*
+*Kickoff 2026-08-12 · branch `observability-coverage` · was roadmap item **H9** (Phase 1.5)*
+
+> **REMOVED from the roadmap — owner decision 2026-08-26.** This file is kept as reference
+> only; no roadmap item tracks this work. If observability coverage is ever revived, start
+> from here (Phase 0 was 2/3 done) but re-verify everything against the then-current stack.
 
 ## Why
 

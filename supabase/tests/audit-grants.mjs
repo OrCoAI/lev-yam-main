@@ -372,9 +372,21 @@ async function runSql(sqlText) {
 // rows instead made staging (whose `public` schema is legitimately empty) exit 2
 // on every run — an "audit" that refused to audit — and would have hard-failed
 // the prod deploy the moment the one stray `public.rls_auto_enable` was dropped.
-const present = new Set((await runSql(
-  `select nspname from pg_namespace where nspname in (${[...schemas].map((s) => `'${s}'`).join(',')})`,
-)).map((r) => r.nspname));
+// The three network calls (schema presence, catalog query, auth config) are
+// mutually independent — issue them together, then evaluate in TRUST order:
+// presence decides whether the other two mean anything at all. The auth fetch
+// gets a .catch(null) so a network-level failure degrades to the same
+// "unverified" warning a non-OK status does, instead of crashing the audit.
+const [presentRows, rows, authRes] = await Promise.all([
+  runSql(
+    `select nspname from pg_namespace where nspname in (${[...schemas].map((s) => `'${s}'`).join(',')})`,
+  ),
+  runSql(query),
+  fetch(`https://api.supabase.com/v1/projects/${ref}/config/auth`, {
+    headers: { Authorization: `Bearer ${token}` },
+  }).catch(() => null),
+]);
+const present = new Set(presentRows.map((r) => r.nspname));
 const missing = [...schemas].filter((s) => !present.has(s));
 if (missing.length) {
   console.error(
@@ -384,8 +396,6 @@ if (missing.length) {
   process.exit(2);
 }
 
-const rows = await runSql(query);
-
 // ------------------------------------------------------ auth posture ----
 // Grants are only half the story: every privilege hole in this repo's history
 // needed an `authenticated` JWT first, and open signup is how an outsider gets
@@ -394,14 +404,11 @@ const rows = await runSql(query);
 // "kept in sync with prod" is exactly the unverifiable intent this tool exists
 // to replace. Assert it instead.
 const authIssues = [];
-const authRes = await fetch(`https://api.supabase.com/v1/projects/${ref}/config/auth`, {
-  headers: { Authorization: `Bearer ${token}` },
-});
-if (!authRes.ok) {
+if (!authRes || !authRes.ok) {
   // "We could not check" is NOT "the check failed" — reporting it as a finding
   // would fail the deploy on a management-API blip or a token whose scope covers
   // database/query but not config/auth. Warn and move on.
-  console.error(`audit-grants: WARNING — could not read auth config (${authRes.status}); auth posture unverified.`);
+  console.error(`audit-grants: WARNING — could not read auth config (${authRes ? authRes.status : 'network error'}); auth posture unverified.`);
 } else {
   const auth = await authRes.json();
   if (auth.disable_signup !== true) {
@@ -409,6 +416,11 @@ if (!authRes.ok) {
   }
   if (auth.external_anonymous_users_enabled === true) {
     authIssues.push('anonymous sign-ins are ENABLED — unauthenticated visitors get an authenticated JWT');
+  } else if (!('external_anonymous_users_enabled' in auth)) {
+    // Absent is NOT disabled: `undefined === true` is false, so a renamed or
+    // partial payload would silently read as green — the exact quiet failure
+    // mode this script exists to end. Warn like every other unverifiable.
+    console.error('audit-grants: WARNING — auth config carries no external_anonymous_users_enabled field; anonymous-sign-in posture unverified.');
   }
 }
 

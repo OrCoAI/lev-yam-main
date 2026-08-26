@@ -310,18 +310,27 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise
       if (!exp) return json({ message: 'expected payment not found' }, 400)
       if (exp.status !== 'open') return json({ message: `הצפי כבר במצב ${exp.status}` }, 400)
       // Mirror record_payment's partial-payment arithmetic: default to the
-      // REMAINDER, reject an overpay, and keep the row open until it is settled.
+      // REMAINDER and keep the row open until it is settled. Overpay is allowed
+      // only with a reason, which lands in the entry's note (2026-08-26).
       const remaining = Number(exp.amount) - Number(exp.paid_amount ?? 0)
       const paying = Number(body.p_amount ?? remaining)
       if (paying <= 0) return json({ message: 'סכום התשלום חייב להיות חיובי' }, 400)
-      if (paying > remaining)
-        return json({ message: `הסכום (${paying}) גדול מהיתרה לתשלום (${remaining})` }, 400)
+      const isOver = paying > remaining
+      const overReason = typeof body.p_over_reason === 'string' ? body.p_over_reason.trim() : ''
+      if (isOver && !overReason)
+        return json(
+          { message: `הסכום (${paying}) גדול מהיתרה לתשלום (${remaining}) — תשלום מעבר לצפי מחייב נימוק` },
+          400,
+        )
+      let note = body.p_note ?? exp.reason
+      if (isOver) note = [note, `מעבר לצפי: ${overReason}`].filter(Boolean).join(' · ')
+      // One prefix covers both grammars, same as the SQL's LIKE: a UUID is
+      // fixed-length, so the legacy bare 'expected:<id>' is itself a prefix
+      // of 'expected:<id>:pN'.
       const paySeq =
         db.entries.filter(
           (e: Row) =>
-            typeof e.source_ref === 'string' &&
-            (e.source_ref === `expected:${exp.id}` ||
-              e.source_ref.startsWith(`expected:${exp.id}:p`)),
+            typeof e.source_ref === 'string' && e.source_ref.startsWith(`expected:${exp.id}`),
         ).length + 1
       const entry: Row = {
         id: `00000000-0000-4000-8000-${String(++seq).padStart(12, '0')}`,
@@ -330,7 +339,7 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise
         amount: paying,
         payment_method: body.p_method ?? null,
         entry_date: body.p_date ?? new Date().toISOString().slice(0, 10),
-        note: body.p_note ?? exp.reason,
+        note,
         source_module: exp.source_module ?? 'finance',
         source_ref: `expected:${exp.id}:p${paySeq}`,
         event_id: exp.event_id,

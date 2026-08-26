@@ -12,9 +12,15 @@ mobile-first regression, one un-closed security-review finding, and a money bug 
 loses the remainder of a partial payment. This initiative closes them so Phase 2 (bookings &
 events) starts from a clean base.
 
-**H9 (observability coverage) is the one large item still inside Phase 1.5.** It has its own
-plan — [observability-coverage.md](observability-coverage.md) — and runs last, after the
-stragglers, per the owner's sequencing decision.
+**H9 (observability coverage) was removed from the roadmap entirely — owner decision
+2026-08-26.** At kickoff it was the final leg of this batch ("stragglers first, then H9 in
+full"); mid-batch the owner first descoped it from this session, then cut it from the roadmap
+altogether. Its plan file — [observability-coverage.md](observability-coverage.md) — stays as
+reference only; nothing tracks it as pending work. What was removed with it, knowingly: `/app`
+RUM + JS error reporting, uptime/CTA alerting on the marketing funnel,
+reconciliation-as-monitor and grant-drift crons, deploy verification in Bluebox, and H8's two
+absorbed follow-ups (`deno check` in CI, `login/options` rate limit) — those two revert to
+open follow-ups in this plan's list below.
 
 ## Corrections found at kickoff (2026-08-12)
 
@@ -46,7 +52,7 @@ already carries the narrower warning ("never re-run `10_pos.sql`"); this plan wi
 
 | Decision | Owner's call |
 |---|---|
-| H9 sequencing | **Stragglers first, then H9 in full.** Both phases genuinely close; H9 runs as its own four PRs afterwards. |
+| H9 sequencing | **Stragglers first, then H9 in full.** Both phases genuinely close; H9 runs as its own four PRs afterwards. *(Superseded 2026-08-26: H9 removed from the roadmap completely — see the note above.)* |
 | Second `users.manage` holder | **Dedicated break-glass owner account** — a new invited account used only for recovery. No existing staff member gains extra power. |
 | Topbar fix | **Sign-out → icon + hide the RoleBadge at phone width.** House `.btn-icon-label` pattern, no new component, no new string. |
 | H6 predicate | **Owner-vs-poster**, not `assert_category_writable` — reject only when the category is owned by a *different* module than the expectation's own `source_module`. The archived-category check is deliberately **not** applied (honours the [54:170-178](../../supabase/schema/54_finance_categories.sql#L170-L178) carve-out). |
@@ -238,6 +244,10 @@ a re-run of `54` silently restores the weaker guard — the exact failure
       ([55:364-365](../../supabase/schema/55_finance_reconciliation.sql#L364-L365)).
 - [ ] Add `finance.expected.paid_amount numeric(12,2) not null default 0`; `record_payment`
       computes the remainder, rejects overpay, and closes the row only when it reaches 0.
+      *(As-executed amendment 2026-08-26, from the staging review: overpay is **allowed with a
+      required reason** rather than flatly rejected — the reason lands in the entry's note as
+      `מעבר לצפי: <reason>` and the row closes at the overpaid total. Prod's history already
+      held a real overpayment, so the flat refusal fought reality.)*
 - [ ] **Ref grammar must extend** — `finance_entries_posting_uniq` on
       `(source_module, source_ref, kind, category)`
       ([21:60-62](../../supabase/schema/21_finance_spine.sql#L60-L62)) collides on a second
@@ -348,9 +358,11 @@ Then `node supabase/tests/build-baseline.mjs --write`. Prod (still off the pipel
 - [ ] **Topbar** → correct the diagnosis in the close-out so the record isn't wrong in history.
 - [ ] Tick H6, the topbar, partial payments, and the four prod-hardening items.
 
-### F — H9 observability coverage *(4 PRs, own plan)*
+### F — H9 observability coverage — REMOVED (owner decision 2026-08-26)
 
-See [observability-coverage.md](observability-coverage.md). Runs last. Phase 0 is 2/3 done.
+Was: 4 PRs per [observability-coverage.md](observability-coverage.md), running last. The owner
+first pulled it out of this session, then removed it from the roadmap entirely. The plan file
+remains as reference; Phase 0 was 2/3 done when work stopped.
 
 ## Architecture invariants check ([ARCHITECTURE.md §7](../ARCHITECTURE.md#L221))
 
@@ -437,4 +449,17 @@ budgets. §C serves "staff and members work from phones" literally. No conflict.
 - Full migration pipeline for prod — blocked on a schema-diff proof (§E).
 - Server-side provenance resolution — trigger named in §E.
 - PITR — parked at 3/20 signed contracts.
-- `deno check` in `ci.yml` and the `login/options` rate limit — absorbed by H9 Phase 3.
+- `deno check` in `ci.yml` and the `login/options` rate limit — were absorbed by H9 Phase 3;
+  back to plain open follow-ups since H9's removal (2026-08-26). No other home tracks them.
+- **Owner fulfil-with-remainder is an implicit write-off** (2026-08-26 review finding, kept
+  by design): the H6 owner exemption runs after the open-row arithmetic guard but before the
+  fulfilled-requires-money check, so the owner can deliberately close a part-paid expectation
+  — forgiving the remainder — with the `finance.audit_log` row as the only trace. If
+  write-offs become routine, give them a first-class motion (stated reason + reconciliation
+  visibility) instead of a bare audited status flip.
+- **`record_payment` and `quotes.settle_on_paid` are parallel hand-copies of the same payment
+  machinery** (remainder math, `:pN` grammar, GUC-window insert, fulfil update) — found by the
+  overpay-with-reason pass (2026-08-26): the new reason policy lives in only one copy, safe
+  today *by construction* (settle posts exactly the remainder, so it cannot overpay) but not
+  enforced. Refactor candidate: an internal `finance.pay_expectation()` (client EXECUTE
+  revoked) both wrap.

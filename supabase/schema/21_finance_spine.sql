@@ -139,12 +139,9 @@ create trigger finance_expected_touch
 -- ₪1 against a ₪5,000 deposit marked it fulfilled and the remaining ₪4,999
 -- silently left the plan — out of the open list, out of the open-expected
 -- total, and out of reconciliation's overdue check. The UI could only warn.
-alter table finance.expected
-  add column if not exists paid_amount numeric(12,2) not null default 0
-  check (paid_amount >= 0);
-
--- Backfill from the LEDGER, not from `status`. The obvious version —
--- `set paid_amount = amount where status = 'fulfilled'` — is wrong twice over:
+-- Column + backfill are ONE-SHOT, gated on the column not existing yet.
+-- The backfill derives from the LEDGER, not from `status` — the obvious
+-- `set paid_amount = amount where status = 'fulfilled'` is wrong twice over:
 --   * it misses a row that was fulfilled under the old semantics and later
 --     RE-OPENED (reachable before H6 landed). That row keeps paid_amount = 0
 --     while its entry sits in the ledger, so "pay the remainder" posts the full
@@ -152,13 +149,23 @@ alter table finance.expected
 --     finance_entries_posting_uniq; with per-payment ':pN' refs the ref is fresh
 --     by construction, so that backstop is gone and the double-post is silent.
 --   * it fabricates money on a re-run: a row hand-set to 'fulfilled' with no
---     entry behind it would be stamped as fully paid. Prod is off the migration
---     pipeline and takes these files by hand, so a second application is the
---     NORMAL path, not an edge case.
--- Summing the entries actually posted against each expectation is true by
--- construction and idempotent however many times it runs.
+--     entry behind it would be stamped as fully paid.
+-- And once the column is LIVE, the ledger sum itself goes stale as a backfill
+-- source: a reversed payment lives under an 'override:<entry>:cN' ref this sum
+-- never sees, so re-deriving a row the owner deliberately re-opened at 0 after
+-- a reversal would re-stamp the reversed money as paid. Prod takes these files
+-- by hand and re-application is the NORMAL path — hence the existence gate,
+-- not an idempotency argument about the sum.
 do $$
 begin
+  if exists (select 1 from information_schema.columns
+              where table_schema = 'finance' and table_name = 'expected'
+                and column_name = 'paid_amount') then
+    return;
+  end if;
+  alter table finance.expected
+    add column paid_amount numeric(12,2) not null default 0
+    check (paid_amount >= 0);
   perform set_config('levyam.finance_posting', 'on', true);
   update finance.expected x
      set paid_amount = coalesce((
@@ -229,12 +236,18 @@ create trigger finance_expected_audit
 --     posts the entry (with the expectation's provenance + event attribution)
 --     and marks the expectation fulfilled, atomically.
 -- ---------------------------------------------------------------------
+-- Signature changed 2026-08-26 (p_over_reason added): the old 5-param overload
+-- must be dropped first or `create or replace` leaves BOTH live — and PostgREST
+-- then refuses the RPC as ambiguous whenever the new argument is omitted.
+drop function if exists finance.record_payment(uuid, numeric, text, date, text);
+
 create or replace function finance.record_payment(
-  p_expected uuid,
-  p_amount   numeric default null,     -- null = the expected amount
-  p_method   text    default null,     -- 'cash' | 'private' | 'grow' | 'bank'
-  p_date     date    default current_date,
-  p_note     text    default null
+  p_expected    uuid,
+  p_amount      numeric default null,  -- null = the expected amount
+  p_method      text    default null,  -- 'cash' | 'private' | 'grow' | 'bank'
+  p_date        date    default current_date,
+  p_note        text    default null,
+  p_over_reason text    default null   -- REQUIRED when p_amount exceeds the remainder
 ) returns uuid
 language plpgsql security definer
 set search_path = finance, core, public
@@ -246,7 +259,8 @@ declare
   v_remaining numeric(12,2);
   v_paid      numeric(12,2);
   v_seq       int;
-  v_kind      text;
+  v_note      text;
+  v_over      text;
 begin
   if not core.has_permission('finance.manage') then
     raise exception 'permission denied';
@@ -274,9 +288,18 @@ begin
   if v_amount <= 0 then
     raise exception 'סכום התשלום חייב להיות חיובי';
   end if;
+  -- Overpaying is ALLOWED — reality does it (prod's history already holds a
+  -- real payment larger than its expectation) — but never silently: it must carry a
+  -- stated reason, stamped into the entry's note below so the books themselves
+  -- say why the extra money is there (owner decision 2026-08-26, staging review).
+  v_note := coalesce(p_note, nullif(exp.reason, ''));
   if v_amount > v_remaining then
-    raise exception 'הסכום (%) גדול מהיתרה לתשלום (%) — לא ניתן לשלם מעבר לצפי',
-      v_amount, v_remaining;
+    v_over := nullif(btrim(p_over_reason), '');
+    if v_over is null then
+      raise exception 'הסכום (%) גדול מהיתרה לתשלום (%) — תשלום מעבר לצפי מחייב נימוק',
+        v_amount, v_remaining;
+    end if;
+    v_note := concat_ws(' · ', v_note, 'מעבר לצפי: ' || v_over);
   end if;
 
   -- H6, the reachable half. This function is SECURITY DEFINER, checks only
@@ -290,8 +313,7 @@ begin
   -- exp.kind is the row's own GENERATED column (54) — re-deriving the mapping
   -- here would be a third copy, and expected_guard's comment records that a
   -- diverging copy fails OPEN.
-  v_kind := exp.kind;
-  perform finance.assert_category_writer(v_kind, exp.category, coalesce(exp.source_module, 'finance'));
+  perform finance.assert_category_writer(exp.kind, exp.category, coalesce(exp.source_module, 'finance'));
 
   -- Each payment needs its own source_ref: finance_entries_posting_uniq is on
   -- (source_module, source_ref, kind, category), so a second payment against a
@@ -314,12 +336,12 @@ begin
   insert into finance.entries
     (kind, category, amount, payment_method, entry_date, note, source_module, source_ref, event_id)
   values (
-    v_kind,
+    exp.kind,
     exp.category,
     v_amount,
     p_method,
     p_date,
-    coalesce(p_note, nullif(exp.reason, '')),
+    v_note,
     coalesce(exp.source_module, 'finance'),
     'expected:' || exp.id || ':p' || v_seq,
     exp.event_id
@@ -376,8 +398,7 @@ as $$
         -- above, which do filter on status.
         'id', id, 'direction', direction, 'amount', amount,
         'amount_paid', paid_amount, 'amount_outstanding', amount - paid_amount,
-        'status', status, 'due_date', due_date,
-        'reason', reason, 'status', status
+        'status', status, 'due_date', due_date, 'reason', reason
       ) order by due_date nulls last) from x), '[]'::jsonb)
   );
 $$;
@@ -405,8 +426,8 @@ grant select, insert, update, delete on finance.expected to authenticated;
 -- grants EXECUTE to PUBLIC (which includes anon) on every new function, so a bare
 -- grant leaves the function anon-callable. Found live on prod AND staging by
 -- supabase/tests/audit-grants.mjs on 2026-08-12 and fixed on both tiers.
-revoke all on function finance.record_payment(uuid, numeric, text, date, text) from public;
-grant execute on function finance.record_payment(uuid, numeric, text, date, text) to authenticated;
+revoke all on function finance.record_payment(uuid, numeric, text, date, text, text) from public;
+grant execute on function finance.record_payment(uuid, numeric, text, date, text, text) to authenticated;
 revoke all on function finance.event_pnl(uuid) from public;
 grant execute on function finance.event_pnl(uuid) to authenticated;
 -- Internal helper: only ever called from inside other functions and guards, but

@@ -74,7 +74,9 @@ bilingual is ever a retrofit.*
         expectation at **any** amount, so ₪1 against a ₪5,000 deposit marked it paid and the
         remaining ₪4,999 left the plan entirely (out of the open list, the open-expected
         total, and reconciliation's overdue check). Now: `paid_amount` column, remainder
-        arithmetic, overpay rejected, one `expected:<id>:pN` entry per payment (the posting
+        arithmetic, overpay only with a stated reason stamped into the entry's note
+        (softened from a flat refusal — owner decision 2026-08-26, staging review),
+        one `expected:<id>:pN` entry per payment (the posting
         unique index forbids reusing one ref), `quotes.settle_on_paid` settles only the
         remainder, reconciliation reports what is still owed, and the UI shows
         "paid X of Y · remaining Z" instead of the old are-you-sure confirm
@@ -278,16 +280,21 @@ entries that were factually wrong** (the topbar diagnosis, H6's prescribed fix, 
 `rls_matrix`-on-prod blocker, and a prod audit script that does not exist) plus a destructive
 `supabase db push` trap; the corrections and the owner's decisions are recorded there and
 written back into the entries below as each ships. Sequence: ops → topbar → prod audit →
-finance money integrity → doc rewrites → **H9**.
+finance money integrity → doc rewrites.
 
 - [x] **H1** RLS regression suite (`supabase/tests/rls_matrix.sql`: per-role can/can't
       matrix) + `PERM` ↔ `core.permissions` drift check in `ci.yml` AND `deploy.yml`
       *(done 2026-07-16 — PR #11 of [plans/users-permissions-suite.md](plans/users-permissions-suite.md);
       caught real drift on its first prod run: viewer role held zero permissions)*
-- [ ] **H2** Schema migration pipeline (Supabase CLI, versioned migrations + drift
-      check in the gate) — **folded into the Staging environment initiative** (kickoff
-      2026-07-28): you can't keep prod + a staging project schema-synced without it. See
+- [x] **H2** Schema migration pipeline — **absorbed by the Staging environment initiative**
+      (2026-07-28): `supabase/schema/*.sql` stays the readable source of truth, a generated
+      baseline migration is what local and staging actually apply, and the drift check runs in
+      both `ci.yml` and `deploy.yml`. See
       [plans/platform-staging-environment.md](plans/platform-staging-environment.md).
+      *(Checkbox corrected 2026-08-12: it was left unticked while the entry that absorbed it
+      was ticked — the tracker contradicted itself.)* **Scope note:** this is done for local and
+      staging. **Prod is still not on the pipeline** — that half is its own open item under
+      Phase 1's prod-hardening block, with the `db push` replay hazard and prerequisites named.
 - [x] **H3** Permission governance: last-admin lockout guard + `core.audit_log` on
       role/permission changes *(done 2026-07-15, bundled with H5 + users-scoped H7 —
       plan: [plans/users-hardening.md](plans/users-hardening.md); landed **ahead of**
@@ -339,20 +346,6 @@ finance money integrity → doc rewrites → **H9**.
       hole in `passkey-verify`'s origin gate, a staging/prod `verify_jwt` drift, and the
       missing `staging.levyam.com` origin that left the staging tier unable to exercise
       these functions at all.)*
-- [ ] **H9** Observability coverage — everything *watched*, not just collected (kickoff
-      2026-08-12, follows directly from H8's close-out gaps): continuous uptime + CTA-dead
-      alerting on the marketing funnel, Dynatrace RUM + JS error reporting on `/app` (the
-      platform UI currently emits nothing), reconciliation-as-monitor cron + grant-drift
-      probe through the H8 OTel plumbing, `traceparent` correlation app→edge, deploy
-      verification in Bluebox, dashboards-as-code via dtctl. Owner decisions: `/app` RUM
-      only (`pos.html` dark until migration); alerts live inside Dynatrace/Bluebox, no
-      external channel; phased PRs. Also absorbs H8's open follow-ups (`deno check` in CI,
-      `login/options` rate limit) and two owner-added dev-loop practices (2026-08-12):
-      production insight wired into the IDE workflow (Dynatrace MCP in `.mcp.json`,
-      mandatory production-context step) and instrumentation-by-default for every new
-      surface (MODULE-TEMPLATE.md observability checklist — telemetry ships in the same
-      PR as the feature). Plan:
-      [plans/observability-coverage.md](plans/observability-coverage.md)
 - [x] **H7** Hygiene batch — nine small repo/UX/ops items; **8 of 9 done** (3 with
       H3/H5 on 2026-07-15, 5 more on 2026-07-16 via PR #11 of
       [plans/users-permissions-suite.md](plans/users-permissions-suite.md): storage

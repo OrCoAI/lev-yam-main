@@ -342,6 +342,17 @@ begin
   if tg_op = 'UPDATE' and new.source_module is distinct from old.source_module then
     raise exception 'לא ניתן לשנות את מקור הצפי';
   end if;
+  -- No OPEN row may carry payment beyond its amount — whoever writes, owner
+  -- included (this runs BEFORE the override exemption below, deliberately).
+  -- record_payment CLOSES an overpaid row at the overpaid total, so open+
+  -- overpaid is only reachable by editing amount below what was already
+  -- collected, or re-opening an overpaid row without resetting it — and the
+  -- state renders a negative "outstanding" in every place that derives one
+  -- (open totals, the fulfil form's default, reconciliation's overdue math).
+  if new.status = 'open' and new.paid_amount > new.amount then
+    raise exception 'צפי פתוח לא יכול לשאת תשלום (%) הגבוה מסכומו (%) — יש לעדכן סכום וסטטוס יחד',
+      new.paid_amount, new.amount;
+  end if;
   -- H6 — MODULE-SOURCED ROWS ARE MODULE-OWNED (2026-08-12).
   -- The gap this closes: the early-return below let any finance.manage holder
   -- freely rewrite amount / due_date / reason / note / event_id / fulfilled_by /
