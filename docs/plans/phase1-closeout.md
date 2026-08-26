@@ -463,3 +463,59 @@ budgets. §C serves "staff and members work from phones" literally. No conflict.
   today *by construction* (settle posts exactly the remainder, so it cannot overpay) but not
   enforced. Refactor candidate: an internal `finance.pay_expectation()` (client EXECUTE
   revoked) both wrap.
+
+## Close-out (2026-08-26)
+
+Phase 1 and Phase 1.5 are **closed**. Every open item was shipped, corrected, or deliberately
+removed; H9 was cut from the roadmap entirely by owner decision (see the note in the kickoff
+section — its plan file survives as reference only).
+
+**What shipped, by package:**
+
+- **A — ops:** `disable_signup=true` on both cloud tiers, probe-verified, now asserted by the
+  audit on every run. Passkey-object and POS TRUNCATE/TRIGGER/REFERENCES revokes applied live
+  to both tiers and written into the files.
+- **C — topbar:** sign-out collapsed to the icon pattern, role chip hidden at phone width, and
+  the structural fix — `.topbar-right` wraps. 360px joined the default screenshot set with an
+  automatic overflow report; the roadmap keeps the wrong-diagnosis record.
+- **D — live grant audit:** `supabase/tests/audit-grants.mjs` (ordered replay vs live ACLs +
+  auth posture), wired into both deploy workflows through a single shared wrapper
+  (`scripts/audit-grants-ci.sh`). `SUPABASE_ACCESS_TOKEN` became a repo secret on 2026-08-26
+  (dedicated token, independently revocable) and the audit's **first live CI run** passed on
+  the staging deploy: 0 drift, detail withheld from public logs. On its first-ever run it had
+  found and closed a live TRUNCATE hole on the POS tables plus 15 anon-callable functions.
+- **B — partial payments + H6 + owner override:** `paid_amount` with a **one-shot**
+  ledger-derived backfill; `record_payment` remainder arithmetic with per-payment
+  `expected:<id>:pN` refs; module-sourced expectations status-only for managers via the
+  jsonb allow-list guard; owner exempt with every edit recorded in `finance.audit_log`;
+  `settle_on_paid` settles only the remainder; reconciliation and `event_pnl` report what is
+  still owed. **Amended post-staging by owner decision: overpay is allowed with a required
+  reason** stamped into the entry's note (`מעבר לצפי: <reason>`); the review of that change
+  hardened the whole surface further — open rows can never carry `paid_amount > amount`
+  (binds the owner too), the client sends `p_over_reason` only when overpaying (deploy-skew
+  safety), and reconciliation no longer reports rows with nothing owed.
+- **E — roadmap honesty:** four factually wrong entries corrected in place, the H2 checkbox
+  contradiction fixed, the prod-pipeline item deferred with its real prerequisites named, and
+  the rls_matrix-on-prod item dropped with its false premise documented.
+
+**Decisions made along the way (all owner-confirmed):** dedicated break-glass owner account
+(address deliberately not in this public repo); owner-vs-poster predicate instead of the
+prescribed `assert_category_writable`; `finance.audit_log` over `core.audit_log`; overpay
+softened from flat refusal to reason-required; H9 removed from the roadmap; real prod payment
+figures scrubbed from repo files (they remain in one pushed commit message — accepted, since
+commit messages are not served anywhere).
+
+**Deliberately left out / still open after this batch:** the follow-ups list above (notably
+the prod migration pipeline with its named prerequisites, the shared `pay_expectation()`
+refactor, and the write-off first-class motion), and one operational step that is not code:
+the break-glass account cannot sign in until its email is confirmed.
+
+**Alignment verdict:** checked against [VISION.md](../VISION.md) and
+[ARCHITECTURE.md](../ARCHITECTURE.md) — **aligned, no drift found.** Money flows through the
+cross-module spine with provenance (invariant: no module-local silos); every new rule is
+DB-enforced with the UI as mirror only (RLS/trigger-first); the new strings ship HE+AR through
+the module i18n layer; the fulfil form was verified at 360/390/1280 (mobile-first); no
+secrets, PII, or real business figures live in repo files; and the audit turns the "committed
+schema = live state" assumption — the root cause of both real prod incidents — into a
+machine-checked claim on every deploy. The one accepted tension (owner write-off implicit in
+the H6 exemption) is recorded as a follow-up rather than silently absorbed.
