@@ -74,7 +74,9 @@ bilingual is ever a retrofit.*
         expectation at **any** amount, so ₪1 against a ₪5,000 deposit marked it paid and the
         remaining ₪4,999 left the plan entirely (out of the open list, the open-expected
         total, and reconciliation's overdue check). Now: `paid_amount` column, remainder
-        arithmetic, overpay rejected, one `expected:<id>:pN` entry per payment (the posting
+        arithmetic, overpay only with a stated reason stamped into the entry's note
+        (softened from a flat refusal — owner decision 2026-08-26, staging review),
+        one `expected:<id>:pN` entry per payment (the posting
         unique index forbids reusing one ref), `quotes.settle_on_paid` settles only the
         remainder, reconciliation reports what is still owed, and the UI shows
         "paid X of Y · remaining Z" instead of the old are-you-sure confirm

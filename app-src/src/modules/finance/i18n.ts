@@ -92,7 +92,10 @@ const he = {
   // the old "this will close the whole thing — continue?" confirm is gone.
   remainingToPay: 'יתרה לתשלום',
   paidOf: (paid: string, total: string) => `שולם ${paid} ₪ מתוך ${total} ₪`,
-  overRemaining: (remaining: string) => `הסכום גדול מהיתרה לתשלום (${remaining} ₪)`,
+  // Overpay is allowed but must carry a reason (owner decision 2026-08-26).
+  overpayNotice: (remaining: string) =>
+    `הסכום גבוה מהיתרה לתשלום (${remaining} ₪) — תשלום מעבר לצפי מחייב נימוק`,
+  overpayReasonLabel: 'נימוק לתשלום מעבר לצפי',
 
   // report tab
   presetToday: 'היום',
@@ -281,7 +284,9 @@ const ar: typeof he = {
   submitPayment: 'تسجيل الدفعة',
   remainingToPay: 'المتبقّي للدفع',
   paidOf: (paid: string, total: string) => `دُفع ${paid} ₪ من ${total} ₪`,
-  overRemaining: (remaining: string) => `المبلغ أكبر من المتبقّي للدفع (${remaining} ₪)`,
+  overpayNotice: (remaining: string) =>
+    `المبلغ أعلى من المتبقّي للدفع (${remaining} ₪) — الدفع فوق المتوقّع يتطلّب تعليلًا`,
+  overpayReasonLabel: 'تعليل الدفع فوق المتوقّع',
 
   presetToday: 'اليوم',
   preset7: '7 أيام',

@@ -35,13 +35,23 @@ touching schema, permissions, or the events/finance spine graduates to a `docs/p
 
 ## Done
 
+- **2026-08-26 — overpay allowed with a stated reason** (owner decision, from the staging
+  review of §B: "it is ok that the customer will pay more than it should, a box with
+  reasoning should pop up"). §B originally refused any payment above the remainder; prod's
+  own history disagreed (it already holds a real payment larger than its expectation —
+  figures deliberately not written here: this repo is public and the books are not). Now
+  `record_payment()` accepts an overpay **only** when a reason is given (new `p_over_reason`
+  param — the old 5-param signature is dropped, or PostgREST would see an ambiguous
+  overload), closes the expectation at the overpaid total, and stamps
+  `מעבר לצפי: <reason>` into the posted entry's note so the books say why. The fulfil form
+  shows the reason box reactively the moment the typed amount exceeds the remainder.
 - **2026-08-12 — partial payments, H6's guard, and the owner override.**
   [plans/phase1-closeout.md](../plans/phase1-closeout.md) §B.
   *Partial payments:* `record_payment()` closed an expectation at **any** amount — ₪1 against
   a ₪5,000 deposit marked it paid and the remaining ₪4,999 disappeared from the plan side
   (open list, open-expected total, and reconciliation's overdue check all stopped seeing it).
   Now `finance.expected.paid_amount` tracks what has arrived, the form defaults to the
-  remainder, overpaying is refused, and each payment posts its own `expected:<id>:pN` entry —
+  remainder, and each payment posts its own `expected:<id>:pN` entry —
   a fixed ref would have collided on the posting unique index. `quotes.settle_on_paid` settles
   only the remainder (it would otherwise double-post a part-paid deposit at full value when a
   quote flips to `paid`), and reconciliation reports what is still owed.

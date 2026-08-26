@@ -370,6 +370,11 @@ language sql stable security definer set search_path = finance, pos, core as $$
            'source_module', x.source_module, 'source_ref', x.source_ref)
   from finance.expected x
   where x.status = 'open' and x.due_date is not null and x.due_date < current_date
+    -- Nothing owed ⇒ not overdue. An open row can legitimately carry a zero
+    -- remainder (a fulfilled row re-opened status-only keeps paid_amount =
+    -- amount), and listing it here is unclearable through its own fix:
+    -- record_payment rejects amount <= 0 and demands an overpay reason above it.
+    and x.amount - x.paid_amount > 0
 
   union all
   -- 4) every pinned day, always (PR C). A pin freezes the WHOLE day: POS has

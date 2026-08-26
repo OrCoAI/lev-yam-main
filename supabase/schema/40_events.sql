@@ -445,7 +445,6 @@ begin
         continue;
       end if;
 
-      v_entry := null;
       -- Own ':pN' slot in the same grammar record_payment() uses, so a
       -- settlement following a partial payment cannot collide with it.
       select count(*) + 1 into v_seq

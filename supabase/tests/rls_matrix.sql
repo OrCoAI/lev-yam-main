@@ -865,9 +865,15 @@ select pg_temp.assert_rows('owner: ...paid_amount accumulated, status still open
   $q$ select 1 from finance.expected
       where id = 'bbbbbbbb-0000-0000-0000-000000000003'
         and paid_amount = 200 and amount = 500 and status = 'open' $q$, 1);
-select pg_temp.assert_raises('owner: cannot pay MORE than the remaining balance',
+-- Overpay is allowed but only with a stated reason (owner decision 2026-08-26):
+-- without one it still raises; the with-reason path is asserted further down.
+select pg_temp.assert_raises('owner: overpaying WITHOUT a reason is refused',
   $q$ select finance.record_payment('bbbbbbbb-0000-0000-0000-000000000003', 301) $q$,
-  'גדול מהיתרה');
+  'מחייב נימוק');
+select pg_temp.assert_raises('owner: ...a blank reason does not count',
+  $q$ select finance.record_payment('bbbbbbbb-0000-0000-0000-000000000003', 301,
+        null, current_date, null, '   ') $q$,
+  'מחייב נימוק');
 select pg_temp.assert_ok('owner: paying the remainder closes it',
   $q$ select finance.record_payment('bbbbbbbb-0000-0000-0000-000000000003', 300) $q$);
 select pg_temp.assert_rows('owner: ...now fulfilled, fully paid, with fulfilled_by set',
@@ -904,6 +910,38 @@ select pg_temp.assert_denied('owner: cannot forge a finance.audit_log row',
 select pg_temp.assert_denied('owner: cannot erase a finance.audit_log row',
   $q$ delete from finance.audit_log
       where row_id = 'bbbbbbbb-0000-0000-0000-000000000003' $q$);
+
+-- ── OVERPAY WITH A REASON (2026-08-26) ────────────────────────────────
+-- The bypass above re-opened the row at amount=750, paid=0. Paying 800 over
+-- it must be accepted once a reason is given, close the expectation, and
+-- stamp the reason into the posted entry's note so the books say why.
+select pg_temp.assert_ok('owner: overpaying WITH a reason is accepted',
+  $q$ select finance.record_payment('bbbbbbbb-0000-0000-0000-000000000003', 800,
+        null, current_date, null, 'הלקוח עיגל למעלה') $q$);
+select pg_temp.assert_rows('owner: ...the expectation closed with the overpaid total',
+  $q$ select 1 from finance.expected
+      where id = 'bbbbbbbb-0000-0000-0000-000000000003'
+        and paid_amount = 800 and amount = 750
+        and status = 'fulfilled' and fulfilled_by is not null $q$, 1);
+select pg_temp.assert_rows('owner: ...and the entry''s note carries the stated reason',
+  $q$ select 1 from finance.entries
+      where source_ref = 'expected:bbbbbbbb-0000-0000-0000-000000000003:p3'
+        and amount = 800 and note like '%מעבר לצפי: הלקוח עיגל למעלה%' $q$, 1);
+
+-- ── OPEN + OVERPAID IS UNREPRESENTABLE (2026-08-26) ──────────────────
+-- The consistency check runs BEFORE the owner exemption: not even the owner
+-- may leave an open row paid beyond its amount (negative outstanding).
+select pg_temp.assert_raises('owner: cannot re-open an overpaid row without settling the arithmetic',
+  $q$ update finance.expected set status = 'open'
+      where id = 'bbbbbbbb-0000-0000-0000-000000000003' $q$,
+  'הגבוה מסכומו');
+select pg_temp.assert_ok('owner: re-opening it WITH a consistent reset is allowed',
+  $q$ update finance.expected set status = 'open', paid_amount = 0
+      where id = 'bbbbbbbb-0000-0000-0000-000000000003' $q$);
+select pg_temp.assert_raises('owner: cannot shrink an open row''s amount below what was already paid',
+  $q$ update finance.expected set paid_amount = 200, amount = 100
+      where id = 'bbbbbbbb-0000-0000-0000-000000000003' $q$,
+  'הגבוה מסכומו');
 
 select pg_temp.assert_ok('owner: can create a custom role',
   $q$ insert into core.roles (key, label_he, sort)

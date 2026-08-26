@@ -244,6 +244,10 @@ a re-run of `54` silently restores the weaker guard — the exact failure
       ([55:364-365](../../supabase/schema/55_finance_reconciliation.sql#L364-L365)).
 - [ ] Add `finance.expected.paid_amount numeric(12,2) not null default 0`; `record_payment`
       computes the remainder, rejects overpay, and closes the row only when it reaches 0.
+      *(As-executed amendment 2026-08-26, from the staging review: overpay is **allowed with a
+      required reason** rather than flatly rejected — the reason lands in the entry's note as
+      `מעבר לצפי: <reason>` and the row closes at the overpaid total. Prod's history already
+      held a real overpayment, so the flat refusal fought reality.)*
 - [ ] **Ref grammar must extend** — `finance_entries_posting_uniq` on
       `(source_module, source_ref, kind, category)`
       ([21:60-62](../../supabase/schema/21_finance_spine.sql#L60-L62)) collides on a second
@@ -447,3 +451,15 @@ budgets. §C serves "staff and members work from phones" literally. No conflict.
 - PITR — parked at 3/20 signed contracts.
 - `deno check` in `ci.yml` and the `login/options` rate limit — were absorbed by H9 Phase 3;
   back to plain open follow-ups since H9's removal (2026-08-26). No other home tracks them.
+- **Owner fulfil-with-remainder is an implicit write-off** (2026-08-26 review finding, kept
+  by design): the H6 owner exemption runs after the open-row arithmetic guard but before the
+  fulfilled-requires-money check, so the owner can deliberately close a part-paid expectation
+  — forgiving the remainder — with the `finance.audit_log` row as the only trace. If
+  write-offs become routine, give them a first-class motion (stated reason + reconciliation
+  visibility) instead of a bare audited status flip.
+- **`record_payment` and `quotes.settle_on_paid` are parallel hand-copies of the same payment
+  machinery** (remainder math, `:pN` grammar, GUC-window insert, fulfil update) — found by the
+  overpay-with-reason pass (2026-08-26): the new reason policy lives in only one copy, safe
+  today *by construction* (settle posts exactly the remainder, so it cannot overpay) but not
+  enforced. Refactor candidate: an internal `finance.pay_expectation()` (client EXECUTE
+  revoked) both wrap.
