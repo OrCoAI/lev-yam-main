@@ -411,8 +411,9 @@ block produces (work order G7).*
 
 - [ ] **Step 0 — M0** environment access: dtctl readonly default + named write context + `levyam-bluebox`
       context *(contexts set 2026-09-09; owner-interactive logins + M0.2 capability confirmation pending)*
-- [ ] **Step 1** — branch protection on `main` *(applied 2026-09-09 via API: PR + `build` check required,
+- [x] **Step 1** — branch protection on `main` *(applied 2026-09-09 via API: PR + `build` check required,
       admins included)* + decision log `docs/decisions/` (35 ADRs) + CLAUDE.md slim + `AGENTS.md`
+      *(done 2026-09-09, PR #50)*
 - [ ] **Step 2** — risk tiers A/B/C (CLAUDE.md + path-check in `ci.yml`) + `.claude/settings.json` allowlist
 - [ ] **Step 3** — vitest on `pos/logic.ts` + `finance/reconciliation.ts`; eslint in `ci.yml`
 - [ ] **Step 4** — H9 Phase 1 + H9.5-B: synthetic monitors, hardened detectors, count/freshness SLOs, Bluebox Routine

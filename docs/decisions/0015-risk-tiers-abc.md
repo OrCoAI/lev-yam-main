@@ -1,7 +1,7 @@
 # 0015 — Risk tiers A/B/C replace uniform triple sign-off
 
 - **Date:** 2026-08-13
-- **Status:** accepted
+- **Status:** accepted — amended by ADR 0036 (the leash class is Tier A; tiers gate human checkpoints only — gate effort stays per ADR 0003, kickoff per initiative)
 - **Decided by:** owner (strategy session with Claude Code)
 - **Source:** `docs/plans/master-execution-plan.md` Part 1 #1; `docs/plans/lev-yam-gap-analysis-work-order.md` G1
 

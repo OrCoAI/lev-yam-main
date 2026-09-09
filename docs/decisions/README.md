@@ -68,3 +68,4 @@ implementation choices stay in their plan files; an ADR is for a decision that c
 - [0033 — Overpaying an expectation is allowed with a stated reason stamped into the entry note](0033-overpay-allowed-with-stated-reason.md) — 2026-08-26
 - [0034 — Harness-engineering alignment](0034-harness-engineering-alignment.md) — 2026-09-09
 - [0035 — H9 reinstated through the master execution plan; an "Operating system" roadmap block gates Phase 2](0035-h9-reinstated-operating-system-block.md) — 2026-09-09
+- [0036 — Agent-instruction files are one "leash" class, all Tier A](0036-agent-instruction-files-are-the-leash.md) — 2026-09-09

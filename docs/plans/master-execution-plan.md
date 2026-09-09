@@ -6,8 +6,8 @@
 > | # | Step | Status | PR / notes |
 > |---|---|---|---|
 > | 0 | M0 environment access + capability confirmation | **in progress** | M0.1: `my-env` → readonly, `my-env-write`, `levyam-bluebox` contexts set 2026-09-09. Owner logins (`dtctl auth login` ×2, `bluebox auth login`) not yet effective on the dev box → M0.2 verdicts + the tgo73062 write path + the dashboard 403 re-run **before Step 4** |
-> | 1 | Branch protection + decision log + CLAUDE.md slim + `AGENTS.md` | **in progress** | branch protection applied 2026-09-09 (PR + `build` check, admins included); 35 ADRs; CLAUDE.md 330 → ~175 lines |
-> | 2 | Risk tiers + permissions allowlist | pending | |
+> | 1 | Branch protection + decision log + CLAUDE.md slim + `AGENTS.md` | **done 2026-09-09** | PR #50 merged. Branch protection live (PR + `build` check, admins included); 35 ADRs; CLAUDE.md 330 → 188 lines (Step 2 adds the tiers section) |
+> | 2 | Risk tiers + permissions allowlist | **in progress** | branch `risk-tiers`: CLAUDE.md tiers section, `scripts/check-tier.mjs` in `ci.yml`, PR template, committed `.claude/settings.json` (Tier A) |
 > | 3 | vitest + eslint | pending | |
 > | 4 | H9 Phase 1 + H9.5-B | pending | needs M0.2 |
 > | 5 | Product skills | pending | |

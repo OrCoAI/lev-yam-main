@@ -96,6 +96,33 @@ Answer-first content pages, one per query cluster — plan: [docs/plans/content-
 — kickoff records alignment answers that change a rule; close-out records what was decided on the
 way. Format and index: [docs/decisions/README.md](docs/decisions/README.md).
 
+## Risk tiers (every PR declares one)
+
+Review depth follows risk, not habit ([ADR 0015](docs/decisions/0015-risk-tiers-abc.md)). **Every PR
+description carries a line `**Tier:** A|B|C — one-line justification`**; the `tier` job of `ci.yml`
+runs `scripts/check-tier.mjs`, **the rule set**: it derives the tier the changed paths require and
+fails a declaration below it — declaring higher is always allowed (`--explain` previews the mapping).
+Tiers decide **human checkpoints only**; gate effort follows the diff class (ADR 0003: docs-only runs
+inline whatever its tier), and kickoff alignment follows initiative-vs-bugfix, not tier.
+
+| Tier | What (the script is authoritative; this is the summary) | Human checkpoints |
+|---|---|---|
+| **A** | `supabase/`, `.github/workflows/`, `scripts/*.sh`, analytics/RUM wiring (`js/vendor-tags.js`, `js/wa-track.js`), the platform `lib/`+`shell/` and the finance/pos/quotes/users modules (named UI-only files excepted), and **the leash** — `.claude/`, `CLAUDE.md`, `AGENTS.md`, `.gitignore`, the tier script and the verify harness ([ADR 0036](docs/decisions/0036-agent-instruction-files-are-the-leash.md)) | localhost UI confirmation + staging sign-off where the diff has a deployed surface; otherwise the owner reviews the PR before merge |
+| **B** | Everything unlisted: module UI files named as exceptions, `index.html`/`js/`/`css/`, `FACTS.md`, `llms.txt`, build scripts, templates, human edits to `package.json` | full gate; Claude's screenshots stay step zero; the human look happens **once, on staging** |
+| **C** | `docs/`, README, tests under `app-src/`, module i18n dictionaries, `img/`+`fonts/`, generated files, `/stories/` content pages (twin rule via the generator), dependabot npm bumps | none — full gate + CI + staging deploy still run; **merge on green**; the merge is reported in the weekly review |
+
+Dependabot's GitHub-Actions bumps touch workflows: the owner adds the Tier-A line to the PR body
+(the `edited` event re-runs the check). Detector/dashboard YAML has no path rule yet — declare B when
+adding, C when tuning (work order Part 4). **Calibration:** two weeks after tiers land, the owner
+watches Tier-B PRs closely.
+
+**Agent permissions** ([ADR 0022](docs/decisions/0022-agent-permissions-allowlist.md)): the committed
+`.claude/settings.json` is the policy. Honest scope: `allow` removes prompts for routine local work;
+`ask`/`deny` catch *direct* invocations (a push, `supabase db push`, `rm -rf`, reading `.env`) — an
+allowed interpreter or `find -delete` can route around them, so they are guardrails against habit,
+not a security boundary; the sandbox and the rails (branch protection, CI, staging) are. Per-machine
+extras go in `settings.local.json`.
+
 ## Module work kickoff (MANDATORY for new initiatives)
 
 **Step zero — alignment questions,** question by question (scope, expected outcome, explicit
@@ -108,7 +135,8 @@ artifacts, no code before that. Then, before any code, generate the full set in 
 3. **Architecture invariants check** — permissions DB-first, schema in `supabase/schema/`, money and
    lifecycle through the cross-module spines, bilingual via shell i18n, mobile-first.
 4. **Vision check.**
-5. **Branch** — `main` deploys straight to production; merge via PR after the gate.
+5. **Branch + tier** — `main` deploys straight to production; merge via PR after the gate, with
+   the tier declared in the PR description.
 
 **Conflict rule:** anything that contradicts the vision, roadmap, architecture or an ADR — or those
 documents contradicting each other — is **raised with the user explicitly**, never coded around.
@@ -120,7 +148,8 @@ For a bug fix or small self-contained feature on a shipped module, skip the kick
 lighter log, automatically: (1) check `docs/modules/<module>.md` for open items and surface them;
 (2) log the item there (Open bugs / Open feature ideas); (3) do the work, then move the entry to
 **Done** with date and a one-line note; (4) before the gate, give the user the list of changes plus
-the exact local command and what to click per item, and wait for confirmation; (5) the gate below
+the exact local command and what to click per item, and wait for confirmation per the tier table
+(Tier A: localhost; B: staging; C: none); (5) the gate below
 still applies in full. If the fix grows (new schema, permissions, the events/finance spine, a real
 UI design decision) stop and run the kickoff — it became an initiative. Convention:
 `docs/modules/README.md`.
@@ -130,8 +159,8 @@ UI design decision) stop and run the kickoff — it became an initiative. Conven
 **Step zero — UI confirmed on localhost before the gate starts** ([ADR 0008](docs/decisions/0008-ui-confirmed-on-localhost-before-gate.md)),
 for any diff with user-visible UI: (1) Claude verifies with headless-Chrome screenshots at 360 / 390 /
 1280px — a `!! HORIZONTAL OVERFLOW` line is a finding ([ADR 0009](docs/decisions/0009-360px-viewport-and-overflow-report.md));
-(2) Claude gives the serve command and what to open/click; (3) the user confirms. Diffs with no UI
-surface skip to the gate.
+(2) Claude gives the serve command and what to open/click; (3) the user confirms — per the tier table
+(A: here; B: on staging; C: none). Diffs with no UI surface skip to the gate.
 
 **No commit until all of these pass** on the pending diff, each review at **high effort** on the most
 capable model; every finding fixed (or explicitly waived by the user) and the step re-run clean:
@@ -145,18 +174,20 @@ capable model; every finding fixed (or explicitly waived by the user) and the st
    `RLS MATRIX: ALL ASSERTIONS PASSED`, extended first with assertions for what the diff changed.
 
 **Diff-class scaling** ([ADR 0003](docs/decisions/0003-docs-only-diffs-run-gate-inline.md)): docs-only
-diffs run steps 1–2 inline and skip 3. The full multi-agent gate is mandatory for any diff touching
-`app-src/`, `supabase/`, the `scripts/assemble-site.sh` allowlist, or `.github/workflows/`.
+diffs (no runtime or schema surface) run steps 1–2 inline and skip 3, whatever their tier. The full
+multi-agent gate is mandatory for any diff with a runtime surface — `app-src/`, `supabase/`, `js/`,
+the assemble allowlist, `.github/workflows/`, `scripts/`.
 A commit with an unrun or failing gate step is a process violation.
 
 ## Staging verification (MANDATORY before merging to main)
 
-[ADR 0012](docs/decisions/0012-staging-verification-mandatory-before-main.md). **Applies to** any diff touching the
-assemble allowlist, `app-src/`, `supabase/`, or `.github/workflows/`; **not** to `docs/`, `CLAUDE.md`,
-`tests/` (never deployed). After the gate: (1) bring the branch up to date with `main`, push it onto
+[ADR 0012](docs/decisions/0012-staging-verification-mandatory-before-main.md). **Applies to** any diff with a
+deployed surface (the assemble allowlist, `app-src/`, `supabase/`, `.github/workflows/`); **not** to
+`docs/`, `CLAUDE.md`, `.claude/`, `tests/` — never deployed, so a Tier-A diff there gets the owner's PR
+review instead. After the gate: (1) bring the branch up to date with `main`, push it onto
 `staging` (merge/fast-forward, never force) — **pre-authorized**, no need to ask; sequence behind any
 branch already mid-verification; (2) wait for `deploy-staging.yml`, smoke-check the routes; (3) give the
-user the `staging.levyam.com` click-list per change; (4) **wait for explicit sign-off**, then merge.
+user the `staging.levyam.com` click-list per change; (4) sign-off **per the tier table**, then merge.
 
 ## Roadmap item close-out (MANDATORY)
 
@@ -181,8 +212,8 @@ included (ARCHITECTURE §6c). Pushing `staging` triggers `deploy-staging.yml` �
 
 - Historical pre-launch records: `docs/archive/` (not a to-do list). Active plans: `docs/plans/`, one
   per initiative, linked from the roadmap. Decisions: `docs/decisions/`.
-- **`.claude/skills/` is versioned with the repo** (the gate depends on `verify`; the Bluebox and
-  product skills are part of the workflow); `.claude/settings.local.json` and other agent state stay
-  untracked. Also ignored: `.DS_Store`, `node_modules/`, `app-src/dist/`, `.env*`, raw source media.
+- **`.claude/skills/` and `.claude/settings.json` are versioned with the repo** (the gate depends on
+  `verify`; the settings file is the committed permission policy); `.claude/settings.local.json` and
+  other agent state stay untracked. Also ignored: `.DS_Store`, `node_modules/`, `app-src/dist/`, `.env*`, raw source media.
 - `tests/` holds Dynatrace bizevent test harnesses (open in a browser), not a unit-test suite.
 - `AGENTS.md` at the root is a pointer to this file for other harnesses — never duplicate content there.
