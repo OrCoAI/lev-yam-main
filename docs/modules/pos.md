@@ -11,7 +11,7 @@ touching schema, permissions, or the events/finance spine graduates to a `docs/p
 
 ## Open bugs
 
-- (none logged)
+- Lint warnings (oxlint, ratcheted at 24 total on 2026-09-09): `react(refs)` during render + one `unicorn` spread in usePosData.ts — see `npm run lint`
 
 ## In progress — POS menu-as-data + kitchen reliability (kickoff 2026-07-28)
 

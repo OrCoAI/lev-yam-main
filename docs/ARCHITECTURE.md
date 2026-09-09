@@ -229,8 +229,8 @@ rule stopped being honor-system).*
   No approval count is required — one-person org; review depth comes from the **risk tiers** in
   `CLAUDE.md` instead (declared per PR, floor-checked by `scripts/check-tier.mjs`, ADR 0015). Changing this setting is an owner action, recorded as an ADR.
 - **`ci.yml` is the required check** on every PR: permission-mirror, migration-baseline and
-  sitemap drift checks, then typecheck + build (tests and lint join it in the operating-system
-  block, Step 3).
+  sitemap drift checks, then lint (oxlint, ratcheted), the money-math unit tests, typecheck + build;
+  `deploy.yml` repeats lint + tests before the prod build (ADR 0037).
 - **Staging is the pre-prod stop** for anything with a deployed surface (ADR 0012); `main`
   deploys straight to production with the grant audit gating the deploy (ADR 0005).
 - **Decisions are logged, not remembered:** every dated rule has an ADR in `docs/decisions/`.

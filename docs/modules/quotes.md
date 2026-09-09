@@ -12,13 +12,17 @@ it for fixes; everything now happens in this module.
 
 ## Open bugs
 
-- (none logged)
+- Quote page at phone widths: the A4 document (798px) makes the whole page scroll sideways and the control pane sits far below it (seen on `main` 2026-09-09 via `screenshot.mjs`, pre-existing — the editor is desktop-first). Decide: scale the document to fit, or accept and document.
+
+- Lint warnings (oxlint, ratcheted at 24 total on 2026-09-09): incomplete effect deps in QuotePage.tsx/ContractPage.tsx, a ref read during render — see `npm run lint`
 
 ## Open feature ideas
 
 - (none logged)
 
 ## Done
+
+- 2026-09-09 — `Toggle` in QuotePage.tsx was declared inside render (a new component identity per keystroke remounted the three toggles and dropped keyboard focus); hoisted to module scope. Found by the Step 3 lint pass.
 
 - **2026-07-13 — follow-up: fixed the actual root cause of "confirmed" never matching
   real quotes, and reworked item reorder as real drag-and-drop** (same branch/PR cycle
