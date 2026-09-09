@@ -1,0 +1,29 @@
+name: tier
+
+# G1 risk tiers (ADR 0015): every PR declares "**Tier:** A|B|C"; the declared tier must be
+# at least what the changed paths require (scripts/check-tier.mjs is the single rule set).
+# Its own workflow, on pull_request ONLY: ci.yml also runs on branch pushes, and a
+# push-event job that is skipped still reports a check run — which branch protection
+# counts as passing. Keeping `tier` out of ci.yml means the only check run with this
+# name is the one that actually read the PR body. `edited` re-runs it when the
+# description is fixed (the only remedy the check asks for). fetch-depth 2 gives the
+# merge commit's first parent = the PR base; no extra fetch, no history. Untrusted PR
+# input (body, actor) reaches the shell only through env vars, never interpolated.
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, edited]
+
+jobs:
+  tier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+      - name: Risk-tier declaration check
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_ACTOR: ${{ github.event.pull_request.user.login }}
+        run: node scripts/check-tier.mjs --base HEAD^1
