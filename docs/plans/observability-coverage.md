@@ -2,9 +2,13 @@
 
 *Kickoff 2026-08-12 · branch `observability-coverage` · was roadmap item **H9** (Phase 1.5)*
 
-> **REMOVED from the roadmap — owner decision 2026-08-26.** This file is kept as reference
-> only; no roadmap item tracks this work. If observability coverage is ever revived, start
-> from here (Phase 0 was 2/3 done) but re-verify everything against the then-current stack.
+> **REINSTATED 2026-09-09** ([ADR 0035](../decisions/0035-h9-reinstated-operating-system-block.md))
+> as part of the roadmap's **Operating system** block, executed through
+> [master-execution-plan.md](master-execution-plan.md) Steps 4, 7, 9, 10, 11 with the H9.5
+> amendments ([observability-best-practices-adoption.md](observability-best-practices-adoption.md))
+> folded in. *(Was: removed from the roadmap by owner decision 2026-08-26 —
+> [ADR 0032](../decisions/0032-h9-observability-coverage-removed-from-roadmap.md); Phase 0 was 2/3 done when work stopped.
+> Everything below is re-verified against the current stack as each phase runs.)*
 
 ## Why
 

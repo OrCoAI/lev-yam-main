@@ -218,6 +218,23 @@ on it must also filter `levyam.outcome`. Requests rejected before the wrapper (b
 method) are not traced at all. Details and the operational runbook: `supabase/README.md`; design
 and decisions: [plans/bluebox-observability.md](plans/bluebox-observability.md).
 
+## 6c. Delivery rails
+
+*Added 2026-09-09 with the operating-system block (work order G6.1 — the "process violation"
+rule stopped being honor-system).*
+
+- **`main` is branch-protected** (GitHub setting, applied 2026-09-09 through the API and
+  confirmed by the owner): a pull request is required, the `build` job of `ci.yml` must be
+  green, direct pushes are rejected **for admins too**, force-pushes and deletion are disabled.
+  No approval count is required — one-person org; review depth comes from the risk tiers in
+  `CLAUDE.md` instead. Changing this setting is an owner action, recorded as an ADR.
+- **`ci.yml` is the required check** on every PR: permission-mirror, migration-baseline and
+  sitemap drift checks, then typecheck + build (tests and lint join it in the operating-system
+  block, Step 3).
+- **Staging is the pre-prod stop** for anything with a deployed surface (ADR 0012); `main`
+  deploys straight to production with the grant audit gating the deploy (ADR 0005).
+- **Decisions are logged, not remembered:** every dated rule has an ADR in `docs/decisions/`.
+
 ## 7. Invariants — the rules that must never break
 
 1. RLS on every table; UI gating is never the only gate.

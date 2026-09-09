@@ -13,7 +13,9 @@ loses the remainder of a partial payment. This initiative closes them so Phase 2
 events) starts from a clean base.
 
 **H9 (observability coverage) was removed from the roadmap entirely — owner decision
-2026-08-26.** At kickoff it was the final leg of this batch ("stragglers first, then H9 in
+2026-08-26.** *(Superseded 2026-09-09: H9 reinstated through the operating-system block,
+[ADR 0035](../decisions/0035-h9-reinstated-operating-system-block.md); the paragraph below is
+kept as the record of what was removed and why.)* At kickoff it was the final leg of this batch ("stragglers first, then H9 in
 full"); mid-batch the owner first descoped it from this session, then cut it from the roadmap
 altogether. Its plan file — [observability-coverage.md](observability-coverage.md) — stays as
 reference only; nothing tracks it as pending work. What was removed with it, knowingly: `/app`
