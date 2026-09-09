@@ -62,7 +62,8 @@ Answer-first content pages, one per query cluster — plan: [docs/plans/content-
 ### Platform (`app-src/`, served at `/app`)
 - **Stack:** Vite + React + TypeScript + react-router. Dev needs **Node 22** and the **local Supabase
   stack** (Colima): `supabase start && supabase db reset`, then `cd app-src && npm run dev`
-  (`localhost:5173/app`; seed logins in `supabase/seed.sql`). Build/typecheck: `npm run build`.
+  (`localhost:5173/app`; seed logins in `supabase/seed.sql`). Before pushing: `npm run lint` (oxlint, warning count
+  ratcheted — ADR 0037), `npm test` (money-math unit tests), `npm run build` (typecheck + build).
   Local dev never touches prod ([ADR 0004](docs/decisions/0004-staging-is-a-permanent-second-supabase-project.md)).
 - **Vite `base` is `/app/`** and the router `basename` is `/app` — keep them in sync.
 - **Permissions are role → module → action, enforced in the DB** via RLS calling

@@ -81,8 +81,8 @@
 ### G6 — Rails hardening (prerequisite for G1's Tier C)
 **Work:**
 1. **Branch protection on `main` (GitHub settings — owner action, not repo code):** require PR, require `ci.yml` green, no direct pushes (including admins). Currently the "process violation" rule is honor-system; autonomy requires it be mechanical. Document the setting in `docs/ARCHITECTURE.md`.
-2. **Unit tests for money-math:** add a minimal test runner (vitest) to `app-src` covering `modules/pos/logic.ts` and `modules/finance/reconciliation.ts` (pure functions — cheapest, highest-value tests in the repo). Wire into `ci.yml` before the build step.
-3. Add **lint** (eslint, existing Vite+TS preset) to `ci.yml`.
+2. **Unit tests for money-math:** add a minimal test runner (vitest) to `app-src` covering `modules/pos/logic.ts` and `modules/finance/reconciliation.ts` *(corrected at Step 3 kickoff — `reconciliation.ts` is a hook over an RPC; see ADR 0037)* (pure functions — cheapest, highest-value tests in the repo). Wire into `ci.yml` before the build step.
+3. Add **lint** (eslint, existing Vite+TS preset) to `ci.yml`. *(Delivered as oxlint — typescript-eslint cannot load on TypeScript 7; ADR 0037.)*
 4. Note the dependabot known-gap (Deno `@simplewebauthn/server`) as a quarterly checklist item in the weekly-review skill's monthly section — it's currently only a comment in a YAML file nobody re-reads.
 **Acceptance:** direct push to `main` is rejected; `npm test` exists and runs in CI; lint gate active.
 

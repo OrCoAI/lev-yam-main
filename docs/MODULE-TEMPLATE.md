@@ -167,7 +167,7 @@ network and is tree-shaken from prod builds.
 - [ ] Add fixtures for the new module's tables to `src/dev/fixtures.ts`.
 - [ ] Screenshot phone-width via puppeteer/playwright-core + system Chrome; for printable
   docs, count PDF pages.
-- [ ] `npm run build` locally; `ci.yml` runs typecheck+build on branch pushes, so open
+- [ ] `npm run lint`, `npm test` and `npm run build` locally; `ci.yml` runs lint + unit tests + typecheck + build on branch pushes (ADR 0037: the warning count is ratcheted — a new lint warning fails CI), so open
   work on a `feat/<module>` branch and merge to `main` only green (main deploys straight
   to production, smoke-checked post-deploy).
 

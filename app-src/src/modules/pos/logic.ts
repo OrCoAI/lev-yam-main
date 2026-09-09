@@ -1,11 +1,12 @@
-// Pure table/menu logic. The menu is owner-editable DB data loaded into
-// menuData.ts (open house was retired 2026-07-28 — every line is à-la-carte).
-import { getMenuGroups } from './menuData'
+// Pure table/menu logic — no store import: callers pass the menu (menuData.getMenuGroups()),
+// which keeps this file testable with a fixture and out of the menuData → api → logic cycle.
+// The menu is owner-editable DB data (open house was retired 2026-07-28 — every line is à-la-carte).
+import type { MenuGroup } from './menu'
 import type { PosLine, PosTable, Payment } from './types'
 
-export function buildItems(): PosLine[] {
+export function buildItems(groups: MenuGroup[]): PosLine[] {
   const out: PosLine[] = []
-  getMenuGroups().forEach((g, gi) =>
+  groups.forEach((g, gi) =>
     g.items.forEach((it, ii) => {
       if (it.isMeal) return // meals are built through the picker (meals section), not a qty stepper
       // Items that carry options still get a plain quick-add stepper here; the ✎
@@ -25,14 +26,14 @@ function normalizeLine(it: LegacyLine): PosLine {
 
 // Merge a saved cart with the current MENU: refresh menu items (category/price/name —
 // so renames don't orphan them) while preserving quantities, custom items and combo lines.
-export function reconcileItems(saved: unknown): PosLine[] {
+export function reconcileItems(saved: unknown, groups: MenuGroup[]): PosLine[] {
   const arr = (Array.isArray(saved) ? (saved as LegacyLine[]) : []).map(normalizeLine)
   const byName: Record<string, PosLine> = {}
   // Only the plain quick-add lines merge by name; configured lines (combo) are
   // distinct instances kept verbatim as extras below.
   arr.forEach((it) => { if (!it.custom && !it.combo) byName[it.name] = it })
   const menuNames = new Set<string>()
-  const merged = buildItems().map((f) => {
+  const merged = buildItems(groups).map((f) => {
     menuNames.add(f.name)
     const o = byName[f.name]
     return o ? { ...f, qty: o.qty || 0, sent: o.sent || 0, done: o.done || 0, served: o.served || 0, firedAt: o.firedAt } : f
@@ -96,12 +97,12 @@ export function nextTableNum(tables: PosTable[]): number {
   return n
 }
 
-export function makeTable(tables: PosTable[]): PosTable {
+export function makeTable(tables: PosTable[], groups: MenuGroup[]): PosTable {
   return {
     id: 't-' + Date.now(),
     num: nextTableNum(tables),
     name: '',
-    items: buildItems(),
+    items: buildItems(groups),
     guests: { a: 2, c: 0 },
     useOH: false, // new tables default to "לפי תפריט" (a-la-carte)
     openedAt: Date.now(),
