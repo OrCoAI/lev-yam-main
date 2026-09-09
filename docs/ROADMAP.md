@@ -395,6 +395,40 @@ finance money integrity → doc rewrites.
       follow-ups:** deploy Supabase edge functions to staging (from a normal machine), and a
       GitHub Action for auto-deploy on `staging` push (currently manual `wrangler pages deploy`).
 
+## Operating system — gate into Phase 2 (kickoff 2026-09-09)
+
+*Not a product phase: installs the Company-of-One operating system (risk tiers, decision log,
+product skills, automations, permissions, cadence) and **reinstates observability coverage
+(H9 + H9.5)** — owner decision 2026-09-09, [ADR 0035](decisions/0035-h9-reinstated-operating-system-block.md),
+superseding the 2026-08-26 removal. Spine: [plans/master-execution-plan.md](plans/master-execution-plan.md)
+(12 steps, each its own PR; the running checklist lives at the top of that file). Companions:
+[company-of-one-operating-system.md](company-of-one-operating-system.md),
+[plans/lev-yam-gap-analysis-work-order.md](plans/lev-yam-gap-analysis-work-order.md) (G1–G8),
+[plans/observability-best-practices-adoption.md](plans/observability-best-practices-adoption.md) (H9.5),
+[plans/observability-coverage.md](plans/observability-coverage.md) (H9, active again).
+**Phase 2 does not start before the first quarterly review**, which runs on the evidence this
+block produces (work order G7).*
+
+- [ ] **Step 0 — M0** environment access: dtctl readonly default + named write context + `levyam-bluebox`
+      context *(contexts set 2026-09-09; owner-interactive logins + M0.2 capability confirmation pending)*
+- [x] **Step 1** — branch protection on `main` *(applied 2026-09-09 via API: PR + `build` check required,
+      admins included)* + decision log `docs/decisions/` (35 ADRs) + CLAUDE.md slim + `AGENTS.md`
+      *(done 2026-09-09, PR #50)*
+- [ ] **Step 2** — risk tiers A/B/C (CLAUDE.md + path-check in `ci.yml`) + `.claude/settings.json` allowlist
+- [ ] **Step 3** — vitest on `pos/logic.ts` + `finance/reconciliation.ts`; eslint in `ci.yml`
+- [ ] **Step 4** — H9 Phase 1 + H9.5-B: synthetic monitors, hardened detectors, count/freshness SLOs, Bluebox Routine
+- [ ] **Step 5** — product skills (product-context, feature-spec, idea-capture + `docs/ideas.md`,
+      weekly-review, feedback-triage, quarterly-review) with 3-case evals; obs-best-practices installed
+- [ ] **Step 6** — automations: `@claude` action, weekly / monthly / quarterly-prep crons, dependabot → Tier C
+- [ ] **Step 7** — H9 Phase 2 + H9.5-D: `/app` RUM (New RUM frontend), masking, staging exclusion, §6b rewrite
+- [ ] **Step 8** — H9.5-C: OpenPipeline masking in both environments; invariant 3 gains its second layer
+- [ ] **Step 9** — H9 Phase 3: reconciliation-as-monitor, log attributes, traceparent/CORS, `deno check`, rate limit
+- [ ] **Step 10** — H9 Phase 4 slot: SRG guardian + SDLC event from `deploy.yml`, dashboards-as-code, H9.5-E/F
+- [ ] **Step 11** — H9 Phase 5 + G5: Dynatrace MCP, production-context mandatory, outcome metric in MODULE-TEMPLATE
+- [ ] **Step 12** — cadence + session hygiene in CLAUDE.md; close-outs for every plan touched
+- [ ] **Closure** (master plan Part 4): Tier-C change flows to prod untouched; three crons fired; green
+      monitors, armed detectors, evaluating SLOs, one real SRG verdict → **first quarterly review opens Phase 2**
+
 ## Phase 2 — What's happening: bookings & events
 
 *Replaces WhatsApp-thread reservation tracking. The shared calendar itself is the `events`
