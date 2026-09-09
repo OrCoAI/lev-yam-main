@@ -226,8 +226,8 @@ rule stopped being honor-system).*
 - **`main` is branch-protected** (GitHub setting, applied 2026-09-09 through the API and
   confirmed by the owner): a pull request is required, the `build` job of `ci.yml` must be
   green, direct pushes are rejected **for admins too**, force-pushes and deletion are disabled.
-  No approval count is required — one-person org; review depth comes from the risk tiers in
-  `CLAUDE.md` instead. Changing this setting is an owner action, recorded as an ADR.
+  No approval count is required — one-person org; review depth comes from the **risk tiers** in
+  `CLAUDE.md` instead (declared per PR, floor-checked by `scripts/check-tier.mjs`, ADR 0015). Changing this setting is an owner action, recorded as an ADR.
 - **`ci.yml` is the required check** on every PR: permission-mirror, migration-baseline and
   sitemap drift checks, then typecheck + build (tests and lint join it in the operating-system
   block, Step 3).

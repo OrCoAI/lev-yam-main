@@ -1,7 +1,7 @@
 # 0003 — Docs-only diffs run the pre-commit gate inline (diff-class scaling)
 
 - **Date:** 2026-07-11
-- **Status:** accepted
+- **Status:** accepted — clarified by ADR 0036: gate effort (this ADR) is orthogonal to risk tier; a docs-only diff runs inline whatever its tier
 - **Decided by:** owner + Claude Code (review)
 - **Source:** `CLAUDE.md` "Pre-commit quality gate", paragraph "Diff-class scaling (decided 2026-07-11)"
 

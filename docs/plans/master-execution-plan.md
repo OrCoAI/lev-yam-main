@@ -6,9 +6,9 @@
 > | # | Step | Status | PR / notes |
 > |---|---|---|---|
 > | 0 | M0 environment access + capability confirmation | **in progress** | M0.1: `my-env` → readonly, `my-env-write`, `levyam-bluebox` contexts set 2026-09-09. Owner logins (`dtctl auth login` ×2, `bluebox auth login`) not yet effective on the dev box → M0.2 verdicts + the tgo73062 write path + the dashboard 403 re-run **before Step 4** |
-> | 1 | Branch protection + decision log + CLAUDE.md slim + `AGENTS.md` | **in progress** | branch protection applied 2026-09-09 (PR + `build` check, admins included); 35 ADRs; CLAUDE.md 330 → ~175 lines |
-> | 2 | Risk tiers + permissions allowlist | pending | |
-> | 3 | vitest + eslint | pending | |
+> | 1 | Branch protection + decision log + CLAUDE.md slim + `AGENTS.md` | **done 2026-09-09** | PR #50 merged. Branch protection live (PR + `build` check, admins included); 35 ADRs; CLAUDE.md 330 → 188 lines (Step 2 adds the tiers section) |
+> | 2 | Risk tiers + permissions allowlist | **done 2026-09-09** | PR #51 (Tier A, owner-approved). `scripts/check-tier.mjs` + `tier.yml` (second required check), PR template, committed `.claude/settings.json`, ADR 0036 leash class. From here every PR self-declares a tier |
+> | 3 | vitest + eslint | **in progress** | correction at kickoff: `finance/reconciliation.ts` is a hook over an RPC, not pure math — test target re-scoped (see Step 3 PR) |
 > | 4 | H9 Phase 1 + H9.5-B | pending | needs M0.2 |
 > | 5 | Product skills | pending | |
 > | 6 | Automations | pending | |

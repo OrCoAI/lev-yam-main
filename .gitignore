@@ -6,8 +6,9 @@
 .vscode/
 .idea/
 
-# Claude Code agent state — settings/local state stays untracked; skills ship
-# with the repo. The gate depends on the verify skill for everyone, and the
+# Claude Code agent state — settings.json (the committed permission policy, ADR 0022,
+# Tier A) and the skills ship with the repo; settings.local.json and other local
+# state stay untracked. The gate depends on the verify skill for everyone, and the
 # Bluebox skills are part of the platform's observability workflow (roadmap H8,
 # docs/plans/bluebox-observability.md) — both must survive `git clone`.
 # (.claude/* + negation, not a bare .claude/ — git can't re-include a path
@@ -17,6 +18,7 @@
 .claude/*
 !.claude/skills/
 !.claude/skills/**
+!.claude/settings.json
 
 # Platform build (app-src/) — Node deps, build output, and local env
 node_modules/

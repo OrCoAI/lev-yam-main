@@ -1,7 +1,7 @@
 # 0022 — Agent permissions allowlist; settings file is Tier A forever
 
 - **Date:** 2026-08-13
-- **Status:** accepted
+- **Status:** accepted — amended by ADR 0036 (leash = class). Scope note (Step 2 gate, 2026-09-09): `ask`/`deny` catch direct invocations only; allowed interpreters (`node`, `npx`, `python3`) and `find -delete` can route around them, and the Read deny gates the Read tool, not shell reads — owner-accepted trade-off ("gating interpreters separately is theater"); the committed file is authoritative over the command list below
 - **Decided by:** owner (strategy session with Claude Code)
 - **Source:** `docs/plans/master-execution-plan.md` Part 1 #8; `docs/plans/lev-yam-gap-analysis-work-order.md` G8
 
