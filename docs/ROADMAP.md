@@ -416,7 +416,8 @@ block produces (work order G7).*
       *(done 2026-09-09, PR #50)*
 - [x] **Step 2** — risk tiers A/B/C (CLAUDE.md + `scripts/check-tier.mjs` as the `tier` required check) +
       committed `.claude/settings.json` allowlist *(done 2026-09-09, PR #51; leash class = Tier A, ADR 0036)*
-- [ ] **Step 3** — vitest on `pos/logic.ts` + `finance/reconciliation.ts`; eslint in `ci.yml`
+- [ ] **Step 3** — vitest on the pure money math (`pos/logic.ts`, `finance/format.ts`, `finance/provenance.ts`)
+      + oxlint (warnings ratcheted) in `ci.yml` and `deploy.yml` *(targets corrected at kickoff — ADR 0037)*
 - [ ] **Step 4** — H9 Phase 1 + H9.5-B: synthetic monitors, hardened detectors, count/freshness SLOs, Bluebox Routine
 - [ ] **Step 5** — product skills (product-context, feature-spec, idea-capture + `docs/ideas.md`,
       weekly-review, feedback-triage, quarterly-review) with 3-case evals; obs-best-practices installed

@@ -12,7 +12,7 @@ touching schema, permissions, or the events/finance spine graduates to a `docs/p
 
 ## Open bugs
 
-- (none logged)
+- Lint warnings (oxlint, ratcheted at 24 total on 2026-09-09): `react(set-state-in-effect)` ×5, `react(refs)` ×1 in this module — see `npm run lint`
 
 ## Open feature ideas
 
