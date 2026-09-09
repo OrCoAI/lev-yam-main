@@ -99,8 +99,8 @@ way. Format and index: [docs/decisions/README.md](docs/decisions/README.md).
 ## Risk tiers (every PR declares one)
 
 Review depth follows risk, not habit ([ADR 0015](docs/decisions/0015-risk-tiers-abc.md)). **Every PR
-description carries a line `**Tier:** A|B|C — one-line justification`**; the `tier` job of `ci.yml`
-runs `scripts/check-tier.mjs`, **the rule set**: it derives the tier the changed paths require and
+description carries a line `**Tier:** A|B|C — one-line justification`**; `tier.yml` (pull requests
+only) runs `scripts/check-tier.mjs`, **the rule set**: it derives the tier the changed paths require and
 fails a declaration below it — declaring higher is always allowed (`--explain` previews the mapping).
 Tiers decide **human checkpoints only**; gate effort follows the diff class (ADR 0003: docs-only runs
 inline whatever its tier), and kickoff alignment follows initiative-vs-bugfix, not tier.

@@ -29,6 +29,7 @@ they record decisions, they do not enforce them.
   reviews them in full. That is the intended cost.
 - `scripts/check-tier.mjs` lists the leash rules first — before every exception — so no pattern can
   demote them; CLAUDE.md's tier table names the class.
-- The tier check is its own required status check (`tier`) in branch protection, next to `build`,
-  so a push-event `build` run (which cannot read a PR body) never satisfies it.
+- The tier check is its own workflow (`tier.yml`, pull requests only) and its own required status
+  check next to `build`: a push-event run — which cannot read a PR body, and whose skipped job
+  would still count as passing — never produces a check run with that name.
 - If the owner amends this (e.g., skills → B), the script rule and this ADR change together.

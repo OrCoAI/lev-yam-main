@@ -9,32 +9,10 @@ name: CI — typecheck & build
 on:
   pull_request:
     branches: [main]
-    # `edited` re-runs the tier check when the description is fixed (the only remedy the
-    # check asks for); default types would leave a corrected declaration unchecked.
-    types: [opened, synchronize, reopened, edited]
   push:
     branches-ignore: [main]
 
 jobs:
-  # G1 risk tiers (ADR 0015): every PR declares "**Tier:** A|B|C"; the declared tier must be
-  # at least what the changed paths require (scripts/check-tier.mjs is the single rule set).
-  # Its own job, and its own required check in branch protection: a `push` run of `build`
-  # (which has no PR body to read) can never satisfy it. fetch-depth 2 gives the merge
-  # commit's first parent = the PR base; no extra fetch, no history. Untrusted PR input
-  # (body, actor) reaches the shell only through env vars, never interpolated.
-  tier:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 2
-      - name: Risk-tier declaration check
-        env:
-          PR_BODY: ${{ github.event.pull_request.body }}
-          PR_ACTOR: ${{ github.event.pull_request.user.login }}
-        run: node scripts/check-tier.mjs --base HEAD^1
-
   build:
     runs-on: ubuntu-latest
     steps:
