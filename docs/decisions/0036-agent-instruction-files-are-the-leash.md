@@ -1,8 +1,8 @@
 # 0036 — Agent-instruction files are one "leash" class, all Tier A
 
 - **Date:** 2026-09-09
-- **Status:** amends 0015 and 0022 — proposed by Claude Code during the Step 2 gate; the owner confirms or amends at the Step 2 (Tier A) sign-off
-- **Decided by:** owner + Claude Code (review) — owner confirmation pending
+- **Status:** accepted — amends 0015 and 0022 (owner confirmed at the Step 2 sign-off, 2026-09-09)
+- **Decided by:** owner + Claude Code (review)
 - **Source:** `/simplify` altitude finding on `scripts/check-tier.mjs`; work order G1 vs G8
 
 ## Context

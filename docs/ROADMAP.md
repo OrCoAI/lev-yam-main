@@ -414,7 +414,8 @@ block produces (work order G7).*
 - [x] **Step 1** — branch protection on `main` *(applied 2026-09-09 via API: PR + `build` check required,
       admins included)* + decision log `docs/decisions/` (35 ADRs) + CLAUDE.md slim + `AGENTS.md`
       *(done 2026-09-09, PR #50)*
-- [ ] **Step 2** — risk tiers A/B/C (CLAUDE.md + path-check in `ci.yml`) + `.claude/settings.json` allowlist
+- [x] **Step 2** — risk tiers A/B/C (CLAUDE.md + `scripts/check-tier.mjs` as the `tier` required check) +
+      committed `.claude/settings.json` allowlist *(done 2026-09-09, PR #51; leash class = Tier A, ADR 0036)*
 - [ ] **Step 3** — vitest on `pos/logic.ts` + `finance/reconciliation.ts`; eslint in `ci.yml`
 - [ ] **Step 4** — H9 Phase 1 + H9.5-B: synthetic monitors, hardened detectors, count/freshness SLOs, Bluebox Routine
 - [ ] **Step 5** — product skills (product-context, feature-spec, idea-capture + `docs/ideas.md`,
