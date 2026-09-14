@@ -190,7 +190,9 @@ flexible"* — maps to specific structural choices:
 *Added 2026-08-12 with roadmap H8, which gave the platform its first telemetry of its own.*
 
 **Two environments, deliberately separate, both the owner's.** Dynatrace RUM + business events
-cover the **public marketing site** (`index.html`, `js/wa-track.js`, `/stories/`). The **Bluebox**
+cover the **public marketing site** *(the environment that held them was deactivated — found
+2026-09-09; a new dedicated environment replaces it, ADR 0038; until the tag is swapped the RUM
+line is dead on production)* (`index.html`, `js/wa-track.js`, `/stories/`). The **Bluebox**
 environment holds **platform edge-function traces**. They are not merged; the Meta/GA4/Dynatrace
 split described in `CLAUDE.md` is untouched by platform telemetry.
 
