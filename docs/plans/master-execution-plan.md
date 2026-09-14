@@ -5,11 +5,11 @@
 >
 > | # | Step | Status | PR / notes |
 > |---|---|---|---|
-> | 0 | M0 environment access + capability confirmation | **in progress** | M0.1: `my-env` → readonly, `my-env-write`, `levyam-bluebox` contexts set 2026-09-09. Owner logins (`dtctl auth login` ×2, `bluebox auth login`) not yet effective on the dev box → M0.2 verdicts + the tgo73062 write path + the dashboard 403 re-run **before Step 4** |
+> | 0 | M0 environment access + capability confirmation | **done 2026-09-14 — with a plan-changing verdict** | Logins landed 2026-09-09. **`pzh8968h.sprint` is DEACTIVATED** (marketing RUM tag 404 on prod); `tgo73062` gives the owner no read/write scopes. Owner decision: **a new dedicated Dynatrace environment is the home** ([ADR 0038](../decisions/0038-new-dedicated-dynatrace-environment.md)); Steps 4/7/8/10/11 start from its own Phase 0 once the owner hands over the URL. Full verdict table in the H9.5 plan |
 > | 1 | Branch protection + decision log + CLAUDE.md slim + `AGENTS.md` | **done 2026-09-09** | PR #50 merged. Branch protection live (PR + `build` check, admins included); 35 ADRs; CLAUDE.md 330 → 188 lines (Step 2 adds the tiers section) |
 > | 2 | Risk tiers + permissions allowlist | **done 2026-09-09** | PR #51 (Tier A, owner-approved). `scripts/check-tier.mjs` + `tier.yml` (second required check), PR template, committed `.claude/settings.json`, ADR 0036 leash class. From here every PR self-declares a tier |
 > | 3 | vitest + eslint | **in progress** | correction at kickoff: `finance/reconciliation.ts` is a hook over an RPC, not pure math — test target re-scoped (see Step 3 PR) |
-> | 4 | H9 Phase 1 + H9.5-B | pending | needs M0.2 |
+> | 4 | H9 Phase 1 + H9.5-B | **blocked** | needs the new Dynatrace environment (ADR 0038) + its Phase 0 baselines |
 > | 5 | Product skills | pending | |
 > | 6 | Automations | pending | |
 > | 7 | H9 Phase 2 + H9.5-D | pending | |
@@ -130,7 +130,7 @@ All decided 2026-08-13 with the owner:
     Grail query budget, ownership team `levyam-solo`, OSS-MCP maintenance-mode noted with
     hosted-MCP/dtctl as the direction. (H9.5-E)
 14. **Query hygiene codified** — clean, narrow, repeatable queries as defaults; budget is not a constraint in this environment. (H9.5-F)
-15. **REVISED (owner, 2026-08-13):** the production observability home **remains the
+15. **REVISED (owner, 2026-08-13) — SUPERSEDED 2026-09-14 by [ADR 0038](../decisions/0038-new-dedicated-dynatrace-environment.md) (tenant deactivated; new dedicated environment):** the production observability home **remains the
     current working environment** (`pzh8968h.sprint`) — owner has full access and
     unconstrained budget there. **No tenant migration.** Existing RUM tag, bizevents,
     baselines, and env references all stand. Bluebox env (`tgo73062`) stays separate

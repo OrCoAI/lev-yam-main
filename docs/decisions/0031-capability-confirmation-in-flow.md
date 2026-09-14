@@ -1,7 +1,7 @@
 # 0031 — Capability confirmation is in-flow before building SRG
 
 - **Date:** 2026-08-13
-- **Status:** accepted — execution was paused when H9 was removed from the roadmap on 2026-08-26 (ADR 0032) and resumed when the owner reinstated H9 on 2026-09-09 (ADR 0035)
+- **Status:** accepted — execution was paused when H9 was removed from the roadmap on 2026-08-26 (ADR 0032) and resumed when the owner reinstated H9 on 2026-09-09 (ADR 0035); amended by ADR 0038 (the target environment is the new dedicated one)
 - **Decided by:** owner (strategy session with Claude Code)
 - **Source:** `docs/plans/master-execution-plan.md` Part 1 #17 and Part 2 (M0.2); `docs/plans/observability-best-practices-adoption.md` phase A step 1 and open question 3
 

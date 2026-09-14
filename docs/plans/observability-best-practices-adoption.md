@@ -127,16 +127,18 @@ explicit decision). Owner decisions (no external channels, pos.html dark): untou
 3. **Capability availability** for SRG / Workflows / OpenPipeline SDLC — phase A
    step 1 / M0.2 verifies; if gated, the documented fallback applies.
 
-## M0 record (2026-09-09)
+## M0 record (2026-09-09, verdicts 2026-09-14)
 
 | Check | Verdict |
 |---|---|
 | `my-env` default context pinned to **readonly** | done — `pzh8968h.sprint.apps.dynatracelabs.com`, token-ref `my-env-oauth` |
-| Named write context for `dtctl apply` sessions | done — `my-env-write` (readwrite-all, same token-ref, so one login covers both) |
-| `levyam-bluebox` context (tgo73062) | created; **auth pending** (owner-interactive `dtctl auth login --context levyam-bluebox`) |
-| `my-env` session authenticated | **no** — refresh token rejected (`invalid_grant`); owner re-runs `dtctl auth login` |
-| SRG app · Workflows · OpenPipeline SDLC ingest · synthetic HTTP + outage handling · Davis detector schema | **not yet verified** — every read needs the login above; re-run before Step 4 and fill this table |
-| Bluebox dashboard-listing 403 | **not yet verified** — same blocker |
+| Named write context for `dtctl apply` sessions | done — `my-env-write` (readwrite-all, same token-ref) |
+| `levyam-bluebox` context (tgo73062) | done — `https://tgo73062.apps.dynatrace.com`, owner logged in 2026-09-09 |
+| `my-env` session authenticated | yes (2026-09-09) — **but the environment is DEACTIVATED**: every endpoint returns `404 EnvironmentDisabled`. The marketing RUM tag returns 404 on levyam.com. → [ADR 0038](../decisions/0038-new-dedicated-dynatrace-environment.md): a new dedicated environment becomes the home |
+| SRG app · Workflows · OpenPipeline SDLC ingest · synthetic HTTP + outage handling · Davis detector schema | **re-verify in the new environment** (its own Phase 0) — nothing in the deactivated tenant can be read |
+| `tgo73062` write path for SLO/alert objects | **no** — and no read path either: SLOs `missingScopes: ["slo:slos:read"]`, dashboards/workflows/buckets 403, Grail "Insufficient permission to access the tenant". Only `bluebox ask` works. Blocked on Bluebox granting scopes; H9 Phase 1's SLOs are authored in the new home or deferred |
+| Bluebox dashboard-listing 403 | **confirmed, same cause** (no document permissions for the owner's identity) — ticketed with the scope request above |
+| Edge-function spans reaching Bluebox | **unconfirmed** — `bluebox ask` sees 0 spans in 3 days, no SLOs, no deploy events; low admin traffic is plausible. Follow-up: test invite on staging, then re-ask |
 
-Nothing here is a blocker for Steps 1–3 (no Dynatrace surface). If any capability turns out
-gated, phase A's documented fallback applies and is logged as a follow-up.
+**Consequence for this plan:** phases A–F run against the new environment once it exists; the
+H9 Phase 0 baselines (~8 CTAs, ~27 sessions/day) are superseded by a fresh collection week.

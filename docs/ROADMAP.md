@@ -409,8 +409,10 @@ superseding the 2026-08-26 removal. Spine: [plans/master-execution-plan.md](plan
 **Phase 2 does not start before the first quarterly review**, which runs on the evidence this
 block produces (work order G7).*
 
-- [ ] **Step 0 — M0** environment access: dtctl readonly default + named write context + `levyam-bluebox`
-      context *(contexts set 2026-09-09; owner-interactive logins + M0.2 capability confirmation pending)*
+- [x] **Step 0 — M0** environment access + capability confirmation *(done 2026-09-14 — verdict changed the
+      plan: the sprint tenant is deactivated and the marketing RUM tag is dead on prod; Bluebox's env grants
+      no scopes. Owner decision: a **new dedicated Dynatrace environment** — [ADR 0038](decisions/0038-new-dedicated-dynatrace-environment.md).
+      Steps 4/7/8/10/11 wait for its URL, then run its own Phase 0 first)*
 - [x] **Step 1** — branch protection on `main` *(applied 2026-09-09 via API: PR + `build` check required,
       admins included)* + decision log `docs/decisions/` (35 ADRs) + CLAUDE.md slim + `AGENTS.md`
       *(done 2026-09-09, PR #50)*
@@ -519,6 +521,10 @@ strategy driving it is private and lives outside the repo.*
 - [ ] Fill the `[חסר]` markers in `FACTS.md` — seasonality (Nimer's fishing calendar,
       needs Nimer), plus whatever the first content sessions surface as missing
 - [ ] Mark `whatsapp_click` as a key event in the GA4 UI (console-side, not repo)
+- [ ] **Dynatrace RUM on the marketing site is dead** (tag returns 404 since the sprint tenant was
+      deactivated, found 2026-09-09): replace the tag with the new environment's once it exists
+      (Tier A, `index.html` + `stories/_template.html`) — [ADR 0038](decisions/0038-new-dedicated-dynatrace-environment.md).
+      Until then the funnel is measured by GA4 + Meta only
 - [ ] *(Optional)* **Self-hosted Arabic webfont.** Arabic copy renders in a system stack —
       `css/styles.css` switches `html[lang="ar"]` to `SF Arabic`/`Geeza Pro`/`Noto Sans Arabic`
       deliberately, and the Heebo/Assistant `unicode-range`s exclude Arabic. That is a working
