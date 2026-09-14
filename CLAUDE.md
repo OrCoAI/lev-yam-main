@@ -125,9 +125,10 @@ extras go in `settings.local.json`.
 
 ## Module work kickoff (MANDATORY for new initiatives)
 
-**Step zero — alignment questions,** question by question (scope, expected outcome, explicit
-out-of-scope, how it serves VISION and fits ARCHITECTURE) until both sides are 100% aligned. No
-artifacts, no code before that. Then, before any code, generate the full set in parallel:
+Run the **`feature-spec` skill** (after `product-context`): it is this section made executable.
+**Step zero — alignment questions,** question by question (scope, expected outcome and its metric,
+explicit out-of-scope, how it serves VISION and fits ARCHITECTURE) until both sides are 100% aligned.
+No artifacts, no code before that. Then, before any code, generate the full set in parallel:
 
 1. **Plan file** `docs/plans/<module>-<initiative>.md`: scope, schema/RLS/permission changes, UI
    surface, open questions; link it from `docs/ROADMAP.md`.
@@ -211,9 +212,14 @@ included (ARCHITECTURE §6c). Pushing `staging` triggers `deploy-staging.yml` �
 ## Repo housekeeping
 
 - Historical pre-launch records: `docs/archive/` (not a to-do list). Active plans: `docs/plans/`, one
-  per initiative, linked from the roadmap. Decisions: `docs/decisions/`.
+  per initiative, linked from the roadmap. Decisions: `docs/decisions/`. Cross-cutting ideas:
+  `docs/ideas.md` (one dated line each, via the `idea-capture` skill; module ideas stay in
+  `docs/modules/`).
 - **`.claude/skills/` and `.claude/settings.json` are versioned with the repo** (the gate depends on
-  `verify`; the settings file is the committed permission policy); `.claude/settings.local.json` and
-  other agent state stay untracked. Also ignored: `.DS_Store`, `node_modules/`, `app-src/dist/`, `.env*`, raw source media.
+  `verify`; the settings file is the committed permission policy). Skills: engineering — `verify`,
+  `production-query`, `bluebox-*`; product — `product-context`, `feature-spec`, `idea-capture`,
+  `weekly-review`, `feedback-triage`, `quarterly-review`; monthly `obs-best-practices`. Each ships a
+  3-case `EVALS.md`, run at the quarterly ceremony audit. `.claude/settings.local.json` and other
+  agent state stay untracked. Also ignored: `.DS_Store`, `node_modules/`, `app-src/dist/`, `.env*`, raw source media.
 - `tests/` holds Dynatrace bizevent test harnesses (open in a browser), not a unit-test suite.
 - `AGENTS.md` at the root is a pointer to this file for other harnesses — never duplicate content there.
