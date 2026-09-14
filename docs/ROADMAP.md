@@ -422,6 +422,7 @@ block produces (work order G7).*
 - [ ] **Step 4** — H9 Phase 1 + H9.5-B: synthetic monitors, hardened detectors, count/freshness SLOs, Bluebox Routine
 - [ ] **Step 5** — product skills (product-context, feature-spec, idea-capture + `docs/ideas.md`,
       weekly-review, feedback-triage, quarterly-review) with 3-case evals; obs-best-practices installed
+      *(built 2026-09-14 on branch `product-skills`, ahead of the blocked Step 4)*
 - [ ] **Step 6** — automations: `@claude` action, weekly / monthly / quarterly-prep crons, dependabot → Tier C
 - [ ] **Step 7** — H9 Phase 2 + H9.5-D: `/app` RUM (New RUM frontend), masking, staging exclusion, §6b rewrite
 - [ ] **Step 8** — H9.5-C: OpenPipeline masking in both environments; invariant 3 gains its second layer

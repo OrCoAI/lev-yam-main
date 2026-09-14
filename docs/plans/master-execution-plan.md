@@ -10,7 +10,7 @@
 > | 2 | Risk tiers + permissions allowlist | **done 2026-09-09** | PR #51 (Tier A, owner-approved). `scripts/check-tier.mjs` + `tier.yml` (second required check), PR template, committed `.claude/settings.json`, ADR 0036 leash class. From here every PR self-declares a tier |
 > | 3 | vitest + eslint | **in progress** | correction at kickoff: `finance/reconciliation.ts` is a hook over an RPC, not pure math — test target re-scoped (see Step 3 PR) |
 > | 4 | H9 Phase 1 + H9.5-B | **blocked** | needs the new Dynatrace environment (ADR 0038) + its Phase 0 baselines |
-> | 5 | Product skills | pending | |
+> | 5 | Product skills | **in progress** (pulled ahead of the blocked Step 4) | branch `product-skills`: six skills + evals, `docs/ideas.md`; obs-best-practices eval added; scaffolding adapted from Anthropic's PM plugin (write-spec, synthesize-research; Apache-2.0) |
 > | 6 | Automations | pending | |
 > | 7 | H9 Phase 2 + H9.5-D | pending | |
 > | 8 | H9.5-C masking | pending | |
