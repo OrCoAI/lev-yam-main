@@ -28,9 +28,13 @@ name: claude
 # Note `ask` rules in .claude/settings.json behave as DENY in headless CI —
 # nobody is there to answer — so `Bash(git merge *)` and friends simply fail.
 #
-# `--allowedTools` only skips prompts; it does not restrict (CLI reference).
-# `--permission-prompts none` is what makes the list binding: anything that
-# would prompt is denied automatically.
+# `--allowedTools` only skips prompts; it does not restrict, and it is unioned
+# with the settings file. `--disallowedTools` is the half that actually binds
+# here, because deny beats allow. The CLI's --restricted / --tools /
+# --permission-prompts are NOT usable: this action runs the agent SDK, which
+# accepts only --mcp-config, --allowedTools, --disallowedTools, --max-turns,
+# --model and --append-system-prompt. Passing the others killed every run in
+# ~120ms with no error text (found by Step 6's acceptance run).
 
 on:
   issue_comment:
@@ -101,7 +105,6 @@ jobs:
           claude_args: |
             --model claude-sonnet-5
             --max-turns 30
-            --permission-prompts none
             --allowedTools "Read,Edit,Write,Glob,Grep,Bash(npm ci),Bash(npm run build),Bash(npm run lint),Bash(npm test),Bash(node scripts/*),Bash(node supabase/tests/*),Bash(git add *),Bash(git commit *),Bash(git status),Bash(git diff *),Bash(git log *),Bash(git checkout *),Bash(gh pr view *),Bash(gh pr create *),Bash(gh issue view *),Bash(gh issue comment *)"
             --disallowedTools "Bash(git push *),Bash(gh pr merge *),Bash(gh api *),Bash(gh secret *),Bash(gh workflow *),Bash(supabase *),Bash(dtctl *),Bash(bluebox *),Bash(curl *),Bash(wget *)"
         env:

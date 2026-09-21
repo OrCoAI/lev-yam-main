@@ -13,29 +13,33 @@ name: agent report
 #
 # `--allowedTools` is NOT a restriction — the CLI reference is explicit: "Tools
 # that execute without prompting for permission … To restrict which tools are
-# available, use --tools instead." It is UNIONED with whatever the settings
-# files allow. So the boundary here is four things, none of which is the prompt:
+# available, use --tools instead." It is UNIONED with whatever the settings files
+# allow. The repo's own `.claude/settings.json` is written for LOCAL DEV:
+# `defaultMode: acceptEdits`, `Bash(node *)`, `Bash(python3 *)`. Inheriting it
+# here would hand an issue-reading agent arbitrary code execution next to
+# ANTHROPIC_API_KEY.
 #
-#   --restricted            ignores user/project/local settings files, so the
-#                           repo's own .claude/settings.json — written for local
-#                           dev, with `defaultMode: acceptEdits` and
-#                           `Bash(node *)` / `Bash(python3 *)` in its allow list —
-#                           does NOT apply here. Passing that file into CI would
-#                           hand an issue-reading agent arbitrary code execution
-#                           next to ANTHROPIC_API_KEY. It is deliberately not
-#                           passed as `settings:`, and --restricted is what stops
-#                           the checkout's copy applying as project settings.
-#   --tools                 the available set, nothing else exists: no Edit, no
-#                           Write, no WebFetch.
-#   --permission-prompts none   "anything that would prompt is denied
-#                           automatically" — this is what turns the --allowedTools
-#                           list into an effective allowlist in headless CI.
-#   --disallowedTools       deny beats allow; the code-execution and egress
-#                           shells are named explicitly as a second layer.
+# The CLI has flags for exactly this (--restricted / --tools /
+# --permission-prompts) and they do NOT work here: this action runs the
+# @anthropic-ai/claude-agent-sdk, not the CLI binary, and it accepts only
+# --mcp-config, --allowedTools, --disallowedTools, --max-turns, --model and
+# --append-system-prompt. Passing the others made every run die in ~120ms with
+# `is_error: true`, no model call and no error text. Found by Step 6's acceptance
+# run; do not reintroduce them.
 #
-# `permissions: contents: read` is the last line: a push fails at the token layer
-# whatever happens above. What is NOT protected is the runner and its network —
-# hence the layers above, not instead of them.
+# So the boundary is three things that do not depend on flag semantics:
+#
+#   1. The workspace copy of `.claude/settings.json` is DELETED below, before the
+#      action runs. No project settings means nothing widens the permission set.
+#      `settings:` is deliberately not passed either.
+#   2. --disallowedTools — a real deny list, and deny beats allow. The
+#      code-execution and egress shells are named explicitly.
+#   3. `permissions: contents: read` — a push fails at the token layer whatever
+#      happens above, and `github_token` below pins API calls to that same
+#      scoped token.
+#
+# What is still NOT protected is the runner and its network. These jobs read
+# public issue text, so treat every word of it as hostile.
 
 on:
   workflow_call:
@@ -84,6 +88,14 @@ jobs:
       # Until the owner adds the secret, exit clean with a note rather than
       # failing on every schedule — a workflow that cries wolf nightly gets
       # muted, and then a real failure goes unseen too.
+      # The repo's .claude/settings.json is a local-dev policy: acceptEdits plus
+      # Bash(node *) / Bash(python3 *). It must not apply to a job that reads
+      # public issue text. This is a throwaway checkout, so deleting it is the
+      # simplest thing that cannot be defeated by a flag being misspelled or
+      # unsupported.
+      - name: Drop the local-dev permission policy from the workspace
+        run: rm -f .claude/settings.json
+
       - name: Check the API key is configured
         id: key
         env:
@@ -109,9 +121,6 @@ jobs:
           claude_args: |
             --model claude-sonnet-5
             --max-turns ${{ inputs.max_turns }}
-            --restricted
-            --permission-prompts none
-            --tools "Read,Glob,Grep,Bash"
             --allowedTools "${{ inputs.allowed_tools }}"
             --disallowedTools "Bash(node *),Bash(npx *),Bash(npm *),Bash(python3 *),Bash(python *),Bash(deno *),Bash(curl *),Bash(wget *),Bash(nc *),Bash(ssh *),Bash(eval *),Bash(git push *),Bash(gh api *),Bash(gh pr merge *),Bash(gh secret *),Bash(gh workflow *),Bash(supabase *),Bash(dtctl *),Bash(bluebox *),Edit,Write,NotebookEdit,WebFetch,WebSearch"
         env:
