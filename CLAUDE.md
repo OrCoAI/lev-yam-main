@@ -217,7 +217,7 @@ Outcome metric table — plans closed out before 2026-09-21 predate the rule and
 
 The rhythm that makes a company of one work at speed ([ADR 0021](docs/decisions/0021-operating-cadence-quarterly-gate.md)).
 Three of the four are automated into a GitHub issue; the owner's time goes only where judgment is
-needed. **The automation is built but not yet live** — it needs the `ANTHROPIC_API_KEY` secret
+needed. **The automation is built but not yet live** — it needs the `CLAUDE_CODE_OAUTH_TOKEN` secret
 (master plan blocker B2); until then each job exits clean at its key guard and produces no issue.
 
 | When | What | Who |
@@ -275,7 +275,8 @@ work order G4). All of them go through the same rails as a human PR — none is 
 
 The three report jobs share one reusable worker, `agent-report.yml` (`workflow_call` only) —
 schedule, prompt and tool scope are all that differ. Each caller has `workflow_dispatch`; that
-manual run is the acceptance test. They need the `ANTHROPIC_API_KEY` repo secret; without it they
+manual run is the acceptance test. They authenticate with **the owner's Claude subscription token** (`claude setup-token` →
+repo secret `CLAUDE_CODE_OAUTH_TOKEN`), not API credits ([ADR 0042](docs/decisions/0042-agent-workflows-run-on-the-subscription-token.md)); without it they
 log the omission and exit clean rather than failing every night.
 
 **`--allowedTools` is not a restriction** — it only skips the permission prompt, and it is
@@ -285,7 +286,7 @@ established, both load-bearing:
 - **The report jobs must not load `.claude/settings.json`.** That file is written for local dev:
   `defaultMode: acceptEdits`, `Bash(node *)`, `Bash(python3 *)`. These jobs read public issue
   text, so inheriting it would hand an issue-reading agent arbitrary code execution next to
-  `ANTHROPIC_API_KEY`. `agent-report.yml` **deletes the workspace copy** before the action runs
+  `CLAUDE_CODE_OAUTH_TOKEN`. `agent-report.yml` **deletes the workspace copy** before the action runs
   and does not pass `settings:`. Its other layers are `--disallowedTools` (deny beats allow) and
   `contents: read` + an explicit `github_token`, which pin API calls to the job's own scoped token.
   **The CLI's `--restricted` / `--tools` / `--permission-prompts` are not usable here:** the action

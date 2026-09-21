@@ -427,16 +427,15 @@ block produces (work order G7).*
 - [x] **Step 5** — product skills (product-context, feature-spec, idea-capture + `docs/ideas.md`,
       weekly-review, feedback-triage, quarterly-review) with 3-case evals; obs-best-practices installed
       *(done 2026-09-21, PR #54 — pulled ahead of the blocked Step 4)*
-- [ ] **Step 6 — shipped 2026-09-21, ACCEPTANCE DEFERRED to after the first quarterly review** —
-      automations: `@claude` action, weekly / monthly / quarterly-prep crons (one shared `agent-report.yml`
-      worker), dependabot → Tier C auto-merge ([ADR 0039](decisions/0039-dependabot-auto-merge-scope.md)).
-      The `ANTHROPIC_API_KEY` secret is in. Three acceptance dispatches on 2026-09-21 each fixed a real
-      bug (`id-token: write`, PR #59; CLI-only flags the agent SDK rejects, PR #61) and then failed
-      identically: `is_error: true` in ~200 ms, one turn, **$0, no model call, no error text** — the shape
-      of an API-side rejection before billing, most plausibly **an API account with no credits or payment
-      method**. **Owner: check the Anthropic console.** Until a dispatch produces an issue the cadence runs
-      by hand (the Q3 pack, #62, was built that way). Ticks when the three dispatched runs and one
-      `@claude` PR are linked here.
+- [ ] **Step 6 — shipped 2026-09-21, ACCEPTANCE PENDING the subscription token** — automations:
+      `@claude` action, weekly / monthly / quarterly-prep crons (one shared `agent-report.yml` worker),
+      dependabot → Tier C auto-merge ([ADR 0039](decisions/0039-dependabot-auto-merge-scope.md)). Three
+      acceptance dispatches on 2026-09-21 fixed two real bugs (PR #59, #61) and then failed at $0 with no
+      model call — **diagnosed and confirmed by the owner: the API account had no credits.** Decision: the
+      workflows run on the owner's Claude subscription token instead
+      ([ADR 0042](decisions/0042-agent-workflows-run-on-the-subscription-token.md)). **Owner: `claude setup-token`,
+      then `gh secret set CLAUDE_CODE_OAUTH_TOKEN`.** Then one `quarterly-prep` dispatch is the test; ticks when
+      the three dispatched runs and one `@claude` PR are linked here. Cadence runs by hand until then (Q3 pack = #62).
 - [ ] **Step 7 — PARKED** — H9 Phase 2 + H9.5-D: `/app` RUM (New RUM frontend), masking, staging exclusion, §6b rewrite *(parked on the deferred observability-home decision — ADR 0041)*
 - [ ] **Step 8 — PARKED** — H9.5-C: OpenPipeline masking in both environments; invariant 3 gains its second layer *(parked on the deferred observability-home decision — ADR 0041)*
 - [ ] **Step 9 — PARTIAL, two items unblocked** — H9 Phase 3. **Unblocked and pending (no Dynatrace
@@ -555,10 +554,11 @@ strategy driving it is private and lives outside the repo.*
 - [ ] Fill the `[חסר]` markers in `FACTS.md` — seasonality (Nimer's fishing calendar,
       needs Nimer), plus whatever the first content sessions surface as missing
 - [ ] Mark `whatsapp_click` as a key event in the GA4 UI (console-side, not repo)
-- [ ] **Rotate `ANTHROPIC_API_KEY` before 2027-01-31** — the repo secret added 2026-09-21 expires that day
-      and all five agent workflows stop with it. The failure is a **loud auth error**, not the silent clean
-      exit a *missing* key produces, so it will be noticed — but the quarterly review on 2027-01-01 is the
-      last natural checkpoint before it; rotate there (closes #60)
+- [ ] **Regenerate `CLAUDE_CODE_OAUTH_TOKEN` at the 2027-01-01 quarterly review** — the agent workflows run
+      on the owner's subscription token ([ADR 0042](decisions/0042-agent-workflows-run-on-the-subscription-token.md));
+      it is long-lived but not permanent, and an expired token fails **loudly** (auth error), not with the silent
+      clean exit a *missing* one produces. `claude setup-token` → `gh secret set`. The unused `ANTHROPIC_API_KEY`
+      secret (expires 2027-01-31) can be deleted from the repo
 - [ ] **Dynatrace RUM on the marketing site is dead** (tag returns 404 since the sprint tenant was
       deactivated, found 2026-09-09): replace the tag with the new environment's once it exists
       (Tier A, `index.html` + `stories/_template.html`) — [ADR 0038](decisions/0038-new-dedicated-dynatrace-environment.md).
