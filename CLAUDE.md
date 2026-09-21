@@ -285,17 +285,24 @@ established, both load-bearing:
 - **The report jobs must not load `.claude/settings.json`.** That file is written for local dev:
   `defaultMode: acceptEdits`, `Bash(node *)`, `Bash(python3 *)`. These jobs read public issue
   text, so inheriting it would hand an issue-reading agent arbitrary code execution next to
-  `ANTHROPIC_API_KEY`. `agent-report.yml` passes `--restricted` (ignores user/project/local
-  settings), `--tools` (the set that exists at all), `--permission-prompts none` (anything that
-  would prompt is denied — this is what makes the allowlist binding) and an explicit
-  `--disallowedTools`. `contents: read` is the last line, not the only one.
+  `ANTHROPIC_API_KEY`. `agent-report.yml` **deletes the workspace copy** before the action runs
+  and does not pass `settings:`. Its other layers are `--disallowedTools` (deny beats allow) and
+  `contents: read` + an explicit `github_token`, which pin API calls to the job's own scoped token.
+  **The CLI's `--restricted` / `--tools` / `--permission-prompts` are not usable here:** the action
+  runs the `@anthropic-ai/claude-agent-sdk`, which accepts only `--mcp-config`, `--allowedTools`,
+  `--disallowedTools`, `--max-turns`, `--model` and `--append-system-prompt`. Passing the others
+  killed every run in ~120ms with `is_error: true` and no error text. Don't reintroduce them.
 - **`claude.yml` denies `git push` outright.** It genuinely needs Edit/Write/build, and an agent
   that can write a file and run a build can run code — inherent, not pluggable. What it must
   never reach is a deploy: `deploy-staging.yml` fires on *any* push to `staging`, and
-  `.claude/settings.json` allows `Bash(git push origin staging)` for local dev. The action pushes
-  its own branch through the API, so denying the command costs nothing. `supabase`, `dtctl` and
-  `gh api/secret/workflow` are denied for the same reason. It triggers for **write-access
-  accounts only** (`allowed_non_write_users` and `allowed_bots` pinned to `""`).
+  `.claude/settings.json` allows `Bash(git push origin staging)` for local dev. `--disallowedTools`
+  is what overrides that, since deny beats allow; the action pushes its own branch through the API,
+  so denying the command costs nothing. `supabase`, `dtctl` and `gh api/secret/workflow` are denied
+  for the same reason. It triggers for **write-access accounts only** (`allowed_non_write_users`
+  and `allowed_bots` pinned to `""`).
+
+All five workflows need **`id-token: write`** — the action mints its token through GitHub's OIDC
+endpoint and fails without it. It is not a repo-write grant.
 
 In `claude_args`, any value containing a space must stay quoted — the action shell-tokenizes each
 line, so a bare `Bash(git log *)` splits into three tokens and the rule silently stops matching
