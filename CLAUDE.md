@@ -112,8 +112,11 @@ inline whatever its tier), and kickoff alignment follows initiative-vs-bugfix, n
 | **B** | Everything unlisted: module UI files named as exceptions, `index.html`/`js/`/`css/`, `FACTS.md`, `llms.txt`, build scripts, templates, human edits to `package.json` | full gate; Claude's screenshots stay step zero; the human look happens **once, on staging** |
 | **C** | `docs/`, README, tests under `app-src/`, module i18n dictionaries, `img/`+`fonts/`, generated files, `/stories/` content pages (twin rule via the generator), dependabot npm bumps | none — full gate + CI + staging deploy still run; **merge on green**; the merge is reported in the weekly review |
 
-Dependabot's GitHub-Actions bumps touch workflows: the owner adds the Tier-A line to the PR body
-(the `edited` event re-runs the check). Detector/dashboard YAML has no path rule yet — declare B when
+Dependabot needs no declaration: `check-tier.mjs` resolves its PRs to C from the PR author.
+`dependabot-auto-merge.yml` queues auto-merge for **npm minor/patch** only
+([ADR 0039](docs/decisions/0039-dependabot-auto-merge-scope.md)); **npm majors** are merged by
+the owner, and its **GitHub-Actions bumps touch workflows**, so the path floor is A and the owner
+writes that line by hand (the `edited` event re-runs the check). Detector/dashboard YAML has no path rule yet — declare B when
 adding, C when tuning (work order Part 4). **Calibration:** two weeks after tiers land, the owner
 watches Tier-B PRs closely.
 
@@ -209,6 +212,47 @@ page or asset folder must be added there or it 404s in prod), runs the grant aud
 included (ARCHITECTURE §6c). Pushing `staging` triggers `deploy-staging.yml` → `staging.levyam.com`
 (Cloudflare Pages, noindex, `lev-yam-staging` Supabase); only `main` and `staging` are long-lived.
 `docs/`, `tests/`, `supabase/` are never deployed. One-time setup: [supabase/README.md](supabase/README.md).
+
+## Automations (the night shift)
+
+Five triggers run without a human ([ADR 0039](docs/decisions/0039-dependabot-auto-merge-scope.md),
+work order G4). All of them go through the same rails as a human PR — none is a shortcut past the gate.
+
+| Workflow | Fires | Produces |
+|---|---|---|
+| `claude.yml` | `@claude` on an issue or PR | a branch + PR through the normal gate, tier declared |
+| `weekly-review.yml` | Sun 17:00 UTC | issue `Weekly review YYYY-Www` — the solo product council, incl. **Alerts & problems** (the only weekly eyes Dynatrace/Bluebox get) and **Harness health** |
+| `monthly-triage.yml` | 1st of the month | issue `Monthly roadmap review YYYY-MM` — feedback digest + parking-lot batch + obs-best-practices audit |
+| `quarterly-prep.yml` | 1st of Jan/Apr/Jul/Oct | issue `Quarterly review YYYY-Qn` — evidence pack + agenda checklist. **The review session itself is never run unattended** |
+| `dependabot-auto-merge.yml` | dependabot PRs | the Tier line, and auto-merge for npm minor/patch |
+
+The three report jobs share one reusable worker, `agent-report.yml` (`workflow_call` only) —
+schedule, prompt and tool scope are all that differ. Each caller has `workflow_dispatch`; that
+manual run is the acceptance test. They need the `ANTHROPIC_API_KEY` repo secret; without it they
+log the omission and exit clean rather than failing every night.
+
+**`--allowedTools` is not a restriction** — it only skips the permission prompt, and it is
+*unioned* with whatever the settings files allow. Two consequences the Step 6 security review
+established, both load-bearing:
+
+- **The report jobs must not load `.claude/settings.json`.** That file is written for local dev:
+  `defaultMode: acceptEdits`, `Bash(node *)`, `Bash(python3 *)`. These jobs read public issue
+  text, so inheriting it would hand an issue-reading agent arbitrary code execution next to
+  `ANTHROPIC_API_KEY`. `agent-report.yml` passes `--restricted` (ignores user/project/local
+  settings), `--tools` (the set that exists at all), `--permission-prompts none` (anything that
+  would prompt is denied — this is what makes the allowlist binding) and an explicit
+  `--disallowedTools`. `contents: read` is the last line, not the only one.
+- **`claude.yml` denies `git push` outright.** It genuinely needs Edit/Write/build, and an agent
+  that can write a file and run a build can run code — inherent, not pluggable. What it must
+  never reach is a deploy: `deploy-staging.yml` fires on *any* push to `staging`, and
+  `.claude/settings.json` allows `Bash(git push origin staging)` for local dev. The action pushes
+  its own branch through the API, so denying the command costs nothing. `supabase`, `dtctl` and
+  `gh api/secret/workflow` are denied for the same reason. It triggers for **write-access
+  accounts only** (`allowed_non_write_users` and `allowed_bots` pinned to `""`).
+
+In `claude_args`, any value containing a space must stay quoted — the action shell-tokenizes each
+line, so a bare `Bash(git log *)` splits into three tokens and the rule silently stops matching
+([claude-code-action#844](https://github.com/anthropics/claude-code-action/issues/844)).
 
 ## Repo housekeeping
 

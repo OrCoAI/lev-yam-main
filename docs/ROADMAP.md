@@ -426,7 +426,12 @@ block produces (work order G7).*
 - [x] **Step 5** — product skills (product-context, feature-spec, idea-capture + `docs/ideas.md`,
       weekly-review, feedback-triage, quarterly-review) with 3-case evals; obs-best-practices installed
       *(done 2026-09-21, PR #54 — pulled ahead of the blocked Step 4)*
-- [ ] **Step 6** — automations: `@claude` action, weekly / monthly / quarterly-prep crons, dependabot → Tier C
+- [ ] **Step 6 — shipped 2026-09-21, ACCEPTANCE PENDING** — automations: `@claude` action, weekly /
+      monthly / quarterly-prep crons (one shared `agent-report.yml` worker), dependabot → Tier C
+      auto-merge. Auto-merge scope narrowed — [ADR 0039](decisions/0039-dependabot-auto-merge-scope.md).
+      **BLOCKED on the owner: add the `ANTHROPIC_API_KEY` repo secret.** G4's acceptance criterion is
+      an `@claude` comment yielding a PR plus three `workflow_dispatch` runs producing their issues;
+      none of that can run until the secret exists, so this stays unticked until those runs are linked here.
 - [ ] **Step 7** — H9 Phase 2 + H9.5-D: `/app` RUM (New RUM frontend), masking, staging exclusion, §6b rewrite
 - [ ] **Step 8** — H9.5-C: OpenPipeline masking in both environments; invariant 3 gains its second layer
 - [ ] **Step 9** — H9 Phase 3: reconciliation-as-monitor, log attributes, traceparent/CORS, `deno check`, rate limit

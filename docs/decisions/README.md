@@ -71,3 +71,4 @@ implementation choices stay in their plan files; an ADR is for a decision that c
 - [0036 — Agent-instruction files are one "leash" class, all Tier A](0036-agent-instruction-files-are-the-leash.md) — 2026-09-09
 - [0037 — ADR 0020's tooling assumptions corrected at kickoff: oxlint (TypeScript 7 blocks typescript-eslint) and the real money-math test target](0037-oxlint-while-typescript-7-blocks-eslint.md) — 2026-09-09
 - [0038 — A new dedicated Dynatrace environment becomes the observability home; the sprint environment is gone](0038-new-dedicated-dynatrace-environment.md) — 2026-09-14
+- [0039 — Dependabot's Tier-C promise is automated for npm minor/patch only; majors and GitHub-Actions bumps keep a human](0039-dependabot-auto-merge-scope.md) — 2026-09-21
