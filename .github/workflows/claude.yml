@@ -44,6 +44,14 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
+  # Required: the action mints its token through GitHub's OIDC endpoint and fails
+  # without it. Unlike the report jobs, `github_token` is deliberately NOT set
+  # here — the action's own app token is what lets a PR it opens trigger ci.yml
+  # and tier.yml (a PR opened with GITHUB_TOKEN starts no workflow runs, which
+  # would leave it with zero checks and unmergeable under branch protection).
+  # Note this is also why `allowed_non_write_users` stays safe at "": that bypass
+  # requires the github_token input to be set, and it is not.
+  id-token: write
 
 concurrency:
   group: claude-${{ github.event.issue.number || github.event.pull_request.number }}

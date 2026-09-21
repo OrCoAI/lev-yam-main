@@ -22,6 +22,7 @@ jobs:
     permissions:
       contents: read
       issues: write
+      id-token: write
     secrets:
       anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
     with:
