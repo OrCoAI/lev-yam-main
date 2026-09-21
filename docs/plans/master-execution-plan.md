@@ -11,7 +11,7 @@
 > | 3 | vitest + lint | **done** (PR #52) | two kickoff corrections, see [ADR 0037](../decisions/0037-oxlint-while-typescript-7-blocks-eslint.md): oxlint replaces eslint, and `finance/reconciliation.ts` is a hook over an RPC, not pure math — test target re-scoped |
 > | 4 | H9 Phase 1 + H9.5-B | **blocked** | needs the new Dynatrace environment ([ADR 0038](../decisions/0038-new-dedicated-dynatrace-environment.md)) + its Phase 0 baselines |
 > | 5 | Product skills | **done** (PR #54, pulled ahead of the blocked Step 4) | six skills + evals, `docs/ideas.md`; obs-best-practices eval added; scaffolding adapted from Anthropic's PM plugin (write-spec, synthesize-research; Apache-2.0) |
-> | 6 | Automations | pending | |
+> | 6 | Automations | **shipped, acceptance pending** | `claude.yml` + three crons over one `agent-report.yml` worker + dependabot Tier-C auto-merge ([ADR 0039](../decisions/0039-dependabot-auto-merge-scope.md)). **Blocked on the `ANTHROPIC_API_KEY` repo secret** — until it lands every job exits clean at the key guard, so G4's acceptance (an `@claude` PR + three dispatched issues) cannot be demonstrated. Scope note: G4.3's GA4-download branch is not built — no credentials are configured, so the monthly issue asks for a paste-list instead, which is G4.3's own stated fallback |
 > | 7 | H9 Phase 2 + H9.5-D | pending | |
 > | 8 | H9.5-C masking | pending | |
 > | 9 | H9 Phase 3 | pending | |
