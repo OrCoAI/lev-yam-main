@@ -412,7 +412,7 @@ block produces (work order G7).*
 - [x] **Step 0 — M0** environment access + capability confirmation *(done 2026-09-14 — verdict changed the
       plan: the sprint tenant is deactivated and the marketing RUM tag is dead on prod; Bluebox's env grants
       no scopes. Owner decision: a **new dedicated Dynatrace environment** — [ADR 0038](decisions/0038-new-dedicated-dynatrace-environment.md).
-      Steps 4/7/8/10 and parts of 9/11 wait for its URL, then run its own Phase 0 first)*
+      Steps 4/7/8/10 and parts of 9/11 are parked; **the home itself is now a deferred decision for the first quarterly review** — ADR 0041)*
 - [x] **Step 1** — branch protection on `main` *(applied 2026-09-09 via API: PR + `build` check required,
       admins included)* + decision log `docs/decisions/` (35 ADRs) + CLAUDE.md slim + `AGENTS.md`
       *(done 2026-09-09, PR #50)*
@@ -422,7 +422,8 @@ block produces (work order G7).*
       + oxlint (warnings ratcheted) in `ci.yml` and `deploy.yml` *(done 2026-09-21, PR #52; targets and linter
       corrected at kickoff — ADR 0037)*
 - [ ] **Step 4 — BLOCKED** — H9 Phase 1 + H9.5-B: synthetic monitors, hardened detectors, count/freshness SLOs,
-      Bluebox Routine *(waiting on the new Dynatrace environment URL — ADR 0038)*
+      Bluebox Routine *(**parked** — the observability home is a deferred decision for the first
+      quarterly review, [ADR 0041](decisions/0041-observability-home-deferred-to-first-quarterly-review.md))*
 - [x] **Step 5** — product skills (product-context, feature-spec, idea-capture + `docs/ideas.md`,
       weekly-review, feedback-triage, quarterly-review) with 3-case evals; obs-best-practices installed
       *(done 2026-09-21, PR #54 — pulled ahead of the blocked Step 4)*
@@ -432,15 +433,16 @@ block produces (work order G7).*
       **BLOCKED on the owner: add the `ANTHROPIC_API_KEY` repo secret.** G4's acceptance criterion is
       an `@claude` comment yielding a PR plus three `workflow_dispatch` runs producing their issues;
       none of that can run until the secret exists, so this stays unticked until those runs are linked here.
-- [ ] **Step 7 — BLOCKED** — H9 Phase 2 + H9.5-D: `/app` RUM (New RUM frontend), masking, staging exclusion, §6b rewrite *(needs the new Dynatrace environment — ADR 0038)*
-- [ ] **Step 8 — BLOCKED** — H9.5-C: OpenPipeline masking in both environments; invariant 3 gains its second layer *(needs the new Dynatrace environment — ADR 0038)*
+- [ ] **Step 7 — PARKED** — H9 Phase 2 + H9.5-D: `/app` RUM (New RUM frontend), masking, staging exclusion, §6b rewrite *(parked on the deferred observability-home decision — ADR 0041)*
+- [ ] **Step 8 — PARKED** — H9.5-C: OpenPipeline masking in both environments; invariant 3 gains its second layer *(parked on the deferred observability-home decision — ADR 0041)*
 - [ ] **Step 9 — PARTIAL, two items unblocked** — H9 Phase 3. **Unblocked and pending (no Dynatrace
       needed): `deno check` in `ci.yml`, and the rate limit on `login/options`** — a pre-auth
-      amplification vector; pure edge-function + CI work. Blocked on B1: reconciliation-as-monitor's
-      alert, the log-attribute fix and traceparent/CORS RUM linking *(ADR 0038)*
-- [ ] **Step 10 — BLOCKED except a docs carve-out** — H9 Phase 4 slot: SRG guardian + SDLC event
-      from `deploy.yml`, dashboards-as-code, H9.5-A/E/F *(need the new Dynatrace environment —
-      ADR 0038)*. Unblocked: H9.5-F query-hygiene rules and H9.5-A's deployment-marker note
+      amplification vector; pure edge-function + CI work. Parked on the deferred observability-home
+      decision: reconciliation-as-monitor's alert, the log-attribute fix, traceparent/CORS RUM
+      linking *(ADR 0041)*
+- [ ] **Step 10 — PARKED except a docs carve-out** — H9 Phase 4 slot: SRG guardian + SDLC event
+      from `deploy.yml`, dashboards-as-code, H9.5-A/E/F *(parked on the deferred observability-home decision —
+      ADR 0041)*. Unblocked: H9.5-F query-hygiene rules and H9.5-A's deployment-marker note
       correction — both docs-only, minutes
 - [ ] **Step 11 — G5 template half shipped, rest PARTIAL** — G5's template half shipped 2026-09-21
       (outcome metric + instrumentation in MODULE-TEMPLATE §0, Outcome check in the close-out ritual,
@@ -449,7 +451,7 @@ block produces (work order G7).*
       sequencing and is **flagged for owner confirmation**. G5's acceptance ("the next initiative
       ships with a named outcome metric") opens with the first Phase 2 initiative. Of H9 P5:
       the telemetry bullet is delivered; the mandatory production-context step and the CLAUDE.md
-      standing rule are **unblocked and pending**; only the Dynatrace MCP entry needs B1
+      standing rule are **unblocked and pending**; only the Dynatrace MCP entry waits on the B1 decision
 - [ ] **Step 12 — cadence shipped, close-outs pending B3** — Operating cadence, queue-jumper rule
       and session hygiene are in CLAUDE.md (2026-09-21). The close-outs wait on the steps they
       would close, and G7's acceptance requires the **first quarterly review** (B3) — owner
@@ -549,7 +551,10 @@ strategy driving it is private and lives outside the repo.*
 - [ ] **Dynatrace RUM on the marketing site is dead** (tag returns 404 since the sprint tenant was
       deactivated, found 2026-09-09): replace the tag with the new environment's once it exists
       (Tier A, `index.html` + `stories/_template.html`) — [ADR 0038](decisions/0038-new-dedicated-dynatrace-environment.md).
-      Until then the funnel is measured by GA4 + Meta only
+      **Now waits on the deferred observability-home decision** ([ADR 0041](decisions/0041-observability-home-deferred-to-first-quarterly-review.md));
+      re-confirm at the first quarterly review that staying dead is still acceptable. Meanwhile the
+      conversion funnel is measured by GA4 + Meta; what is lost is the homepage-only interaction
+      signal, which went to Dynatrace alone
 - [ ] *(Optional)* **Self-hosted Arabic webfont.** Arabic copy renders in a system stack —
       `css/styles.css` switches `html[lang="ar"]` to `SF Arabic`/`Geeza Pro`/`Noto Sans Arabic`
       deliberately, and the Heebo/Assistant `unicode-range`s exclude Arabic. That is a working

@@ -9,7 +9,7 @@
 > | 1 | Branch protection + decision log + CLAUDE.md slim + `AGENTS.md` | **done 2026-09-09** | PR #50 merged. Branch protection live (PR + `build` check, admins included); 35 ADRs; CLAUDE.md 330 → 188 lines (Step 2 adds the tiers section) |
 > | 2 | Risk tiers + permissions allowlist | **done 2026-09-09** | PR #51 (Tier A, owner-approved). `scripts/check-tier.mjs` + `tier.yml` (second required check), PR template, committed `.claude/settings.json`, ADR 0036 leash class. From here every PR self-declares a tier |
 > | 3 | vitest + lint | **done** (PR #52) | two kickoff corrections, see [ADR 0037](../decisions/0037-oxlint-while-typescript-7-blocks-eslint.md): oxlint replaces eslint, and `finance/reconciliation.ts` is a hook over an RPC, not pure math — test target re-scoped |
-> | 4 | H9 Phase 1 + H9.5-B | **blocked** | needs the new Dynatrace environment ([ADR 0038](../decisions/0038-new-dedicated-dynatrace-environment.md)) + its Phase 0 baselines |
+> | 4 | H9 Phase 1 + H9.5-B | **blocked** | **parked**: the observability home is a deferred decision ([ADR 0041](../decisions/0041-observability-home-deferred-to-first-quarterly-review.md)); this step re-scopes once the quarterly review settles it |
 > | 5 | Product skills | **done** (PR #54, pulled ahead of the blocked Step 4) | six skills + evals, `docs/ideas.md`; obs-best-practices eval added; scaffolding adapted from Anthropic's PM plugin (write-spec, synthesize-research; Apache-2.0) |
 > | 6 | Automations | **shipped, acceptance pending** | `claude.yml` + three crons over one `agent-report.yml` worker + dependabot Tier-C auto-merge ([ADR 0039](../decisions/0039-dependabot-auto-merge-scope.md)). **Blocked on the `ANTHROPIC_API_KEY` repo secret** — until it lands every job exits clean at the key guard, so G4's acceptance (an `@claude` PR + three dispatched issues) cannot be demonstrated. Scope note: G4.3's GA4-download branch is not built — no credentials are configured, so the monthly issue asks for a paste-list instead, which is G4.3's own stated fallback |
 > | 7 | H9 Phase 2 + H9.5-D | **blocked** | `/app` RUM needs the new Dynatrace environment (ADR 0038) |
@@ -29,7 +29,10 @@
 >
 > ### BLOCKED — waiting on the owner (2026-09-21)
 >
-> Every remaining **step** is blocked on one of the three things below, all of which need a person.
+> **B1 is deferred, not pending** (ADR 0041, 2026-09-21) — it became an agenda item rather than a
+> chore. That leaves **B2 as the only thing needing action now**, and it is the gate to B3.
+>
+> Every remaining **step** is parked behind one of the three things below, all of which need a person.
 > Two things are *not* blocked and are simply next: **Step 9's unblocked half** (`deno check` in
 > `ci.yml`, and the rate limit on `login/options` — a pre-auth amplification vector, pure
 > edge-function work) and the **docs carve-outs** in Steps 10 and 11. Part 4's closure criterion 2
@@ -38,9 +41,9 @@
 >
 > | # | Blocker | Unblocks | How |
 > |---|---|---|---|
-> | **B1** | **The new Dynatrace environment** — URL + a login for `dtctl` | Steps 4, 7, 8, 9, 10, and the H9-P5 half of 11 | Create the environment ([ADR 0038](../decisions/0038-new-dedicated-dynatrace-environment.md)), hand over the URL. The `my-env`/`my-env-write` dtctl contexts point at a dead tenant and get replaced with `levyam`/`levyam-write`. Each blocked step then starts from that environment's own Phase 0 |
+> | **B1** | ~~The new Dynatrace environment~~ — **DEFERRED to the first quarterly review** ([ADR 0041](../decisions/0041-observability-home-deferred-to-first-quarterly-review.md)) | Steps 4, 7, 8, 10 and the blocked parts of 9 and 11 are **parked**, not waiting | Nothing to do now. It is agenda item 3 at the quarterly review: a cost-and-commitment decision (which tenant, which licence, what running two Dynatrace environments plus Bluebox means for a company of one), taken on evidence rather than to unblock a checklist. `quarterly-prep.yml` will surface it automatically — ADR 0038's Status now carries `deferred — first quarterly review` |
 > | **B2** | **`ANTHROPIC_API_KEY` as a repo secret** | Step 6's acceptance | Settings → Secrets and variables → Actions. Then dispatch the three crons and comment `@claude` on a test issue — that is G4's acceptance criterion. Until it exists every job exits clean at its key guard |
-> | **B3** | **The first quarterly review** | Step 12's close-outs, Part 4 closure, and Phase 2 itself | Owner judgment, 2–3 hours, **never run unattended** (ADR 0021). `quarterly-prep.yml` assembles the evidence pack; B2 gates that. It cannot run before B1 either — the evidence pack is meant to include observability evidence that does not exist yet |
+> | **B3** | **The first quarterly review** | Step 12's close-outs, Part 4 closure, the B1 decision, and Phase 2 itself | Owner judgment, 2–3 hours, **never run unattended** (ADR 0021). `quarterly-prep.yml` assembles the evidence pack; **B2 is now its only gate** — the old "wait for B1 first" circle is cut by ADR 0041, and the pack reports the missing observability evidence instead of waiting for it |
 >
 > **A live production finding is riding on B1:** the marketing RUM tag on levyam.com has returned
 > 404 since some time after 2026-08-12, so all Dynatrace RUM and bizevents are dead. GA4 and Meta

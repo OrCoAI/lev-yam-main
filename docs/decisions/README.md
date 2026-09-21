@@ -73,3 +73,4 @@ implementation choices stay in their plan files; an ADR is for a decision that c
 - [0038 — A new dedicated Dynatrace environment becomes the observability home; the sprint environment is gone](0038-new-dedicated-dynatrace-environment.md) — 2026-09-14
 - [0039 — Dependabot auto-merge covers npm minor/patch only; majors and GitHub-Actions bumps keep a human](0039-dependabot-auto-merge-scope.md) — 2026-09-21
 - [0040 — G5's outcome-metric field ships ahead of H9 Phase 5, carrying Phase 5's telemetry bullet with it](0040-g5-ships-ahead-of-h9-phase-5.md) — 2026-09-21
+- [0041 — The observability home is deferred to the first quarterly review, and the plan stops waiting on it](0041-observability-home-deferred-to-first-quarterly-review.md) — 2026-09-21
