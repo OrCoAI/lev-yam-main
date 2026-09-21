@@ -1,7 +1,7 @@
 # 0029 — Production observability home stays; no tenant migration
 
 - **Date:** 2026-08-13
-- **Status:** accepted — execution was paused when H9 was removed from the roadmap on 2026-08-26 (ADR 0032) and resumed when the owner reinstated H9 on 2026-09-09 (ADR 0035)
+- **Status:** superseded by ADR 0038 (2026-09-14: the sprint environment was deactivated; a new dedicated environment is the home)
 - **Decided by:** owner (strategy session with Claude Code)
 - **Source:** `docs/plans/master-execution-plan.md` Part 1 #15 (marked REVISED) and Part 2; `docs/plans/observability-best-practices-adoption.md` "Standing context" and open question 1
 

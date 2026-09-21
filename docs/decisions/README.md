@@ -61,12 +61,13 @@ implementation choices stay in their plan files; an ADR is for a decision that c
 - [0026 — New RUM Experience frontends for both surfaces](0026-new-rum-experience-frontends.md) — 2026-08-13
 - [0027 — Dev-loop and access hardening](0027-dev-loop-hardening.md) — 2026-08-13
 - [0028 — Query hygiene codified as defaults, not constraints](0028-query-hygiene-codified.md) — 2026-08-13
-- [0029 — Production observability home stays; no tenant migration](0029-observability-home-stays.md) — 2026-08-13
-- [0030 — Bluebox-env write access is Claude Code's task](0030-bluebox-env-write-access.md) — 2026-08-13
-- [0031 — Capability confirmation is in-flow before building SRG](0031-capability-confirmation-in-flow.md) — 2026-08-13
+- [0029 — Production observability home stays; no tenant migration](0029-observability-home-stays.md) — 2026-08-13 *(superseded)*
+- [0030 — Bluebox-env write access is Claude Code's task](0030-bluebox-env-write-access.md) — 2026-08-13 *(amended — see status)*
+- [0031 — Capability confirmation is in-flow before building SRG](0031-capability-confirmation-in-flow.md) — 2026-08-13 *(amended — see status)*
 - [0032 — H9 (observability coverage) removed from the roadmap](0032-h9-observability-coverage-removed-from-roadmap.md) — 2026-08-26 *(superseded)*
 - [0033 — Overpaying an expectation is allowed with a stated reason stamped into the entry note](0033-overpay-allowed-with-stated-reason.md) — 2026-08-26
 - [0034 — Harness-engineering alignment](0034-harness-engineering-alignment.md) — 2026-09-09
 - [0035 — H9 reinstated through the master execution plan; an "Operating system" roadmap block gates Phase 2](0035-h9-reinstated-operating-system-block.md) — 2026-09-09
 - [0036 — Agent-instruction files are one "leash" class, all Tier A](0036-agent-instruction-files-are-the-leash.md) — 2026-09-09
 - [0037 — ADR 0020's tooling assumptions corrected at kickoff: oxlint (TypeScript 7 blocks typescript-eslint) and the real money-math test target](0037-oxlint-while-typescript-7-blocks-eslint.md) — 2026-09-09
+- [0038 — A new dedicated Dynatrace environment becomes the observability home; the sprint environment is gone](0038-new-dedicated-dynatrace-environment.md) — 2026-09-14

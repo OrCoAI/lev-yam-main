@@ -409,18 +409,23 @@ superseding the 2026-08-26 removal. Spine: [plans/master-execution-plan.md](plan
 **Phase 2 does not start before the first quarterly review**, which runs on the evidence this
 block produces (work order G7).*
 
-- [ ] **Step 0 — M0** environment access: dtctl readonly default + named write context + `levyam-bluebox`
-      context *(contexts set 2026-09-09; owner-interactive logins + M0.2 capability confirmation pending)*
+- [x] **Step 0 — M0** environment access + capability confirmation *(done 2026-09-14 — verdict changed the
+      plan: the sprint tenant is deactivated and the marketing RUM tag is dead on prod; Bluebox's env grants
+      no scopes. Owner decision: a **new dedicated Dynatrace environment** — [ADR 0038](decisions/0038-new-dedicated-dynatrace-environment.md).
+      Steps 4/7/8/10/11 wait for its URL, then run its own Phase 0 first)*
 - [x] **Step 1** — branch protection on `main` *(applied 2026-09-09 via API: PR + `build` check required,
       admins included)* + decision log `docs/decisions/` (35 ADRs) + CLAUDE.md slim + `AGENTS.md`
       *(done 2026-09-09, PR #50)*
 - [x] **Step 2** — risk tiers A/B/C (CLAUDE.md + `scripts/check-tier.mjs` as the `tier` required check) +
       committed `.claude/settings.json` allowlist *(done 2026-09-09, PR #51; leash class = Tier A, ADR 0036)*
-- [ ] **Step 3** — vitest on the pure money math (`pos/logic.ts`, `finance/format.ts`, `finance/provenance.ts`)
-      + oxlint (warnings ratcheted) in `ci.yml` and `deploy.yml` *(targets corrected at kickoff — ADR 0037)*
-- [ ] **Step 4** — H9 Phase 1 + H9.5-B: synthetic monitors, hardened detectors, count/freshness SLOs, Bluebox Routine
-- [ ] **Step 5** — product skills (product-context, feature-spec, idea-capture + `docs/ideas.md`,
+- [x] **Step 3** — vitest on the pure money math (`pos/logic.ts`, `finance/format.ts`, `finance/provenance.ts`)
+      + oxlint (warnings ratcheted) in `ci.yml` and `deploy.yml` *(done 2026-09-21, PR #52; targets and linter
+      corrected at kickoff — ADR 0037)*
+- [ ] **Step 4 — BLOCKED** — H9 Phase 1 + H9.5-B: synthetic monitors, hardened detectors, count/freshness SLOs,
+      Bluebox Routine *(waiting on the new Dynatrace environment URL — ADR 0038)*
+- [x] **Step 5** — product skills (product-context, feature-spec, idea-capture + `docs/ideas.md`,
       weekly-review, feedback-triage, quarterly-review) with 3-case evals; obs-best-practices installed
+      *(done 2026-09-21, PR #54 — pulled ahead of the blocked Step 4)*
 - [ ] **Step 6** — automations: `@claude` action, weekly / monthly / quarterly-prep crons, dependabot → Tier C
 - [ ] **Step 7** — H9 Phase 2 + H9.5-D: `/app` RUM (New RUM frontend), masking, staging exclusion, §6b rewrite
 - [ ] **Step 8** — H9.5-C: OpenPipeline masking in both environments; invariant 3 gains its second layer
@@ -520,6 +525,10 @@ strategy driving it is private and lives outside the repo.*
 - [ ] Fill the `[חסר]` markers in `FACTS.md` — seasonality (Nimer's fishing calendar,
       needs Nimer), plus whatever the first content sessions surface as missing
 - [ ] Mark `whatsapp_click` as a key event in the GA4 UI (console-side, not repo)
+- [ ] **Dynatrace RUM on the marketing site is dead** (tag returns 404 since the sprint tenant was
+      deactivated, found 2026-09-09): replace the tag with the new environment's once it exists
+      (Tier A, `index.html` + `stories/_template.html`) — [ADR 0038](decisions/0038-new-dedicated-dynatrace-environment.md).
+      Until then the funnel is measured by GA4 + Meta only
 - [ ] *(Optional)* **Self-hosted Arabic webfont.** Arabic copy renders in a system stack —
       `css/styles.css` switches `html[lang="ar"]` to `SF Arabic`/`Geeza Pro`/`Noto Sans Arabic`
       deliberately, and the Heebo/Assistant `unicode-range`s exclude Arabic. That is a working
