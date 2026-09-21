@@ -11,7 +11,7 @@
 > | 3 | vitest + lint | **done** (PR #52) | two kickoff corrections, see [ADR 0037](../decisions/0037-oxlint-while-typescript-7-blocks-eslint.md): oxlint replaces eslint, and `finance/reconciliation.ts` is a hook over an RPC, not pure math — test target re-scoped |
 > | 4 | H9 Phase 1 + H9.5-B | **blocked** | **parked**: the observability home is a deferred decision ([ADR 0041](../decisions/0041-observability-home-deferred-to-first-quarterly-review.md)); this step re-scopes once the quarterly review settles it |
 > | 5 | Product skills | **done** (PR #54, pulled ahead of the blocked Step 4) | six skills + evals, `docs/ideas.md`; obs-best-practices eval added; scaffolding adapted from Anthropic's PM plugin (write-spec, synthesize-research; Apache-2.0) |
-> | 6 | Automations | **shipped, acceptance pending** | `claude.yml` + three crons over one `agent-report.yml` worker + dependabot Tier-C auto-merge ([ADR 0039](../decisions/0039-dependabot-auto-merge-scope.md)). **Blocked on the `ANTHROPIC_API_KEY` repo secret** — until it lands every job exits clean at the key guard, so G4's acceptance (an `@claude` PR + three dispatched issues) cannot be demonstrated. Scope note: G4.3's GA4-download branch is not built — no credentials are configured, so the monthly issue asks for a paste-list instead, which is G4.3's own stated fallback |
+> | 6 | Automations | **shipped; acceptance deferred to after the quarterly review** | `claude.yml` + three crons over one `agent-report.yml` worker + dependabot Tier-C auto-merge ([ADR 0039](../decisions/0039-dependabot-auto-merge-scope.md)). Key is in. Three acceptance dispatches (2026-09-21) fixed two real bugs (#59, #61) then all failed identically at ~200 ms, $0, no model call, no error text — an API-side rejection before billing; **owner to check the Anthropic console for credits/payment method**. Cadence runs by hand meanwhile (Q3 pack = #62). G4.3's GA4-download branch is not built (no credentials; the monthly issue asks for a paste-list, G4.3's own fallback) |
 > | 7 | H9 Phase 2 + H9.5-D | **blocked** | `/app` RUM needs the new Dynatrace environment (ADR 0038) |
 > | 8 | H9.5-C masking | **blocked** | OpenPipeline processors need both environments to exist (ADR 0038) |
 > | 9 | H9 Phase 3 | **partial — two items unblocked** | **Unblocked, no Dynatrace needed: `deno check` in `ci.yml`, and the rate limit on `login/options`** (a pre-auth amplification vector). Blocked on B1: reconciliation-as-monitor's alert, the log-attribute fix, traceparent/CORS RUM linking |
@@ -30,7 +30,9 @@
 > ### BLOCKED — waiting on the owner (2026-09-21)
 >
 > **B1 is deferred, not pending** (ADR 0041, 2026-09-21) — it became an agenda item rather than a
-> chore. That leaves **B2 as the only thing needing action now**, and it is the gate to B3.
+> chore. **B3 is no longer gated on B2:** the Q3 evidence pack was assembled by hand and is
+> [issue #62](https://github.com/OrCoAI/lev-yam-main/issues/62), so the review can run on 2026-09-22
+> regardless. B2 is now an API-account check, not a repo task.
 >
 > Every remaining **step** is parked behind one of the three things below, all of which need a person.
 > Two things are *not* blocked and are simply next: **Step 9's unblocked half** (`deno check` in
@@ -42,7 +44,7 @@
 > | # | Blocker | Unblocks | How |
 > |---|---|---|---|
 > | **B1** | ~~The new Dynatrace environment~~ — **DEFERRED to the first quarterly review** ([ADR 0041](../decisions/0041-observability-home-deferred-to-first-quarterly-review.md)) | Steps 4, 7, 8, 10 and the blocked parts of 9 and 11 are **parked**, not waiting | Nothing to do now. It is agenda item 3 at the quarterly review: a cost-and-commitment decision (which tenant, which licence, what running two Dynatrace environments plus Bluebox means for a company of one), taken on evidence rather than to unblock a checklist. `quarterly-prep.yml` will surface it automatically — ADR 0038's Status now carries `deferred — first quarterly review` |
-> | **B2** | **`ANTHROPIC_API_KEY` as a repo secret** | Step 6's acceptance | Settings → Secrets and variables → Actions. Then dispatch the three crons and comment `@claude` on a test issue — that is G4's acceptance criterion. Until it exists every job exits clean at its key guard |
+> | **B2** | ~~`ANTHROPIC_API_KEY` as a repo secret~~ **added 2026-09-21** → now: **the API account behind it** | Step 6's acceptance | Every dispatch fails in ~200 ms with `is_error: true`, $0, no model call, no error text — nothing is billed, so the request is rejected before it runs. Most plausible: **no credits / payment method on the Anthropic API account**. Owner checks the console; then one `workflow_dispatch` of `quarterly-prep.yml` is the test. Two real bugs were already fixed on the way (#59, #61) — this is not a code fault |
 > | **B3** | **The first quarterly review** | Step 12's close-outs, Part 4 closure, the B1 decision, and Phase 2 itself | Owner judgment, 2–3 hours, **never run unattended** (ADR 0021). `quarterly-prep.yml` assembles the evidence pack; **B2 is now its only gate** — the old "wait for B1 first" circle is cut by ADR 0041, and the pack reports the missing observability evidence instead of waiting for it |
 >
 > **A live production finding is riding on B1:** the marketing RUM tag on levyam.com has returned
