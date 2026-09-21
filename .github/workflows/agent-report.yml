@@ -17,7 +17,7 @@ name: agent report
 # allow. The repo's own `.claude/settings.json` is written for LOCAL DEV:
 # `defaultMode: acceptEdits`, `Bash(node *)`, `Bash(python3 *)`. Inheriting it
 # here would hand an issue-reading agent arbitrary code execution next to
-# ANTHROPIC_API_KEY.
+# the Claude credential (CLAUDE_CODE_OAUTH_TOKEN).
 #
 # The CLI has flags for exactly this (--restricted / --tools /
 # --permission-prompts) and they do NOT work here: this action runs the
@@ -62,7 +62,8 @@ on:
         type: string
         default: '40'
     secrets:
-      anthropic_api_key:
+      # A Claude subscription token from `claude setup-token`, not an API key (ADR 0042).
+      claude_code_oauth_token:
         required: false
 
 permissions:
@@ -99,10 +100,10 @@ jobs:
       - name: Check the API key is configured
         id: key
         env:
-          KEY: ${{ secrets.anthropic_api_key }}
+          KEY: ${{ secrets.claude_code_oauth_token }}
         run: |
           if [ -z "$KEY" ]; then
-            echo 'ANTHROPIC_API_KEY is not set — add it under Settings → Secrets and variables → Actions. Skipping.' >> "$GITHUB_STEP_SUMMARY"
+            echo 'CLAUDE_CODE_OAUTH_TOKEN is not set — run `claude setup-token` locally and store the result under Settings → Secrets and variables → Actions. Skipping.' >> "$GITHUB_STEP_SUMMARY"
             echo 'ready=false' >> "$GITHUB_OUTPUT"
           else
             echo 'ready=true' >> "$GITHUB_OUTPUT"
@@ -111,7 +112,7 @@ jobs:
       - if: steps.key.outputs.ready == 'true'
         uses: anthropics/claude-code-action@v1
         with:
-          anthropic_api_key: ${{ secrets.anthropic_api_key }}
+          claude_code_oauth_token: ${{ secrets.claude_code_oauth_token }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           prompt: ${{ inputs.prompt }}
           # Every value that contains a space MUST stay quoted: claude_args is

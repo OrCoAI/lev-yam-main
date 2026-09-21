@@ -24,7 +24,7 @@ jobs:
       issues: write
       id-token: write
     secrets:
-      anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+      claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
     with:
       max_turns: '40'
       allowed_tools: Read,Glob,Grep,Bash(git log *),Bash(gh issue list *),Bash(gh issue view *),Bash(gh issue create *),Bash(gh pr list *)

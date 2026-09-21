@@ -74,3 +74,4 @@ implementation choices stay in their plan files; an ADR is for a decision that c
 - [0039 — Dependabot auto-merge covers npm minor/patch only; majors and GitHub-Actions bumps keep a human](0039-dependabot-auto-merge-scope.md) — 2026-09-21
 - [0040 — G5's outcome-metric field ships ahead of H9 Phase 5, carrying Phase 5's telemetry bullet with it](0040-g5-ships-ahead-of-h9-phase-5.md) — 2026-09-21
 - [0041 — The observability home is deferred to the first quarterly review, and the plan stops waiting on it](0041-observability-home-deferred-to-first-quarterly-review.md) — 2026-09-21
+- [0042 — The agent workflows authenticate with the owner's Claude subscription token, not API credits](0042-agent-workflows-run-on-the-subscription-token.md) — 2026-09-21
