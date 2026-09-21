@@ -33,6 +33,7 @@ const RULES = [
   // ── 1. the leash ─────────────────────────────────────────────────────────────
   ['A', /^(\.claude\/|\.mcp\.json$|\.gitignore$|AGENTS\.md$|(.*\/)?CLAUDE\.md$)/],   // instructions, permissions, publication allowlist
   ['A', /^(scripts\/check-tier\.mjs$|scripts\/verify\/|\.github\/pull_request_template\.md$)/], // the gate's own tooling
+  ['A', /^(\.node-version$|app-src\/(\.oxlintrc\.json|vitest\.config\.ts)$)/],   // what decides whether lint/test can fail (Step 3)
   // ── 2. exceptions inside A directories ─────────────────────────────────────
   ['C', /^app-src\/src\/.*\.test\.tsx?$/],                                        // vitest (Step 3)
   ['C', /^app-src\/src\/modules\/[a-z]+\/i18n\.ts$/],                              // module dictionaries (lib/i18n.tsx is the runtime → A)

@@ -83,6 +83,17 @@ const DragHandle = () => (
   </svg>
 )
 
+// Module scope: a component declared inside render gets a new identity every render,
+// which remounts the toggles' DOM (and drops keyboard focus) on each keystroke.
+const Toggle = ({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) => (
+  <div className="lq-ctrl-row">
+    <label>{label}</label>
+    <button type="button" className="lq-ctrl-toggle" data-on={String(value)} onClick={() => onChange(!value)}>
+      <i />
+    </button>
+  </div>
+)
+
 /** Pointer-based drag reorder for quote line items (touch + mouse, no library) — Pointer
  *  Events with `setPointerCapture` keep firing on the handle regardless of where the
  *  finger/cursor travels, so a single element's own handlers are enough; no window
@@ -364,14 +375,6 @@ export default function QuotePage() {
     })
   }
 
-  const Toggle = ({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) => (
-    <div className="lq-ctrl-row">
-      <label>{label}</label>
-      <button type="button" className="lq-ctrl-toggle" data-on={String(value)} onClick={() => onChange(!value)}>
-        <i />
-      </button>
-    </div>
-  )
 
   return (
     <div className="lq-stage">

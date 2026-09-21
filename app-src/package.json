@@ -8,7 +8,9 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "TZ=Asia/Jerusalem vitest run",
+    "lint": "oxlint --max-warnings=24"
   },
   "dependencies": {
     "@simplewebauthn/browser": "^13.3.0",
@@ -21,7 +23,12 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "@vitejs/plugin-react": "^6.0.5",
+    "oxlint": "^1.82.0",
     "typescript": "^7.0.2",
-    "vite": "^8.2.1"
+    "vite": "^8.2.1",
+    "vitest": "^5.0.0"
+  },
+  "engines": {
+    "node": "^22.12 || ^24"
   }
 }

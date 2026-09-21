@@ -8,9 +8,9 @@
 > | 0 | M0 environment access + capability confirmation | **done 2026-09-14 — with a plan-changing verdict** | Logins landed 2026-09-09. **`pzh8968h.sprint` is DEACTIVATED** (marketing RUM tag 404 on prod); `tgo73062` gives the owner no read/write scopes. Owner decision: **a new dedicated Dynatrace environment is the home** ([ADR 0038](../decisions/0038-new-dedicated-dynatrace-environment.md)); Steps 4/7/8/10/11 start from its own Phase 0 once the owner hands over the URL. Full verdict table in the H9.5 plan |
 > | 1 | Branch protection + decision log + CLAUDE.md slim + `AGENTS.md` | **done 2026-09-09** | PR #50 merged. Branch protection live (PR + `build` check, admins included); 35 ADRs; CLAUDE.md 330 → 188 lines (Step 2 adds the tiers section) |
 > | 2 | Risk tiers + permissions allowlist | **done 2026-09-09** | PR #51 (Tier A, owner-approved). `scripts/check-tier.mjs` + `tier.yml` (second required check), PR template, committed `.claude/settings.json`, ADR 0036 leash class. From here every PR self-declares a tier |
-> | 3 | vitest + eslint | **in progress** | correction at kickoff: `finance/reconciliation.ts` is a hook over an RPC, not pure math — test target re-scoped (see Step 3 PR) |
-> | 4 | H9 Phase 1 + H9.5-B | **blocked** | needs the new Dynatrace environment (ADR 0038) + its Phase 0 baselines |
-> | 5 | Product skills | **in progress** (pulled ahead of the blocked Step 4) | branch `product-skills`: six skills + evals, `docs/ideas.md`; obs-best-practices eval added; scaffolding adapted from Anthropic's PM plugin (write-spec, synthesize-research; Apache-2.0) |
+> | 3 | vitest + lint | **done** (PR #52) | two kickoff corrections, see [ADR 0037](../decisions/0037-oxlint-while-typescript-7-blocks-eslint.md): oxlint replaces eslint, and `finance/reconciliation.ts` is a hook over an RPC, not pure math — test target re-scoped |
+> | 4 | H9 Phase 1 + H9.5-B | **blocked** | needs the new Dynatrace environment ([ADR 0038](../decisions/0038-new-dedicated-dynatrace-environment.md)) + its Phase 0 baselines |
+> | 5 | Product skills | **done** (PR #54, pulled ahead of the blocked Step 4) | six skills + evals, `docs/ideas.md`; obs-best-practices eval added; scaffolding adapted from Anthropic's PM plugin (write-spec, synthesize-research; Apache-2.0) |
 > | 6 | Automations | pending | |
 > | 7 | H9 Phase 2 + H9.5-D | pending | |
 > | 8 | H9.5-C masking | pending | |
@@ -114,7 +114,7 @@ All decided 2026-08-13 with the owner:
 5. **Outcome metrics** join the plan template + close-out ritual ("shipped-but-unvalidated
    never deeper than one cycle"). (G5)
 6. **Mechanical rails**: branch protection on `main`, vitest on pos/finance money-math,
-   eslint in CI. (G6)
+   lint in CI (eslint as written; oxlint in practice — ADR 0037). (G6)
 7. **Operating cadence** (weekly/monthly/quarterly + queue-jumper rule) codified in CLAUDE.md;
    **the first quarterly review is the gate into Roadmap Phase 2 and its opening act**. (G7)
 8. **Agent permissions allowlist** (`.claude/settings.json`, acceptEdits + allow/ask/deny);
@@ -192,7 +192,7 @@ everything else is Claude Code solo.
 | 0 | **M0 environment access + capability confirmation** (Part 2) | this doc | **[OWNER]** interactive `dtctl auth login` (as needed, both envs) |
 | 1 | Branch protection on `main` + decision-log extraction (incl. Part 1 ADRs) + CLAUDE.md slim + fix stale `.claude/` housekeeping line | G6.1, G2 | **[OWNER]** confirm branch-protection setting in GitHub UI (or grant admin `gh` scope) |
 | 2 | Risk tiers (CLAUDE.md + path-check script in CI) + `.claude/settings.json` permissions allowlist | G1, G8 | — |
-| 3 | vitest for `pos/logic.ts` + `finance/reconciliation.ts`; eslint in `ci.yml` | G6.2–3 | — |
+| 3 | vitest on the pure money math + lint in `ci.yml` (targets corrected at kickoff — ADR 0037) | G6.2–3 | — |
 | 4 | H9 Phase 1 **with H9.5-B folded in**: synthetic monitors, hardened detectors ("alert on missing data", 1m interval, service user), Grail-generation count/freshness SLOs (created in `tgo73062` via the `levyam-bluebox` context), Bluebox weekly Routine | H9 P1 + H9.5-B | **[OWNER]** paste tokens as repo secrets when asked |
 | 5 | Product skills: product-context, feature-spec, idea-capture (+ `docs/ideas.md`), weekly-review, feedback-triage, quarterly-review (+ audit checklists); install obs-best-practices skill; adapt reusable scaffolding from Anthropic's PM plugin (Apache-2.0) where it fits | G3 | — |
 | 6 | Automations: @claude GitHub Action; weekly cron (report incl. Alerts & problems line); monthly cron (triage digest + parking-lot batch + **obs-best-practices audit section**); quarterly-prep cron; dependabot→Tier-C auto-merge | G4 | **[OWNER]** add Anthropic API key secret |

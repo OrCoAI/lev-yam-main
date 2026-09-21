@@ -2,6 +2,7 @@
 // (moved out of `public` at cut-over, docs/plans/pos-cutover-hardening.md).
 import { pos } from '../../lib/supabase'
 import { jerusalemDate, reconcileItems } from './logic'
+import { getMenuGroups } from './menuData'
 import type { CloseDayResult, ClosedBill, DayReport, PosPayment, PosTable } from './types'
 
 // ── row mappers (wire format frozen — shared with pos.html) ──
@@ -31,7 +32,7 @@ export function tableToRow(t: PosTable): TableRow {
 export function rowToTable(r: TableRow): PosTable {
   return {
     id: r.id, num: r.num, name: r.name || '',
-    items: reconcileItems(r.items),
+    items: reconcileItems(r.items, getMenuGroups()),
     guests: { a: r.guests_adults || 0, c: r.guests_children || 0 },
     useOH: r.pricing_mode !== 'a_la_carte',
     openedAt: r.opened_at ? Date.parse(r.opened_at) : Date.now(),

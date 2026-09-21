@@ -1,7 +1,7 @@
 # 0020 — Mechanical rails: branch protection, money-math tests, lint
 
 - **Date:** 2026-08-13
-- **Status:** accepted
+- **Status:** accepted — amended by ADR 0037 (linter and money-math test target)
 - **Decided by:** owner (strategy session with Claude Code)
 - **Source:** `docs/plans/master-execution-plan.md` Part 1 #6; `docs/plans/lev-yam-gap-analysis-work-order.md` G6
 

@@ -52,7 +52,7 @@ implementation choices stay in their plan files; an ADR is for a decision that c
 - [0017 — Product-side skill set joins the engineering skills](0017-product-skill-set.md) — 2026-08-13
 - [0018 — Automation layer: @claude action and scheduled review issues](0018-automation-layer.md) — 2026-08-13
 - [0019 — Outcome metrics close the validation loop](0019-outcome-metrics-validation-loop.md) — 2026-08-13
-- [0020 — Mechanical rails: branch protection, money-math tests, lint](0020-mechanical-rails.md) — 2026-08-13
+- [0020 — Mechanical rails: branch protection, money-math tests, lint](0020-mechanical-rails.md) — 2026-08-13 *(amended — see status)*
 - [0021 — Operating cadence; first quarterly review gates Phase 2](0021-operating-cadence-quarterly-gate.md) — 2026-08-13
 - [0022 — Agent permissions allowlist; settings file is Tier A forever](0022-agent-permissions-allowlist.md) — 2026-08-13 *(amended — see status)*
 - [0023 — Site Reliability Guardian supersedes hand-rolled deploy verification](0023-srg-deploy-verification.md) — 2026-08-13
@@ -69,4 +69,5 @@ implementation choices stay in their plan files; an ADR is for a decision that c
 - [0034 — Harness-engineering alignment](0034-harness-engineering-alignment.md) — 2026-09-09
 - [0035 — H9 reinstated through the master execution plan; an "Operating system" roadmap block gates Phase 2](0035-h9-reinstated-operating-system-block.md) — 2026-09-09
 - [0036 — Agent-instruction files are one "leash" class, all Tier A](0036-agent-instruction-files-are-the-leash.md) — 2026-09-09
+- [0037 — ADR 0020's tooling assumptions corrected at kickoff: oxlint (TypeScript 7 blocks typescript-eslint) and the real money-math test target](0037-oxlint-while-typescript-7-blocks-eslint.md) — 2026-09-09
 - [0038 — A new dedicated Dynatrace environment becomes the observability home; the sprint environment is gone](0038-new-dedicated-dynatrace-environment.md) — 2026-09-14

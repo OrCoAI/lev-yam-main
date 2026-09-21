@@ -8,6 +8,8 @@ touching schema, permissions, or the events/finance spine graduates to a `docs/p
 
 ## Open bugs
 
+- Lint warnings (oxlint, ratcheted at 24 total on 2026-09-09): `react(set-state-in-effect)` ×3 in UsersAdmin.tsx — see `npm run lint`
+
 - **`admin-user-ops` and `admin-invite` are unusable on staging** — their `ALLOWED_ORIGINS`
   lists `localhost:5173`, `levyam.com`, `www.levyam.com` but **not**
   `https://staging.levyam.com`, so every call from the staging site returns
