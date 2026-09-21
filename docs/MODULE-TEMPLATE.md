@@ -19,6 +19,17 @@ destination. Everything else is the module's own UI.
   data never enters this public repo), and keep the old tool running until the parity bar
   is met. Define that bar in the plan (for quotes: a real record through its full life +
   a printed A4 identical to the old output).
+- [ ] **Name the outcome metric** ([ADR 0019](decisions/0019-outcome-metrics-validation-loop.md),
+  sequencing amended by [ADR 0040](decisions/0040-g5-ships-ahead-of-h9-phase-5.md)): the one
+  number this module is supposed to move, where it is read from, its value today, the target,
+  and the date the verdict is due (ship + 2–4 weeks). It goes in the plan file's **Outcome
+  metric** table — `.claude/skills/feature-spec/plan-template.md` is the shape. A module with
+  no named metric cannot be validated later, only admired; `weekly-review` lists the check when
+  it comes due and the verdict is appended to the plan under **Outcome check**.
+- [ ] **Instrumentation is part of the slice, not a follow-up.** If the metric is a Dynatrace
+  bizevent or a GA4 event, the emitting code ships with the feature — allow-listed attributes
+  only, never PII or error text, telemetry additive and never load-bearing
+  ([ADR 0013](decisions/0013-platform-telemetry-separate-envs-allow-list-additive.md), ARCHITECTURE §6b).
 - [ ] **Answer the two spine questions** (design:
   [plans/cross-module-foundation.md](plans/cross-module-foundation.md)):
   1. *What does this module project into `events`?* Anything with a date on the shared
@@ -202,4 +213,9 @@ The quotes import is the worked example (`docs/plans/quotes-module.md` §6):
 ## 7. Close the loop
 
 - [ ] Tick the ROADMAP item; update the plan doc to "as-executed".
+- [ ] Write the `## Close-out` section (CLAUDE.md "Roadmap item close-out").
+- [ ] **Diarise the outcome check.** The plan's check date is now live: on that date the
+  metric's value goes under `## Outcome check` with a verdict — worked / did not / cannot
+  tell — and what it changes. "Cannot tell" is a finding about the instrumentation, not a
+  pass. Nothing is validated by having shipped.
 - [ ] Update this template with anything the migration taught.

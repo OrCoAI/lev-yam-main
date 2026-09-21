@@ -134,8 +134,9 @@ Run the **`feature-spec` skill** (after `product-context`): it is this section m
 explicit out-of-scope, how it serves VISION and fits ARCHITECTURE) until both sides are 100% aligned.
 No artifacts, no code before that. Then, before any code, generate the full set in parallel:
 
-1. **Plan file** `docs/plans/<module>-<initiative>.md`: scope, schema/RLS/permission changes, UI
-   surface, open questions; link it from `docs/ROADMAP.md`.
+1. **Plan file** `docs/plans/<module>-<initiative>.md`: scope, the **Outcome metric** table
+   (ADR 0019), schema/RLS/permission changes, UI surface, open questions; link it from
+   `docs/ROADMAP.md`.
 2. **Roadmap alignment** — it belongs to the current phase, or is added/flagged.
 3. **Architecture invariants check** — permissions DB-first, schema in `supabase/schema/`, money and
    lifecycle through the cross-module spines, bilingual via shell i18n, mobile-first.
@@ -201,6 +202,52 @@ schema/permission changes were applied, what was decided on the way (→ ADRs), 
 (2) alignment against VISION and ARCHITECTURE is stated explicitly — drift is a conflict, raised and
 resolved first; (3) `docs/ROADMAP.md` is ticked and discovered follow-ups added; (4) the user has seen
 the summary and verdict.
+
+**Outcome check** ([ADR 0019](docs/decisions/0019-outcome-metrics-validation-loop.md)): close-out
+proves the thing was *built*, not that it *worked*. Every plan **from 2026-09-21 onward** names an
+**Outcome metric** at kickoff (`feature-spec`, MODULE-TEMPLATE §0) with a check date of
+ship + 2–4 weeks. On that date the metric's value goes under `## Outcome check` in the plan file
+with a verdict — **worked / did not / cannot tell** — and what it changes. `weekly-review` lists
+checks that have come due; the monthly triage carries the **shipped-but-unvalidated** list, which
+per the operating system must never be deeper than one cycle. Both scope to plans that *have* an
+Outcome metric table — plans closed out before 2026-09-21 predate the rule and are not retrofitted.
+"Cannot tell" is a finding about the instrumentation, not a pass.
+
+## Operating cadence
+
+The rhythm that makes a company of one work at speed ([ADR 0021](docs/decisions/0021-operating-cadence-quarterly-gate.md)).
+Three of the four are automated into a GitHub issue; the owner's time goes only where judgment is
+needed. **The automation is built but not yet live** — it needs the `ANTHROPIC_API_KEY` secret
+(master plan blocker B2); until then each job exits clean at its key guard and produces no issue.
+
+| When | What | Who |
+|---|---|---|
+| **Weekly** (Sun) | `weekly-review` — shipped vs the roadmap block, Tier-C merges that auto-shipped, plans missing a close-out, outcome checks now due, drift check, analytics headline, Alerts & problems, Harness health | automated; owner reads |
+| **Monthly** (1st) | `feedback-triage` digest + parking-lot batch + obs-best-practices audit + shipped-but-unvalidated | automated agenda; owner decides |
+| **Quarterly** (1st of Jan/Apr/Jul/Oct) | vision audit, architecture audit, then the one sanctioned divergent brainstorm, then converge | **owner's judgment, never run unattended**; evidence pack assembled for them |
+| **Per initiative** | kickoff alignment (Gate 1) → build → outcome check (Gate 2) | owner at the two gates only |
+
+**The queue-jumper rule:** evidence that a current bet is *wrong* interrupts anything. Nothing else
+does — not a new idea, not a competitor, not an interesting piece of tech. Ideas go to
+`docs/ideas.md` via `idea-capture` and wait for the monthly batch. Interrupting for anything but
+invalidation is how a one-person roadmap becomes a list of half-built things.
+
+**The first quarterly review is the gate into Roadmap Phase 2** (ADR 0021) and doubles as the
+shakedown cruise for this machinery — decision log, tiers, outcome metrics, cadence. Its output
+is the mandate for Phase 2.
+
+### Session hygiene (context-rot defence)
+
+- **One approved spec per session.** Never two initiatives in one context — the second inherits
+  the first's assumptions silently, which is how a bugfix acquires a schema change.
+- **Review and test passes run as subagents** for any diff with a runtime surface, with their own
+  clean context, not in the builder's. Docs-only diffs keep ADR 0003's inline path.
+  A builder reviewing its own work in its own context re-reads its own intent, not the diff.
+  The gate already runs the two reviews concurrently (ADR 0010, for wall-clock); running them as
+  subagents is what gives each its own context.
+- **Compact or restart at natural checkpoints** — after a merge, between gate steps — rather than
+  pushing through to the end of a full window. A session that runs out of context mid-gate loses
+  the findings it had not yet acted on.
 
 ## Deploying
 
