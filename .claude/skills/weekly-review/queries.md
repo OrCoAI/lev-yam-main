@@ -37,7 +37,7 @@ bluebox ask "Summarize the weekly health-check Routine findings for the last 7 d
 grep -l "## Outcome metric" docs/plans/*.md | while read f; do
   d=$(grep -m1 -E "^\| Check date" "$f" | grep -oE "[0-9]{4}-[0-9]{2}-[0-9]{2}" | head -1)
   filled=$(awk '/^## Outcome check/{f=1;next} f&&NF{print;exit}' "$f")
-  [ -n "$d" ] && [ "$d" \< "$(date -u +%F)" ] && [ -z "$filled" ] && echo "$f due $d"
+  [ -n "$d" ] && [ ! "$d" \> "$(date -u +%F)" ] && [ -z "$filled" ] && echo "$f due $d"
 done
 ```
 

@@ -412,7 +412,7 @@ block produces (work order G7).*
 - [x] **Step 0 — M0** environment access + capability confirmation *(done 2026-09-14 — verdict changed the
       plan: the sprint tenant is deactivated and the marketing RUM tag is dead on prod; Bluebox's env grants
       no scopes. Owner decision: a **new dedicated Dynatrace environment** — [ADR 0038](decisions/0038-new-dedicated-dynatrace-environment.md).
-      Steps 4/7/8/10/11 wait for its URL, then run its own Phase 0 first)*
+      Steps 4/7/8/10 and parts of 9/11 wait for its URL, then run its own Phase 0 first)*
 - [x] **Step 1** — branch protection on `main` *(applied 2026-09-09 via API: PR + `build` check required,
       admins included)* + decision log `docs/decisions/` (35 ADRs) + CLAUDE.md slim + `AGENTS.md`
       *(done 2026-09-09, PR #50)*
@@ -432,12 +432,28 @@ block produces (work order G7).*
       **BLOCKED on the owner: add the `ANTHROPIC_API_KEY` repo secret.** G4's acceptance criterion is
       an `@claude` comment yielding a PR plus three `workflow_dispatch` runs producing their issues;
       none of that can run until the secret exists, so this stays unticked until those runs are linked here.
-- [ ] **Step 7** — H9 Phase 2 + H9.5-D: `/app` RUM (New RUM frontend), masking, staging exclusion, §6b rewrite
-- [ ] **Step 8** — H9.5-C: OpenPipeline masking in both environments; invariant 3 gains its second layer
-- [ ] **Step 9** — H9 Phase 3: reconciliation-as-monitor, log attributes, traceparent/CORS, `deno check`, rate limit
-- [ ] **Step 10** — H9 Phase 4 slot: SRG guardian + SDLC event from `deploy.yml`, dashboards-as-code, H9.5-E/F
-- [ ] **Step 11** — H9 Phase 5 + G5: Dynatrace MCP, production-context mandatory, outcome metric in MODULE-TEMPLATE
-- [ ] **Step 12** — cadence + session hygiene in CLAUDE.md; close-outs for every plan touched
+- [ ] **Step 7 — BLOCKED** — H9 Phase 2 + H9.5-D: `/app` RUM (New RUM frontend), masking, staging exclusion, §6b rewrite *(needs the new Dynatrace environment — ADR 0038)*
+- [ ] **Step 8 — BLOCKED** — H9.5-C: OpenPipeline masking in both environments; invariant 3 gains its second layer *(needs the new Dynatrace environment — ADR 0038)*
+- [ ] **Step 9 — PARTIAL, two items unblocked** — H9 Phase 3. **Unblocked and pending (no Dynatrace
+      needed): `deno check` in `ci.yml`, and the rate limit on `login/options`** — a pre-auth
+      amplification vector; pure edge-function + CI work. Blocked on B1: reconciliation-as-monitor's
+      alert, the log-attribute fix and traceparent/CORS RUM linking *(ADR 0038)*
+- [ ] **Step 10 — BLOCKED except a docs carve-out** — H9 Phase 4 slot: SRG guardian + SDLC event
+      from `deploy.yml`, dashboards-as-code, H9.5-A/E/F *(need the new Dynatrace environment —
+      ADR 0038)*. Unblocked: H9.5-F query-hygiene rules and H9.5-A's deployment-marker note
+      correction — both docs-only, minutes
+- [ ] **Step 11 — G5 template half shipped, rest PARTIAL** — G5's template half shipped 2026-09-21
+      (outcome metric + instrumentation in MODULE-TEMPLATE §0, Outcome check in the close-out ritual,
+      shipped-but-unvalidated in the monthly triage), ahead of H9 P5 and carrying P5's telemetry
+      bullet — [ADR 0040](decisions/0040-g5-ships-ahead-of-h9-phase-5.md) amends ADR 0019's
+      sequencing and is **flagged for owner confirmation**. G5's acceptance ("the next initiative
+      ships with a named outcome metric") opens with the first Phase 2 initiative. Of H9 P5:
+      the telemetry bullet is delivered; the mandatory production-context step and the CLAUDE.md
+      standing rule are **unblocked and pending**; only the Dynatrace MCP entry needs B1
+- [ ] **Step 12 — cadence shipped, close-outs pending B3** — Operating cadence, queue-jumper rule
+      and session hygiene are in CLAUDE.md (2026-09-21). The close-outs wait on the steps they
+      would close, and G7's acceptance requires the **first quarterly review** (B3) — owner
+      judgment, never run unattended
 - [ ] **Closure** (master plan Part 4): Tier-C change flows to prod untouched; three crons fired; green
       monitors, armed detectors, evaluating SLOs, one real SRG verdict → **first quarterly review opens Phase 2**
 
