@@ -64,6 +64,12 @@ on:
 permissions:
   contents: read
   issues: write
+  # The action mints its token through GitHub's OIDC endpoint and fails without
+  # this ("Could not fetch an OIDC token"). It is NOT a repo-write grant: it only
+  # lets the job request an identity token. The `github_token` input below is
+  # what the action actually uses for GitHub API calls, so the job's own scoped
+  # token — contents:read + issues:write — stays the ceiling.
+  id-token: write
 
 jobs:
   report:
@@ -94,6 +100,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.anthropic_api_key }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           prompt: ${{ inputs.prompt }}
           # Every value that contains a space MUST stay quoted: claude_args is
           # shell-tokenized per line, so a bare Bash(git log *) splits into
