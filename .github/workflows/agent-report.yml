@@ -53,7 +53,12 @@ name: agent report
 #     it writes `report.md` for a later step to publish instead;
 #   - it cannot write anywhere else: `Write` is scoped to that one file, and `.git/` is
 #     denied because git runs `diff.external`/`textconv` THROUGH THE SHELL on an allowed
-#     `git log -p` / `git show`, which would be arbitrary execution;
+#     `git log -p` / `git show`, which would be arbitrary execution. Do NOT "harden" this
+#     by adding `Write(/**)`: specifiers are matched against the RESOLVED path, so it also
+#     matches `report.md` and, since deny beats allow, silently leaves the agent unable to
+#     write the one file it exists to produce — an 9-minute run that ends with no report
+#     (observed, run 35732989022). A narrow allow needs no wildcard deny beside it: in
+#     headless CI a tool call outside the allow list is refused anyway;
 #   - it cannot reach the runner's own file commands: `GITHUB_STEP_SUMMARY` (rendered
 #     publicly), `GITHUB_ENV`, `GITHUB_PATH` and `GITHUB_OUTPUT` are pointed at /dev/null
 #     for the agent step. An allowed command plus a shell redirect would otherwise write
@@ -180,7 +185,7 @@ jobs:
             --model claude-sonnet-5
             --max-turns ${{ inputs.max_turns }}
             --allowedTools "${{ inputs.allowed_tools }}"
-            --disallowedTools "Read(/proc/**),Read(/etc/**),Read(~/.claude/**),Bash(env),Bash(env *),Bash(printenv),Bash(printenv *),Bash(cat /proc/*),Bash(grep * /proc/*),Bash(set),Bash(export),Bash(node *),Bash(npx *),Bash(npm *),Bash(python3 *),Bash(python *),Bash(deno *),Bash(curl *),Bash(wget *),Bash(nc *),Bash(ssh *),Bash(eval *),Bash(git push *),Bash(gh api *),Bash(gh pr merge *),Bash(gh secret *),Bash(gh workflow *),Bash(supabase *),Bash(dtctl *),Bash(bluebox *),Bash(jq *),Bash(awk *),Bash(find *),Bash(gh issue create *),Bash(gh issue comment *),Bash(gh issue edit *),Bash(gh issue close *),Bash(gh issue reopen *),Bash(gh issue delete *),Bash(gh issue lock *),Bash(gh issue unlock *),Bash(gh issue pin *),Bash(gh issue unpin *),Bash(gh issue transfer *),Bash(gh issue develop *),Bash(gh pr comment *),Bash(gh pr close *),Bash(gh pr reopen *),Bash(gh pr review *),Bash(gh pr edit *),Bash(gh pr merge *),Bash(gh gist *),Bash(gh release *),Bash(gh label *),Bash(gh alias *),Bash(gh config *),Bash(gh repo *),Bash(gh auth *),Edit,NotebookEdit,WebFetch,WebSearch,Write(.github/**),Write(.claude/**),Write(scripts/**),Write(supabase/**),Write(.git/**),Write(/**),Write(~/**)"
+            --disallowedTools "Read(/proc/**),Read(/etc/**),Read(~/.claude/**),Bash(env),Bash(env *),Bash(printenv),Bash(printenv *),Bash(cat /proc/*),Bash(grep * /proc/*),Bash(set),Bash(export),Bash(node *),Bash(npx *),Bash(npm *),Bash(python3 *),Bash(python *),Bash(deno *),Bash(curl *),Bash(wget *),Bash(nc *),Bash(ssh *),Bash(eval *),Bash(git push *),Bash(gh api *),Bash(gh pr merge *),Bash(gh secret *),Bash(gh workflow *),Bash(supabase *),Bash(dtctl *),Bash(bluebox *),Bash(jq *),Bash(awk *),Bash(find *),Bash(gh issue create *),Bash(gh issue comment *),Bash(gh issue edit *),Bash(gh issue close *),Bash(gh issue reopen *),Bash(gh issue delete *),Bash(gh issue lock *),Bash(gh issue unlock *),Bash(gh issue pin *),Bash(gh issue unpin *),Bash(gh issue transfer *),Bash(gh issue develop *),Bash(gh pr comment *),Bash(gh pr close *),Bash(gh pr reopen *),Bash(gh pr review *),Bash(gh pr edit *),Bash(gh pr merge *),Bash(gh gist *),Bash(gh release *),Bash(gh label *),Bash(gh alias *),Bash(gh config *),Bash(gh repo *),Bash(gh auth *),Edit,NotebookEdit,WebFetch,WebSearch,Write(.github/**),Write(.claude/**),Write(scripts/**),Write(supabase/**),Write(.git/**)"
         env:
           # The agent no longer opens issues; it still reads them to build the report.
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
