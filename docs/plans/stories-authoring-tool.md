@@ -177,6 +177,12 @@ its last stamped state. No data left behind anywhere; `media/` is local only.
   portrait. The `media/` intake is still where new photos go, but the flagship page is not
   blocked on it.
 
+## Status
+
+- 2026-09-22 — tool half built, gate run, on staging as [PR #79](https://github.com/OrCoAI/lev-yam-main/pull/79);
+  awaiting the owner's staging sign-off. Next: photos into `media/`, then the flagship pair
+  (team day by the sea) via `story-author`, its own PR.
+
 ## Close-out
 *(appended when done — CLAUDE.md "Roadmap item close-out")*
 
