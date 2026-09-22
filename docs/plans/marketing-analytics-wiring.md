@@ -178,6 +178,16 @@ runs; the GA4 key-event mark and the custom dimension are console toggles the ow
   needs no new GitHub permission since `id-token: write` is already granted — worth re-deciding at
   the 2027-01-01 rotation rather than treating ADR 0047 §2 as settled.
 
+## Discovered follow-ups
+
+- **Manual dispatch and the schedule disagree on the ISO week.** The acceptance run
+  (2026-09-22, dispatched) titled its issue `Weekly review 2026-W38`; the scheduled run the same
+  morning produced `2026-W39`. `weekly-review.yml`'s prompt says "the week that just ended", which
+  a Monday dispatch and a Sunday schedule resolve differently. Scheduled runs are self-consistent,
+  so this only bites on manual dispatches — logged rather than fixed (owner's call, 2026-09-22).
+- **The outcome-check count starts at the first scheduled run after merge**, not at the acceptance
+  issue ([#74](https://github.com/OrCoAI/lev-yam-main/issues/74), closed as a test artefact).
+
 ## Close-out
 
 *(appended when done — CLAUDE.md "Roadmap item close-out")*
