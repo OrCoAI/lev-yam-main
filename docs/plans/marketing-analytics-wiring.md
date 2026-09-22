@@ -20,7 +20,7 @@ without a paid plan, so both are parked as a spend decision
 
 | | |
 |---|---|
-| Metric | Consecutive Sunday `Weekly review` issues whose **Analytics headline** carries real numbers — GA4 `whatsapp_click` by `page_slug` **and** GSC clicks + impressions for the window — with no `n/a` on that line |
+| Metric | Consecutive Sunday `Weekly review` issues whose **Analytics headline** carries real numbers — GA4 sessions and `whatsapp_click` **and** GSC clicks + impressions for the window — with no `n/a` on those lines. The per-page `page_slug` breakdown is a **secondary** signal: it is reported when present, and its absence in the first weeks is the custom dimension's registration date, not a failure of the wiring (ADR 0047 §4 is the governing wording) |
 | Source | The `weekly-review` issues themselves (`gh issue list --label weekly-review`) |
 | Baseline (today) | 0 — the only headline so far (#70, 2026-09-22) says `n/a` |
 | Target | 3 of 3, without the owner exporting anything |
@@ -136,8 +136,9 @@ runs; the GA4 key-event mark and the custom dimension are console toggles the ow
 
 - **Blocking (owner):** the GCP setup and `GOOGLE_SA_KEY` — the workflow step can be built and
   tested locally against the same key, but the acceptance run needs the secret.
-- **Blocking for the first real headline (owner):** the `page_slug` custom dimension — scope (a);
-  until it exists the GA4 half of the headline is `n/a — 400 INVALID_ARGUMENT …`, by design.
+- **Owner, before 10-04 for a full first headline:** the `page_slug` custom dimension — scope (a).
+  Until it exists the GA4 line still carries sessions and the `whatsapp_click` total (both
+  un-dimensioned); only the per-page breakdown reads `n/a`, with the reason from Google.
 - **Non-blocking:** GSC data lags ~2 days; the "last 7 full days" window ends at `today − 3` for
   GSC and `today − 1` for GA4. The headline states both ranges.
 
@@ -154,11 +155,18 @@ runs; the GA4 key-event mark and the custom dimension are console toggles the ow
   rather than trusted to the prompt; each GA4/GSC part is fetched independently so a missing
   `page_slug` dimension costs only its own line; `users` comes from an un-dimensioned query
   (summing `totalUsers` per channel double-counts); `jq`/`awk`/`find` were **removed from the
-  report jobs' allowlists and denied** — they read the process environment directly
-  (`jq 'env.X'`), which walked around the existing `env`/`/proc` denies next to a public-issue
-  write and the agent's inherited `GH_TOKEN`. That last one is a pre-existing hole in the three
-  report workflows, not something this diff introduced.
-- **Raised, not fixed (owner's call):** (1) `actions/checkout@v7` and `claude-code-action@v1` are
+  report jobs' allowlists and denied** — each reads the process environment directly
+  (`jq 'env.X'`) next to a public-issue write and the agent's inherited `GH_TOKEN`.
+- 2026-09-22 · **Correction from the re-review: that deny does not close the class, and this
+  plan will not claim it does.** The shell expands `$VAR` in any *allowed* command's arguments
+  (`gh issue create --body "$CLAUDE_CODE_OAUTH_TOKEN"` uses no denied binary), `gh --jq` is gojq
+  and implements `$ENV`, and `head`/`tail`/`cut`/`sort` read `/proc/self/environ`. The deny
+  removes the obvious paths only. Pre-existing in all three report jobs; the workflow's threat-model
+  comment now says so plainly instead of overstating it.
+- **Raised, not fixed (owner's call):** (0) **the report agent can read its own environment**
+  (above) — closing it means taking `gh issue create` off the agent and having a post-agent step
+  publish what it wrote, across all three report jobs: a harness initiative, not part of this one,
+  and the only reason it is not urgent is that the repo has one write account; (1) `actions/checkout@v7` and `claude-code-action@v1` are
   mutable tags that now run upstream of a Google private key — SHA-pinning them is a repo-wide
   convention change; (2) `workflow_dispatch` runs the *selected ref's* workflow with the secret,
   so branch protection does not cover this credential, and Workload Identity Federation (keyless)

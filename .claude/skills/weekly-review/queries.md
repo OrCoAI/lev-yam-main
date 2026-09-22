@@ -55,7 +55,8 @@ file is small — `Read` it whole. Shape: `ga4.{windows,current,trailing}` (`ses
 `whatsapp_click`, `whatsapp_click_by_page[]`, `whatsapp_click_by_source[]`,
 `sessions_by_channel[]`) and `gsc.{windows,current,trailing}` (`clicks`, `impressions`,
 `ctr_pct` — already a percentage, not GSC's 0–1 fraction — `position`, `top_queries[]`,
-`top_pages[]`). `current` is 7 full days; `trailing` is the 28 days before — divide by 4 for
+`top_pages[]`). List items are `{page|source|channel|query, …}` — `whatsapp_click_by_page[]` is
+`{page, clicks}`, `sessions_by_channel[]` is `{channel, sessions}`. `current` is 7 full days; `trailing` is the 28 days before — divide by 4 for
 the weekly average the delta compares against. The two sources end on different days (GA4
 lags 1, GSC lags 3); quote both ranges.
 
@@ -64,7 +65,8 @@ either side is null. `position` and `ctr_pct` are averages — report the curren
 a ÷4 delta. Quote up to three rows per list, or as many as the file holds.
 
 Four things to report rather than paper over:
-- A source object that is `{ "error": … }` (a missing file counts the same) → `n/a — <reason>`.
+- A source with an `error` field (a missing file counts the same) → `n/a — <reason>` for that
+  source; it still carries its `windows`, so the line names the range it has no numbers for.
 - An `errors` object *inside* a source: that part failed and the rest is real — a `null` value
   or an empty list is `n/a`, the numbers next to it are not. The expected case is `byPage`
   until `page_slug` is registered as a GA4 custom dimension.

@@ -41,12 +41,20 @@ name: agent report
 # What is still NOT protected is the runner and its network. These jobs read
 # public issue text, so treat every word of it as hostile. The one write they hold
 # — `gh issue create/comment` into a PUBLIC repo — is also an exfiltration path for
-# anything the agent can read, which is why the process environment (/proc, env,
-# printenv) is denied explicitly. Denied with it: `jq`, `awk` and `find`, which read
-# the environment directly (`jq 'env.X'`, `awk 'BEGIN{print ENVIRON["X"]}'`,
-# `find -exec`) and would otherwise walk around those denies — the agent's bash
-# inherits `GH_TOKEN` and the action's token inputs. That list is a guardrail against
-# the obvious, not a proof; the prompt's hard rule is the other layer.
+# anything the agent can read. `env`, `printenv`, `/proc` and (added 2026-09-22) `jq`,
+# `awk` and `find` are denied because each reads the environment directly.
+#
+# Be clear about what that does NOT achieve. A bash-capable agent holding a public
+# write can still read its own environment: the shell expands `$VAR` in the arguments
+# of any ALLOWED command (`gh issue create --body "$CLAUDE_CODE_OAUTH_TOKEN"` needs no
+# denied binary at all), `gh`'s own `--jq` is gojq and implements `$ENV`, and
+# `head`/`tail`/`cut`/`sort` read `/proc/self/environ` as happily as `cat` does.
+# The deny list removes the obvious paths and nothing more; it is not a boundary, and
+# extending it cannot make it one. The real boundaries are: the credential is not in
+# the agent's environment (this is why `GOOGLE_SA_KEY` is named by ONE plain step and
+# never by the agent step), `permissions: contents: read`, and the prompt's hard rule.
+# Closing the class properly means taking `gh issue create` off the agent and having a
+# post-agent step publish what it wrote — an open decision, not a done thing.
 
 on:
   workflow_call:

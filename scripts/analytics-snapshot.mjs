@@ -65,11 +65,13 @@ const clean = (value) => String(value ?? '')
 // But the reason reaches a public step summary and a public issue, and Google's
 // SERVICE_DISABLED text carries the GCP project number and its console URL — so URLs and
 // long digit runs go, and the sentence that tells the owner what to do stays.
-const reason = (e) => String(e?.message ?? e)
+const reason = (e) => String(e?.message ?? e ?? 'unknown error')
   .replace(/[\p{Cc}\p{Cf}]/gu, ' ')
-  .replace(/https?:\/\/\S+/g, '<url>')
-  .replace(/\d{6,}/g, '<id>')
-  .replace(/[`<>|\[\]()!]/g, ' ')
+  .replace(/[`<>|\[\]()!]/g, ' ')                                  // strip first, so the markers below survive
+  .replace(/https?:\/\/\S+/g, 'URL')                              // console links name the GCP project
+  .replace(/[\w.+-]+@[\w.-]*\.iam\.gserviceaccount\.com/g, 'SERVICE-ACCOUNT') // IAM denials name the principal
+  .replace(/\/\S*\//g, 'PATH')                                     // a local key path is nobody's business
+  .replace(/\d{6,}/g, 'ID')
   .replace(/\s+/g, ' ')
   .trim()
   .slice(0, 200) || 'unknown error'
@@ -145,18 +147,23 @@ const ga4Report = async (token, w, { dimension, metrics, filter }) => {
     ...(filter && { dimensionFilter: { filter: { fieldName: 'eventName', stringFilter: { value: filter } } } }),
     limit: 100,
   })
+  // With more than one dateRange the API appends a `dateRange` dimension valued to the
+  // range's name. Find it by name rather than assuming it is last: were it ever to move,
+  // every row would land nowhere and the part would report empty lists instead of failing.
+  const headers = (body.dimensionHeaders || []).map((h) => h.name)
+  const rangeAt = headers.indexOf('dateRange')
+  const valueAt = headers.findIndex((h) => h === dimension)
+  if (body.rows?.length && rangeAt === -1) throw new Error('GA4 response carries no dateRange column')
   const split = { current: [], trailing: [], thresholded: Boolean(body.metadata?.subjectToThresholding) }
   for (const row of body.rows || []) {
-    const values = row.dimensionValues.map((v) => v.value)
-    const range = values.pop()
-    const rec = dimension ? { key: clean(values[0]) } : {}
-    metrics.forEach((m, i) => { rec[m] = Number(row.metricValues[i].value) })
-    split[range]?.push(rec)
+    const values = (row.dimensionValues || []).map((v) => v.value)
+    const rec = dimension ? { key: clean(values[valueAt]) } : {}
+    metrics.forEach((m, i) => { rec[m] = Number(row.metricValues?.[i]?.value) })
+    split[values[rangeAt]]?.push(rec)
   }
   return split
 }
 
-const sumBy = (rows, metric) => rows.reduce((n, r) => n + (r[metric] || 0), 0)
 const rank = (part, range, label) => (failed(part) ? [] : part[range].slice(0, 3).map((r) => ({ [label]: r.key, clicks: r.eventCount })))
 
 // `page_slug` is a custom event parameter: grouping by it needs the event-scoped custom
@@ -164,7 +171,7 @@ const rank = (part, range, label) => (failed(part) ? [] : part[range].slice(0, 3
 // the page path — a story's HE and AR twins share one slug, so the path would quietly
 // measure something else and make a broken metric look like a working one.
 const ga4 = async (token) => {
-  const w = windows(1)
+  const w = GA4_WINDOWS
   const wa = { metrics: ['eventCount'], filter: 'whatsapp_click' }
   // `totals` is un-dimensioned on purpose: `totalUsers` is de-duplicated per row, so
   // summing it across channel groups counts anyone who arrived two ways twice.
@@ -180,11 +187,15 @@ const ga4 = async (token) => {
   })
   const out = { windows: w, errors: Object.fromEntries(Object.entries(parts).filter(([, p]) => failed(p)).map(([n, p]) => [n, p.error])) }
   if (Object.keys(out.errors).length === 0) delete out.errors
-  if (parts.totals.thresholded) out.thresholded = 'GA4 withheld low-volume rows (data thresholding) — totals are a floor'
-  // Custom dimensions are not retroactive: an empty trailing breakdown next to a populated
-  // current one is the registration date showing through, not a collapse in clicks.
-  if (!failed(parts.byPage) && parts.byPage.current.length && !parts.byPage.trailing.length) {
-    out.no_baseline = 'page_slug was registered inside this window — no comparable baseline for the per-page breakdown yet'
+  if (Object.values(parts).some((p) => p.thresholded)) {
+    out.thresholded = 'GA4 withheld low-volume rows (data thresholding) — these numbers are a floor, not a count'
+  }
+  // Custom dimensions are not retroactive. The signature is a trailing window that HAD
+  // clicks but no breakdown for them; an empty breakdown next to zero clicks is just a
+  // quiet month, and saying otherwise would suppress a real 0 → N delta.
+  if (!failed(parts.byPage) && !failed(parts.clicks)
+      && !parts.byPage.trailing.length && parts.clicks.trailing[0]?.eventCount > 0) {
+    out.no_baseline = 'the trailing window has clicks but no per-page breakdown — page_slug was registered inside it, so there is no comparable baseline for the per-page list yet'
   }
   for (const range of RANGES) {
     out[range] = {
@@ -217,7 +228,7 @@ const gscQuery = async (token, range, dimension) => {
 }
 
 const gsc = async (token) => {
-  const w = windows(3)
+  const w = GSC_WINDOWS
   const parts = await settle(Object.fromEntries(RANGES.flatMap((range) => [
     [`${range}_totals`, gscQuery(token, w[range])],
     [`${range}_queries`, gscQuery(token, w[range], 'query')],
@@ -229,7 +240,7 @@ const gsc = async (token) => {
   for (const range of RANGES) {
     const totals = parts[`${range}_totals`]
     out[range] = {
-      ...(failed(totals) ? { clicks: null, impressions: null } : (totals[0] || { clicks: 0, impressions: 0, ctr_pct: 0, position: 0 })),
+      ...(failed(totals) ? { clicks: null, impressions: null, ctr_pct: null, position: null } : (totals[0] || { clicks: 0, impressions: 0, ctr_pct: 0, position: 0 })),
       top_queries: failed(parts[`${range}_queries`]) ? [] : parts[`${range}_queries`].slice(0, 3),
       top_pages: failed(parts[`${range}_pages`]) ? [] : parts[`${range}_pages`].slice(0, 3),
     }
@@ -238,6 +249,8 @@ const gsc = async (token) => {
 }
 
 // ── main ─────────────────────────────────────────────────────────────────────
+const GA4_WINDOWS = windows(1)
+const GSC_WINDOWS = windows(3)
 const snapshot = { generated_at: new Date(NOW).toISOString(), property: PROPERTY, site: SITE }
 const sources = { ga4, gsc }
 try {
@@ -246,8 +259,8 @@ try {
 } catch (e) {
   // Keep the windows even when auth failed: the report still names the range it has no
   // numbers for, instead of dropping (or inventing) the dates.
-  snapshot.ga4 = { windows: windows(1), error: reason(e) }
-  snapshot.gsc = { windows: windows(3), error: reason(e) }
+  snapshot.ga4 = { windows: GA4_WINDOWS, error: reason(e) }
+  snapshot.gsc = { windows: GSC_WINDOWS, error: reason(e) }
 }
 
 mkdirSync(dirname(OUT), { recursive: true })

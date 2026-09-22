@@ -22,10 +22,8 @@ Ticked this week: … · Still open in the block: …
 N of M PRs off-roadmap: … (target 0)
 
 ## Analytics headline
-<!-- Δ = current − (trailing ÷ 4), written `+N (+P%)`; `0` when equal, `n/a` when either
-     side is null. `position` is an average — current value only, never a Δ. Quote up to
-     three rows per list, or as many as the file holds. n/a lines carry the snapshot's
-     reason; a partly-failed source reports only the part that failed. -->
+<!-- Filling rules: queries.md §7. One line per source; keep the `ga4.thresholded` /
+     `ga4.no_baseline` sentence, when present, as the last bullet of this section. -->
 - GA4 (YYYY-MM-DD → YYYY-MM-DD): sessions … (Δ …) · users … · `whatsapp_click` … (Δ …) — top pages: `…` n, `…` n, `…` n · top sources: `…` n, `…` n · channels: … / …
 - Search Console (YYYY-MM-DD → YYYY-MM-DD): clicks … (Δ …) · impressions … (Δ …) · CTR …% · avg position … — top queries: `…` n, `…` n, `…` n · top pages: `…` n
 - Dynatrace bizevents: n/a — observability home deferred (ADR 0045)
