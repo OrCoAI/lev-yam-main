@@ -24,15 +24,22 @@ be printed in a GitHub issue on a public repository.
    monthly triage**; items 4 (Brand Radar) and 9 (referring domains) will re-raise it with their
    own metric need. The mandate is not otherwise changed.
 2. **The workflow pulls, the agent reads.** A plain step in the shared report worker
-   (`agent-report.yml`), run before the agent and gated on a boolean input plus the secret, calls
-   the GA4 Data API and the GSC Search Analytics API with a **Google service-account key stored as
-   the repo secret `GOOGLE_SA_KEY`**, and writes one JSON snapshot the agent only `Read`s. The
-   agent step never names the secret, so GitHub never puts it in the agent's environment. Keyless
-   Workload Identity Federation was offered and declined for setup cost. The key is rotated at the
-   2027-01-01 review.
+   (`agent-report.yml`), run before the agent, calls the GA4 Data API and the GSC Search Analytics
+   API with a **Google service-account key stored as the repo secret `GOOGLE_SA_KEY`**, and writes
+   one JSON snapshot the agent only `Read`s. The agent step never names the secret, so GitHub never
+   puts it in the agent's environment. Keyless Workload Identity Federation was offered and
+   declined for setup cost; the gate's security review noted that `id-token: write` is already
+   granted on these jobs, so the keyless path needs no new GitHub permission — **re-decide it at
+   the 2027-01-01 rotation** rather than treating this as settled. The key is rotated at that
+   review.
 3. **Traffic numbers may appear in the public weekly issue.** Sessions, clicks, impressions,
    `whatsapp_click` counts and top query strings are not PII, prices or customer data
-   (ARCHITECTURE invariant 3). The snapshot itself is a workflow artifact, never committed.
+   (ARCHITECTURE invariant 3); Search Console already suppresses rare queries below its own
+   anonymisation threshold, which is what makes publishing `top_queries` safe rather than a
+   judgement call. The snapshot itself is never committed or archived — the weekly issues are the
+   time series. Because the free-text fields are attacker-influenceable (GA4 collection is
+   unauthenticated), they are **scrubbed and clamped in the script** before they can reach a public
+   issue; the prompts' HARD RULE is the second layer, not the first.
 4. **Outcome metric:** three consecutive Sunday reports whose Analytics headline carries real GA4 +
    GSC numbers with no owner export; check date 2026-10-19.
 

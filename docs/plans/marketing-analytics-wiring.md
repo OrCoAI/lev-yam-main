@@ -34,8 +34,13 @@ non-zero conversion count for the window (proves the console click, item (a) bel
 
 The thinnest slice that makes the headline real and keeps the agent away from the credential:
 
-- **(a) Console, owner, 2 clicks:** mark `whatsapp_click` a key event in the GA4 UI
-  (ADR 0006 already names it *the* key event; nothing in the repo changes).
+- **(a) Console, owner, one trip:** in the GA4 UI (1) mark `whatsapp_click` a key event
+  (ADR 0006 already names it *the* key event) and (2) register `page_slug` as an
+  **event-scoped custom dimension** — the Data API can only group by a registered parameter,
+  and the script deliberately has no fallback to the page path (HE/AR twins share one slug; the
+  path would measure something else). Custom dimensions collect from registration onward, so
+  this click lands **before the first scheduled run (10-04)** or that headline is a legitimate
+  `n/a`. Nothing in the repo changes.
 - **(b) `scripts/analytics-snapshot.mjs`** — Node 22, **zero dependencies** (a service-account JWT
   signed with `node:crypto`, exchanged at `oauth2.googleapis.com/token`, then plain `fetch`):
   - GA4 Data API (`runReport`, property `549432476`): sessions and users by default channel group;
@@ -44,15 +49,15 @@ The thinnest slice that makes the headline real and keeps the agent away from th
     top 10 queries and top 10 pages by clicks.
   - Two windows in one file: the **last 7 full days** and the **28 days before them**, so the
     headline can say up/down against the trailing four-week average.
-  - Output: one JSON file (`.reports/analytics.json`, untracked) with the two windows, the query
-    date range, and a `generated_at` stamp. On any error it writes `{ "error": "<reason>" }` and
-    exits 0 — the report must never fail because Google did.
-- **(c) `agent-report.yml`** gains one optional step *before* the agent, gated on a new boolean
-  input `analytics_snapshot` and the presence of secret `google_sa_key`: runs (b), uploads the JSON
-  as a workflow artifact (default 90-day retention). The three callers pass the input
-  (`weekly-review.yml`, `monthly-triage.yml`, `quarterly-prep.yml` — scope (e)). Missing secret →
-  a step-summary line and the file `{ "error": "GOOGLE_SA_KEY not set" }`, same pattern as the
-  OAuth-token guard.
+  - Output: one JSON file (`.reports/analytics.json`, untracked) with the two windows per source
+    and a `generated_at` stamp. Any error — auth or per source — becomes `{ "error": "<reason>" }`
+    under `ga4` / `gsc` and the exit code stays 0: the report must never fail because Google did.
+- **(c) `agent-report.yml`** gains one plain step *before* the agent, after the OAuth-token guard
+  (no token → no report → no Google calls): runs (b) with secret `google_sa_key`, which the three
+  callers pass through (`weekly-review.yml`, `monthly-triage.yml`, `quarterly-prep.yml` — scope
+  (e)). Missing secret → the file says so and the step summary prints the status line. No artifact
+  upload: nothing in the system can read a run artifact (the agent has no `gh run`), and the
+  weekly issues *are* the time series.
 - **(d) `weekly-review` skill:** step 7 and `queries.md` §7 read `.reports/analytics.json` and
   produce the headline: sessions (Δ vs trailing avg), `whatsapp_click` total and top 3 `page_slug`,
   GSC clicks/impressions (Δ), top 3 queries. `Read` is already in the allowlist; no new tools.
@@ -61,8 +66,8 @@ The thinnest slice that makes the headline real and keeps the agent away from th
   monthly-triage prompt's "no analytics credentials" sentence is replaced.
 - **Owner setup, once (~15 min):** GCP project → enable *Google Analytics Data API* and *Google
   Search Console API* → service account → JSON key → `gh secret set GOOGLE_SA_KEY < key.json`;
-  add the SA e-mail as **Viewer** on the GA4 property and as a **Full/Restricted user** on the GSC
-  property. The key is long-lived: **rotate at the 2027-01-01 review** (added to that list).
+  add the SA e-mail as **Viewer** on the GA4 property and as a **Restricted user** (not Full —
+  reading is all it does) on the Search Console property. The key is long-lived: **rotate at the 2027-01-01 review** (added to that list).
   Locally the same key lives at `.secrets/google-sa.json` (already git-ignored) for running the
   script by hand.
 
@@ -74,8 +79,8 @@ The thinnest slice that makes the headline real and keeps the agent away from th
 - **Dynatrace anything** — deferred to 2027-01-01 ([ADR 0045](../decisions/0045-observability-home-re-deferred-to-2027-01-review.md)).
 - **Any new `gtag('event', …)`** — ADR 0006: one hand-written event; this item marks it, adds none.
 - **Dashboards, charts, GA4 alerts, e-mailed reports** — the weekly issue is the reader.
-- **Committing the snapshot** — the numbers appear in the public issue (decided, ADR 0047); the
-  JSON stays a workflow artifact so the repo carries no time series to maintain.
+- **Committing or archiving the snapshot** — the numbers appear in the public issue (decided,
+  ADR 0047), which is the time series; the JSON is regenerated every run.
 - **Workload Identity Federation** — keyless auth was offered and declined for setup cost;
   revisit if a second Google integration appears.
 
@@ -95,16 +100,23 @@ gate (screenshots) does not apply; the acceptance test is the `workflow_dispatch
   `Bash(env)` / `Read(/proc/**)` denies stay a second layer, not the only one.
 - The snapshot step is plain `node`, run by the workflow, not by the agent (`Bash(node *)` stays
   denied for the agent). The script is read-only against Google (reports only).
-- The JSON the agent reads is data from Google, not from an issue — but the prompt's HARD RULE
-  still applies to it; the skill quotes numbers, never text fields, into the headline (query
-  strings are the one text field and are rendered inside a code span).
+- **The snapshot carries attacker-influenceable text.** GA4 collection is unauthenticated (the
+  measurement ID is in the page source), so anyone can post a `whatsapp_click` with an arbitrary
+  `page_slug`, or arrive with a crafted `utm_source`; search queries are whatever people type.
+  The headline quotes three such fields (top pages, top source, top queries) into a **public
+  issue**, so the script strips markdown punctuation and control/bidi characters and clamps each
+  to 80 characters before writing them, and the two consuming prompts name the file in their HARD
+  RULE. The same channel can inflate the outcome metric itself — a deliberate accepted limit at
+  this traffic volume, re-read at the check date.
+- Google's own error text is clamped too: `SERVICE_DISABLED` names the GCP project and its
+  console URL, and both the step summary and the issue are public.
 - The SA holds Viewer on one GA4 property and one GSC property, nothing else in Google.
 
 ## Rollback
 
-Revert the PR. The workflow then falls back to the guard path (`n/a — GOOGLE_SA_KEY not set`)
-even before the revert, if the secret is deleted. No data is left anywhere but expired workflow
-artifacts; the GA4 key-event mark is a console toggle the owner can undo.
+Revert the PR. Deleting the secret alone already returns the reports to `n/a — GOOGLE_SA_KEY not
+set` without a revert. No data is left anywhere but past issues and expired workflow
+runs; the GA4 key-event mark and the custom dimension are console toggles the owner can undo.
 
 ## Checks
 
@@ -124,9 +136,8 @@ artifacts; the GA4 key-event mark is a console toggle the owner can undo.
 
 - **Blocking (owner):** the GCP setup and `GOOGLE_SA_KEY` — the workflow step can be built and
   tested locally against the same key, but the acceptance run needs the secret.
-- **Non-blocking:** GA4 `page_slug` is a custom event parameter — if it was never registered as a
-  custom dimension in the GA4 UI, `runReport` cannot group by it; the script then falls back to
-  `pageLocation` and the plan notes the console step. Confirmed during local verification.
+- **Blocking for the first real headline (owner):** the `page_slug` custom dimension — scope (a);
+  until it exists the GA4 half of the headline is `n/a — 400 INVALID_ARGUMENT …`, by design.
 - **Non-blocking:** GSC data lags ~2 days; the "last 7 full days" window ends at `today − 3` for
   GSC and `today − 1` for GA4. The headline states both ranges.
 
@@ -135,6 +146,24 @@ artifacts; the GA4 key-event mark is a console toggle the owner can undo.
 - 2026-09-22 · Sources are GA4 + Search Console only; Ahrefs/Semrush parked as a paid decision;
   traffic numbers may appear in the public weekly issue; SA key as a repo secret ·
   [ADR 0047](../decisions/0047-analytics-wiring-ga4-and-gsc-only-public-numbers.md).
+- 2026-09-22 · Gate step 1 (`/simplify`): no `pagePath` fallback for `page_slug` (it would fake
+  a pass on the outcome metric — twins share a slug); no artifact upload and no `setup-node`
+  (no consumer; Node ≥ 18 suffices); the step is gated on the OAuth-token guard rather than a
+  caller flag. Implementation detail, no ADR.
+- 2026-09-22 · Gate step 2 (code + security review): free-text fields are scrubbed in the script
+  rather than trusted to the prompt; each GA4/GSC part is fetched independently so a missing
+  `page_slug` dimension costs only its own line; `users` comes from an un-dimensioned query
+  (summing `totalUsers` per channel double-counts); `jq`/`awk`/`find` were **removed from the
+  report jobs' allowlists and denied** — they read the process environment directly
+  (`jq 'env.X'`), which walked around the existing `env`/`/proc` denies next to a public-issue
+  write and the agent's inherited `GH_TOKEN`. That last one is a pre-existing hole in the three
+  report workflows, not something this diff introduced.
+- **Raised, not fixed (owner's call):** (1) `actions/checkout@v7` and `claude-code-action@v1` are
+  mutable tags that now run upstream of a Google private key — SHA-pinning them is a repo-wide
+  convention change; (2) `workflow_dispatch` runs the *selected ref's* workflow with the secret,
+  so branch protection does not cover this credential, and Workload Identity Federation (keyless)
+  needs no new GitHub permission since `id-token: write` is already granted — worth re-deciding at
+  the 2027-01-01 rotation rather than treating ADR 0047 §2 as settled.
 
 ## Close-out
 

@@ -3,10 +3,10 @@ name: monthly triage
 # G4.3: the monthly roadmap review — feedback triage plus the parking-lot batch
 # plus the obs-best-practices audit section.
 #
-# No analytics credentials are configured in this repo, so the run has no raw
-# feedback to ingest on its own. That is stated rather than papered over: the
-# issue lists the sources it could read and a paste-list of the exports needed
-# to complete the digest. When a GA4 export path is wired later it plugs in here.
+# Analytics arrive as `.reports/analytics.json` (GA4 + Search Console, ADR 0047),
+# written by the worker before the agent starts. Reviews and survey answers still
+# have no wired source: the issue lists those as a paste-list rather than
+# papering over the gap.
 
 on:
   schedule:
@@ -25,18 +25,19 @@ jobs:
       id-token: write
     secrets:
       claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+      google_sa_key: ${{ secrets.GOOGLE_SA_KEY }}
     with:
       max_turns: '120'
-      allowed_tools: Read,Glob,Grep,Bash(git log *),Bash(git diff *),Bash(gh issue list *),Bash(gh issue view *),Bash(gh issue create *),Bash(gh issue comment *),Bash(gh pr list *),Bash(gh pr view *),Bash(date *),Bash(grep *),Bash(awk *),Bash(wc *),Bash(sort *),Bash(uniq *),Bash(head *),Bash(tail *),Bash(cut *),Bash(ls *),Bash(find *),Bash(jq *)
+      allowed_tools: Read,Glob,Grep,Bash(git log *),Bash(git diff *),Bash(gh issue list *),Bash(gh issue view *),Bash(gh issue create *),Bash(gh issue comment *),Bash(gh pr list *),Bash(gh pr view *),Bash(date *),Bash(grep *),Bash(wc *),Bash(sort *),Bash(uniq *),Bash(head *),Bash(tail *),Bash(cut *),Bash(ls *)
       prompt: |
         Produce this month's roadmap review and deliver it as a new GitHub issue.
 
         - Title exactly: `Monthly roadmap review <YYYY>-<MM>` for the month that just ended.
         - Run the `feedback-triage` skill over whatever signal is reachable from the
-          repository. No analytics credentials are configured, so end the digest with a
-          short, specific paste-list: which exports the owner should drop into this issue
-          (GA4 query + date range, Google reviews, survey answers) for the digest to be
-          completed on the next pass. Do not invent numbers you could not read.
+          repository (the analytics snapshot and the weekly-review issues). Reviews and survey
+          answers have no wired source, so end the digest with a short, specific paste-list of
+          what the owner should drop into this issue (Google reviews, survey answers) for the
+          digest to be completed on the next pass. Do not invent numbers you could not read.
         - Add the parking-lot batch: review `docs/ideas.md`, group the month's captures, and
           recommend promote / hold / drop for each with one line of reasoning.
         - Add a **"Shipped but unvalidated"** list (ADR 0019): plan files that HAVE an

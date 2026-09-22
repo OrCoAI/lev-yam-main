@@ -54,7 +54,7 @@ Two halves, never mixed:
 
 ## Rules
 - The pack is assembled from files and commands (`weekly-review` reports, plan close-outs,
-  `docs/ideas.md`, GA4/Dynatrace exports) — never from memory.
+  `docs/ideas.md`, `.reports/analytics.json`) — never from memory.
 - Nothing in the pack is a decision. The skill proposes wording for ADRs only after the
   owner has decided.
 - A finding that contradicts a core bet does not wait for the quarter — that is the

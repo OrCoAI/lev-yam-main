@@ -56,3 +56,7 @@ img/hero/hero.webm
 # Logs
 *.log
 app-src/tsconfig.tsbuildinfo
+
+# Report-workflow analytics snapshot (scripts/analytics-snapshot.mjs) — a workflow
+# artifact, never committed (ADR 0047).
+.reports/

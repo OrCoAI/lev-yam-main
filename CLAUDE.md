@@ -303,6 +303,10 @@ established, both load-bearing:
   for the same reason. It triggers for **write-access accounts only** (`allowed_non_write_users`
   and `allowed_bots` pinned to `""`).
 
+- **Analytics reach the report jobs as a file, never as a credential:** a pre-agent step in
+  `agent-report.yml` is the only one that names `GOOGLE_SA_KEY`; the agent only `Read`s
+  `.reports/analytics.json` ([ADR 0047](docs/decisions/0047-analytics-wiring-ga4-and-gsc-only-public-numbers.md)).
+
 All five workflows need **`id-token: write`** — the action mints its token through GitHub's OIDC
 endpoint and fails without it. It is not a repo-write grant.
 
