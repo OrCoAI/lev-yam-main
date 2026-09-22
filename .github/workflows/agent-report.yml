@@ -39,7 +39,11 @@ name: agent report
 #      scoped token.
 #
 # What is still NOT protected is the runner and its network. These jobs read
-# public issue text, so treat every word of it as hostile.
+# public issue text, so treat every word of it as hostile. The one write they hold
+# — `gh issue create/comment` into a PUBLIC repo — is also an exfiltration path for
+# anything the agent can read, which is why the process environment (/proc, env,
+# printenv) is denied explicitly. That list is a guardrail against the obvious,
+# not a proof; the prompt's hard rule is the other layer.
 
 on:
   workflow_call:
@@ -123,7 +127,7 @@ jobs:
             --model claude-sonnet-5
             --max-turns ${{ inputs.max_turns }}
             --allowedTools "${{ inputs.allowed_tools }}"
-            --disallowedTools "Bash(node *),Bash(npx *),Bash(npm *),Bash(python3 *),Bash(python *),Bash(deno *),Bash(curl *),Bash(wget *),Bash(nc *),Bash(ssh *),Bash(eval *),Bash(git push *),Bash(gh api *),Bash(gh pr merge *),Bash(gh secret *),Bash(gh workflow *),Bash(supabase *),Bash(dtctl *),Bash(bluebox *),Edit,Write,NotebookEdit,WebFetch,WebSearch"
+            --disallowedTools "Read(/proc/**),Read(/etc/**),Read(~/.claude/**),Bash(env),Bash(env *),Bash(printenv),Bash(printenv *),Bash(cat /proc/*),Bash(grep * /proc/*),Bash(set),Bash(export),Bash(node *),Bash(npx *),Bash(npm *),Bash(python3 *),Bash(python *),Bash(deno *),Bash(curl *),Bash(wget *),Bash(nc *),Bash(ssh *),Bash(eval *),Bash(git push *),Bash(gh api *),Bash(gh pr merge *),Bash(gh secret *),Bash(gh workflow *),Bash(supabase *),Bash(dtctl *),Bash(bluebox *),Edit,Write,NotebookEdit,WebFetch,WebSearch"
         env:
           # issues:write + contents:read only — the narrowest token that can still
           # open the report issue.
