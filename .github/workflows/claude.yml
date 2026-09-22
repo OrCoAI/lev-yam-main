@@ -104,7 +104,8 @@ jobs:
           # shell-tokenized per line (anthropics/claude-code-action#844).
           claude_args: |
             --model claude-sonnet-5
-            --max-turns 30
+            --max-turns 40
+            --append-system-prompt "When the task is done, open the pull request yourself with gh pr create (base main), with a **Tier:** line in the body as CLAUDE.md requires. Do not stop at a compare link."
             --allowedTools "Read,Edit,Write,Glob,Grep,Bash(npm ci),Bash(npm run build),Bash(npm run lint),Bash(npm test),Bash(node scripts/*),Bash(node supabase/tests/*),Bash(git add *),Bash(git commit *),Bash(git status),Bash(git diff *),Bash(git log *),Bash(git checkout *),Bash(gh pr view *),Bash(gh pr create *),Bash(gh issue view *),Bash(gh issue comment *)"
             --disallowedTools "Bash(git push *),Bash(gh pr merge *),Bash(gh api *),Bash(gh secret *),Bash(gh workflow *),Bash(supabase *),Bash(dtctl *),Bash(bluebox *),Bash(curl *),Bash(wget *)"
         env:
