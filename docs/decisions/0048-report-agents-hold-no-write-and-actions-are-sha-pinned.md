@@ -31,11 +31,18 @@ Google service-account key.
 
 ## Decision
 
-1. **The report agent holds no network write.** It writes the finished report to `report.md`
-   (first line `# <title>`, the rest is the body). `gh issue create`, `gh issue comment` and
-   `gh issue edit` are denied to it; `Write` replaces them, itself denied for `.github/`,
-   `.claude/`, `scripts/` and `supabase/`. Reads (`gh issue list` / `view`) stay — the weekly
-   report is built from past issues.
+1. **The report agent holds no write to any public surface.** It writes the finished report to
+   `report.md` (first line `# <title>`, the rest is the body) and nothing else. Closed, after the
+   gate's security review found each one still open: the whole `gh` write family (`issue
+   create/comment/edit/close/reopen/lock/pin/transfer/delete`, `pr comment/close/review/edit`,
+   `gist`, `release`, `label`, `alias`, `config`, `repo`, `auth`) — `gh issue close --comment`
+   posts a public comment just as well as `gh issue comment`; `Write` **scoped to `report.md`**,
+   with `.git/` denied because git runs `diff.external` and `textconv` *through the shell* on an
+   allowed `git log -p` or `git show`; and the runner's file commands — `GITHUB_STEP_SUMMARY`
+   (which renders on a public run page), `GITHUB_ENV`, `GITHUB_PATH`, `GITHUB_OUTPUT` and
+   `BASH_ENV` — neutralised on the agent step, because an *allowed* command with a shell redirect
+   reaches those files whatever `Write` is scoped to. Reads (`gh issue list` / `view`) stay: the
+   weekly report is built from past issues.
 2. **A deterministic step publishes.** After the agent, a fixed shell step runs
    `scripts/report-guard.py`, then applies the caller's new `label` input, matches an existing
    issue title with `jq --arg` (never a search string built from agent text) and comments or
@@ -45,8 +52,8 @@ Google service-account key.
    of `CLAUDE_CODE_OAUTH_TOKEN` or the job's `GITHUB_TOKEN` appears in `report.md` — including
    split across lines. It does **not** redact and publish: a redacted report would hide that the
    attempt happened, and knowing costs more than the week's report.
-4. **Every third-party action is pinned to a commit SHA** with the version in a trailing comment,
-   across all eight workflows. Dependabot's `github-actions` ecosystem keeps them current, and
+4. **Every third-party action is pinned to a commit SHA** with the version in a trailing comment:
+   7 distinct actions across the 7 workflow files that use one (of 10 in total). Dependabot's `github-actions` ecosystem keeps them current, and
    such bumps already require a hand-written Tier line
    ([ADR 0039](0039-dependabot-auto-merge-scope.md)).
 
@@ -57,6 +64,11 @@ Google service-account key.
   boundary — an encoded value passes it. What changed is that the agent can no longer publish
   anything itself, so the naive attempt is caught and the sophisticated one still has to survive
   a human reading the diff of a report.
+- **The first draft of this decision overclaimed**, and the gate caught it: it said the agent
+  "cannot publish anything" while `gh issue close --comment`, the step-summary file and a
+  writable `.git/` were all still reachable. The claim is now the narrower, true one, and the
+  three holes are closed. Recorded because the failure mode matters more than the fix: a
+  guardrail described as stronger than it is stops the next reader from looking.
 - `agent-report.yml` gains a required `label` input; a fourth report job must pass it.
 - The workflow's threat-model comment states what the deny list does **not** achieve. That is
   deliberate: an overstated guardrail comment is worse than none, because it stops the next

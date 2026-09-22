@@ -60,3 +60,10 @@ app-src/tsconfig.tsbuildinfo
 # Report-workflow analytics snapshot (scripts/analytics-snapshot.mjs) — a workflow
 # artifact, never committed (ADR 0047).
 .reports/
+
+# The report jobs write these in the runner workspace (ADR 0048); a local run
+# should not leave them behind either.
+report.md
+title.txt
+body.md
+issues.json

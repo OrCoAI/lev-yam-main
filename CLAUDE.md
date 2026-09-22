@@ -269,8 +269,8 @@ work order G4). All of them go through the same rails as a human PR — none is 
 |---|---|---|
 | `claude.yml` | `@claude` on an issue or PR | a branch + PR through the normal gate, tier declared |
 | `weekly-review.yml` | Sun 17:00 UTC | `report.md` → issue `Weekly review YYYY-Www` — the solo product council, incl. **Alerts & problems** (the only weekly eyes Dynatrace/Bluebox get) and **Harness health** |
-| `monthly-triage.yml` | 1st of the month | issue `Monthly roadmap review YYYY-MM` — feedback digest + parking-lot batch + obs-best-practices audit |
-| `quarterly-prep.yml` | 1st of Jan/Apr/Jul/Oct | issue `Quarterly review YYYY-Qn` — evidence pack + agenda checklist. **The review session itself is never run unattended** |
+| `monthly-triage.yml` | 1st of the month | `report.md` → issue `Monthly roadmap review YYYY-MM` — feedback digest + parking-lot batch + obs-best-practices audit |
+| `quarterly-prep.yml` | 1st of Jan/Apr/Jul/Oct | `report.md` → issue `Quarterly review YYYY-Qn` — evidence pack + agenda checklist. **The review session itself is never run unattended** |
 | `dependabot-auto-merge.yml` | dependabot PRs | the Tier line, and auto-merge for npm minor/patch |
 
 The three report jobs share one reusable worker, `agent-report.yml` (`workflow_call` only) —
@@ -294,15 +294,21 @@ established, both load-bearing:
   options — so only the documented set survives the translation: `--mcp-config`, `--allowedTools`,
   `--disallowedTools`, `--max-turns`, `--model`, `--append-system-prompt`. Passing the others killed
   every run in ~120 ms with `is_error: true` and no error text. Don't reintroduce them.
-- **The report agents cannot publish anything** ([ADR 0048](docs/decisions/0048-report-agents-hold-no-write-and-actions-are-sha-pinned.md)).
+- **The report agents hold no write to any public surface** ([ADR 0048](docs/decisions/0048-report-agents-hold-no-write-and-actions-are-sha-pinned.md)).
   They write `report.md`; a fixed step after them runs `scripts/report-guard.py`, then labels,
   de-duplicates (`jq --arg`, never a search string built from agent text) and publishes. Say
   plainly what the deny list does **not** do: `$VAR` expands in any *allowed* command's
   arguments, `gh --jq` is gojq with `$ENV`, and `head`/`tail`/`cut`/`sort` read
   `/proc/self/environ` — so a bash-capable agent reads its own environment whatever is denied.
-  Removing its write is the change that matters; the guard, which withholds the whole report if a
-  secret's value appears in it, is a loud detector, not a boundary. **Every third-party action is
-  SHA-pinned** with the version in a trailing comment; dependabot keeps them current.
+  The design therefore assumes it may learn a secret and removes every way to send one: the `gh`
+  write family denied, `Write` scoped to `report.md`, `.git/` denied (git runs `diff.external`
+  through the shell on an allowed `git log -p`), and the runner's own file commands —
+  `GITHUB_STEP_SUMMARY`, which renders publicly, plus `GITHUB_ENV`/`PATH`/`OUTPUT` — pointed at
+  `/dev/null` for the agent step, since an allowed command with a redirect reaches them whatever
+  `Write` is scoped to. The guard, which withholds the whole report if a secret's value appears in
+  it, is a loud detector on top of that, not a boundary. **Every third-party action is
+  SHA-pinned** with the version in a trailing comment (7 actions across the 7 workflow files that
+  use one); dependabot keeps them current.
 - **`claude.yml` denies `git push` outright.** It genuinely needs Edit/Write/build, and an agent
   that can write a file and run a build can run code — inherent, not pluggable. What it must
   never reach is a deploy: `deploy-staging.yml` fires on *any* push to `staging`, and

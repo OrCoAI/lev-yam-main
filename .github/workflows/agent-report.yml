@@ -38,23 +38,30 @@ name: agent report
 #      happens above, and `github_token` below pins API calls to that same
 #      scoped token.
 #
-# What is still NOT protected is the runner and its network. These jobs read
-# public issue text, so treat every word of it as hostile. The one write they hold
-# — `gh issue create/comment` into a PUBLIC repo — is also an exfiltration path for
-# anything the agent can read. `env`, `printenv`, `/proc` and (added 2026-09-22) `jq`,
-# `awk` and `find` are denied because each reads the environment directly.
+# What is still NOT protected is the runner and its network. These jobs read public
+# issue text, so treat every word of it as hostile.
 #
-# Be clear about what that does NOT achieve. A bash-capable agent holding a public
-# write can still read its own environment: the shell expands `$VAR` in the arguments
-# of any ALLOWED command (`gh issue create --body "$CLAUDE_CODE_OAUTH_TOKEN"` needs no
-# denied binary at all), `gh`'s own `--jq` is gojq and implements `$ENV`, and
-# `head`/`tail`/`cut`/`sort` read `/proc/self/environ` as happily as `cat` does.
-# The deny list removes the obvious paths and nothing more; it is not a boundary, and
-# extending it cannot make it one. The real boundaries are: the credential is not in
-# the agent's environment (this is why `GOOGLE_SA_KEY` is named by ONE plain step and
-# never by the agent step), `permissions: contents: read`, and the prompt's hard rule.
-# Closing the class properly means taking `gh issue create` off the agent and having a
-# post-agent step publish what it wrote — an open decision, not a done thing.
+# THE AGENT CAN READ ITS OWN ENVIRONMENT, and no deny list changes that: the shell
+# expands `$VAR` inside the arguments of any ALLOWED command, `gh`'s own `--jq` is gojq
+# and implements `$ENV`, and `head`/`tail`/`cut`/`sort` read `/proc/self/environ` as
+# happily as the denied `cat` does. `env`, `printenv`, `/proc`, `jq`, `awk` and `find`
+# are denied to remove the obvious paths, not because that closes the class.
+#
+# So the design assumes the agent may learn a secret, and takes away every way to send
+# one (ADR 0048):
+#   - it cannot publish: `gh issue create/comment/edit/close/reopen/…` are denied, and
+#     it writes `report.md` for a later step to publish instead;
+#   - it cannot write anywhere else: `Write` is scoped to that one file, and `.git/` is
+#     denied because git runs `diff.external`/`textconv` THROUGH THE SHELL on an allowed
+#     `git log -p` / `git show`, which would be arbitrary execution;
+#   - it cannot reach the runner's own file commands: `GITHUB_STEP_SUMMARY` (rendered
+#     publicly), `GITHUB_ENV`, `GITHUB_PATH` and `GITHUB_OUTPUT` are pointed at /dev/null
+#     for the agent step. An allowed command plus a shell redirect would otherwise write
+#     them, so scoping `Write` alone is not enough. The action's own job summary is the
+#     deliberate price; the run log still has it.
+#   - `report-guard.py` then refuses to publish a report containing a secret's value.
+#     A detector, not a boundary: an encoded value passes it.
+# `permissions: contents: read` and the prompt's hard rule are the other two layers.
 
 on:
   workflow_call:
@@ -65,9 +72,10 @@ on:
         type: string
       allowed_tools:
         description: >
-          --allowedTools value. Read-only commands plus `gh issue create` (the report's
-          one write). MUST be a literal in the caller, never a value derived from event
-          data — it is interpolated into the CLI argument line.
+          --allowedTools value. Read-only commands plus `Write(report.md)` — the agent's
+          only write, and not a network one (ADR 0048). MUST be a literal in the caller,
+          never a value derived from event data — it is interpolated into the CLI
+          argument line.
         required: true
         type: string
       # A RUNAWAY GUARD, not a budget. The action fails the job when Claude finishes
@@ -172,11 +180,18 @@ jobs:
             --model claude-sonnet-5
             --max-turns ${{ inputs.max_turns }}
             --allowedTools "${{ inputs.allowed_tools }}"
-            --disallowedTools "Read(/proc/**),Read(/etc/**),Read(~/.claude/**),Bash(env),Bash(env *),Bash(printenv),Bash(printenv *),Bash(cat /proc/*),Bash(grep * /proc/*),Bash(set),Bash(export),Bash(node *),Bash(npx *),Bash(npm *),Bash(python3 *),Bash(python *),Bash(deno *),Bash(curl *),Bash(wget *),Bash(nc *),Bash(ssh *),Bash(eval *),Bash(git push *),Bash(gh api *),Bash(gh pr merge *),Bash(gh secret *),Bash(gh workflow *),Bash(supabase *),Bash(dtctl *),Bash(bluebox *),Bash(jq *),Bash(awk *),Bash(find *),Bash(gh issue create *),Bash(gh issue comment *),Bash(gh issue edit *),Edit,NotebookEdit,WebFetch,WebSearch,Write(.github/**),Write(.claude/**),Write(scripts/**),Write(supabase/**)"
+            --disallowedTools "Read(/proc/**),Read(/etc/**),Read(~/.claude/**),Bash(env),Bash(env *),Bash(printenv),Bash(printenv *),Bash(cat /proc/*),Bash(grep * /proc/*),Bash(set),Bash(export),Bash(node *),Bash(npx *),Bash(npm *),Bash(python3 *),Bash(python *),Bash(deno *),Bash(curl *),Bash(wget *),Bash(nc *),Bash(ssh *),Bash(eval *),Bash(git push *),Bash(gh api *),Bash(gh pr merge *),Bash(gh secret *),Bash(gh workflow *),Bash(supabase *),Bash(dtctl *),Bash(bluebox *),Bash(jq *),Bash(awk *),Bash(find *),Bash(gh issue create *),Bash(gh issue comment *),Bash(gh issue edit *),Bash(gh issue close *),Bash(gh issue reopen *),Bash(gh issue delete *),Bash(gh issue lock *),Bash(gh issue unlock *),Bash(gh issue pin *),Bash(gh issue unpin *),Bash(gh issue transfer *),Bash(gh issue develop *),Bash(gh pr comment *),Bash(gh pr close *),Bash(gh pr reopen *),Bash(gh pr review *),Bash(gh pr edit *),Bash(gh pr merge *),Bash(gh gist *),Bash(gh release *),Bash(gh label *),Bash(gh alias *),Bash(gh config *),Bash(gh repo *),Bash(gh auth *),Edit,NotebookEdit,WebFetch,WebSearch,Write(.github/**),Write(.claude/**),Write(scripts/**),Write(supabase/**),Write(.git/**),Write(/**),Write(~/**)"
         env:
-          # issues:write + contents:read only — the narrowest token that can still
-          # open the report issue.
+          # The agent no longer opens issues; it still reads them to build the report.
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # The runner's file commands are a write surface reachable by any allowed
+          # command with a shell redirect — GITHUB_STEP_SUMMARY renders on a PUBLIC run
+          # page, GITHUB_ENV and GITHUB_PATH feed the step that holds the tokens.
+          GITHUB_STEP_SUMMARY: /dev/null
+          GITHUB_ENV: /dev/null
+          GITHUB_PATH: /dev/null
+          GITHUB_OUTPUT: /dev/null
+          BASH_ENV: ''
 
       # The agent writes `report.md`; THIS step publishes it. That split is the point
       # (roadmap item 14): the agent holds no network write at all, so text it was
@@ -198,8 +213,17 @@ jobs:
           # Read ONLY to be redacted. Both are values the agent could have reached.
           SCAN_OAUTH: ${{ secrets.claude_code_oauth_token }}
           SCAN_GH: ${{ secrets.GITHUB_TOKEN }}
+          # Not in the agent's environment by design — watched anyway, since the agent
+          # does read the analytics snapshot this key produced.
+          SCAN_GOOGLE: ${{ secrets.google_sa_key }}
         run: |
           set -euo pipefail
+          # The agent had a shell in this workspace. `Write(scripts/**)` is denied, but an
+          # ALLOWED command with a redirect (`head -c 1 x > scripts/report-guard.py`) is
+          # not a Write-tool call and never meets that rule — so restore the vetting
+          # script from the commit before running it. Without this line the "deterministic"
+          # step could be running agent-authored Python next to the scanned secrets.
+          git checkout HEAD -- scripts/report-guard.py
           if [ ! -s report.md ]; then
             echo 'The agent produced no report.md — nothing to publish.' >> "$GITHUB_STEP_SUMMARY"
             exit 1
@@ -214,7 +238,9 @@ jobs:
           # with `jq --arg`, so agent-authored text never becomes part of a search string
           # or a filter expression — it stays an argument.
           title=$(cat title.txt)
-          gh issue list --state all --label "$LABEL" --limit 200 --json number,title > issues.json
+          # --limit 1000: the dedupe is an exact title match over this label's whole
+          # history, and a weekly label passes 200 issues in under four years.
+          gh issue list --state all --label "$LABEL" --limit 1000 --json number,title > issues.json
           existing=$(jq -r --arg t "$title" '[.[] | select(.title == $t) | .number] | first // empty' issues.json)
           if [ -n "$existing" ]; then
             gh issue comment "$existing" --body-file body.md

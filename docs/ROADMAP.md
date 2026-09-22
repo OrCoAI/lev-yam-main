@@ -527,16 +527,12 @@ proposal — the owner reorders by editing this list.*
       (owner's addition) → *owner hours per data task*
 - [ ] **13. Harness smalls** — shared `build-app.sh`, CI double-run dedupe, decision graph
       (from `docs/ideas.md`) → *CI minutes; context-load time*
-- [x] **14. Take `gh issue create` off the report agents** *(done 2026-09-22, [ADR 0048](decisions/0048-report-agents-hold-no-write-and-actions-are-sha-pinned.md) — the agent writes `report.md`, a deterministic step publishes it and withholds the whole report if a secret's value appears in it; all eight workflows SHA-pinned)* *(added 2026-09-22 from item 1's security
-      review)* — the three report jobs deny `env`/`printenv`/`/proc`/`jq`/`awk`/`find`, but a
-      bash-capable agent holding a **public** write still reads its own environment: the shell
-      expands `$VAR` in any *allowed* command's arguments (`gh issue create --body
-      "$CLAUDE_CODE_OAUTH_TOKEN"` uses no denied binary), `gh`'s own `--jq` is gojq and implements
-      `$ENV`, and `head`/`tail`/`cut`/`sort` read `/proc/self/environ`. **No deny list can close
-      this** — the agent must write the report to a file and a post-agent step publish it, so the
-      agent never holds the write. Touches all three report workflows + `agent-report.yml`
-      (Tier A, own gate run). Not urgent only because the repo has one write account; `GOOGLE_SA_KEY`
-      is *not* exposed this way (no agent step names it) →
+- [x] **14. Take the public write off the report agents** — *done 2026-09-22,
+      [ADR 0048](decisions/0048-report-agents-hold-no-write-and-actions-are-sha-pinned.md).* The
+      agent writes `report.md` and a deterministic step publishes it, withholding the whole report
+      if a secret's value appears in it; the `gh` write family, `.git/` and the runner's file
+      commands are closed too, since a bash-capable agent reads its own environment whatever is
+      denied. Every third-party action SHA-pinned (7 actions, 7 of the 10 workflow files). Raised by item 1's security review →
       *no credential reachable from agent-authored text*
 - **Out this quarter:** English stories (`/stories/en/`) — reserved, not built.
 

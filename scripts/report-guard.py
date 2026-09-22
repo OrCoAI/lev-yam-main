@@ -26,14 +26,20 @@ REPORT = 'report.md'
 TITLE_OUT = 'title.txt'
 BODY_OUT = 'body.md'
 MAX_TITLE = 120
+# GitHub rejects an issue body over 65536 characters. Truncating here keeps the week's
+# report — failing at `gh issue create` would lose it entirely, and the API error reads
+# like a bug in the publish step rather than a long report.
+MAX_BODY = 60000
 # Values the agent could have reached. Names only are logged, never values.
-WATCHED = ('SCAN_OAUTH', 'SCAN_GH')
+WATCHED = ('SCAN_OAUTH', 'SCAN_GH', 'SCAN_GOOGLE')
 MIN_LEN = 12  # below this a "secret" is too short to match without false positives
 
 
 def main() -> int:
     try:
-        with open(REPORT, encoding='utf-8', errors='replace') as fh:
+        # utf-8-sig: a BOM on line 1 would otherwise fail the `# Title` check and
+        # throw the whole report away.
+        with open(REPORT, encoding='utf-8-sig', errors='replace') as fh:
             report = fh.read()
     except OSError as exc:
         print(f'report-guard: cannot read {REPORT}: {exc.strerror}')
@@ -60,6 +66,10 @@ def main() -> int:
         return 1
 
     lines = report.split('\n')
+    # Skip leading blank lines: a stray newline before the title should not cost the
+    # whole report.
+    while lines and not lines[0].strip():
+        lines.pop(0)
     first = lines[0].strip() if lines else ''
     if not first.startswith('#'):
         print(f'report-guard: {REPORT} must start with a `# Title` line; got: {first[:60]!r}')
@@ -73,10 +83,17 @@ def main() -> int:
 
     with open(TITLE_OUT, 'w', encoding='utf-8') as fh:
         fh.write(title)
+    body = '\n'.join(lines[1:]).strip()
+    truncated = len(body) > MAX_BODY
+    if truncated:
+        body = body[:MAX_BODY].rstrip() + (
+            f'\n\n---\n*[truncated at {MAX_BODY} characters — GitHub caps an issue body at '
+            '65,536. The full report is in the workflow run log.]*')
     with open(BODY_OUT, 'w', encoding='utf-8') as fh:
-        fh.write('\n'.join(lines[1:]).strip() + '\n')
+        fh.write(body + '\n')
 
-    print(f'report-guard: clean; title {title!r}')
+    print(f'report-guard: clean; title {title!r}'
+          + (f'; body TRUNCATED from {len(chr(10).join(lines[1:]).strip())} chars' if truncated else ''))
     return 0
 
 
