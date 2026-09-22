@@ -7,8 +7,11 @@
   A page ships only when BOTH languages exist (docs/ARCHITECTURE.md, invariant 5;
   the generator enforces it).
 
-  Replace every {{PLACEHOLDER}}. Underscore-prefixed files are ignored by the
-  sitemap/hub generator, so this file never appears on the site.
+  Replace every {{PLACEHOLDER}} — except inside the two chrome regions (the
+  header and footer, between the "chrome:header" / "chrome:footer" marker
+  comments): the generator overwrites those from this template on every run,
+  so a nav or footer edit is made HERE and never on a page. Underscore-prefixed
+  files are ignored by the generator, so this file never appears on the site.
 
   RULES (docs/plans/content-engine-phase0.md):
     · Facts come only from /facts.txt or levyam.com. Missing → [חסר: ...].
@@ -26,9 +29,11 @@
     · Keep the FAQ <details> text and the JSON-LD FAQPage IDENTICAL.
     · At most ONE .story-figure--wide per story. No H3s at this length.
 
-  After adding a page, refresh the sitemap and both hubs:
+  After adding a page, refresh the sitemap, both hubs and the page chrome:
       node scripts/gen-stories-index.mjs
-  (The deploy runs it too, so production is correct either way.)
+  (The deploy runs it too, so production is correct either way; CI fails on
+  a stale copy. It also refuses a leftover {{PLACEHOLDER}} and a referenced
+  /img/stories/… file that does not exist.)
 -->
 <html lang="he" dir="rtl">
 <head>
@@ -132,6 +137,8 @@
 
   <a class="skip-link" href="#story-main">דלג לתוכן הראשי</a>
 
+  <!-- The header and footer between the chrome markers are stamped from stories/_template*.html by scripts/gen-stories-index.mjs — edit the page template. -->
+  <!-- chrome:header -->
   <header class="story-header">
     <div class="hero-topbar">
       <a href="/" class="logo" aria-label="לב ים — דף הבית">
@@ -143,7 +150,7 @@
           <li><a href="/#services">מה קורה בלב ים</a></li>
           <li><a href="/#why">למה לב ים</a></li>
           <li><a href="/#gallery">גלריה</a></li>
-          <li><a href="/stories/">סיפורים</a></li>
+          <li><a href="/stories/"{{STORIES_CURRENT}}>סיפורים</a></li>
           <li><a href="/#faq">שאלות ותשובות</a></li>
           <li><a href="/#contact">צור קשר</a></li>
         </ul>
@@ -169,8 +176,8 @@
 
       <!-- Language toggle navigates to the twin URL — one URL per language. -->
       <div class="lang-toggle" role="group" aria-label="שפה / اللغة">
-        <a class="lang-opt is-active" href="/stories/{{SLUG}}/" hreflang="he" lang="he" aria-current="page">עב</a>
-        <a class="lang-opt" href="/stories/ar/{{SLUG}}/" hreflang="ar" lang="ar">عر</a>
+        <a class="lang-opt is-active" href="{{HE_URL}}" hreflang="he" lang="he" aria-current="page">עב</a>
+        <a class="lang-opt" href="{{AR_URL}}" hreflang="ar" lang="ar">عر</a>
       </div>
 
       <button class="nav-toggle" aria-label="פתיחת תפריט" data-label-open="פתיחת תפריט" data-label-close="סגירת תפריט" aria-expanded="false" aria-controls="mobile-nav">
@@ -189,12 +196,13 @@
         <li><a href="/#services">מה קורה בלב ים</a></li>
         <li><a href="/#why">למה לב ים</a></li>
         <li><a href="/#gallery">גלריה</a></li>
-        <li><a href="/stories/">סיפורים</a></li>
+        <li><a href="/stories/"{{STORIES_CURRENT}}>סיפורים</a></li>
         <li><a href="/#faq">שאלות ותשובות</a></li>
         <li><a href="/#contact">צור קשר</a></li>
       </ul>
     </nav>
   </header>
+  <!-- /chrome:header -->
   <div class="wave-divider wave-divider--orange" aria-hidden="true"></div>
 
   <main id="story-main">
@@ -319,6 +327,7 @@
     </aside>
   </main>
 
+  <!-- chrome:footer -->
   <footer class="site-footer">
     <div class="container footer-inner">
       <div class="footer-brand">
@@ -356,6 +365,7 @@
       <a href="/app" class="footer-staff-login" rel="nofollow">כניסת צוות</a>
     </div>
   </footer>
+  <!-- /chrome:footer -->
 
   <a class="wa-float"
      href="https://wa.me/972506669138?text={{URLENCODED_HEBREW_MESSAGE}}"

@@ -55,9 +55,16 @@ Answer-first content pages, one per query cluster — plan: [docs/plans/content-
   `[مفقود: ...]`. **No prices anywhere in the repo** — inquiry by WhatsApp only.
 - **Story pages load `js/stories.js`, never `js/app.js`** (one URL per language vs. client-side swap;
   `app.js` would overwrite their SEO metadata). Asset paths are root-absolute.
-- **`sitemap.xml` and both hubs are generated:** `node scripts/gen-stories-index.mjs` (edit
-  `stories/_hub*.html`, never `stories/index.html`). CI runs `--check`; the generator enforces the
-  twin rule and skips `noindex` pages.
+- **`sitemap.xml`, both hubs and every page's chrome are generated:** `node scripts/gen-stories-index.mjs`
+  (edit `stories/_hub*.html`, never `stories/index.html`). It also **stamps** the
+  `chrome:header` / `chrome:footer` regions of every story page and both hubs from
+  `_template*.html` — a nav or footer change is one template edit per language
+  ([ADR 0049](docs/decisions/0049-story-chrome-is-generated-and-a-pair-merges-complete.md)). CI runs
+  `--check`; the generator enforces the twin rule, refuses leftover placeholders and missing
+  story images, and skips `noindex` pages.
+- **Writing a page = the `story-author` skill** (brief → HE + AR pair, gap list, images via
+  `scripts/story-images.sh` from the gitignored `media/` intake). No page goes to PR with a
+  `[חסר]` marker; the Arabic needs a native reader's sign-off before merge.
 
 ### Platform (`app-src/`, served at `/app`)
 - **Stack:** Vite + React + TypeScript + react-router. Dev needs **Node 22** and the **local Supabase
@@ -345,7 +352,8 @@ line, so a bare `Bash(git log *)` splits into three tokens and the rule silently
 - **`.claude/skills/` and `.claude/settings.json` are versioned with the repo** (the gate depends on
   `verify`; the settings file is the committed permission policy). Skills: engineering — `verify`,
   `production-query`, `bluebox-*`; product — `product-context`, `feature-spec`, `idea-capture`,
-  `weekly-review`, `feedback-triage`, `quarterly-review`; monthly `obs-best-practices`. Each ships a
+  `weekly-review`, `feedback-triage`, `quarterly-review`; content — `story-author`; monthly
+  `obs-best-practices`. Each ships a
   3-case `EVALS.md`, run at the quarterly ceremony audit. `.claude/settings.local.json` and other
   agent state stay untracked. Also ignored: `.DS_Store`, `node_modules/`, `app-src/dist/`, `.env*`, raw source media.
 - `tests/` holds Dynatrace bizevent test harnesses (open in a browser), not a unit-test suite.
