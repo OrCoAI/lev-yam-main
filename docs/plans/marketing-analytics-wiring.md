@@ -163,6 +163,11 @@ runs; the GA4 key-event mark and the custom dimension are console toggles the ow
   and implements `$ENV`, and `head`/`tail`/`cut`/`sort` read `/proc/self/environ`. The deny
   removes the obvious paths only. Pre-existing in all three report jobs; the workflow's threat-model
   comment now says so plainly instead of overstating it.
+- 2026-09-22 · `agent-report.yml` pins `actions/checkout` and `anthropics/claude-code-action` to
+  commit SHAs (owner's call at the gate): both run upstream of `GOOGLE_SA_KEY` — checkout supplies
+  the script that receives it — and a tag can be moved. Dependabot's github-actions ecosystem keeps
+  them current. **The repo's other workflows still use tags**; making that consistent is a
+  follow-up, not a blocker, since none of them holds a long-lived third-party credential.
 - **Raised, not fixed (owner's call):** (0) **the report agent can read its own environment**
   (above) — closing it means taking `gh issue create` off the agent and having a post-agent step
   publish what it wrote, across all three report jobs: a harness initiative, not part of this one,

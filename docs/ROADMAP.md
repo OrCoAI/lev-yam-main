@@ -520,6 +520,17 @@ proposal — the owner reorders by editing this list.*
       (owner's addition) → *owner hours per data task*
 - [ ] **13. Harness smalls** — shared `build-app.sh`, CI double-run dedupe, decision graph
       (from `docs/ideas.md`) → *CI minutes; context-load time*
+- [ ] **14. Take `gh issue create` off the report agents** *(added 2026-09-22 from item 1's security
+      review)* — the three report jobs deny `env`/`printenv`/`/proc`/`jq`/`awk`/`find`, but a
+      bash-capable agent holding a **public** write still reads its own environment: the shell
+      expands `$VAR` in any *allowed* command's arguments (`gh issue create --body
+      "$CLAUDE_CODE_OAUTH_TOKEN"` uses no denied binary), `gh`'s own `--jq` is gojq and implements
+      `$ENV`, and `head`/`tail`/`cut`/`sort` read `/proc/self/environ`. **No deny list can close
+      this** — the agent must write the report to a file and a post-agent step publish it, so the
+      agent never holds the write. Touches all three report workflows + `agent-report.yml`
+      (Tier A, own gate run). Not urgent only because the repo has one write account; `GOOGLE_SA_KEY`
+      is *not* exposed this way (no agent step names it) →
+      *no credential reachable from agent-authored text*
 - **Out this quarter:** English stories (`/stories/en/`) — reserved, not built.
 
 ## Phase 2 — What's happening: bookings & events *(internal half deferred by the Q4 mandate)*

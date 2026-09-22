@@ -106,7 +106,10 @@ jobs:
     steps:
       # fetch-depth 0: every one of these reports reads merge history over a
       # period, which a shallow clone does not contain.
-      - uses: actions/checkout@v7
+      # Pinned to commit SHAs, not tags: these two run upstream of `GOOGLE_SA_KEY`
+      # (checkout supplies the very script that receives it), and a tag can be moved.
+      # Dependabot's github-actions ecosystem keeps the SHAs current.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
@@ -151,7 +154,7 @@ jobs:
         run: node scripts/analytics-snapshot.mjs | tee -a "$GITHUB_STEP_SUMMARY"
 
       - if: steps.key.outputs.ready == 'true'
-        uses: anthropics/claude-code-action@v1
+        uses: anthropics/claude-code-action@cfc3eb22bfed5c26ef66e3223c982af27e4524de # v1
         with:
           claude_code_oauth_token: ${{ secrets.claude_code_oauth_token }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
