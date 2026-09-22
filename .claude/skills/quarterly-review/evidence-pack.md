@@ -10,9 +10,11 @@ Window: the quarter (or since the last review). Every item names its source file
    Gate-2 queue depth over time.
 3. **Monthly digests**: the quarter's `Monthly roadmap review` issues — ranked opportunities
    that recurred, bets validated/contradicted, parking-lot graduations.
-4. **Analytics trajectory**: WhatsApp CTA trend by page (GA4), `/stories/` performance,
-   survey signal. **Dynatrace RUM and bizevents are unavailable** — the home is itself a
-   deferred decision ([ADR 0041](../../../docs/decisions/0041-observability-home-deferred-to-first-quarterly-review.md));
+4. **Analytics trajectory**: the weekly-review issues' Analytics headlines across the quarter
+   (WhatsApp CTA by page, sessions, GSC clicks/impressions/queries) plus the current
+   `.reports/analytics.json` (ADR 0047), `/stories/` performance, survey signal.
+   **Dynatrace RUM and bizevents are unavailable** — the home is itself a deferred decision
+   ([ADR 0045](../../../docs/decisions/0045-observability-home-re-deferred-to-2027-01-review.md));
    say so under "Missing evidence" rather than waiting for it.
 5. **Observability generation**: the monthly `obs-best-practices` compliance tables —
    drifted/superseded items, traffic-threshold status, deprecations. Thin until the home

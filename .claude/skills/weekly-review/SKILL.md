@@ -37,9 +37,10 @@ states its source; a source that is unavailable prints **n/a + why**, never a gu
    flag if any is more than a month overdue.
 6. **Drift check**: PRs and branches in the window that do not reference a roadmap block /
    step / module-log item (queries §2). Report `N of M off-roadmap` and name them. Target: 0.
-7. **Analytics headline**: GA4 `whatsapp_click` by `page_slug` for the window if the owner
-   pasted/exported it; Dynatrace bizevents via `dtctl query` on the observability home once it
-   exists (ADR 0038); else `n/a — observability home pending`.
+7. **Analytics headline**: from `.reports/analytics.json` (queries §7) — sessions,
+   `whatsapp_click` total and top 3 pages, GSC clicks/impressions and top 3 queries, each with
+   the delta against the trailing 28-day weekly average; a source with an `error` field prints
+   `n/a — <reason>`, never a guess and never another source.
 8. **Alerts & problems**: open/closed Davis problems in the window (queries §3) and the
    Bluebox Routine's findings (`bluebox ask`, queries §4). Alerts stay inside the platforms by
    decision (ADR 0018) — this line is the weekly eyes. If it proves too slow, that is the

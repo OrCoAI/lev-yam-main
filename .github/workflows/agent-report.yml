@@ -41,9 +41,20 @@ name: agent report
 # What is still NOT protected is the runner and its network. These jobs read
 # public issue text, so treat every word of it as hostile. The one write they hold
 # — `gh issue create/comment` into a PUBLIC repo — is also an exfiltration path for
-# anything the agent can read, which is why the process environment (/proc, env,
-# printenv) is denied explicitly. That list is a guardrail against the obvious,
-# not a proof; the prompt's hard rule is the other layer.
+# anything the agent can read. `env`, `printenv`, `/proc` and (added 2026-09-22) `jq`,
+# `awk` and `find` are denied because each reads the environment directly.
+#
+# Be clear about what that does NOT achieve. A bash-capable agent holding a public
+# write can still read its own environment: the shell expands `$VAR` in the arguments
+# of any ALLOWED command (`gh issue create --body "$CLAUDE_CODE_OAUTH_TOKEN"` needs no
+# denied binary at all), `gh`'s own `--jq` is gojq and implements `$ENV`, and
+# `head`/`tail`/`cut`/`sort` read `/proc/self/environ` as happily as `cat` does.
+# The deny list removes the obvious paths and nothing more; it is not a boundary, and
+# extending it cannot make it one. The real boundaries are: the credential is not in
+# the agent's environment (this is why `GOOGLE_SA_KEY` is named by ONE plain step and
+# never by the agent step), `permissions: contents: read`, and the prompt's hard rule.
+# Closing the class properly means taking `gh issue create` off the agent and having a
+# post-agent step publish what it wrote — an open decision, not a done thing.
 
 on:
   workflow_call:
@@ -74,6 +85,10 @@ on:
       # A Claude subscription token from `claude setup-token`, not an API key (ADR 0042).
       claude_code_oauth_token:
         required: false
+      # A Google service-account JSON key, Viewer on the GA4 + Search Console properties
+      # only (ADR 0047). Rotated at the 2027-01-01 review.
+      google_sa_key:
+        required: false
 
 permissions:
   contents: read
@@ -91,7 +106,10 @@ jobs:
     steps:
       # fetch-depth 0: every one of these reports reads merge history over a
       # period, which a shallow clone does not contain.
-      - uses: actions/checkout@v7
+      # Pinned to commit SHAs, not tags: these two run upstream of `GOOGLE_SA_KEY`
+      # (checkout supplies the very script that receives it), and a tag can be moved.
+      # Dependabot's github-actions ecosystem keeps the SHAs current.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
@@ -118,8 +136,25 @@ jobs:
             echo 'ready=true' >> "$GITHUB_OUTPUT"
           fi
 
+      # GA4 + Search Console snapshot (ADR 0047) — the ONLY step that names
+      # `google_sa_key`: GitHub exposes a secret to the steps that reference it, so the
+      # agent below never has it in its environment and just Reads the file. Read-only
+      # against Google; exits 0 on every error with the reason in the file, so a Google
+      # hiccup costs a `n/a` line, not the report. `node` is the runner's (>= 18 is
+      # enough), not the agent's — Bash(node *) stays denied below.
+      # `shell: bash` for pipefail — without it the pipe hides a non-zero exit and a
+      # script that crashed outright would look like a clean run with no numbers.
+      # continue-on-error keeps that visible (a red step) without costing the report.
+      - name: Analytics snapshot (GA4 + Search Console)
+        if: steps.key.outputs.ready == 'true'
+        continue-on-error: true
+        shell: bash
+        env:
+          GOOGLE_SA_KEY: ${{ secrets.google_sa_key }}
+        run: node scripts/analytics-snapshot.mjs | tee -a "$GITHUB_STEP_SUMMARY"
+
       - if: steps.key.outputs.ready == 'true'
-        uses: anthropics/claude-code-action@v1
+        uses: anthropics/claude-code-action@cfc3eb22bfed5c26ef66e3223c982af27e4524de # v1
         with:
           claude_code_oauth_token: ${{ secrets.claude_code_oauth_token }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -132,7 +167,7 @@ jobs:
             --model claude-sonnet-5
             --max-turns ${{ inputs.max_turns }}
             --allowedTools "${{ inputs.allowed_tools }}"
-            --disallowedTools "Read(/proc/**),Read(/etc/**),Read(~/.claude/**),Bash(env),Bash(env *),Bash(printenv),Bash(printenv *),Bash(cat /proc/*),Bash(grep * /proc/*),Bash(set),Bash(export),Bash(node *),Bash(npx *),Bash(npm *),Bash(python3 *),Bash(python *),Bash(deno *),Bash(curl *),Bash(wget *),Bash(nc *),Bash(ssh *),Bash(eval *),Bash(git push *),Bash(gh api *),Bash(gh pr merge *),Bash(gh secret *),Bash(gh workflow *),Bash(supabase *),Bash(dtctl *),Bash(bluebox *),Edit,Write,NotebookEdit,WebFetch,WebSearch"
+            --disallowedTools "Read(/proc/**),Read(/etc/**),Read(~/.claude/**),Bash(env),Bash(env *),Bash(printenv),Bash(printenv *),Bash(cat /proc/*),Bash(grep * /proc/*),Bash(set),Bash(export),Bash(node *),Bash(npx *),Bash(npm *),Bash(python3 *),Bash(python *),Bash(deno *),Bash(curl *),Bash(wget *),Bash(nc *),Bash(ssh *),Bash(eval *),Bash(git push *),Bash(gh api *),Bash(gh pr merge *),Bash(gh secret *),Bash(gh workflow *),Bash(supabase *),Bash(dtctl *),Bash(bluebox *),Bash(jq *),Bash(awk *),Bash(find *),Edit,Write,NotebookEdit,WebFetch,WebSearch"
         env:
           # issues:write + contents:read only — the narrowest token that can still
           # open the report issue.
