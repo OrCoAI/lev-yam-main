@@ -490,11 +490,13 @@ venue and what it gives to people."** Each line is its own initiative through `f
 Outcome metric and a check date (ADR 0019); one spec per session. The order is the review's
 proposal — the owner reorders by editing this list.*
 
-- [ ] **1. Analytics wiring** — GA4 `whatsapp_click` as a key event + GA4 Data API + Search Console
+- [x] **1. Analytics wiring** — GA4 `whatsapp_click` as a key event + GA4 Data API + Search Console
       feeding the `weekly-review` analytics headline through a workflow-side snapshot the agent only
       reads → *every other outcome becomes measurable*. **Kicked off 2026-09-22:**
       [plans/marketing-analytics-wiring.md](plans/marketing-analytics-wiring.md), check date 2026-10-19.
       Ahrefs/Semrush parked as a spend decision ([ADR 0047](decisions/0047-analytics-wiring-ga4-and-gsc-only-public-numbers.md)).
+      **Shipped 2026-09-22 (PR #73); close-out in the plan. Outcome check due 2026-10-19**, counted
+      from the first scheduled run after the merge.
 - [ ] **2. Story pages at cadence + the authoring tool** — a story pair (HE + AR) from a brief with
       chrome, twin, hub and sitemap handled; `FACTS.md` gaps filled as pages need them → *organic
       sessions and `whatsapp_click` by `page_slug`*
@@ -624,7 +626,7 @@ strategy driving it is private and lives outside the repo.*
 - [ ] Fill the `[חסר]` markers in `FACTS.md` — seasonality (Nimer's fishing calendar,
       needs Nimer), plus whatever the first content sessions surface as missing
       *(→ Q4 mandate item 2, as pages need them)*
-- [ ] Mark `whatsapp_click` as a key event in the GA4 UI (console-side, not repo)
+- [x] Mark `whatsapp_click` as a key event in the GA4 UI (console-side, not repo) *(done 2026-09-22)*
       *(→ Q4 mandate item 1, [plans/marketing-analytics-wiring.md](plans/marketing-analytics-wiring.md) scope (a))*
 - [ ] **Regenerate `CLAUDE_CODE_OAUTH_TOKEN` at the 2027-01-01 quarterly review** — the agent workflows run
       on the owner's subscription token ([ADR 0042](decisions/0042-agent-workflows-run-on-the-subscription-token.md));

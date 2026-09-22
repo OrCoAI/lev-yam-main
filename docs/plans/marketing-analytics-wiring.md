@@ -208,7 +208,43 @@ the Data API answers the server half on its own schedule.
 
 ## Close-out
 
-*(appended when done — CLAUDE.md "Roadmap item close-out")*
+*2026-09-22 — shipped in [PR #73](https://github.com/OrCoAI/lev-yam-main/pull/73).*
+
+**What shipped.** `scripts/analytics-snapshot.mjs` (zero dependencies, read-only) runs as a plain
+step in `agent-report.yml` before the agent and is the only step naming `GOOGLE_SA_KEY`; the agent
+reads `.reports/analytics.json`. The `weekly-review` skill turns it into the Analytics headline,
+and `feedback-triage` / `quarterly-review` read the same file. Proven in CI, not just locally: the
+acceptance dispatch produced a real headline where every prior report said `n/a`.
+
+**Console / infrastructure applied** (owner, verified): GCP project `lev-yam-analytics` with the
+GA4 Data API and Search Console API enabled; service account `levyam-reports@` holding **Viewer**
+on the GA4 property and **Restricted** on `sc-domain:levyam.com`; `GOOGLE_SA_KEY` repo secret;
+`whatsapp_click` marked a key event; `page_slug` registered as an event-scoped custom dimension.
+The dimension and key event were created through the Admin API under a **temporary Editor grant,
+since reverted** — the revert was verified by confirming a write now returns 403, not by assertion.
+
+**Schema / permissions:** none. No Supabase surface.
+
+**Decided on the way** (full list in *Decisions made on the way*): sources are GA4 + GSC only,
+Ahrefs/Semrush parked as a spend decision, and traffic numbers may appear in the public weekly
+issue — [ADR 0047](../decisions/0047-analytics-wiring-ga4-and-gsc-only-public-numbers.md). The
+gate's findings became a second decision: the report agents' deny list cannot stop an agent
+reading its own environment, which produced roadmap item 14 and
+[ADR 0048](../decisions/0048-report-agents-hold-no-write-and-actions-are-sha-pinned.md).
+
+**Left out, deliberately:** Ahrefs/Semrush data, Meta Insights, Dynatrace (ADR 0045), any second
+hand-written GA4 event (ADR 0006), dashboards, and archiving the snapshot — the weekly issues are
+the time series.
+
+**Alignment.** *VISION:* serves the **Join** circle — being found, understood and contacted is what
+this quarter measures — and honours P4 (public by default) by putting the numbers in an open issue.
+No principle is strained. *ARCHITECTURE:* invariants 1, 2, 4, 6, 7 are untouched (no DB, no browser
+key); **3 holds** — the service-account key lives only in a repo secret and git-ignored `.secrets/`,
+and aggregate traffic counts are not PII, prices or customer data, with Search Console's own
+anonymisation threshold suppressing rare queries; 5 is n/a (no user-facing text); 8 is satisfied by
+this plan and the roadmap tick. **No drift.**
+
+**Discovered follow-ups** are listed above; item 14 shipped immediately at the owner's direction.
 
 ## Outcome check
 
