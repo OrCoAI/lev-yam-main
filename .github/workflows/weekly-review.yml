@@ -28,14 +28,23 @@ jobs:
       google_sa_key: ${{ secrets.GOOGLE_SA_KEY }}
     with:
       max_turns: '120'
-      allowed_tools: Read,Glob,Grep,Bash(git log *),Bash(git diff *),Bash(git show *),Bash(gh pr list *),Bash(gh pr view *),Bash(gh issue list *),Bash(gh issue view *),Bash(gh issue create *),Bash(gh issue comment *),Bash(gh run list *),Bash(date *),Bash(grep *),Bash(wc *),Bash(sort *),Bash(uniq *),Bash(head *),Bash(tail *),Bash(cut *),Bash(ls *)
+      label: weekly-review
+      allowed_tools: Read,Glob,Grep,Write,Bash(git log *),Bash(git diff *),Bash(git show *),Bash(gh pr list *),Bash(gh pr view *),Bash(gh issue list *),Bash(gh issue view *),Bash(gh run list *),Bash(date *),Bash(grep *),Bash(wc *),Bash(sort *),Bash(uniq *),Bash(head *),Bash(tail *),Bash(cut *),Bash(ls *)
       prompt: |
-        Run the `weekly-review` skill for the week that just ended and deliver its report
-        as a new GitHub issue in this repository.
+        Run the `weekly-review` skill for the week that just ended and deliver its report.
 
-        - Title exactly: `Weekly review <ISO year>-W<ISO week number>`, e.g. `Weekly review 2026-W38`.
+        Write the finished report to `report.md` in the repository root. Its FIRST line must
+        be `# <exact title>` and everything after it is the issue body. A later step
+        publishes that file, labels it and handles the duplicate case — **you do not open
+        or comment on any issue, and you no longer can.** Write nothing else.
+
+        - Title line exactly: `# Weekly review <ISO year>-W<ISO week number>`, e.g.
+          `# Weekly review 2026-W38`. Do not reason about which week it is — compute it, so a
+          manual run mid-week produces the same title the Sunday schedule would have:
+          `date -u -d "-$(date -u +%w) days" +%G-W%V` (the ISO week of the most recent Sunday,
+          which is today when today is Sunday). Issues #70 and #74 are both live because this
+          was left to judgement.
         - Body: the report the skill produces, in full, unchanged.
-        - Label it `weekly-review`. Do not create labels.
         - Every section of the skill's template must be present, including the
           "Alerts & problems" and "Harness health" lines. Where a source is unavailable,
           say so explicitly on that line — never omit the line, never fill it with a guess.
@@ -54,8 +63,4 @@ jobs:
         `bluebox ask`): **no dtctl or bluebox session exists in CI** — write `n/a` with that reason on
         those lines and do not attempt the commands; each attempt is a denied turn.
 
-        Before opening the issue, run `gh issue list --state all --search "<exact title>"`. If an
-        issue with that exact title already exists, post the report as a comment on it instead of
-        opening a duplicate, and say so in the first line.
-
-        This is a report: open the issue and change nothing else.
+        This is a report: write `report.md` and change nothing else.

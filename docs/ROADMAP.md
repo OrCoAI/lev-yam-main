@@ -515,23 +515,26 @@ proposal — the owner reorders by editing this list.*
       tested; prereq H4 done) → *event inquiries*
 - [ ] **9. Backlink programme** — tourism, food/travel, Arab-society media → *referring domains*
 - [ ] **10. Paid test** — a small Meta/Google campaign against one or two pages → *cost per WhatsApp
-      conversation*
+      conversation*. **Prerequisite, owner 2026-09-22:** before spending anything, prove the paid
+      path is connected end to end — UTM tagging on every ad URL, the campaign landing in GA4 as
+      `Paid Social` / `Paid Search` (not `Unassigned`), Meta Pixel `Contact` firing, and
+      `whatsapp_click` attributable to the campaign by `page_slug` *and* source. Evidence this is
+      not theoretical: a Paid Social campaign ran and stopped inside the trailing window on
+      2026-09-22 (43 sessions → 0, ~66% of the week-over-week drop) and nothing in the system
+      linked the spend to the clicks it bought — the weekly report could show the fall but not
+      the cost per conversation, which is exactly this item's metric.
 - [ ] **11. Content automation** — `@claude` drafts story twins from a brief issue, gated on the
       owner's tone + facts review → *pages per week*
 - [ ] **12. Platform modules as MCP** — agents work on platform data through RLS-scoped access
       (owner's addition) → *owner hours per data task*
 - [ ] **13. Harness smalls** — shared `build-app.sh`, CI double-run dedupe, decision graph
       (from `docs/ideas.md`) → *CI minutes; context-load time*
-- [ ] **14. Take `gh issue create` off the report agents** *(added 2026-09-22 from item 1's security
-      review)* — the three report jobs deny `env`/`printenv`/`/proc`/`jq`/`awk`/`find`, but a
-      bash-capable agent holding a **public** write still reads its own environment: the shell
-      expands `$VAR` in any *allowed* command's arguments (`gh issue create --body
-      "$CLAUDE_CODE_OAUTH_TOKEN"` uses no denied binary), `gh`'s own `--jq` is gojq and implements
-      `$ENV`, and `head`/`tail`/`cut`/`sort` read `/proc/self/environ`. **No deny list can close
-      this** — the agent must write the report to a file and a post-agent step publish it, so the
-      agent never holds the write. Touches all three report workflows + `agent-report.yml`
-      (Tier A, own gate run). Not urgent only because the repo has one write account; `GOOGLE_SA_KEY`
-      is *not* exposed this way (no agent step names it) →
+- [x] **14. Take the public write off the report agents** — *done 2026-09-22,
+      [ADR 0048](decisions/0048-report-agents-hold-no-write-and-actions-are-sha-pinned.md).* The
+      agent writes `report.md` and a deterministic step publishes it, withholding the whole report
+      if a secret's value appears in it; the `gh` write family, `.git/` and the runner's file
+      commands are closed too, since a bash-capable agent reads its own environment whatever is
+      denied. Every third-party action SHA-pinned (7 actions, 7 of the 10 workflow files). Raised by item 1's security review →
       *no credential reachable from agent-authored text*
 - **Out this quarter:** English stories (`/stories/en/`) — reserved, not built.
 
