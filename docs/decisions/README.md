@@ -75,3 +75,7 @@ implementation choices stay in their plan files; an ADR is for a decision that c
 - [0040 — G5's outcome-metric field ships ahead of H9 Phase 5, carrying Phase 5's telemetry bullet with it](0040-g5-ships-ahead-of-h9-phase-5.md) — 2026-09-21
 - [0041 — The observability home is deferred to the first quarterly review, and the plan stops waiting on it](0041-observability-home-deferred-to-first-quarterly-review.md) — 2026-09-21
 - [0042 — The agent workflows authenticate with the owner's Claude subscription token, not API credits](0042-agent-workflows-run-on-the-subscription-token.md) — 2026-09-21
+- [0043 — First quarterly review (2026-Q3): every vision principle and every architecture invariant holds; "Where we are today" rewritten](0043-q3-2026-review-vision-and-invariants-hold.md) — 2026-09-22
+- [0044 — ADR 0040 confirmed; the Operating-system block closes on a reduced Part 4, and Phase 2 opens](0044-adr-0040-confirmed-and-part-4-reduced-closure.md) — 2026-09-22
+- [0045 — The observability home is re-deferred to the 2027-01-01 quarterly review; the dated re-check list for that review](0045-observability-home-re-deferred-to-2027-01-review.md) — 2026-09-22
+- [0046 — Phase 2 mandate for 2026-Q4: the marketing quarter — every effort goes to reaching the world, measured first](0046-q4-2026-mandate-marketing-quarter.md) — 2026-09-22

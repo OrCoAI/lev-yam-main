@@ -117,12 +117,6 @@ touching schema, permissions, or the events/finance spine graduates to a `docs/p
 
 ## Open feature ideas
 
-- **Close open self-signup on prod** (surfaced by the 2026-07-30 security review):
-  `disable_signup` is `false`, so anyone with the public anon key can create an
-  unconfirmed account, even though the platform is invite-only and ships no signup UI.
-  Harmless alone (no roles ⇒ empty launcher, RLS denies everything), but it's the one
-  scenario where `confirm_email` unlocks a password the platform never verified anyone
-  controls. One dashboard toggle.
 - **Confirm the address at invite time** (`admin-invite`), so no account is ever created
   in the sign-in-blocked state — the invite itself is the owner's vouch, and "invited but
   never accepted" is a normal steady state (links expire, land in spam). Raised by the
@@ -141,6 +135,11 @@ touching schema, permissions, or the events/finance spine graduates to a `docs/p
 
 ## Done
 
+- **2026-08-12** — Close open self-signup on prod: `disable_signup = true` on prod + staging,
+  probe-verified (`422 signup_disabled`), asserted by the grant audit on every deploy
+  ([plans/phase1-closeout.md](../plans/phase1-closeout.md) §D). *Moved here 2026-09-22 — the
+  line sat under Open feature ideas for six weeks after it shipped; found by the first quarterly
+  review's tracker check (ADR 0043, invariant 8).*
 - **2026-07-20** — UX pass + admin capabilities (full kickoff — plan + close-out:
   [plans/users-ux-admin-caps.md](../plans/users-ux-admin-caps.md)): users list →
   per-user **accordion** (all per-user data + actions in one place; by-user

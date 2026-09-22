@@ -50,15 +50,25 @@ is a later decision, not a launch requirement.
    working while their replacements are built. Cut-over only after parity is proven on real
    service days.
 
-## Where we are today (July 2026)
+## Where we are today (September 2026 — rewritten at the first quarterly review)
 
-- **Live:** marketing site (levyam.com, HE/AR), standalone POS (`pos.html`, feature-complete:
-  billing, tips/discounts, combos, kitchen pipeline, day reports, expenses), community survey,
-  and a quotes & contracts manager (separate local app at `~/lev-yam-quotes` — quote → contract
-  → signed → confirmed event with prep checklist; the platform's **first** module migration).
-- **Platform `/app` (live):** Vite + React + TS shell, Supabase auth + passkeys,
-  role → module → action RBAC (`core` schema), Users admin module, Finance module.
-- **The gap:** POS is outside the platform; bookings live in WhatsApp; the community has no
-  presence in the app at all yet; nothing is public-facing beyond marketing.
+- **Live, public:** the marketing site (levyam.com, HE/AR) with a `/stories/` answer-first
+  content section (template, bilingual hub, generated sitemap, `facts.txt` / `llms.txt`) —
+  Phase 0 of the organic-reach track. Conversion is measured by GA4 + Meta on the WhatsApp CTA.
+- **Live, platform `/app`:** one shell, Supabase auth + passkeys, role → module → action RBAC
+  enforced in Postgres, four modules — **Users** (invite, lifecycle, custom roles, break-glass),
+  **Finance** (entries, expected payments, categories-as-data, reconciliation, owner override,
+  transfers, audit log), **Quotes** (migrated; documents rendered from the DB), **POS** (migrated
+  and cut over 2026-07-15; `pos.html` is a redirect — menu-as-data, options, split payments,
+  kitchen pipeline, day lifecycle posting into finance). The events and money **spines** are in
+  the schema; the events module row is seeded but disabled.
+- **Live, machinery:** three tiers (local · `lev-yam-staging` · prod) with a grant audit on every
+  deploy; risk tiers, a decision log (46 ADRs), product skills, and the weekly / monthly /
+  quarterly automations — the company-of-one operating system ([ADR 0021](decisions/0021-operating-cadence-quarterly-gate.md)).
+- **Not live:** the observability home (deferred, [ADR 0045](decisions/0045-observability-home-re-deferred-to-2027-01-review.md));
+  bookings still live in WhatsApp; the community has no presence in the app; nothing on the
+  platform is public-facing yet.
+- **The quarter ahead (2026-Q4):** marketing — reach the world, measured first
+  ([ADR 0046](decisions/0046-q4-2026-mandate-marketing-quarter.md)).
 
 The path from here to the dream is [ROADMAP.md](ROADMAP.md).

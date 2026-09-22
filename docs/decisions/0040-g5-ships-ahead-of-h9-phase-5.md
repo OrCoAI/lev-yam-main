@@ -1,7 +1,7 @@
 # 0040 — G5's outcome-metric field ships ahead of H9 Phase 5, carrying Phase 5's telemetry bullet with it
 
 - **Date:** 2026-09-21
-- **Status:** accepted — amends 0019's ownership split; **flagged for owner confirmation** (see Context)
+- **Status:** accepted — amends 0019's ownership split; **confirmed by the owner 2026-09-22** at the first quarterly review ([ADR 0044](0044-adr-0040-confirmed-and-part-4-reduced-closure.md))
 - **Decided by:** Claude Code (Step 11 partial), raised to the owner in the PR rather than settled silently
 - **Source:** [ADR 0019](0019-outcome-metrics-validation-loop.md) Consequences; [ADR 0038](0038-new-dedicated-dynatrace-environment.md)
 

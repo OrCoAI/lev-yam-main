@@ -1,7 +1,7 @@
 # 0041 — The observability home is deferred to the first quarterly review, and the plan stops waiting on it
 
 - **Date:** 2026-09-21
-- **Status:** accepted — defers the open half of [0038](0038-new-dedicated-dynatrace-environment.md)
+- **Status:** accepted — defers the open half of [0038](0038-new-dedicated-dynatrace-environment.md); **the review ran 2026-09-22 and re-deferred it, dated, in [ADR 0045](0045-observability-home-re-deferred-to-2027-01-review.md)**
 - **Decided by:** owner (2026-09-21)
 - **Source:** master plan blocker B1; ADR 0038's open action
 

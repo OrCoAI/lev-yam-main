@@ -1,7 +1,7 @@
 # 0038 — A new dedicated Dynatrace environment becomes the observability home; the sprint environment is gone
 
 - **Date:** 2026-09-14
-- **Status:** accepted — supersedes ADR 0029 (observability home stays `pzh8968h.sprint`); amends ADRs 0030 and 0031 (their targets move with the home). **Standing the environment up is deferred — first quarterly review** ([ADR 0041](0041-observability-home-deferred-to-first-quarterly-review.md))
+- **Status:** accepted — supersedes ADR 0029 (observability home stays `pzh8968h.sprint`); amends ADRs 0030 and 0031 (their targets move with the home). **Standing the environment up is deferred — 2027-01-01 quarterly review** ([ADR 0041](0041-observability-home-deferred-to-first-quarterly-review.md) → re-deferred with reason in [ADR 0045](0045-observability-home-re-deferred-to-2027-01-review.md))
 - **Decided by:** owner (closed questions at the M0.2 capability check, 2026-09-09; recorded 2026-09-14)
 - **Source:** master execution plan M0.2 run; `docs/plans/observability-best-practices-adoption.md` M0 record
 
