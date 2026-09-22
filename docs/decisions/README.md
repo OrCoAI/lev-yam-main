@@ -61,12 +61,24 @@ implementation choices stay in their plan files; an ADR is for a decision that c
 - [0026 — New RUM Experience frontends for both surfaces](0026-new-rum-experience-frontends.md) — 2026-08-13
 - [0027 — Dev-loop and access hardening](0027-dev-loop-hardening.md) — 2026-08-13
 - [0028 — Query hygiene codified as defaults, not constraints](0028-query-hygiene-codified.md) — 2026-08-13
-- [0029 — Production observability home stays; no tenant migration](0029-observability-home-stays.md) — 2026-08-13
-- [0030 — Bluebox-env write access is Claude Code's task](0030-bluebox-env-write-access.md) — 2026-08-13
-- [0031 — Capability confirmation is in-flow before building SRG](0031-capability-confirmation-in-flow.md) — 2026-08-13
+- [0029 — Production observability home stays; no tenant migration](0029-observability-home-stays.md) — 2026-08-13 *(superseded)*
+- [0030 — Bluebox-env write access is Claude Code's task](0030-bluebox-env-write-access.md) — 2026-08-13 *(amended — see status)*
+- [0031 — Capability confirmation is in-flow before building SRG](0031-capability-confirmation-in-flow.md) — 2026-08-13 *(amended — see status)*
 - [0032 — H9 (observability coverage) removed from the roadmap](0032-h9-observability-coverage-removed-from-roadmap.md) — 2026-08-26 *(superseded)*
 - [0033 — Overpaying an expectation is allowed with a stated reason stamped into the entry note](0033-overpay-allowed-with-stated-reason.md) — 2026-08-26
 - [0034 — Harness-engineering alignment](0034-harness-engineering-alignment.md) — 2026-09-09
 - [0035 — H9 reinstated through the master execution plan; an "Operating system" roadmap block gates Phase 2](0035-h9-reinstated-operating-system-block.md) — 2026-09-09
 - [0036 — Agent-instruction files are one "leash" class, all Tier A](0036-agent-instruction-files-are-the-leash.md) — 2026-09-09
 - [0037 — ADR 0020's tooling assumptions corrected at kickoff: oxlint (TypeScript 7 blocks typescript-eslint) and the real money-math test target](0037-oxlint-while-typescript-7-blocks-eslint.md) — 2026-09-09
+- [0038 — A new dedicated Dynatrace environment becomes the observability home; the sprint environment is gone](0038-new-dedicated-dynatrace-environment.md) — 2026-09-14
+- [0039 — Dependabot auto-merge covers npm minor/patch only; majors and GitHub-Actions bumps keep a human](0039-dependabot-auto-merge-scope.md) — 2026-09-21
+- [0040 — G5's outcome-metric field ships ahead of H9 Phase 5, carrying Phase 5's telemetry bullet with it](0040-g5-ships-ahead-of-h9-phase-5.md) — 2026-09-21
+- [0041 — The observability home is deferred to the first quarterly review, and the plan stops waiting on it](0041-observability-home-deferred-to-first-quarterly-review.md) — 2026-09-21
+- [0042 — The agent workflows authenticate with the owner's Claude subscription token, not API credits](0042-agent-workflows-run-on-the-subscription-token.md) — 2026-09-21
+- [0043 — First quarterly review (2026-Q3): every vision principle and every architecture invariant holds; "Where we are today" rewritten](0043-q3-2026-review-vision-and-invariants-hold.md) — 2026-09-22
+- [0044 — ADR 0040 confirmed; the Operating-system block closes on a reduced Part 4, and Phase 2 opens](0044-adr-0040-confirmed-and-part-4-reduced-closure.md) — 2026-09-22
+- [0045 — The observability home is re-deferred to the 2027-01-01 quarterly review; the dated re-check list for that review](0045-observability-home-re-deferred-to-2027-01-review.md) — 2026-09-22
+- [0046 — Phase 2 mandate for 2026-Q4: the marketing quarter — every effort goes to reaching the world, measured first](0046-q4-2026-mandate-marketing-quarter.md) — 2026-09-22
+- [0047 — Initiative #1 measures with GA4 + Search Console only; Ahrefs/Semrush are a paid decision; traffic numbers may appear in the public weekly issue](0047-analytics-wiring-ga4-and-gsc-only-public-numbers.md) — 2026-09-22
+- [0048 — The report agents hold no network write: they write a file and a deterministic step publishes it; every third-party action is SHA-pinned](0048-report-agents-hold-no-write-and-actions-are-sha-pinned.md) — 2026-09-22
+- [0049 — Story chrome is generated, not copied; a story pair merges only complete](0049-story-chrome-is-generated-and-a-pair-merges-complete.md) — 2026-09-22

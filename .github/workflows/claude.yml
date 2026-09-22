@@ -1,0 +1,112 @@
+name: claude
+
+# G4.1 (master plan Step 6): the issue→PR path from a phone. The owner files an
+# issue or comments "@claude ..."; the agent works on a branch and opens a PR
+# that goes through the normal gate. This workflow grants no shortcut past it:
+# `main` stays branch-protected (PR + `build` + `tier` required), so anything it
+# produces is still reviewed, and the PR must declare its tier like any other.
+#
+# ── WHO CAN TRIGGER IT ───────────────────────────────────────────────────────
+# Only accounts with WRITE access. The action checks this itself on every issue,
+# PR and comment event and refuses otherwise. The two documented bypasses are
+# `allowed_non_write_users` (which additionally requires a `github_token` input)
+# and `allowed_bots`; both default to empty and both are pinned to "" below, so
+# the default can never drift under this workflow without an explicit edit here.
+#
+# ── THE RESIDUAL RISK, STATED PLAINLY ────────────────────────────────────────
+# This job legitimately needs Write + Edit + a build, and an agent that can write
+# a file and run a build can run code — that is inherent, not a hole to plug. The
+# realistic attack is therefore NOT a stranger triggering it; it is the owner
+# typing "@claude" on an outside contributor's PR or issue whose text carries
+# injected instructions. What that must never reach is a deploy:
+#   - `git push` is denied outright. `deploy-staging.yml` fires on ANY push to
+#     `staging`, and the repo's own .claude/settings.json allows
+#     `Bash(git push origin staging)` for local dev — an allow this job must not
+#     inherit. The action pushes its own working branch through the API, not
+#     through Bash, so denying the command costs nothing here.
+#   - `supabase`, `dtctl`, `gh workflow/secret/api` are denied for the same reason.
+# Note `ask` rules in .claude/settings.json behave as DENY in headless CI —
+# nobody is there to answer — so `Bash(git merge *)` and friends simply fail.
+#
+# `--allowedTools` only skips prompts; it does not restrict, and it is unioned
+# with the settings file. `--disallowedTools` is the half that actually binds
+# here, because deny beats allow. The CLI's --restricted / --tools /
+# --permission-prompts are NOT usable: this action runs the agent SDK, which
+# accepts only --mcp-config, --allowedTools, --disallowedTools, --max-turns,
+# --model and --append-system-prompt. Passing the others killed every run in
+# ~120ms with no error text (found by Step 6's acceptance run).
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  # Required: the action mints its token through GitHub's OIDC endpoint and fails
+  # without it. Unlike the report jobs, `github_token` is deliberately NOT set
+  # here — the action's own app token is what lets a PR it opens trigger ci.yml
+  # and tier.yml (a PR opened with GITHUB_TOKEN starts no workflow runs, which
+  # would leave it with zero checks and unmergeable under branch protection).
+  # Note this is also why `allowed_non_write_users` stays safe at "": that bypass
+  # requires the github_token input to be set, and it is not.
+  id-token: write
+
+concurrency:
+  group: claude-${{ github.event.issue.number || github.event.pull_request.number }}
+
+jobs:
+  claude:
+    # Cheap guard before the runner does any work: without it every comment in a
+    # public repo pays for a checkout + node setup before the action declines.
+    if: |
+      contains(github.event.comment.body, '@claude') ||
+      contains(github.event.issue.body, '@claude')
+    runs-on: ubuntu-latest
+    steps:
+      # Gives the run the repo's CLAUDE.md, docs/decisions/ and .claude/skills/ —
+      # without them the agent would work without the rules it exists to follow.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+          cache-dependency-path: app-src/package-lock.json
+
+      - name: Check the API key is configured
+        id: key
+        env:
+          KEY: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          if [ -z "$KEY" ]; then
+            echo 'CLAUDE_CODE_OAUTH_TOKEN is not set — run `claude setup-token` locally and store the result under Settings → Secrets and variables → Actions. Skipping.' >> "$GITHUB_STEP_SUMMARY"
+            echo 'ready=false' >> "$GITHUB_OUTPUT"
+          else
+            echo 'ready=true' >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.key.outputs.ready == 'true'
+        uses: anthropics/claude-code-action@cfc3eb22bfed5c26ef66e3223c982af27e4524de # v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          trigger_phrase: "@claude"
+          allowed_non_write_users: ""
+          allowed_bots: ""
+          settings: .claude/settings.json
+          use_sticky_comment: true
+          # Every value containing a space stays quoted — claude_args is
+          # shell-tokenized per line (anthropics/claude-code-action#844).
+          claude_args: |
+            --model claude-sonnet-5
+            --max-turns 40
+            --append-system-prompt "When the task is done, open the pull request yourself with gh pr create (base main), with a **Tier:** line in the body as CLAUDE.md requires. Do not stop at a compare link."
+            --allowedTools "Read,Edit,Write,Glob,Grep,Bash(npm ci),Bash(npm run build),Bash(npm run lint),Bash(npm test),Bash(node scripts/*),Bash(node supabase/tests/*),Bash(git add *),Bash(git commit *),Bash(git status),Bash(git diff *),Bash(git log *),Bash(git checkout *),Bash(gh pr view *),Bash(gh pr create *),Bash(gh issue view *),Bash(gh issue comment *)"
+            --disallowedTools "Bash(git push *),Bash(gh pr merge *),Bash(gh api *),Bash(gh secret *),Bash(gh workflow *),Bash(supabase *),Bash(dtctl *),Bash(bluebox *),Bash(curl *),Bash(wget *)"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

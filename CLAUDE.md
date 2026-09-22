@@ -55,9 +55,16 @@ Answer-first content pages, one per query cluster — plan: [docs/plans/content-
   `[مفقود: ...]`. **No prices anywhere in the repo** — inquiry by WhatsApp only.
 - **Story pages load `js/stories.js`, never `js/app.js`** (one URL per language vs. client-side swap;
   `app.js` would overwrite their SEO metadata). Asset paths are root-absolute.
-- **`sitemap.xml` and both hubs are generated:** `node scripts/gen-stories-index.mjs` (edit
-  `stories/_hub*.html`, never `stories/index.html`). CI runs `--check`; the generator enforces the
-  twin rule and skips `noindex` pages.
+- **`sitemap.xml`, both hubs and every page's chrome are generated:** `node scripts/gen-stories-index.mjs`
+  (edit `stories/_hub*.html`, never `stories/index.html`). It also **stamps** the
+  `chrome:header` / `chrome:footer` regions of every story page and both hubs from
+  `_template*.html` — a nav or footer change is one template edit per language
+  ([ADR 0049](docs/decisions/0049-story-chrome-is-generated-and-a-pair-merges-complete.md)). CI runs
+  `--check`; the generator enforces the twin rule, refuses leftover placeholders and missing
+  story images, and skips `noindex` pages.
+- **Writing a page = the `story-author` skill** (brief → HE + AR pair, gap list, images via
+  `scripts/story-images.sh` from the gitignored `media/` intake). No page goes to PR with a
+  `[חסר]` marker; the Arabic needs a native reader's sign-off before merge.
 
 ### Platform (`app-src/`, served at `/app`)
 - **Stack:** Vite + React + TypeScript + react-router. Dev needs **Node 22** and the **local Supabase
@@ -112,8 +119,11 @@ inline whatever its tier), and kickoff alignment follows initiative-vs-bugfix, n
 | **B** | Everything unlisted: module UI files named as exceptions, `index.html`/`js/`/`css/`, `FACTS.md`, `llms.txt`, build scripts, templates, human edits to `package.json` | full gate; Claude's screenshots stay step zero; the human look happens **once, on staging** |
 | **C** | `docs/`, README, tests under `app-src/`, module i18n dictionaries, `img/`+`fonts/`, generated files, `/stories/` content pages (twin rule via the generator), dependabot npm bumps | none — full gate + CI + staging deploy still run; **merge on green**; the merge is reported in the weekly review |
 
-Dependabot's GitHub-Actions bumps touch workflows: the owner adds the Tier-A line to the PR body
-(the `edited` event re-runs the check). Detector/dashboard YAML has no path rule yet — declare B when
+Dependabot needs no declaration: `check-tier.mjs` resolves its PRs to C from the PR author.
+`dependabot-auto-merge.yml` queues auto-merge for **npm minor/patch** only
+([ADR 0039](docs/decisions/0039-dependabot-auto-merge-scope.md)); **npm majors** are merged by
+the owner, and its **GitHub-Actions bumps touch workflows**, so the path floor is A and the owner
+writes that line by hand (the `edited` event re-runs the check). Detector/dashboard YAML has no path rule yet — declare B when
 adding, C when tuning (work order Part 4). **Calibration:** two weeks after tiers land, the owner
 watches Tier-B PRs closely.
 
@@ -126,12 +136,14 @@ extras go in `settings.local.json`.
 
 ## Module work kickoff (MANDATORY for new initiatives)
 
-**Step zero — alignment questions,** question by question (scope, expected outcome, explicit
-out-of-scope, how it serves VISION and fits ARCHITECTURE) until both sides are 100% aligned. No
-artifacts, no code before that. Then, before any code, generate the full set in parallel:
+Run the **`feature-spec` skill** (after `product-context`): it is this section made executable.
+**Step zero — alignment questions,** question by question (scope, expected outcome and its metric,
+explicit out-of-scope, how it serves VISION and fits ARCHITECTURE) until both sides are 100% aligned.
+No artifacts, no code before that. Then, before any code, generate the full set in parallel:
 
-1. **Plan file** `docs/plans/<module>-<initiative>.md`: scope, schema/RLS/permission changes, UI
-   surface, open questions; link it from `docs/ROADMAP.md`.
+1. **Plan file** `docs/plans/<module>-<initiative>.md`: scope, the **Outcome metric** table
+   (ADR 0019), schema/RLS/permission changes, UI surface, open questions; link it from
+   `docs/ROADMAP.md`.
 2. **Roadmap alignment** — it belongs to the current phase, or is added/flagged.
 3. **Architecture invariants check** — permissions DB-first, schema in `supabase/schema/`, money and
    lifecycle through the cross-module spines, bilingual via shell i18n, mobile-first.
@@ -198,6 +210,52 @@ schema/permission changes were applied, what was decided on the way (→ ADRs), 
 resolved first; (3) `docs/ROADMAP.md` is ticked and discovered follow-ups added; (4) the user has seen
 the summary and verdict.
 
+**Outcome check** ([ADR 0019](docs/decisions/0019-outcome-metrics-validation-loop.md)): close-out
+proves the thing was *built*, not that it *worked*. Every plan **from 2026-09-21 onward** names an
+**Outcome metric** at kickoff (`feature-spec`, MODULE-TEMPLATE §0) with a check date of
+ship + 2–4 weeks. On that date the metric's value goes under `## Outcome check` in the plan file
+with a verdict — **worked / did not / cannot tell** — and what it changes. `weekly-review` lists
+checks that have come due; the monthly triage carries the **shipped-but-unvalidated** list, which
+per the operating system must never be deeper than one cycle. Both scope to plans that *have* an
+Outcome metric table — plans closed out before 2026-09-21 predate the rule and are not retrofitted.
+"Cannot tell" is a finding about the instrumentation, not a pass.
+
+## Operating cadence
+
+The rhythm that makes a company of one work at speed ([ADR 0021](docs/decisions/0021-operating-cadence-quarterly-gate.md)).
+Three of the four are automated into a GitHub issue; the owner's time goes only where judgment is
+needed. **The automation is built but not yet live** — it needs the `CLAUDE_CODE_OAUTH_TOKEN` secret
+(master plan blocker B2); until then each job exits clean at its key guard and produces no issue.
+
+| When | What | Who |
+|---|---|---|
+| **Weekly** (Sun) | `weekly-review` — shipped vs the roadmap block, Tier-C merges that auto-shipped, plans missing a close-out, outcome checks now due, drift check, analytics headline, Alerts & problems, Harness health | automated; owner reads |
+| **Monthly** (1st) | `feedback-triage` digest + parking-lot batch + obs-best-practices audit + shipped-but-unvalidated | automated agenda; owner decides |
+| **Quarterly** (1st of Jan/Apr/Jul/Oct) | vision audit, architecture audit, then the one sanctioned divergent brainstorm, then converge | **owner's judgment, never run unattended**; evidence pack assembled for them |
+| **Per initiative** | kickoff alignment (Gate 1) → build → outcome check (Gate 2) | owner at the two gates only |
+
+**The queue-jumper rule:** evidence that a current bet is *wrong* interrupts anything. Nothing else
+does — not a new idea, not a competitor, not an interesting piece of tech. Ideas go to
+`docs/ideas.md` via `idea-capture` and wait for the monthly batch. Interrupting for anything but
+invalidation is how a one-person roadmap becomes a list of half-built things.
+
+**The first quarterly review is the gate into Roadmap Phase 2** (ADR 0021) and doubles as the
+shakedown cruise for this machinery — decision log, tiers, outcome metrics, cadence. Its output
+is the mandate for Phase 2.
+
+### Session hygiene (context-rot defence)
+
+- **One approved spec per session.** Never two initiatives in one context — the second inherits
+  the first's assumptions silently, which is how a bugfix acquires a schema change.
+- **Review and test passes run as subagents** for any diff with a runtime surface, with their own
+  clean context, not in the builder's. Docs-only diffs keep ADR 0003's inline path.
+  A builder reviewing its own work in its own context re-reads its own intent, not the diff.
+  The gate already runs the two reviews concurrently (ADR 0010, for wall-clock); running them as
+  subagents is what gives each its own context.
+- **Compact or restart at natural checkpoints** — after a merge, between gate steps — rather than
+  pushing through to the end of a full window. A session that runs out of context mid-gate loses
+  the findings it had not yet acted on.
+
 ## Deploying
 
 Push to `main` → `.github/workflows/deploy.yml` builds `app-src` → `/app`, assembles the site from the
@@ -209,12 +267,94 @@ included (ARCHITECTURE §6c). Pushing `staging` triggers `deploy-staging.yml` �
 (Cloudflare Pages, noindex, `lev-yam-staging` Supabase); only `main` and `staging` are long-lived.
 `docs/`, `tests/`, `supabase/` are never deployed. One-time setup: [supabase/README.md](supabase/README.md).
 
+## Automations (the night shift)
+
+Five triggers run without a human ([ADR 0039](docs/decisions/0039-dependabot-auto-merge-scope.md),
+work order G4). All of them go through the same rails as a human PR — none is a shortcut past the gate.
+
+| Workflow | Fires | Produces |
+|---|---|---|
+| `claude.yml` | `@claude` on an issue or PR | a branch + PR through the normal gate, tier declared |
+| `weekly-review.yml` | Sun 17:00 UTC | `report.md` → issue `Weekly review YYYY-Www` — the solo product council, incl. **Alerts & problems** (the only weekly eyes Dynatrace/Bluebox get) and **Harness health** |
+| `monthly-triage.yml` | 1st of the month | `report.md` → issue `Monthly roadmap review YYYY-MM` — feedback digest + parking-lot batch + obs-best-practices audit |
+| `quarterly-prep.yml` | 1st of Jan/Apr/Jul/Oct | `report.md` → issue `Quarterly review YYYY-Qn` — evidence pack + agenda checklist. **The review session itself is never run unattended** |
+| `dependabot-auto-merge.yml` | dependabot PRs | the Tier line, and auto-merge for npm minor/patch |
+
+The three report jobs share one reusable worker, `agent-report.yml` (`workflow_call` only) —
+schedule, prompt and tool scope are all that differ. Each caller has `workflow_dispatch`; that
+manual run is the acceptance test. They authenticate with **the owner's Claude subscription token** (`claude setup-token` →
+repo secret `CLAUDE_CODE_OAUTH_TOKEN`), not API credits ([ADR 0042](docs/decisions/0042-agent-workflows-run-on-the-subscription-token.md)); without it they
+log the omission and exit clean rather than failing every night.
+
+**`--allowedTools` is not a restriction** — it only skips the permission prompt, and it is
+*unioned* with whatever the settings files allow. Two consequences the Step 6 security review
+established, both load-bearing:
+
+- **The report jobs must not load `.claude/settings.json`.** That file is written for local dev:
+  `defaultMode: acceptEdits`, `Bash(node *)`, `Bash(python3 *)`. These jobs read public issue
+  text, so inheriting it would hand an issue-reading agent arbitrary code execution next to
+  `CLAUDE_CODE_OAUTH_TOKEN`. `agent-report.yml` **deletes the workspace copy** before the action runs
+  and does not pass `settings:`. Its other layers are `--disallowedTools` (deny beats allow) and
+  `contents: read` + an explicit `github_token`, which pin API calls to the job's own scoped token.
+  **The CLI's `--restricted` / `--tools` / `--permission-prompts` are not usable here.** The action
+  installs Claude Code but drives it *through* the agent SDK, translating `claude_args` into SDK
+  options — so only the documented set survives the translation: `--mcp-config`, `--allowedTools`,
+  `--disallowedTools`, `--max-turns`, `--model`, `--append-system-prompt`. Passing the others killed
+  every run in ~120 ms with `is_error: true` and no error text. Don't reintroduce them.
+- **The report agents hold no write to any public surface** ([ADR 0048](docs/decisions/0048-report-agents-hold-no-write-and-actions-are-sha-pinned.md)).
+  They write `report.md`; a fixed step after them runs `scripts/report-guard.py`, then labels,
+  de-duplicates (`jq --arg`, never a search string built from agent text) and publishes. Say
+  plainly what the deny list does **not** do: `$VAR` expands in any *allowed* command's
+  arguments, `gh --jq` is gojq with `$ENV`, and `head`/`tail`/`cut`/`sort` read
+  `/proc/self/environ` — so a bash-capable agent reads its own environment whatever is denied.
+  The design therefore assumes it may learn a secret and removes every way to send one: the `gh`
+  write family denied, `Write` scoped to `report.md`, `.git/` denied (git runs `diff.external`
+  through the shell on an allowed `git log -p`), and the runner's own file commands —
+  `GITHUB_STEP_SUMMARY`, which renders publicly, plus `GITHUB_ENV`/`PATH`/`OUTPUT` — pointed at
+  `/dev/null` for the agent step, since an allowed command with a redirect reaches them whatever
+  `Write` is scoped to. The guard, which withholds the whole report if a secret's value appears in
+  it, is a loud detector on top of that, not a boundary. **Every third-party action is
+  SHA-pinned** with the version in a trailing comment (7 actions across the 7 workflow files that
+  use one); dependabot keeps them current.
+- **`claude.yml` denies `git push` outright.** It genuinely needs Edit/Write/build, and an agent
+  that can write a file and run a build can run code — inherent, not pluggable. What it must
+  never reach is a deploy: `deploy-staging.yml` fires on *any* push to `staging`, and
+  `.claude/settings.json` allows `Bash(git push origin staging)` for local dev. `--disallowedTools`
+  is what overrides that, since deny beats allow; the action pushes its own branch through the API,
+  so denying the command costs nothing. `supabase`, `dtctl` and `gh api/secret/workflow` are denied
+  for the same reason. It triggers for **write-access accounts only** (`allowed_non_write_users`
+  and `allowed_bots` pinned to `""`).
+
+- **Analytics reach the report jobs as a file, never as a credential:** a pre-agent step in
+  `agent-report.yml` is the only one that names `GOOGLE_SA_KEY`; the agent only `Read`s
+  `.reports/analytics.json` ([ADR 0047](docs/decisions/0047-analytics-wiring-ga4-and-gsc-only-public-numbers.md)).
+
+All five workflows need **`id-token: write`** — the action mints its token through GitHub's OIDC
+endpoint and fails without it. It is not a repo-write grant.
+
+**A skill's `queries.md` and its workflow's `allowed_tools` are one unit.** The weekly report failed
+its first live run because the skill's shell pipelines (`date`, `grep`, `awk`) and its `dtctl` /
+`bluebox` sections were not in the allowlist: each denial costs a turn, and the turn budget ran out
+before the issue was written. Change one, check the other. `max_turns` is a **runaway guard, not a
+budget** — the action fails a job that finishes successfully past the cap, so set it well above the
+real count (observed: weekly 73, monthly 50, quarterly 34).
+
+In `claude_args`, any value containing a space must stay quoted — the action shell-tokenizes each
+line, so a bare `Bash(git log *)` splits into three tokens and the rule silently stops matching
+([claude-code-action#844](https://github.com/anthropics/claude-code-action/issues/844)).
+
 ## Repo housekeeping
 
 - Historical pre-launch records: `docs/archive/` (not a to-do list). Active plans: `docs/plans/`, one
-  per initiative, linked from the roadmap. Decisions: `docs/decisions/`.
+  per initiative, linked from the roadmap. Decisions: `docs/decisions/`. Cross-cutting ideas:
+  `docs/ideas.md` (one dated line each, via the `idea-capture` skill; module ideas stay in
+  `docs/modules/`).
 - **`.claude/skills/` and `.claude/settings.json` are versioned with the repo** (the gate depends on
-  `verify`; the settings file is the committed permission policy); `.claude/settings.local.json` and
-  other agent state stay untracked. Also ignored: `.DS_Store`, `node_modules/`, `app-src/dist/`, `.env*`, raw source media.
+  `verify`; the settings file is the committed permission policy). Skills: engineering — `verify`,
+  `production-query`, `bluebox-*`; product — `product-context`, `feature-spec`, `idea-capture`,
+  `weekly-review`, `feedback-triage`, `quarterly-review`; content — `story-author`; monthly
+  `obs-best-practices`. Each ships a
+  3-case `EVALS.md`, run at the quarterly ceremony audit. `.claude/settings.local.json` and other
+  agent state stay untracked. Also ignored: `.DS_Store`, `node_modules/`, `app-src/dist/`, `.env*`, raw source media.
 - `tests/` holds Dynatrace bizevent test harnesses (open in a browser), not a unit-test suite.
 - `AGENTS.md` at the root is a pointer to this file for other harnesses — never duplicate content there.

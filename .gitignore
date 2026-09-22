@@ -53,6 +53,23 @@ img/hero/*.MOV
 img/hero/*.mov
 img/hero/hero.webm
 
+# Story photo intake (docs/plans/stories-authoring-tool.md) — originals the owner
+# drops for future pages. Never committed, never deployed; only the optimized
+# derivatives under img/stories/<slug>/ ship. The README is the one tracked file.
+media/*
+!media/README.md
+
 # Logs
 *.log
 app-src/tsconfig.tsbuildinfo
+
+# Report-workflow analytics snapshot (scripts/analytics-snapshot.mjs) — a workflow
+# artifact, never committed (ADR 0047).
+.reports/
+
+# The report jobs write these in the runner workspace (ADR 0048); a local run
+# should not leave them behind either.
+report.md
+title.txt
+body.md
+issues.json

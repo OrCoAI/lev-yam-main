@@ -395,7 +395,7 @@ finance money integrity → doc rewrites.
       follow-ups:** deploy Supabase edge functions to staging (from a normal machine), and a
       GitHub Action for auto-deploy on `staging` push (currently manual `wrangler pages deploy`).
 
-## Operating system — gate into Phase 2 (kickoff 2026-09-09)
+## Operating system — gate into Phase 2 (kickoff 2026-09-09) ✅ closed 2026-09-22 (reduced closure)
 
 *Not a product phase: installs the Company-of-One operating system (risk tiers, decision log,
 product skills, automations, permissions, cadence) and **reinstates observability coverage
@@ -409,34 +409,145 @@ superseding the 2026-08-26 removal. Spine: [plans/master-execution-plan.md](plan
 **Phase 2 does not start before the first quarterly review**, which runs on the evidence this
 block produces (work order G7).*
 
-- [ ] **Step 0 — M0** environment access: dtctl readonly default + named write context + `levyam-bluebox`
-      context *(contexts set 2026-09-09; owner-interactive logins + M0.2 capability confirmation pending)*
+- [x] **Step 0 — M0** environment access + capability confirmation *(done 2026-09-14 — verdict changed the
+      plan: the sprint tenant is deactivated and the marketing RUM tag is dead on prod; Bluebox's env grants
+      no scopes. Owner decision: a **new dedicated Dynatrace environment** — [ADR 0038](decisions/0038-new-dedicated-dynatrace-environment.md).
+      Steps 4/7/8/10 and parts of 9/11 are parked; **the home itself is now a deferred decision for the first quarterly review** — ADR 0041)*
 - [x] **Step 1** — branch protection on `main` *(applied 2026-09-09 via API: PR + `build` check required,
       admins included)* + decision log `docs/decisions/` (35 ADRs) + CLAUDE.md slim + `AGENTS.md`
       *(done 2026-09-09, PR #50)*
 - [x] **Step 2** — risk tiers A/B/C (CLAUDE.md + `scripts/check-tier.mjs` as the `tier` required check) +
       committed `.claude/settings.json` allowlist *(done 2026-09-09, PR #51; leash class = Tier A, ADR 0036)*
-- [ ] **Step 3** — vitest on the pure money math (`pos/logic.ts`, `finance/format.ts`, `finance/provenance.ts`)
-      + oxlint (warnings ratcheted) in `ci.yml` and `deploy.yml` *(targets corrected at kickoff — ADR 0037)*
-- [ ] **Step 4** — H9 Phase 1 + H9.5-B: synthetic monitors, hardened detectors, count/freshness SLOs, Bluebox Routine
-- [ ] **Step 5** — product skills (product-context, feature-spec, idea-capture + `docs/ideas.md`,
+- [x] **Step 3** — vitest on the pure money math (`pos/logic.ts`, `finance/format.ts`, `finance/provenance.ts`)
+      + oxlint (warnings ratcheted) in `ci.yml` and `deploy.yml` *(done 2026-09-21, PR #52; targets and linter
+      corrected at kickoff — ADR 0037)*
+- [ ] **Step 4 — BLOCKED** — H9 Phase 1 + H9.5-B: synthetic monitors, hardened detectors, count/freshness SLOs,
+      Bluebox Routine *(**parked** — re-deferred 2026-09-22 to the 2027-01-01 review, [ADR 0045](decisions/0045-observability-home-re-deferred-to-2027-01-review.md))*
+- [x] **Step 5** — product skills (product-context, feature-spec, idea-capture + `docs/ideas.md`,
       weekly-review, feedback-triage, quarterly-review) with 3-case evals; obs-best-practices installed
-- [ ] **Step 6** — automations: `@claude` action, weekly / monthly / quarterly-prep crons, dependabot → Tier C
-- [ ] **Step 7** — H9 Phase 2 + H9.5-D: `/app` RUM (New RUM frontend), masking, staging exclusion, §6b rewrite
-- [ ] **Step 8** — H9.5-C: OpenPipeline masking in both environments; invariant 3 gains its second layer
-- [ ] **Step 9** — H9 Phase 3: reconciliation-as-monitor, log attributes, traceparent/CORS, `deno check`, rate limit
-- [ ] **Step 10** — H9 Phase 4 slot: SRG guardian + SDLC event from `deploy.yml`, dashboards-as-code, H9.5-E/F
-- [ ] **Step 11** — H9 Phase 5 + G5: Dynatrace MCP, production-context mandatory, outcome metric in MODULE-TEMPLATE
-- [ ] **Step 12** — cadence + session hygiene in CLAUDE.md; close-outs for every plan touched
-- [ ] **Closure** (master plan Part 4): Tier-C change flows to prod untouched; three crons fired; green
-      monitors, armed detectors, evaluating SLOs, one real SRG verdict → **first quarterly review opens Phase 2**
+      *(done 2026-09-21, PR #54 — pulled ahead of the blocked Step 4)*
+- [x] **Step 6** — automations: `@claude` action, weekly / monthly / quarterly-prep crons (one shared
+      `agent-report.yml` worker), dependabot → Tier C auto-merge
+      ([ADR 0039](decisions/0039-dependabot-auto-merge-scope.md)); running on the owner's subscription
+      token ([ADR 0042](decisions/0042-agent-workflows-run-on-the-subscription-token.md)).
+      **G4 acceptance met 2026-09-21/22:** `@claude` on issue #67 → branch → PR #68 merged on green;
+      quarterly-prep → #65; monthly-triage → #66; weekly-review → #70. Three tuning rounds on the way
+      (PR #59 `id-token: write`, PR #61 flag set, PR #69 allowlist ↔ skill mismatch + caps) — each found
+      by a live run, none by review.
+- [ ] **Step 7 — PARKED** — H9 Phase 2 + H9.5-D: `/app` RUM (New RUM frontend), masking, staging exclusion, §6b rewrite *(parked — re-deferred to 2027-01-01, ADR 0045)*
+- [ ] **Step 8 — PARKED** — H9.5-C: OpenPipeline masking in both environments; invariant 3 gains its second layer *(parked — re-deferred to 2027-01-01, ADR 0045)*
+- [ ] **Step 9 — PARTIAL, two items unblocked** — H9 Phase 3. **Unblocked and pending (no Dynatrace
+      needed): `deno check` in `ci.yml`, and the rate limit on `login/options`** — a pre-auth
+      amplification vector; pure edge-function + CI work. Parked on the deferred observability-home
+      decision: reconciliation-as-monitor's alert, the log-attribute fix, traceparent/CORS RUM
+      linking *(re-deferred to 2027-01-01, ADR 0045)*
+- [ ] **Step 10 — PARKED except a docs carve-out** — H9 Phase 4 slot: SRG guardian + SDLC event
+      from `deploy.yml`, dashboards-as-code, H9.5-A/E/F *(parked — re-deferred to 2027-01-01,
+      ADR 0045)*. Unblocked: H9.5-F query-hygiene rules and H9.5-A's deployment-marker note
+      correction — both docs-only, minutes
+- [ ] **Step 11 — G5 template half shipped, rest PARTIAL** — G5's template half shipped 2026-09-21
+      (outcome metric + instrumentation in MODULE-TEMPLATE §0, Outcome check in the close-out ritual,
+      shipped-but-unvalidated in the monthly triage), ahead of H9 P5 and carrying P5's telemetry
+      bullet — [ADR 0040](decisions/0040-g5-ships-ahead-of-h9-phase-5.md) amends ADR 0019's
+      sequencing and is **flagged for owner confirmation**. G5's acceptance ("the next initiative
+      ships with a named outcome metric") opens with the first Phase 2 initiative. Of H9 P5:
+      the telemetry bullet is delivered; the mandatory production-context step and the CLAUDE.md
+      standing rule are **unblocked and pending**; only the Dynatrace MCP entry waits on the B1 decision
+- [x] **Step 12 — done 2026-09-22** — Operating cadence, queue-jumper rule and session hygiene in
+      CLAUDE.md (2026-09-21); the master plan's `## Close-out` written at the first quarterly review;
+      G7's acceptance met by the review itself (owner judgment, run live on issue #62)
+- [x] **Closure — reduced, 2026-09-22** by the first quarterly review ([issue #62](https://github.com/OrCoAI/lev-yam-main/issues/62),
+      [ADR 0044](decisions/0044-adr-0040-confirmed-and-part-4-reduced-closure.md)): Tier-C change
+      flows to prod untouched *(docs #53/#63/#68, dependabot #56 — **still not shown for a code
+      change**; the weekly review watches for the first)*; three crons fired *(#65, #66, #70)* and
+      `@claude` produced a merged PR *(#67 → #68)*. The observability criteria and every PARKED step
+      above sit under [ADR 0045](decisions/0045-observability-home-re-deferred-to-2027-01-review.md)
+      (re-check 2027-01-01), not counted here. Phase 2 opens with the mandate below
+- Follow-ups discovered at the review (ordinary items, no block):
+  - [ ] **Close-out ritual: add "update `docs/modules/<module>.md`"** — the stale users.md line
+        below happened because phase1-closeout §D shipped a module item under a plan file and the
+        ritual never says to touch the module log. CLAUDE.md edit → Tier A, its own PR
+  - [ ] **Step 9's unblocked half** — `deno check` over `supabase/functions/` in `ci.yml`; rate limit
+        on passkey `login/options` (pre-auth amplification vector). Tier A, no Dynatrace needed
+  - [ ] **Docs carve-outs from Steps 10/11** — H9.5-F query-hygiene rules, H9.5-A's deployment-marker
+        note correction, the mandatory production-context step + CLAUDE.md standing rule
+  - [ ] **Run the skill evals** (`.claude/skills/*/EVALS.md`, 3 cases each) — due at this ceremony,
+        not run; first real run before the 2027-01-01 review
+  - [ ] **Verify the break-glass account can sign in** (email confirmed) — unverified since the
+        2026-08-12 invite; owner action, then tick here
+  - [ ] **`@simplewebauthn/server` `^10.0.0` → 14.0.2** — Deno-imported, invisible to dependabot;
+        deferred with a date to the 2027-01-01 review (ADR 0045 re-check list)
+  - [ ] Delete the unused `ANTHROPIC_API_KEY` repo secret (expires 2027-01-31 anyway)
+  - [ ] **`quarterly-review/evidence-pack.md` names ADR 0041 as the live deferral** — now ADR 0045;
+        the pack finds deferrals by Status-line grep so the 2027-01 run still works, but the template
+        text is stale. `.claude/` → Tier A, its own PR (bundle with the close-out-ritual edit above)
 
-## Phase 2 — What's happening: bookings & events
+## Phase 2 — 2026-Q4 mandate: the marketing quarter (first quarterly review, 2026-09-22)
+
+*The mandate and the owner's words behind it: [ADR 0046](decisions/0046-q4-2026-mandate-marketing-quarter.md).
+Positioning for every piece: **"Focus on private and business events — we want a lot of focus on the
+venue and what it gives to people."** Each line is its own initiative through `feature-spec` with an
+Outcome metric and a check date (ADR 0019); one spec per session. The order is the review's
+proposal — the owner reorders by editing this list.*
+
+- [x] **1. Analytics wiring** — GA4 `whatsapp_click` as a key event + GA4 Data API + Search Console
+      feeding the `weekly-review` analytics headline through a workflow-side snapshot the agent only
+      reads → *every other outcome becomes measurable*. **Kicked off 2026-09-22:**
+      [plans/marketing-analytics-wiring.md](plans/marketing-analytics-wiring.md), check date 2026-10-19.
+      Ahrefs/Semrush parked as a spend decision ([ADR 0047](decisions/0047-analytics-wiring-ga4-and-gsc-only-public-numbers.md)).
+      **Shipped 2026-09-22 (PR #73); close-out in the plan. Outcome check due 2026-10-19**, counted
+      from the first scheduled run after the merge.
+- [ ] **2. Story pages at cadence + the authoring tool** — a story pair (HE + AR) from a brief with
+      chrome, twin, hub and sitemap handled; `FACTS.md` gaps filled as pages need them → *organic
+      sessions and `whatsapp_click` by `page_slug`*. **Kicked off 2026-09-22:**
+      [plans/stories-authoring-tool.md](plans/stories-authoring-tool.md) — `story-author` skill,
+      gitignored `media/` photo intake, chrome stamping in the generator, four cornerstone pairs;
+      check date 2026-10-25
+- [ ] **3. Local SEO cluster** — near Caesarea / Hadera / Jisr, directions, "things to do",
+      fish-restaurant intents → *local-pack impressions, direction requests*
+- [ ] **4. AEO layer** — `facts.txt` / `llms.txt` expansion, `FAQPage` + `Event` JSON-LD, answer-first
+      blocks; measured with Ahrefs Brand Radar → *citations and mentions in AI answers*
+- [ ] **5. CTA sharpening** — per-page prefilled WhatsApp messages, click-to-call, sticky CTA on
+      stories → *click-through rate per page*
+- [ ] **6. Social pipeline** — every story yields IG/FB posts; Meta Pixel `Contact` already fires →
+      *social-referred WhatsApp clicks*
+- [ ] **7. Google Business Profile loop** — posts, photos, review replies, Q&A; `AggregateRating` on
+      site → *GBP calls and direction requests*
+- [ ] **8. Public "What's happening"** — the original Phase 2's public half, minimal: events table +
+      one HE/AR public page reading Supabase anonymously (the first public content table — P4 gets
+      tested; prereq H4 done) → *event inquiries*
+- [ ] **9. Backlink programme** — tourism, food/travel, Arab-society media → *referring domains*
+- [ ] **10. Paid test** — a small Meta/Google campaign against one or two pages → *cost per WhatsApp
+      conversation*. **Prerequisite, owner 2026-09-22:** before spending anything, prove the paid
+      path is connected end to end — UTM tagging on every ad URL, the campaign landing in GA4 as
+      `Paid Social` / `Paid Search` (not `Unassigned`), Meta Pixel `Contact` firing, and
+      `whatsapp_click` attributable to the campaign by `page_slug` *and* source. Evidence this is
+      not theoretical: a Paid Social campaign ran and stopped inside the trailing window on
+      2026-09-22 (43 sessions → 0, ~66% of the week-over-week drop) and nothing in the system
+      linked the spend to the clicks it bought — the weekly report could show the fall but not
+      the cost per conversation, which is exactly this item's metric.
+- [ ] **11. Content automation** — `@claude` drafts story twins from a brief issue, gated on the
+      owner's tone + facts review → *pages per week*
+- [ ] **12. Platform modules as MCP** — agents work on platform data through RLS-scoped access
+      (owner's addition) → *owner hours per data task*
+- [ ] **13. Harness smalls** — shared `build-app.sh`, CI double-run dedupe, decision graph
+      (from `docs/ideas.md`) → *CI minutes; context-load time*
+- [x] **14. Take the public write off the report agents** — *done 2026-09-22,
+      [ADR 0048](decisions/0048-report-agents-hold-no-write-and-actions-are-sha-pinned.md).* The
+      agent writes `report.md` and a deterministic step publishes it, withholding the whole report
+      if a secret's value appears in it; the `gh` write family, `.git/` and the runner's file
+      commands are closed too, since a bash-capable agent reads its own environment whatever is
+      denied. Every third-party action SHA-pinned (7 actions, 7 of the 10 workflow files). Raised by item 1's security review →
+      *no credential reachable from agent-authored text*
+- **Out this quarter:** English stories (`/stories/en/`) — reserved, not built.
+
+## Phase 2 — What's happening: bookings & events *(internal half deferred by the Q4 mandate)*
 
 *Replaces WhatsApp-thread reservation tracking. The shared calendar itself is the `events`
 spine landed in Phase 1 ([plans/cross-module-foundation.md](plans/cross-module-foundation.md))
 — this phase builds the bookings module **on** it and takes it public, because the feed is
-public by default.*
+public by default. **2026-09-22:** the public "What's happening" item moved up into the Q4
+mandate (its item 8); the rest waits for the 2027-01-01 review ([ADR 0046](decisions/0046-q4-2026-mandate-marketing-quarter.md)).*
 
 - [ ] `41_bookings.sql`: reservations table (RLS, permission keys) feeding the `events`
       spine; spine events already carry the **visibility flag — `public` by default,
@@ -517,9 +628,25 @@ strategy driving it is private and lives outside the repo.*
       `whatsapp_click` with `page_slug`
 - [ ] First real story pages (HE + AR twins, one query cluster each) — written in
       dedicated sessions, each gated on Or's tone + facts review before commit
+      *(→ Q4 mandate item 2)*
 - [ ] Fill the `[חסר]` markers in `FACTS.md` — seasonality (Nimer's fishing calendar,
       needs Nimer), plus whatever the first content sessions surface as missing
-- [ ] Mark `whatsapp_click` as a key event in the GA4 UI (console-side, not repo)
+      *(→ Q4 mandate item 2, as pages need them)*
+- [x] Mark `whatsapp_click` as a key event in the GA4 UI (console-side, not repo) *(done 2026-09-22)*
+      *(→ Q4 mandate item 1, [plans/marketing-analytics-wiring.md](plans/marketing-analytics-wiring.md) scope (a))*
+- [ ] **Regenerate `CLAUDE_CODE_OAUTH_TOKEN` at the 2027-01-01 quarterly review** — the agent workflows run
+      on the owner's subscription token ([ADR 0042](decisions/0042-agent-workflows-run-on-the-subscription-token.md));
+      it is long-lived but not permanent, and an expired token fails **loudly** (auth error), not with the silent
+      clean exit a *missing* one produces. `claude setup-token` → `gh secret set`. The unused `ANTHROPIC_API_KEY`
+      secret (expires 2027-01-31) can be deleted from the repo. **Same session: rotate `GOOGLE_SA_KEY`**
+      (the analytics service-account key, [ADR 0047](decisions/0047-analytics-wiring-ga4-and-gsc-only-public-numbers.md))
+- [ ] **Dynatrace RUM on the marketing site is dead** (tag returns 404 since the sprint tenant was
+      deactivated, found 2026-09-09): replace the tag with the new environment's once it exists
+      (Tier A, `index.html` + `stories/_template.html`) — [ADR 0038](decisions/0038-new-dedicated-dynatrace-environment.md).
+      **Re-deferred 2026-09-22 to the 2027-01-01 review** ([ADR 0045](decisions/0045-observability-home-re-deferred-to-2027-01-review.md));
+      the first quarterly review confirmed that staying dead is acceptable for the marketing quarter. Meanwhile the
+      conversion funnel is measured by GA4 + Meta; what is lost is the homepage-only interaction
+      signal, which went to Dynatrace alone
 - [ ] *(Optional)* **Self-hosted Arabic webfont.** Arabic copy renders in a system stack —
       `css/styles.css` switches `html[lang="ar"]` to `SF Arabic`/`Geeza Pro`/`Noto Sans Arabic`
       deliberately, and the Heebo/Assistant `unicode-range`s exclude Arabic. That is a working
@@ -529,7 +656,8 @@ strategy driving it is private and lives outside the repo.*
       `document.title` and four meta tags through hardcoded selectors, so it would erase any
       page's own SEO metadata — the one part of its i18n layer that isn't `data-i18n*`-driven.
       Harmless today (only `index.html` loads it), but it's why `/stories/` needed `js/stories.js`
-- [ ] English (`/stories/en/<slug>/`) — reserved in the URL structure, not built
+- [ ] English (`/stories/en/<slug>/`) — reserved in the URL structure, not built *(explicitly out
+      of the Q4 mandate, 2026-09-22)*
 
 ---
 

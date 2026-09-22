@@ -5,19 +5,19 @@
 >
 > | # | Step | Status | PR / notes |
 > |---|---|---|---|
-> | 0 | M0 environment access + capability confirmation | **in progress** | M0.1: `my-env` → readonly, `my-env-write`, `levyam-bluebox` contexts set 2026-09-09. Owner logins (`dtctl auth login` ×2, `bluebox auth login`) not yet effective on the dev box → M0.2 verdicts + the tgo73062 write path + the dashboard 403 re-run **before Step 4** |
+> | 0 | M0 environment access + capability confirmation | **done 2026-09-14 — with a plan-changing verdict** | Logins landed 2026-09-09. **`pzh8968h.sprint` is DEACTIVATED** (marketing RUM tag 404 on prod); `tgo73062` gives the owner no read/write scopes. Owner decision: **a new dedicated Dynatrace environment is the home** ([ADR 0038](../decisions/0038-new-dedicated-dynatrace-environment.md)); Steps 4/7/8/10 and parts of 9/11 start from its own Phase 0 once the owner hands over the URL. Full verdict table in the H9.5 plan |
 > | 1 | Branch protection + decision log + CLAUDE.md slim + `AGENTS.md` | **done 2026-09-09** | PR #50 merged. Branch protection live (PR + `build` check, admins included); 35 ADRs; CLAUDE.md 330 → 188 lines (Step 2 adds the tiers section) |
 > | 2 | Risk tiers + permissions allowlist | **done 2026-09-09** | PR #51 (Tier A, owner-approved). `scripts/check-tier.mjs` + `tier.yml` (second required check), PR template, committed `.claude/settings.json`, ADR 0036 leash class. From here every PR self-declares a tier |
-> | 3 | vitest + lint | **in progress** | branch `rails-tests-lint`; two kickoff corrections, see ADR 0037 |
-> | 4 | H9 Phase 1 + H9.5-B | pending | needs M0.2 |
-> | 5 | Product skills | pending | |
-> | 6 | Automations | pending | |
-> | 7 | H9 Phase 2 + H9.5-D | pending | |
-> | 8 | H9.5-C masking | pending | |
-> | 9 | H9 Phase 3 | pending | |
-> | 10 | H9 Phase 4 slot + H9.5-A/E/F | pending | |
-> | 11 | H9 Phase 5 + G5 | pending | |
-> | 12 | Cadence + close-outs | pending | |
+> | 3 | vitest + lint | **done** (PR #52) | two kickoff corrections, see [ADR 0037](../decisions/0037-oxlint-while-typescript-7-blocks-eslint.md): oxlint replaces eslint, and `finance/reconciliation.ts` is a hook over an RPC, not pure math — test target re-scoped |
+> | 4 | H9 Phase 1 + H9.5-B | **blocked** | **parked**: the observability home is a deferred decision ([ADR 0041](../decisions/0041-observability-home-deferred-to-first-quarterly-review.md)); this step re-scopes once the quarterly review settles it |
+> | 5 | Product skills | **done** (PR #54, pulled ahead of the blocked Step 4) | six skills + evals, `docs/ideas.md`; obs-best-practices eval added; scaffolding adapted from Anthropic's PM plugin (write-spec, synthesize-research; Apache-2.0) |
+> | 6 | Automations | **done 2026-09-22** | `claude.yml` + three crons over one `agent-report.yml` worker + dependabot Tier-C auto-merge ([ADR 0039](../decisions/0039-dependabot-auto-merge-scope.md)), on the owner's subscription token ([ADR 0042](../decisions/0042-agent-workflows-run-on-the-subscription-token.md)). G4 acceptance met: `@claude` #67 → PR #68 merged; quarterly-prep #65; monthly-triage #66; weekly-review #70 |
+> | 7 | H9 Phase 2 + H9.5-D | **blocked** | `/app` RUM needs the new Dynatrace environment (ADR 0038) |
+> | 8 | H9.5-C masking | **blocked** | OpenPipeline processors need both environments to exist (ADR 0038) |
+> | 9 | H9 Phase 3 | **partial — two items unblocked** | **Unblocked, no Dynatrace needed: `deno check` in `ci.yml`, and the rate limit on `login/options`** (a pre-auth amplification vector). Blocked on B1: reconciliation-as-monitor's alert, the log-attribute fix, traceparent/CORS RUM linking |
+> | 10 | H9 Phase 4 slot + H9.5-A/E/F | **blocked except a docs carve-out** | SRG guardian, dashboards-as-code and the SDLC ingest token need the new environment (ADR 0038). Unblocked: H9.5-F query-hygiene rules + H9.5-A's deployment-marker note correction, both docs-only |
+> | 11 | H9 Phase 5 + G5 | **partial** | G5's **template half** shipped, ahead of H9 P5 and carrying P5's telemetry bullet — [ADR 0040](../decisions/0040-g5-ships-ahead-of-h9-phase-5.md) amends ADR 0019's sequencing and is **flagged for owner confirmation**. G5's acceptance (next initiative ships with a named metric) opens with the first Phase 2 initiative. Of H9 P5: telemetry bullet delivered; production-context step + CLAUDE.md standing rule **unblocked and pending**; only the Dynatrace MCP entry needs B1 |
+> | 12 | Cadence + close-outs | **cadence shipped; close-outs pending B3** | Operating cadence + queue-jumper rule + session hygiene are in CLAUDE.md. The close-outs wait on the steps they would close; G7's own acceptance requires the **first quarterly review** (B3), owner judgment, never run unattended |
 >
 > **Kickoff 2026-09-09 — conflicts found and resolved with the owner** ([ADR 0035](../decisions/0035-h9-reinstated-operating-system-block.md)):
 > H9 had been removed from the roadmap on 2026-08-26 while this plan builds on it → **reinstated**;
@@ -26,6 +26,31 @@
 > (`obs-best-practices` skill) was recovered from the owner's bundle. Standing interpretation for
 > Part 1: every CLAUDE.md dated decision migrates; from plan files only owner-level policy
 > decisions migrate (per-feature choices stay in their plans).
+>
+> ### BLOCKED — waiting on the owner (2026-09-21)
+>
+> **B1 is deferred, not pending** (ADR 0041, 2026-09-21) — it became an agenda item rather than a
+> chore. **B3 is no longer gated on B2:** the Q3 evidence pack was assembled by hand and is
+> [issue #62](https://github.com/OrCoAI/lev-yam-main/issues/62), so the review can run on 2026-09-22
+> regardless. B2 is now an API-account check, not a repo task.
+>
+> Every remaining **step** is parked behind one of the three things below, all of which need a person.
+> Two things are *not* blocked and are simply next: **Step 9's unblocked half** (`deno check` in
+> `ci.yml`, and the rate limit on `login/options` — a pre-auth amplification vector, pure
+> edge-function work) and the **docs carve-outs** in Steps 10 and 11. Part 4's closure criterion 2
+> — a Tier-C change flowing to production with zero owner interactions — needs no blocker cleared
+> either; it needs a Tier-C change to happen and be observed.
+>
+> | # | Blocker | Unblocks | How |
+> |---|---|---|---|
+> | **B1** | ~~The new Dynatrace environment~~ — **DEFERRED to the first quarterly review** ([ADR 0041](../decisions/0041-observability-home-deferred-to-first-quarterly-review.md)) | Steps 4, 7, 8, 10 and the blocked parts of 9 and 11 are **parked**, not waiting | Nothing to do now. It is agenda item 3 at the quarterly review: a cost-and-commitment decision (which tenant, which licence, what running two Dynatrace environments plus Bluebox means for a company of one), taken on evidence rather than to unblock a checklist. `quarterly-prep.yml` will surface it automatically — ADR 0038's Status now carries `deferred — first quarterly review` |
+> | **B2** | ~~`ANTHROPIC_API_KEY`~~ → **`CLAUDE_CODE_OAUTH_TOKEN`** — **CLEARED 2026-09-22** | Step 6's acceptance — **met** | The API account had no credits; the owner chose the subscription token instead ([ADR 0042](../decisions/0042-agent-workflows-run-on-the-subscription-token.md)). Secret is in, all four acceptance runs produced their artefacts. Regenerate the token at the 2027-01-01 review |
+> | **B3** | **The first quarterly review** | Step 12's close-outs, Part 4 closure, the B1 decision, and Phase 2 itself | Owner judgment, 2–3 hours, **never run unattended** (ADR 0021). `quarterly-prep.yml` assembles the evidence pack; **B2 is now its only gate** — the old "wait for B1 first" circle is cut by ADR 0041, and the pack reports the missing observability evidence instead of waiting for it |
+>
+> **A live production finding is riding on B1:** the marketing RUM tag on levyam.com has returned
+> 404 since some time after 2026-08-12, so all Dynatrace RUM and bizevents are dead. GA4 and Meta
+> still carry the WhatsApp CTA, so the funnel is not blind. The dead tag stays until the new
+> environment exists — owner decision, ADR 0038.
 
 **Mission:** execute everything defined in the 2026-08-13 strategy session so that
 (1) the Company-of-One operating system is fully installed in this repo,
@@ -130,7 +155,7 @@ All decided 2026-08-13 with the owner:
     Grail query budget, ownership team `levyam-solo`, OSS-MCP maintenance-mode noted with
     hosted-MCP/dtctl as the direction. (H9.5-E)
 14. **Query hygiene codified** — clean, narrow, repeatable queries as defaults; budget is not a constraint in this environment. (H9.5-F)
-15. **REVISED (owner, 2026-08-13):** the production observability home **remains the
+15. **REVISED (owner, 2026-08-13) — SUPERSEDED 2026-09-14 by [ADR 0038](../decisions/0038-new-dedicated-dynatrace-environment.md) (tenant deactivated; new dedicated environment):** the production observability home **remains the
     current working environment** (`pzh8968h.sprint`) — owner has full access and
     unconstrained budget there. **No tenant migration.** Existing RUM tag, bizevents,
     baselines, and env references all stand. Bluebox env (`tgo73062`) stays separate
@@ -238,3 +263,52 @@ Tier-B PRs closely; Tier-A always full review).
 From that moment the operating system is self-sustaining: weekly reports watch the week,
 monthly reviews absorb ideas and audit best practices, quarterly reviews steer — and the
 owner's job is two gates and one judgment session per quarter.
+
+---
+
+## Close-out (2026-09-22 — written at the first quarterly review, [issue #62](https://github.com/OrCoAI/lev-yam-main/issues/62))
+
+**What shipped (Steps 0–3, 5, 6, 12; Step 11's template half):** branch protection on `main`
+(PR + `build` + `tier`, admins included); the decision log (46 ADRs at close) and a slim CLAUDE.md
++ `AGENTS.md`; risk tiers A/B/C with `scripts/check-tier.mjs` as a required check and the committed
+`.claude/settings.json` allowlist; vitest on the pure money math + oxlint ratcheted in CI; six
+product skills with 3-case evals + `obs-best-practices` + `docs/ideas.md`; the five automations
+(`claude.yml`, weekly / monthly / quarterly-prep over one `agent-report.yml` worker, dependabot
+Tier-C auto-merge) on the owner's subscription token; the operating cadence, queue-jumper rule and
+session hygiene in CLAUDE.md; the outcome-metric field in MODULE-TEMPLATE §0 and the close-out ritual.
+
+**Acceptance demonstrated:** Tier C flowed to prod with zero owner interactions (docs #53/#63/#68,
+dependabot #56 — not yet for a code change); all three crons produced an issue (#65, #66, #70) and
+`@claude` produced a merged PR (#67 → #68); the first quarterly review ran live on the pack.
+
+**Schema / permission changes:** none — this block never touched `supabase/`.
+
+**What moved (not counted against the block — [ADR 0044](../decisions/0044-adr-0040-confirmed-and-part-4-reduced-closure.md)):**
+Steps 4, 7, 8, 10 (except its docs carve-out) and the parked parts of 9 and 11 — H9 Phases 1–5 and
+H9.5 A–F — sit under the deferred observability decision, re-deferred with a reason to the
+2027-01-01 review ([ADR 0045](../decisions/0045-observability-home-re-deferred-to-2027-01-review.md)).
+Part 4's criterion 4 (green monitors, armed detectors, evaluating SLOs, an SRG verdict) goes with them.
+The companion plans are closed by reference: `lev-yam-gap-analysis-work-order.md` (G1–G8 delivered,
+G7's acceptance = this review), `observability-best-practices-adoption.md` and
+`observability-coverage.md` (parked, not abandoned).
+
+**Decided on the way (ADRs):** 0035 (H9 reinstated as this block), 0036 (the leash class),
+0037 (oxlint; real test target), 0038 (new dedicated Dynatrace environment — unbuilt), 0039
+(dependabot scope), 0040 (G5 ahead of H9 P5 — confirmed 2026-09-22), 0041 (observability deferred
+to this review), 0042 (subscription token), and the review's own 0043–0046.
+
+**Left out, now ordinary roadmap items:** Step 9's unblocked half (`deno check`, `login/options`
+rate limit); the Step 10/11 docs carve-outs; the skill evals (due at this ceremony, not run); the
+break-glass sign-in check; the `@simplewebauthn/server` bump (dated re-check); "Tier-C *code* change
+flows untouched" stays on the weekly watch list.
+
+**Alignment:** VISION — the block built no product surface and changed no principle; every
+principle held at the review (ADR 0043). ARCHITECTURE — §6c delivery rails are as documented and
+verified; invariants 1–8 hold on the quarter's evidence; the one known gap (no second masking layer,
+H9.5-C) is recorded, not hidden. No drift.
+
+## Outcome check
+
+This plan predates the outcome-metric rule (ADR 0019, from 2026-09-21) and carries no metric table;
+per CLAUDE.md it is not retrofitted. The operating system's own outcome is judged by the next
+quarterly review through the mandate's outcome checks (ADR 0046) and the weekly Harness-health line.

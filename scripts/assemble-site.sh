@@ -22,9 +22,11 @@ case "$TIER" in
   *) echo "usage: scripts/assemble-site.sh <prod|staging>" >&2; exit 2 ;;
 esac
 
-# sitemap.xml + both /stories/ hubs are generated from the story pages on disk, so
-# production is correct even if someone forgot to regenerate locally. This also
-# enforces the HE/AR twin invariant — it exits non-zero on a half-translated page.
+# sitemap.xml, both /stories/ hubs and the header/footer chrome of every story page
+# are generated from the templates and pages on disk (it rewrites story files in
+# this checkout before they are copied), so production is correct even if someone
+# forgot to regenerate locally. It also enforces the HE/AR twin invariant and
+# refuses leftover placeholders and missing story images — exits non-zero.
 node scripts/gen-stories-index.mjs
 
 rm -rf _site

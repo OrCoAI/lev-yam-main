@@ -1,0 +1,57 @@
+name: dependabot auto-merge
+
+# G4.5 + G1 (ADR 0015): dependabot's npm bumps are Tier C — merge on green, no
+# human checkpoint. This is the piece that makes that true in practice.
+#
+# NOTE what this does NOT do: it does not stamp a tier. `scripts/check-tier.mjs`
+# already resolves a dependabot PR's declaration to C on its own (it reads
+# `pull_request.user.login` and maps app-src/package{,-lock}.json to C), so the
+# `tier` check is green without help. The floor is still derived from the changed
+# paths, so a dependabot PR that somehow touched `.github/workflows/` would map
+# to A and fail — the leash (ADR 0036) holds regardless of what runs here.
+#
+# SCOPE, deliberately narrower than "all npm bumps" — see ADR 0039:
+#   npm minor/patch  → auto-merged on green. This is the Tier-C promise.
+#   npm MAJOR        → left for the owner. A major of supabase-js or
+#                      @simplewebauthn is a behaviour change in the auth path;
+#                      Tier C means no human CHECKPOINT, not "mechanical".
+#   github-actions   → not touched at all. Those bumps change
+#                      `.github/workflows/` — Tier A, the leash.
+#
+# Auto-merge only QUEUES the merge; GitHub still waits for `build` and `tier`.
+# It changes when the merge happens, not what is allowed to merge.
+#
+# `pull_request_target` runs the base-ref version of this file with a read-write
+# token. That is safe here for one reason only: there is no `actions/checkout`
+# and no PR-authored code runs. Do not add one.
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    # The PR's AUTHOR, not the event actor: `github.actor` is whoever triggered
+    # this run, so a human reopening a stale dependabot PR would skip the job.
+    # Matches how scripts/check-tier.mjs identifies dependabot.
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch dependabot metadata
+        id: meta
+        uses: dependabot/fetch-metadata@21025c705c08248db411dc16f3619e6b5f9ea21a # v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Enable auto-merge for npm minor and patch bumps
+        if: >-
+          steps.meta.outputs.package-ecosystem == 'npm' &&
+          steps.meta.outputs.update-type != 'version-update:semver-major'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: gh pr merge --auto --merge "$PR_URL"
