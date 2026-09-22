@@ -157,14 +157,19 @@ const ga4Report = async (token, w, { dimension, metrics, filter }) => {
   const split = { current: [], trailing: [], thresholded: Boolean(body.metadata?.subjectToThresholding) }
   for (const row of body.rows || []) {
     const values = (row.dimensionValues || []).map((v) => v.value)
-    const rec = dimension ? { key: clean(values[valueAt]) } : {}
+    // GA4 answers with a literal "(not set)" row for events recorded before a custom
+    // dimension existed — a row, not an absence, so it has to be marked or it gets
+    // published as though it were a real page.
+    const raw = values[valueAt]
+    const rec = dimension ? { key: clean(raw), unset: raw === '(not set)' } : {}
     metrics.forEach((m, i) => { rec[m] = Number(row.metricValues?.[i]?.value) })
     split[values[rangeAt]]?.push(rec)
   }
   return split
 }
 
-const rank = (part, range, label) => (failed(part) ? [] : part[range].slice(0, 3).map((r) => ({ [label]: r.key, clicks: r.eventCount })))
+const named = (part, range) => (failed(part) ? [] : part[range].filter((r) => !r.unset))
+const rank = (part, range, label) => named(part, range).slice(0, 3).map((r) => ({ [label]: r.key, clicks: r.eventCount }))
 
 // `page_slug` is a custom event parameter: grouping by it needs the event-scoped custom
 // dimension registered in the GA4 UI (plan scope (a)). There is deliberately no fallback to
@@ -194,14 +199,20 @@ const ga4 = async (token) => {
   // clicks but no breakdown for them; an empty breakdown next to zero clicks is just a
   // quiet month, and saying otherwise would suppress a real 0 → N delta.
   if (!failed(parts.byPage) && !failed(parts.clicks)
-      && !parts.byPage.trailing.length && parts.clicks.trailing[0]?.eventCount > 0) {
-    out.no_baseline = 'the trailing window has clicks but no per-page breakdown — page_slug was registered inside it, so there is no comparable baseline for the per-page list yet'
+      && !named(parts.byPage, 'trailing').length && parts.clicks.trailing[0]?.eventCount > 0) {
+    out.no_baseline = 'the trailing window has clicks but no named page for any of them — page_slug was registered inside it and GA4 does not backfill, so there is no comparable baseline for the per-page list yet'
+  }
+  // Same signal for the current window: clicks recorded before registration stay
+  // unattributed for good, so "0 pages, N clicks" is history, not a tracking fault.
+  if (!failed(parts.byPage) && !failed(parts.clicks)
+      && !named(parts.byPage, 'current').length && parts.clicks.current[0]?.eventCount > 0) {
+    out.unattributed = 'every click this window predates the page_slug dimension — the per-page list fills from the next clicks onward'
   }
   for (const range of RANGES) {
     out[range] = {
       sessions: failed(parts.totals) ? null : (parts.totals[range][0]?.sessions ?? 0),
       users: failed(parts.totals) ? null : (parts.totals[range][0]?.totalUsers ?? 0),
-      sessions_by_channel: failed(parts.channels) ? [] : parts.channels[range].slice(0, 3).map((r) => ({ channel: r.key, sessions: r.sessions })),
+      sessions_by_channel: named(parts.channels, range).slice(0, 3).map((r) => ({ channel: r.key, sessions: r.sessions })),
       whatsapp_click: failed(parts.clicks) ? null : (parts.clicks[range][0]?.eventCount ?? 0),
       whatsapp_click_by_page: rank(parts.byPage, range, 'page'),
       whatsapp_click_by_source: rank(parts.bySource, range, 'source'),
