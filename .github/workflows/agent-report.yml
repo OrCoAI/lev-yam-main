@@ -51,14 +51,17 @@ name: agent report
 # one (ADR 0048):
 #   - it cannot publish: `gh issue create/comment/edit/close/reopen/…` are denied, and
 #     it writes `report.md` for a later step to publish instead;
-#   - it cannot write anywhere else: `Write` is scoped to that one file, and `.git/` is
-#     denied because git runs `diff.external`/`textconv` THROUGH THE SHELL on an allowed
-#     `git log -p` / `git show`, which would be arbitrary execution. Do NOT "harden" this
-#     by adding `Write(/**)`: specifiers are matched against the RESOLVED path, so it also
-#     matches `report.md` and, since deny beats allow, silently leaves the agent unable to
-#     write the one file it exists to produce — an 9-minute run that ends with no report
-#     (observed, run 35732989022). A narrow allow needs no wildcard deny beside it: in
-#     headless CI a tool call outside the allow list is refused anyway;
+#   - it can write files, but not the ones that matter: `.git/` is denied because git runs
+#     `diff.external`/`textconv` THROUGH THE SHELL on an allowed `git log -p` / `git show`,
+#     which would be arbitrary execution; `.github/`, `.claude/`, `scripts/` and `supabase/`
+#     are denied so it cannot rewrite the harness or the vetting script.
+#     TWO forms were tried here and BOTH silently produced no report at all, each costing a
+#     ~8-minute run: `Write(report.md)` as the allow (runs 35732989022 and 35762372931 — the
+#     action's SDK translation does not appear to honour a path specifier on Write), and
+#     `Write(/**)` as an extra deny, which matches the RESOLVED path of `report.md` and, since
+#     deny beats allow, forbids the one file the agent exists to produce. Do not reintroduce
+#     either. The write is therefore a plain `Write` grant, and the containment is: nothing
+#     the agent writes is published except through the vetting step below;
 #   - it cannot reach the runner's own file commands: `GITHUB_STEP_SUMMARY` (rendered
 #     publicly), `GITHUB_ENV`, `GITHUB_PATH` and `GITHUB_OUTPUT` are pointed at /dev/null
 #     for the agent step. An allowed command plus a shell redirect would otherwise write
@@ -230,6 +233,9 @@ jobs:
           # step could be running agent-authored Python next to the scanned secrets.
           git checkout HEAD -- scripts/report-guard.py
           if [ ! -s report.md ]; then
+            # Say what IS there: "no report" twice cost two 8-minute runs to diagnose.
+            echo 'The agent produced no report.md — nothing to publish. Workspace root:'
+            ls -la
             echo 'The agent produced no report.md — nothing to publish.' >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi

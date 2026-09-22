@@ -29,7 +29,7 @@ jobs:
     with:
       max_turns: '120'
       label: weekly-review
-      allowed_tools: Read,Glob,Grep,Write(report.md),Bash(git log *),Bash(git diff *),Bash(git show *),Bash(gh pr list *),Bash(gh pr view *),Bash(gh issue list *),Bash(gh issue view *),Bash(gh run list *),Bash(date *),Bash(grep *),Bash(wc *),Bash(sort *),Bash(uniq *),Bash(head *),Bash(tail *),Bash(cut *),Bash(ls *)
+      allowed_tools: Read,Glob,Grep,Write,Bash(git log *),Bash(git diff *),Bash(git show *),Bash(gh pr list *),Bash(gh pr view *),Bash(gh issue list *),Bash(gh issue view *),Bash(gh run list *),Bash(date *),Bash(grep *),Bash(wc *),Bash(sort *),Bash(uniq *),Bash(head *),Bash(tail *),Bash(cut *),Bash(ls *)
       prompt: |
         Run the `weekly-review` skill for the week that just ended and deliver its report.
 
