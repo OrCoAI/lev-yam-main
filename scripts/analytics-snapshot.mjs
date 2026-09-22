@@ -60,7 +60,19 @@ const clean = (value) => String(value ?? '')
   .trim()
   .slice(0, 80) || '(empty)'
 
-const reason = (e) => clean(e.message).slice(0, 120)
+// Errors get their own clamp: Google's actionable half ("Enable it at …") sits past
+// clean()'s 80-character value limit, and a truncated reason wastes the report's one line.
+// But the reason reaches a public step summary and a public issue, and Google's
+// SERVICE_DISABLED text carries the GCP project number and its console URL — so URLs and
+// long digit runs go, and the sentence that tells the owner what to do stays.
+const reason = (e) => String(e?.message ?? e)
+  .replace(/[\p{Cc}\p{Cf}]/gu, ' ')
+  .replace(/https?:\/\/\S+/g, '<url>')
+  .replace(/\d{6,}/g, '<id>')
+  .replace(/[`<>|\[\]()!]/g, ' ')
+  .replace(/\s+/g, ' ')
+  .trim()
+  .slice(0, 200) || 'unknown error'
 
 // ── auth: service-account JWT → access token ─────────────────────────────────
 const loadKey = () => {
@@ -158,6 +170,10 @@ const ga4 = async (token) => {
   // summing it across channel groups counts anyone who arrived two ways twice.
   const parts = await settle({
     totals: ga4Report(token, w, { metrics: ['sessions', 'totalUsers'] }),
+    // The headline number is un-dimensioned on purpose: derived from `byPage` it would
+    // vanish along with the custom dimension — i.e. exactly during the first month, when
+    // the outcome check (ADR 0047) is read.
+    clicks: ga4Report(token, w, { ...wa }),
     channels: ga4Report(token, w, { dimension: 'sessionDefaultChannelGroup', metrics: ['sessions'] }),
     byPage: ga4Report(token, w, { dimension: 'customEvent:page_slug', ...wa }),
     bySource: ga4Report(token, w, { dimension: 'sessionSourceMedium', ...wa }),
@@ -165,12 +181,17 @@ const ga4 = async (token) => {
   const out = { windows: w, errors: Object.fromEntries(Object.entries(parts).filter(([, p]) => failed(p)).map(([n, p]) => [n, p.error])) }
   if (Object.keys(out.errors).length === 0) delete out.errors
   if (parts.totals.thresholded) out.thresholded = 'GA4 withheld low-volume rows (data thresholding) — totals are a floor'
+  // Custom dimensions are not retroactive: an empty trailing breakdown next to a populated
+  // current one is the registration date showing through, not a collapse in clicks.
+  if (!failed(parts.byPage) && parts.byPage.current.length && !parts.byPage.trailing.length) {
+    out.no_baseline = 'page_slug was registered inside this window — no comparable baseline for the per-page breakdown yet'
+  }
   for (const range of RANGES) {
     out[range] = {
       sessions: failed(parts.totals) ? null : (parts.totals[range][0]?.sessions ?? 0),
       users: failed(parts.totals) ? null : (parts.totals[range][0]?.totalUsers ?? 0),
       sessions_by_channel: failed(parts.channels) ? [] : parts.channels[range].slice(0, 3).map((r) => ({ channel: r.key, sessions: r.sessions })),
-      whatsapp_click: failed(parts.byPage) ? null : sumBy(parts.byPage[range], 'eventCount'),
+      whatsapp_click: failed(parts.clicks) ? null : (parts.clicks[range][0]?.eventCount ?? 0),
       whatsapp_click_by_page: rank(parts.byPage, range, 'page'),
       whatsapp_click_by_source: rank(parts.bySource, range, 'source'),
     }
@@ -223,7 +244,10 @@ try {
   const token = await accessToken(loadKey())
   Object.assign(snapshot, await settle(Object.fromEntries(Object.entries(sources).map(([n, fn]) => [n, fn(token)]))))
 } catch (e) {
-  for (const name of Object.keys(sources)) snapshot[name] = { error: reason(e) }
+  // Keep the windows even when auth failed: the report still names the range it has no
+  // numbers for, instead of dropping (or inventing) the dates.
+  snapshot.ga4 = { windows: windows(1), error: reason(e) }
+  snapshot.gsc = { windows: windows(3), error: reason(e) }
 }
 
 mkdirSync(dirname(OUT), { recursive: true })
