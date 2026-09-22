@@ -81,6 +81,11 @@ on:
         required: false
         type: string
         default: '40'
+      # The label the publish step applies. Must already exist in the repo — these jobs
+      # deliberately cannot create labels.
+      label:
+        required: true
+        type: string
     secrets:
       # A Claude subscription token from `claude setup-token`, not an API key (ADR 0042).
       claude_code_oauth_token:
@@ -167,8 +172,54 @@ jobs:
             --model claude-sonnet-5
             --max-turns ${{ inputs.max_turns }}
             --allowedTools "${{ inputs.allowed_tools }}"
-            --disallowedTools "Read(/proc/**),Read(/etc/**),Read(~/.claude/**),Bash(env),Bash(env *),Bash(printenv),Bash(printenv *),Bash(cat /proc/*),Bash(grep * /proc/*),Bash(set),Bash(export),Bash(node *),Bash(npx *),Bash(npm *),Bash(python3 *),Bash(python *),Bash(deno *),Bash(curl *),Bash(wget *),Bash(nc *),Bash(ssh *),Bash(eval *),Bash(git push *),Bash(gh api *),Bash(gh pr merge *),Bash(gh secret *),Bash(gh workflow *),Bash(supabase *),Bash(dtctl *),Bash(bluebox *),Bash(jq *),Bash(awk *),Bash(find *),Edit,Write,NotebookEdit,WebFetch,WebSearch"
+            --disallowedTools "Read(/proc/**),Read(/etc/**),Read(~/.claude/**),Bash(env),Bash(env *),Bash(printenv),Bash(printenv *),Bash(cat /proc/*),Bash(grep * /proc/*),Bash(set),Bash(export),Bash(node *),Bash(npx *),Bash(npm *),Bash(python3 *),Bash(python *),Bash(deno *),Bash(curl *),Bash(wget *),Bash(nc *),Bash(ssh *),Bash(eval *),Bash(git push *),Bash(gh api *),Bash(gh pr merge *),Bash(gh secret *),Bash(gh workflow *),Bash(supabase *),Bash(dtctl *),Bash(bluebox *),Bash(jq *),Bash(awk *),Bash(find *),Bash(gh issue create *),Bash(gh issue comment *),Bash(gh issue edit *),Edit,NotebookEdit,WebFetch,WebSearch,Write(.github/**),Write(.claude/**),Write(scripts/**),Write(supabase/**)"
         env:
           # issues:write + contents:read only — the narrowest token that can still
           # open the report issue.
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # The agent writes `report.md`; THIS step publishes it. That split is the point
+      # (roadmap item 14): the agent holds no network write at all, so text it was
+      # talked into producing — by a public issue, or by attacker-influenced analytics
+      # values — has nowhere to go but a file a fixed script inspects first.
+      #
+      # It is not a complete boundary. The agent can still read its own environment
+      # (`$VAR` expands in any allowed command's arguments; `gh --jq` is gojq with
+      # `$ENV`), so it could write a secret INTO the report. That is what the redaction
+      # check below is for: if a secret's value appears in the report, nothing is
+      # published and the run goes red. Encodings would defeat a literal match — this
+      # raises the cost and makes the naive attempt loud, it does not eliminate it.
+      - name: Publish the report
+        if: steps.key.outputs.ready == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LABEL: ${{ inputs.label }}
+          # Read ONLY to be redacted. Both are values the agent could have reached.
+          SCAN_OAUTH: ${{ secrets.claude_code_oauth_token }}
+          SCAN_GH: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ ! -s report.md ]; then
+            echo 'The agent produced no report.md — nothing to publish.' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          # A secret in the report is treated as compromise, not as something to clean
+          # up and ship: publishing a redacted version would hide that it happened.
+          if ! python3 scripts/report-guard.py; then
+            echo 'Report withheld — see the log. Nothing was published.' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          # report-guard wrote title.txt and body.md. The duplicate check compares titles
+          # with `jq --arg`, so agent-authored text never becomes part of a search string
+          # or a filter expression — it stays an argument.
+          title=$(cat title.txt)
+          gh issue list --state all --label "$LABEL" --limit 200 --json number,title > issues.json
+          existing=$(jq -r --arg t "$title" '[.[] | select(.title == $t) | .number] | first // empty' issues.json)
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body-file body.md
+            echo "Appended the report to existing issue #$existing ($title)." >> "$GITHUB_STEP_SUMMARY"
+          else
+            url=$(gh issue create --title "$title" --body-file body.md --label "$LABEL")
+            echo "Opened $url" >> "$GITHUB_STEP_SUMMARY"
+          fi

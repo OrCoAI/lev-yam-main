@@ -520,7 +520,7 @@ proposal — the owner reorders by editing this list.*
       (owner's addition) → *owner hours per data task*
 - [ ] **13. Harness smalls** — shared `build-app.sh`, CI double-run dedupe, decision graph
       (from `docs/ideas.md`) → *CI minutes; context-load time*
-- [ ] **14. Take `gh issue create` off the report agents** *(added 2026-09-22 from item 1's security
+- [x] **14. Take `gh issue create` off the report agents** *(done 2026-09-22, [ADR 0048](decisions/0048-report-agents-hold-no-write-and-actions-are-sha-pinned.md) — the agent writes `report.md`, a deterministic step publishes it and withholds the whole report if a secret's value appears in it; all eight workflows SHA-pinned)* *(added 2026-09-22 from item 1's security
       review)* — the three report jobs deny `env`/`printenv`/`/proc`/`jq`/`awk`/`find`, but a
       bash-capable agent holding a **public** write still reads its own environment: the shell
       expands `$VAR` in any *allowed* command's arguments (`gh issue create --body

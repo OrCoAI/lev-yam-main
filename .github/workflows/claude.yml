@@ -71,9 +71,9 @@ jobs:
     steps:
       # Gives the run the repo's CLAUDE.md, docs/decisions/ and .claude/skills/ —
       # without them the agent would work without the rules it exists to follow.
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
           cache: npm
@@ -92,7 +92,7 @@ jobs:
           fi
 
       - if: steps.key.outputs.ready == 'true'
-        uses: anthropics/claude-code-action@v1
+        uses: anthropics/claude-code-action@cfc3eb22bfed5c26ef66e3223c982af27e4524de # v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           trigger_phrase: "@claude"

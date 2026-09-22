@@ -80,3 +80,4 @@ implementation choices stay in their plan files; an ADR is for a decision that c
 - [0045 — The observability home is re-deferred to the 2027-01-01 quarterly review; the dated re-check list for that review](0045-observability-home-re-deferred-to-2027-01-review.md) — 2026-09-22
 - [0046 — Phase 2 mandate for 2026-Q4: the marketing quarter — every effort goes to reaching the world, measured first](0046-q4-2026-mandate-marketing-quarter.md) — 2026-09-22
 - [0047 — Initiative #1 measures with GA4 + Search Console only; Ahrefs/Semrush are a paid decision; traffic numbers may appear in the public weekly issue](0047-analytics-wiring-ga4-and-gsc-only-public-numbers.md) — 2026-09-22
+- [0048 — The report agents hold no network write: they write a file and a deterministic step publishes it; every third-party action is SHA-pinned](0048-report-agents-hold-no-write-and-actions-are-sha-pinned.md) — 2026-09-22
