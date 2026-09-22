@@ -35,6 +35,7 @@ const OUT = process.env.ANALYTICS_OUT || '.reports/analytics.json'
 const SCOPES = 'https://www.googleapis.com/auth/analytics.readonly https://www.googleapis.com/auth/webmasters.readonly'
 const TOP = 10
 const RANGES = ['current', 'trailing']
+const UNSET = new Set(['(not set)', '(other)', '', '(not set) / (not set)'])
 const TIMEOUT_MS = 20_000
 
 // ── windows ──────────────────────────────────────────────────────────────────
@@ -157,11 +158,11 @@ const ga4Report = async (token, w, { dimension, metrics, filter }) => {
   const split = { current: [], trailing: [], thresholded: Boolean(body.metadata?.subjectToThresholding) }
   for (const row of body.rows || []) {
     const values = (row.dimensionValues || []).map((v) => v.value)
-    // GA4 answers with a literal "(not set)" row for events recorded before a custom
-    // dimension existed — a row, not an absence, so it has to be marked or it gets
-    // published as though it were a real page.
+    // GA4 answers with a literal placeholder ROW, not an absence, when it has no value
+    // for a dimension — mark it or it gets published as though it were a real page.
+    // `(direct) / (none)` is deliberately NOT in that set: it is a real attribution.
     const raw = values[valueAt]
-    const rec = dimension ? { key: clean(raw), unset: raw === '(not set)' } : {}
+    const rec = dimension ? { key: clean(raw), unset: UNSET.has(raw) } : {}
     metrics.forEach((m, i) => { rec[m] = Number(row.metricValues?.[i]?.value) })
     split[values[rangeAt]]?.push(rec)
   }
@@ -198,15 +199,19 @@ const ga4 = async (token) => {
   // Custom dimensions are not retroactive. The signature is a trailing window that HAD
   // clicks but no breakdown for them; an empty breakdown next to zero clicks is just a
   // quiet month, and saying otherwise would suppress a real 0 → N delta.
-  if (!failed(parts.byPage) && !failed(parts.clicks)
-      && !named(parts.byPage, 'trailing').length && parts.clicks.trailing[0]?.eventCount > 0) {
-    out.no_baseline = 'the trailing window has clicks but no named page for any of them — page_slug was registered inside it and GA4 does not backfill, so there is no comparable baseline for the per-page list yet'
-  }
-  // Same signal for the current window: clicks recorded before registration stay
-  // unattributed for good, so "0 pages, N clicks" is history, not a tracking fault.
-  if (!failed(parts.byPage) && !failed(parts.clicks)
-      && !named(parts.byPage, 'current').length && parts.clicks.current[0]?.eventCount > 0) {
-    out.unattributed = 'every click this window predates the page_slug dimension — the per-page list fills from the next clicks onward'
+  // Clicks GA4 could not attribute to a page. Report the COUNT and both possible
+  // causes rather than asserting one: the script cannot see when the custom dimension
+  // was registered, and "the parameter stopped being sent" produces identical rows.
+  // Asserting the harmless cause would print an all-clear over a real tracking fault.
+  if (!failed(parts.byPage)) {
+    const unattributed = Object.fromEntries(RANGES.map((r) =>
+      [r, parts.byPage[r].filter((row) => row.unset).reduce((n, row) => n + row.eventCount, 0)]))
+    if (unattributed.current || unattributed.trailing) {
+      out.page_attribution = {
+        ...unattributed,
+        note: 'clicks carrying no page_slug, excluded from the per-page list (so it need not sum to the total). Either they predate the custom dimension — GA4 does not backfill — or the parameter is not being sent on those pages. Check which before reading the per-page list as complete.',
+      }
+    }
   }
   for (const range of RANGES) {
     out[range] = {
