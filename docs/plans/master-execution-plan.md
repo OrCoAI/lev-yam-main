@@ -263,3 +263,52 @@ Tier-B PRs closely; Tier-A always full review).
 From that moment the operating system is self-sustaining: weekly reports watch the week,
 monthly reviews absorb ideas and audit best practices, quarterly reviews steer — and the
 owner's job is two gates and one judgment session per quarter.
+
+---
+
+## Close-out (2026-09-22 — written at the first quarterly review, [issue #62](https://github.com/OrCoAI/lev-yam-main/issues/62))
+
+**What shipped (Steps 0–3, 5, 6, 12; Step 11's template half):** branch protection on `main`
+(PR + `build` + `tier`, admins included); the decision log (46 ADRs at close) and a slim CLAUDE.md
++ `AGENTS.md`; risk tiers A/B/C with `scripts/check-tier.mjs` as a required check and the committed
+`.claude/settings.json` allowlist; vitest on the pure money math + oxlint ratcheted in CI; six
+product skills with 3-case evals + `obs-best-practices` + `docs/ideas.md`; the five automations
+(`claude.yml`, weekly / monthly / quarterly-prep over one `agent-report.yml` worker, dependabot
+Tier-C auto-merge) on the owner's subscription token; the operating cadence, queue-jumper rule and
+session hygiene in CLAUDE.md; the outcome-metric field in MODULE-TEMPLATE §0 and the close-out ritual.
+
+**Acceptance demonstrated:** Tier C flowed to prod with zero owner interactions (docs #53/#63/#68,
+dependabot #56 — not yet for a code change); all three crons produced an issue (#65, #66, #70) and
+`@claude` produced a merged PR (#67 → #68); the first quarterly review ran live on the pack.
+
+**Schema / permission changes:** none — this block never touched `supabase/`.
+
+**What moved (not counted against the block — [ADR 0044](../decisions/0044-adr-0040-confirmed-and-part-4-reduced-closure.md)):**
+Steps 4, 7, 8, 10 (except its docs carve-out) and the parked parts of 9 and 11 — H9 Phases 1–5 and
+H9.5 A–F — sit under the deferred observability decision, re-deferred with a reason to the
+2027-01-01 review ([ADR 0045](../decisions/0045-observability-home-re-deferred-to-2027-01-review.md)).
+Part 4's criterion 4 (green monitors, armed detectors, evaluating SLOs, an SRG verdict) goes with them.
+The companion plans are closed by reference: `lev-yam-gap-analysis-work-order.md` (G1–G8 delivered,
+G7's acceptance = this review), `observability-best-practices-adoption.md` and
+`observability-coverage.md` (parked, not abandoned).
+
+**Decided on the way (ADRs):** 0035 (H9 reinstated as this block), 0036 (the leash class),
+0037 (oxlint; real test target), 0038 (new dedicated Dynatrace environment — unbuilt), 0039
+(dependabot scope), 0040 (G5 ahead of H9 P5 — confirmed 2026-09-22), 0041 (observability deferred
+to this review), 0042 (subscription token), and the review's own 0043–0046.
+
+**Left out, now ordinary roadmap items:** Step 9's unblocked half (`deno check`, `login/options`
+rate limit); the Step 10/11 docs carve-outs; the skill evals (due at this ceremony, not run); the
+break-glass sign-in check; the `@simplewebauthn/server` bump (dated re-check); "Tier-C *code* change
+flows untouched" stays on the weekly watch list.
+
+**Alignment:** VISION — the block built no product surface and changed no principle; every
+principle held at the review (ADR 0043). ARCHITECTURE — §6c delivery rails are as documented and
+verified; invariants 1–8 hold on the quarter's evidence; the one known gap (no second masking layer,
+H9.5-C) is recorded, not hidden. No drift.
+
+## Outcome check
+
+This plan predates the outcome-metric rule (ADR 0019, from 2026-09-21) and carries no metric table;
+per CLAUDE.md it is not retrofitted. The operating system's own outcome is judged by the next
+quarterly review through the mandate's outcome checks (ADR 0046) and the weekly Harness-health line.

@@ -159,6 +159,12 @@ Verified against prod (all tx-rolled-back): tip never posts as revenue (200 bill
 100+100 across two days, not 250); cross-day deposit lands on its own day; discount breakdown
 returns `{family_friends: 30}`; `rls_matrix` +18 assertions green.
 
+**Alignment** *(added 2026-09-22 at the first quarterly review — the 2026-07-22 close-out shipped
+without this line, the one ritual miss the review's evidence pack found)*: serves VISION P6 (real
+numbers, guarded — every shekel now has a payment row and every discount an attribution) and holds
+the ARCHITECTURE invariants — RPC-only tables with RLS on, money derived server-side from
+`pos_payments` (client values ignored), voids leave a trail and edits are manager-only on open bills, bilingual UI. No drift.
+
 ## Gate
 
 Full gate + `rls_matrix` assertions for every new RPC (take/edit/void payment on open vs
