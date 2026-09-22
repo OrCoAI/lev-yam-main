@@ -289,10 +289,11 @@ established, both load-bearing:
   `CLAUDE_CODE_OAUTH_TOKEN`. `agent-report.yml` **deletes the workspace copy** before the action runs
   and does not pass `settings:`. Its other layers are `--disallowedTools` (deny beats allow) and
   `contents: read` + an explicit `github_token`, which pin API calls to the job's own scoped token.
-  **The CLI's `--restricted` / `--tools` / `--permission-prompts` are not usable here:** the action
-  runs the `@anthropic-ai/claude-agent-sdk`, which accepts only `--mcp-config`, `--allowedTools`,
-  `--disallowedTools`, `--max-turns`, `--model` and `--append-system-prompt`. Passing the others
-  killed every run in ~120ms with `is_error: true` and no error text. Don't reintroduce them.
+  **The CLI's `--restricted` / `--tools` / `--permission-prompts` are not usable here.** The action
+  installs Claude Code but drives it *through* the agent SDK, translating `claude_args` into SDK
+  options — so only the documented set survives the translation: `--mcp-config`, `--allowedTools`,
+  `--disallowedTools`, `--max-turns`, `--model`, `--append-system-prompt`. Passing the others killed
+  every run in ~120 ms with `is_error: true` and no error text. Don't reintroduce them.
 - **`claude.yml` denies `git push` outright.** It genuinely needs Edit/Write/build, and an agent
   that can write a file and run a build can run code — inherent, not pluggable. What it must
   never reach is a deploy: `deploy-staging.yml` fires on *any* push to `staging`, and
@@ -304,6 +305,13 @@ established, both load-bearing:
 
 All five workflows need **`id-token: write`** — the action mints its token through GitHub's OIDC
 endpoint and fails without it. It is not a repo-write grant.
+
+**A skill's `queries.md` and its workflow's `allowed_tools` are one unit.** The weekly report failed
+its first live run because the skill's shell pipelines (`date`, `grep`, `awk`) and its `dtctl` /
+`bluebox` sections were not in the allowlist: each denial costs a turn, and the turn budget ran out
+before the issue was written. Change one, check the other. `max_turns` is a **runaway guard, not a
+budget** — the action fails a job that finishes successfully past the cap, so set it well above the
+real count (observed: weekly 73, monthly 50, quarterly 34).
 
 In `claude_args`, any value containing a space must stay quoted — the action shell-tokenizes each
 line, so a bare `Bash(git log *)` splits into three tokens and the rule silently stops matching

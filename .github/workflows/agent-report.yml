@@ -59,6 +59,11 @@ on:
           data — it is interpolated into the CLI argument line.
         required: true
         type: string
+      # A RUNAWAY GUARD, not a budget. The action fails the job when Claude finishes
+      # successfully past this number, so a cap set near the real turn count turns a
+      # good report into a red X. Observed on the first live runs: weekly 73, monthly 50,
+      # quarterly 34. 120 leaves headroom; cost is bounded by the work (~$1/run), not by
+      # this number.
       max_turns:
         # string, not number: Actions renders a `number` input in decimal form, and
         # `--max-turns 40.0` is not a valid turn count.

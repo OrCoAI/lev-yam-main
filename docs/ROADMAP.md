@@ -427,17 +427,14 @@ block produces (work order G7).*
 - [x] **Step 5** — product skills (product-context, feature-spec, idea-capture + `docs/ideas.md`,
       weekly-review, feedback-triage, quarterly-review) with 3-case evals; obs-best-practices installed
       *(done 2026-09-21, PR #54 — pulled ahead of the blocked Step 4)*
-- [ ] **Step 6 — shipped 2026-09-21, acceptance 3 of 4 demonstrated** — automations: `@claude` action,
-      weekly / monthly / quarterly-prep crons (one shared `agent-report.yml` worker), dependabot → Tier C
-      auto-merge ([ADR 0039](decisions/0039-dependabot-auto-merge-scope.md)); running on the owner's
-      subscription token ([ADR 0042](decisions/0042-agent-workflows-run-on-the-subscription-token.md)).
-      **Acceptance runs 2026-09-21:** quarterly-prep ✅ (#65, closed as the test artifact — the live pack
-      is #62); monthly-triage ✅ (#66, real content; the run was marked failed only for finishing at turn
-      50 against a cap of 40); `@claude` ✅ (#67 → branch → PR, one-line docs change, merged on green);
-      **weekly-review ❌** — ran out of turns (40) before opening its issue, 14 denied tool calls (the
-      skill's `dtctl`/`bluebox` sections and shell helpers outside the allowlist). Tuned: caps to 60,
-      read-only helpers allowed, CI-n/a for the observability sections, duplicate-issue guard, explicit
-      quarter rule. **Ticks when a weekly dispatch produces its issue.**
+- [x] **Step 6** — automations: `@claude` action, weekly / monthly / quarterly-prep crons (one shared
+      `agent-report.yml` worker), dependabot → Tier C auto-merge
+      ([ADR 0039](decisions/0039-dependabot-auto-merge-scope.md)); running on the owner's subscription
+      token ([ADR 0042](decisions/0042-agent-workflows-run-on-the-subscription-token.md)).
+      **G4 acceptance met 2026-09-21/22:** `@claude` on issue #67 → branch → PR #68 merged on green;
+      quarterly-prep → #65; monthly-triage → #66; weekly-review → #70. Three tuning rounds on the way
+      (PR #59 `id-token: write`, PR #61 flag set, PR #69 allowlist ↔ skill mismatch + caps) — each found
+      by a live run, none by review.
 - [ ] **Step 7 — PARKED** — H9 Phase 2 + H9.5-D: `/app` RUM (New RUM frontend), masking, staging exclusion, §6b rewrite *(parked on the deferred observability-home decision — ADR 0041)*
 - [ ] **Step 8 — PARKED** — H9.5-C: OpenPipeline masking in both environments; invariant 3 gains its second layer *(parked on the deferred observability-home decision — ADR 0041)*
 - [ ] **Step 9 — PARTIAL, two items unblocked** — H9 Phase 3. **Unblocked and pending (no Dynatrace
