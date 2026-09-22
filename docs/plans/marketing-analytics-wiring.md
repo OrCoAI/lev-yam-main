@@ -244,6 +244,16 @@ and aggregate traffic counts are not PII, prices or customer data, with Search C
 anonymisation threshold suppressing rare queries; 5 is n/a (no user-facing text); 8 is satisfied by
 this plan and the roadmap tick. **No drift.**
 
+**Scope (e) proven, 2026-09-22 18:27 UTC** — the last unproven piece, tested at the owner's request
+before closing: `monthly-triage` and `quarterly-prep` dispatched on `main` after PR #75. Both ran the
+analytics snapshot, both agents read it (the monthly digest opens with the GA4/GSC numbers where it
+used to end with "no analytics credentials"; the quarterly evidence pack's §4 *Analytics trajectory*
+quotes them), and both published through the **comment** path — matching `Monthly roadmap review
+2026-08` (#66) and `Quarterly review 2026-Q3` (#62) by exact title rather than duplicating. With the
+weekly run's **create** path (#77), every branch of the new publish contract has now executed once
+in CI. Those two comments are acceptance output appended to the cycle's real issues; each says so in
+its first paragraph.
+
 **Discovered follow-ups** are listed above; item 14 shipped immediately at the owner's direction.
 
 ## Outcome check
