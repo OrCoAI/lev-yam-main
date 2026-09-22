@@ -1,4 +1,9 @@
-# Weekly review YYYY-WW (YYYY-MM-DD → YYYY-MM-DD)
+# Weekly review YYYY-Www
+<!-- The title line is matched EXACTLY against existing issues to decide comment-vs-create,
+     so it carries the ISO week and nothing else — no date range, no suffix. The window goes
+     on the line below. Issue #77 duplicated #74 because this heading used to carry it. -->
+
+*Window: YYYY-MM-DD → YYYY-MM-DD.*
 
 **On course?** one sentence.
 
