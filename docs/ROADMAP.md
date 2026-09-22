@@ -490,9 +490,11 @@ venue and what it gives to people."** Each line is its own initiative through `f
 Outcome metric and a check date (ADR 0019); one spec per session. The order is the review's
 proposal — the owner reorders by editing this list.*
 
-- [ ] **1. Analytics wiring** — GA4 `whatsapp_click` as a key event, Search Console, Ahrefs/Semrush
-      (connected as MCP) feeding the `weekly-review` analytics headline → *every other outcome
-      becomes measurable*. **First kickoff.**
+- [ ] **1. Analytics wiring** — GA4 `whatsapp_click` as a key event + GA4 Data API + Search Console
+      feeding the `weekly-review` analytics headline through a workflow-side snapshot the agent only
+      reads → *every other outcome becomes measurable*. **Kicked off 2026-09-22:**
+      [plans/marketing-analytics-wiring.md](plans/marketing-analytics-wiring.md), check date 2026-10-19.
+      Ahrefs/Semrush parked as a spend decision ([ADR 0047](decisions/0047-analytics-wiring-ga4-and-gsc-only-public-numbers.md)).
 - [ ] **2. Story pages at cadence + the authoring tool** — a story pair (HE + AR) from a brief with
       chrome, twin, hub and sitemap handled; `FACTS.md` gaps filled as pages need them → *organic
       sessions and `whatsapp_click` by `page_slug`*
@@ -612,12 +614,13 @@ strategy driving it is private and lives outside the repo.*
       needs Nimer), plus whatever the first content sessions surface as missing
       *(→ Q4 mandate item 2, as pages need them)*
 - [ ] Mark `whatsapp_click` as a key event in the GA4 UI (console-side, not repo)
-      *(→ Q4 mandate item 1)*
+      *(→ Q4 mandate item 1, [plans/marketing-analytics-wiring.md](plans/marketing-analytics-wiring.md) scope (a))*
 - [ ] **Regenerate `CLAUDE_CODE_OAUTH_TOKEN` at the 2027-01-01 quarterly review** — the agent workflows run
       on the owner's subscription token ([ADR 0042](decisions/0042-agent-workflows-run-on-the-subscription-token.md));
       it is long-lived but not permanent, and an expired token fails **loudly** (auth error), not with the silent
       clean exit a *missing* one produces. `claude setup-token` → `gh secret set`. The unused `ANTHROPIC_API_KEY`
-      secret (expires 2027-01-31) can be deleted from the repo
+      secret (expires 2027-01-31) can be deleted from the repo. **Same session: rotate `GOOGLE_SA_KEY`**
+      (the analytics service-account key, [ADR 0047](decisions/0047-analytics-wiring-ga4-and-gsc-only-public-numbers.md))
 - [ ] **Dynatrace RUM on the marketing site is dead** (tag returns 404 since the sprint tenant was
       deactivated, found 2026-09-09): replace the tag with the new environment's once it exists
       (Tier A, `index.html` + `stories/_template.html`) — [ADR 0038](decisions/0038-new-dedicated-dynatrace-environment.md).

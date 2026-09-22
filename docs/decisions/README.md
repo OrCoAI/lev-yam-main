@@ -79,3 +79,4 @@ implementation choices stay in their plan files; an ADR is for a decision that c
 - [0044 — ADR 0040 confirmed; the Operating-system block closes on a reduced Part 4, and Phase 2 opens](0044-adr-0040-confirmed-and-part-4-reduced-closure.md) — 2026-09-22
 - [0045 — The observability home is re-deferred to the 2027-01-01 quarterly review; the dated re-check list for that review](0045-observability-home-re-deferred-to-2027-01-review.md) — 2026-09-22
 - [0046 — Phase 2 mandate for 2026-Q4: the marketing quarter — every effort goes to reaching the world, measured first](0046-q4-2026-mandate-marketing-quarter.md) — 2026-09-22
+- [0047 — Initiative #1 measures with GA4 + Search Console only; Ahrefs/Semrush are a paid decision; traffic numbers may appear in the public weekly issue](0047-analytics-wiring-ga4-and-gsc-only-public-numbers.md) — 2026-09-22
