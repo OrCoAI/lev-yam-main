@@ -513,7 +513,14 @@ proposal — the owner reorders by editing this list.*
       tested; prereq H4 done) → *event inquiries*
 - [ ] **9. Backlink programme** — tourism, food/travel, Arab-society media → *referring domains*
 - [ ] **10. Paid test** — a small Meta/Google campaign against one or two pages → *cost per WhatsApp
-      conversation*
+      conversation*. **Prerequisite, owner 2026-09-22:** before spending anything, prove the paid
+      path is connected end to end — UTM tagging on every ad URL, the campaign landing in GA4 as
+      `Paid Social` / `Paid Search` (not `Unassigned`), Meta Pixel `Contact` firing, and
+      `whatsapp_click` attributable to the campaign by `page_slug` *and* source. Evidence this is
+      not theoretical: a Paid Social campaign ran and stopped inside the trailing window on
+      2026-09-22 (43 sessions → 0, ~66% of the week-over-week drop) and nothing in the system
+      linked the spend to the clicks it bought — the weekly report could show the fall but not
+      the cost per conversation, which is exactly this item's metric.
 - [ ] **11. Content automation** — `@claude` drafts story twins from a brief issue, gated on the
       owner's tone + facts review → *pages per week*
 - [ ] **12. Platform modules as MCP** — agents work on platform data through RLS-scoped access
