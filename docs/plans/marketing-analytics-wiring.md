@@ -178,6 +178,24 @@ runs; the GA4 key-event mark and the custom dimension are console toggles the ow
   needs no new GitHub permission since `id-token: write` is already granted — worth re-deciding at
   the 2027-01-01 rotation rather than treating ADR 0047 §2 as settled.
 
+## Attribution verified end to end (2026-09-22)
+
+The first snapshots reported every `whatsapp_click` as unattributed, with the honest note that
+this was *either* history predating the custom dimension *or* the parameter no longer being sent.
+Resolved to the first, by evidence rather than assumption:
+
+- The owner tapped a live CTA; GA4 **realtime** showed `whatsapp_click ×1` — the event fires.
+- `https://levyam.com/js/wa-track.js` is **byte-identical** to the repo's copy and contains
+  `gaEvent('whatsapp_click', { page_slug: slug, … })`; the deployed homepage serves
+  `<body data-page-slug="home">`. So the parameter is being sent.
+- GA4's Data API had not yet processed the day, so the dimension's first values arrive within
+  hours. Nothing further is required.
+
+Method note for next time: GA4's **Realtime** API does not accept `customEvent:*` dimensions
+(`400 INVALID_ARGUMENT`), so realtime can prove an event fired but never that it carries a custom
+parameter. Comparing the deployed asset against the repo answers the client half immediately;
+the Data API answers the server half on its own schedule.
+
 ## Discovered follow-ups
 
 - **Manual dispatch and the schedule disagree on the ISO week.** The acceptance run
