@@ -15,7 +15,8 @@
   answer-first in the first two sentences of .story-lede, root-absolute asset
   paths, og:image REQUIRED (same /img/stories/<slug>/card.jpg as the Hebrew
   twin — image files are shared), meta title ≤ 60 chars, description ≤ 155,
-  FAQ text identical to the JSON-LD, at most ONE --wide figure, no H3s.
+  FAQ text identical to the JSON-LD, at most ONE --wide figure, no H3s,
+  no links in the body text (ADR 0050).
 -->
 <html lang="ar" dir="rtl">
 <head>
@@ -223,8 +224,10 @@
           <figcaption>{{CAPTION_AR}}</figcaption>
         </figure>
 
-        <!-- Video — self-hosted mp4 ≤8MB, 16:9, poster required (the poster
-             is fetched eagerly — compress it like a figure, ~100KB):
+        <!-- Video — self-hosted mp4 ≤8MB, 16:9, poster required, loads nothing
+             until tapped — or, with muted loop data-autoplay on the <video>, until
+             it scrolls into view, then plays muted while on screen (js/stories.js,
+             ADR 0051). The poster is fetched eagerly — compress it like a figure, ~100KB):
         <figure class="story-figure story-video">
           <video controls preload="none" playsinline
                  poster="/img/stories/{{SLUG}}/clip-poster.jpg" width="1600" height="900">

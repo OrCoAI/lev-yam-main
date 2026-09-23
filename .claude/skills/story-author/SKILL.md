@@ -26,16 +26,17 @@ quote. If the target query is missing, ask for it — one closed question — be
 ## Procedure
 
 1. **Read, don't recall:** `FACTS.md` in full, `stories/_template.html`,
-   `stories/_template.ar.html`, and every existing `stories/<slug>/index.html` title (for
-   internal links and to refuse a near-duplicate — one page, one query cluster).
+   `stories/_template.ar.html`, and every existing `stories/<slug>/index.html` title (to
+   refuse a near-duplicate — one page, one query cluster).
 2. **Slug:** English kebab-case, shared by both twins (`stories/<slug>/`, `stories/ar/<slug>/`).
    Refuse a slug that already exists.
 3. **Hebrew draft** from `_template.html`, every `{{PLACEHOLDER}}` replaced. The RULES block at
    the top of the template is the rule set (facts, no prices, answer-first, meta limits, FAQ ↔
    JSON-LD identical, every figure in the one 16:9 frame); this skill adds only:
    - H1 carries the target query. Body 250–500 words, real names and places where `FACTS.md`
-     has them, no marketing generics. FAQ 3–5 Q&As. Two or three internal links to existing
-     stories or homepage sections, inside the body text (there is no links block).
+     has them (unless it says a name stays off the pages), no marketing generics. FAQ 3–5 Q&As. **No links in the body text** — the
+     page is read top to bottom, and a link out of it mid-paragraph is not where a reader expects
+     to go next (ADR 0050). The site nav and the WhatsApp CTA are the ways onward.
    - A missing fact becomes `[חסר: what is needed]` in the text, never a guess.
    - `levyam:published` = today; canonical, the three `hreflang` links and `og:image` carry
      the slug.
@@ -54,7 +55,8 @@ quote. If the target query is missing, ask for it — one closed question — be
    `scripts/story-images.sh <photo> <slug> [--focus top|center|bottom]` writes the three
    derivatives under `img/stories/<slug>/` (sizes in `media/README.md`), rotation applied,
    metadata stripped. It refuses a source under 1600×900; if nothing fits, stop with a named
-   photo request.
+   photo request. A second photo or a video montage is not scripted yet — the first pair's
+   by-hand recipe is in `docs/plans/stories-authoring-tool.md` (Status, 2026-09-23).
 6. **Generate:** `node scripts/gen-stories-index.mjs` — stamps chrome, rebuilds both hubs and
    `sitemap.xml`, and fails on a missing twin, a stale canonical, a leftover placeholder, a
    referenced image that does not exist, or an `og:image` that is not the slug's `card.jpg`.

@@ -505,6 +505,8 @@ proposal — the owner reorders by editing this list.*
       check date 2026-10-25. **Tool + template merged to main 2026-09-23 (PRs
       [#79](https://github.com/OrCoAI/lev-yam-main/pull/79), [#80](https://github.com/OrCoAI/lev-yam-main/pull/80));
       the four pairs follow, one PR each, via `story-author` — first: team day by the sea**
+      *(drafted 2026-09-23, PR pending Arabic sign-off; follow-up: script the extra-figure and
+      video-montage steps — `story-images.sh --as`, `scripts/story-video.sh`, Tier A)*
 - [ ] **3. Local SEO cluster** — near Caesarea / Hadera / Jisr, directions, "things to do",
       fish-restaurant intents → *local-pack impressions, direction requests*
 - [ ] **4. AEO layer** — `facts.txt` / `llms.txt` expansion, `FAQPage` + `Event` JSON-LD, answer-first
