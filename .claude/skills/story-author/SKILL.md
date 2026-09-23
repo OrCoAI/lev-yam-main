@@ -32,16 +32,17 @@ quote. If the target query is missing, ask for it — one closed question — be
    Refuse a slug that already exists.
 3. **Hebrew draft** from `_template.html`, every `{{PLACEHOLDER}}` replaced. The RULES block at
    the top of the template is the rule set (facts, no prices, answer-first, meta limits, FAQ ↔
-   JSON-LD identical, one wide figure at most); this skill adds only:
+   JSON-LD identical, every figure in the one 16:9 frame); this skill adds only:
    - H1 carries the target query. Body 250–500 words, real names and places where `FACTS.md`
      has them, no marketing generics. FAQ 3–5 Q&As. Two or three internal links to existing
-     stories or homepage sections.
+     stories or homepage sections, inside the body text (there is no links block).
    - A missing fact becomes `[חסר: what is needed]` in the text, never a guess.
    - `levyam:published` = today; canonical, the three `hreflang` links and `og:image` carry
      the slug.
    - CTA lead and the URL-encoded WhatsApp message are page-specific and mention the topic.
-   - The column figure needs a **4:3 image at 1600×1200** (`/img/{{IMAGE_PATH}}`): pick one
-     from `img/gallery/` (`08`, `09`, `10`, `14`, `18` are 1600×1200) or delete the whole
+   - The figure needs a **landscape image at least 1600px wide** (`/img/{{IMAGE_PATH}}`); the
+     frame crops it to 16:9. Pick one from `img/gallery/` (`08`, `09`, `10`, `14`, `18` are
+     1600×1200) or delete the whole
      `<figure>` — the generator refuses a page that references a missing image.
    - Leave the chrome regions (between the `chrome:header` / `chrome:footer` markers) exactly
      as the template has them — the generator stamps them.
@@ -52,7 +53,7 @@ quote. If the target query is missing, ask for it — one closed question — be
    propose 1–2 candidates for the hero; the owner picks. Then
    `scripts/story-images.sh <photo> <slug> [--focus top|center|bottom]` writes the three
    derivatives under `img/stories/<slug>/` (sizes in `media/README.md`), rotation applied,
-   metadata stripped. It refuses a source under 1600×800; if nothing fits, stop with a named
+   metadata stripped. It refuses a source under 1600×900; if nothing fits, stop with a named
    photo request.
 6. **Generate:** `node scripts/gen-stories-index.mjs` — stamps chrome, rebuilds both hubs and
    `sitemap.xml`, and fails on a missing twin, a stale canonical, a leftover placeholder, a
