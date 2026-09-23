@@ -22,8 +22,8 @@ keep the ~180 lines of copied chrome in step with the homepage — which is why 
 |---|---|
 | Metric | **Real story pairs live and indexed** (primary) and **Search Console impressions for `/stories/` URLs** (primary); `whatsapp_click` events with a `/stories/` `page_slug` recorded as a secondary number, not pass/fail |
 | Source | repo (`sitemap.xml` entries minus `dugma`) · `.reports/analytics.json` GSC pages block via `weekly-review` · GA4 `whatsapp_click` by `page_slug` |
-| Baseline (today) | 0 pairs · 0 impressions · 0 clicks (2026-09-22) |
-| Target | 4 pairs live and indexed · impressions > 0 on at least 2 of the 4 · clicks: any |
+| Baseline (today) | 0 pairs · 0 impressions · 0 clicks (2026-09-22) · GSC finds the site almost only for brand queries (2026-09-23) |
+| Target | ~~4 pairs live and indexed · impressions > 0 on at least 2 of the 4~~ → **amended 2026-09-23 ([ADR 0052](../decisions/0052-stories-four-pairs-a-week-for-the-first-month.md)): 16 pairs live and indexed by 2026-10-24 (4 a week)**; share of backlog queries with a story page in GSC **top 3** (reported, first read — no pass line yet); story impressions and clicks; AI-citation spot-check log (below) · clicks: any |
 | Check date | **2026-10-25** (planned merge of the last pair by 2026-10-04 + 3 weeks; corrected at close-out to the real merge date + 3 weeks) — `weekly-review` lists it when due |
 | Verdict owner | owner |
 
@@ -181,12 +181,54 @@ otherwise B. Applied from the owner's change sheet:
   the same two edges at 390 / 1280 / 1440, both languages; no horizontal overflow at any width.
 - Not carried over: the review artifact's own panel copy (it is a mirror, republished after).
 
+## Cadence and backlog (ADR 0052, 2026-09-23)
+
+Four pairs a week for four weeks, then the owner decides the pace. **Backlog approved by the owner
+2026-09-23** — one page per query cluster; "facts" says whether `FACTS.md` already covers
+it or which gap must be answered first (those are ordered last).
+
+| # | Week | Hebrew query (as typed) | Slug | Facts |
+|---|---|---|---|---|
+| 1 | 1 | יום גיבוש על חוף הים | `team-day-by-the-sea` | ✓ — **live 2026-09-23** (PR #83) |
+| 2 | 1 | מקום לאירוע חברה ליד קיסריה / חדרה | `company-event-near-caesarea` | answered 2026-09-23 (owner): ~10 min from Caesarea, ~15 min from Hadera by car — into `FACTS.md` with the page |
+| 3 | 1 | איך מגיעים לכפר הדייגים ג'סר א-זרקא | `how-to-get-to-jisr-az-zarqa` | ✓ (car only; transit unverified) |
+| 4 | 1 | אירוע פרטי על חוף הים | `private-event-on-the-beach` | ✓ |
+| 5 | 2 | יום אסטרטגיה מחוץ למשרד ליד הים | `strategy-offsite-by-the-sea` | ✓ |
+| 6 | 2 | מקום לסדנה או ריטריט ליד הים | `workshop-retreat-venue-by-the-sea` | ✓ (no lodging — say so) |
+| 7 | 2 | איפה אוכלים בג'סר א-זרקא | `where-to-eat-in-jisr-az-zarqa` | ✓ weekends + kitchen; not a restaurant — the page says what it is |
+| 8 | 2 | סוף שבוע בכפר הדייגים ג'סר א-זרקא | `weekend-at-the-fishing-village` | gap: what a typical weekend's content events are |
+| 9 | 3 | יום הולדת או חגיגה משפחתית ליד הים | `birthday-by-the-sea` | ✓ |
+| 10 | 3 | קייטרינג כשר לאירוע על חוף הים | `kosher-catering-beach-event` | ✓ (kitchen not kosher; kosher catering allowed) |
+| 11 | 3 | קהילת יזמים / יום עבודה משותף ליד הים | `sunday-community-by-the-sea` | ✓ |
+| 12 | 3 | כפר הדייגים ג'סר א-זרקא — מה זה | `jisr-az-zarqa-fishing-village` | ✓ (entity page for AEO) |
+| 13 | 4 | מה עושים בג'סר א-זרקא | `things-to-do-in-jisr-az-zarqa` | partial: tours, trail, beach |
+| 14 | 4 | שביל ישראל בג'סר א-זרקא | `israel-trail-jisr-az-zarqa` | gap: the trail segment details |
+| 15 | 4 | דגים טריים מהים לשולחן | `sea-to-table-fish` | gap: Nimer's fishing calendar (Nimer) |
+| 16 | 4 | עונת הדיג בחוף הכרמל / איסור דיג | `fishing-seasons-carmel-coast` | ✓ public facts in `FACTS.md` (not attributed to Nimer) |
+
+**AI-citation spot-check (owner, weekly, ~10 min):** ask ChatGPT, Perplexity and Google the
+queries of pages already live, log `cited / not cited` per assistant. Claude turns the log into
+the trend at the 2026-10-24 review.
+
+| Week of | Query # | ChatGPT | Perplexity | Google AI Overview |
+|---|---|---|---|---|
+| *(first entries after the week-1 pages merge)* | | | | |
+
+**Throughput order:** (1) script the extra-figure + video steps (Tier A PR, before week 2);
+(2) item 11 kickoff (`@claude` drafts from a brief issue) — own session; (3) two pairs per
+session, reviewed together on localhost; each pair its own PR; owner reviews the Arabic.
+
 ## Follow-ups discovered (logged, not done here)
 
-- **AR header at 1280px:** the WhatsApp icon in `.header-social` overlaps the last nav item
-  ("تواصلوا معنا") on the Arabic pages — pre-existing (verified against `main` during step zero
-  on 2026-09-22), untouched by this diff. Now a one-line fix in `_template.ar.html` thanks to
-  stamping; do it with the first real Arabic page, where it will be looked at on staging anyway.
+- **Desktop header overlap — site-wide, not a one-liner (re-measured 2026-09-23):** the
+  absolutely-centred `.primary-nav` (`css/styles.css`) runs into `.header-social` between 961 and
+  ~1300px, **homepage and stories, both languages**. Overlap in px (nav's last item vs the social
+  block): AR 961→116 · 1100→47 · 1201→48 · 1280→9 · 1300→0; HE 961→77 · 1100→7 · 1201→3 · 1280→0.
+  The logo side has 120–270px free. Moving the nav next to the logo alone still leaves ~20px at
+  961 AR, so it needs a design call (tighter nav for AR, an earlier hamburger breakpoint for AR, or
+  both). **Own Tier B PR, fresh session** (owner, 2026-09-23). Method: `screenshot.mjs --viewport
+  xwide --js` with a same-origin `<iframe>` per width (media queries follow the iframe) —
+  the harness has no custom widths.
 
 ## Decisions made on the way
 

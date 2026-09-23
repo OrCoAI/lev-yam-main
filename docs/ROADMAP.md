@@ -505,8 +505,13 @@ proposal — the owner reorders by editing this list.*
       check date 2026-10-25. **Tool + template merged to main 2026-09-23 (PRs
       [#79](https://github.com/OrCoAI/lev-yam-main/pull/79), [#80](https://github.com/OrCoAI/lev-yam-main/pull/80));
       the four pairs follow, one PR each, via `story-author` — first: team day by the sea**
-      *(drafted 2026-09-23, PR pending Arabic sign-off; follow-up: script the extra-figure and
-      video-montage steps — `story-images.sh --as`, `scripts/story-video.sh`, Tier A)*
+      **Pair 1 `team-day-by-the-sea` LIVE 2026-09-23 (PR #83); follow-up: script the extra-figure and
+      video-montage steps — `story-images.sh --as`, `scripts/story-video.sh`, Tier A.**
+      **→ amended 2026-09-23 ([ADR 0052](decisions/0052-stories-four-pairs-a-week-for-the-first-month.md)):
+      4 pairs a week for four weeks = 16 by 2026-10-24, then the owner sets the pace; backlog in the
+      plan; item 11 pulled forward; "number one" = GSC top-3 share + manual AI-citation check**
+      *(bug found 2026-09-23: desktop header nav overlaps the social icons at 961–1300px, site-wide,
+      HE + AR — own Tier B PR; measurements in the plan's follow-ups)*
 - [ ] **3. Local SEO cluster** — near Caesarea / Hadera / Jisr, directions, "things to do",
       fish-restaurant intents → *local-pack impressions, direction requests*
 - [ ] **4. AEO layer** — `facts.txt` / `llms.txt` expansion, `FAQPage` + `Event` JSON-LD, answer-first
