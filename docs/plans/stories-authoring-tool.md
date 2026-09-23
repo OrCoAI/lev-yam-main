@@ -219,6 +219,11 @@ otherwise B. Applied from the owner's change sheet:
 - 2026-09-22 — tool half built, gate run, on staging as [PR #79](https://github.com/OrCoAI/lev-yam-main/pull/79);
   awaiting the owner's staging sign-off. Next: photos into `media/`, then the flagship pair
   (team day by the sea) via `story-author`, its own PR.
+- 2026-09-23 — template revision 1 (this file, section above) built on the owner's markup and
+  four localhost rounds; gate run; [PR #80](https://github.com/OrCoAI/lev-yam-main/pull/80)
+  stacked on #79. Owner signed off on staging; **#80 then #79 merged to main, deploy green,
+  routes 200.** Photos are in `media/` (41 usable). Next: the flagship pair via `story-author`,
+  its own session and PR.
 
 ## Close-out
 *(appended when done — CLAUDE.md "Roadmap item close-out")*
