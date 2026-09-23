@@ -37,10 +37,11 @@ already have open.
 
 ```
 node scripts/verify/screenshot.mjs <url> <outPrefix> \
-  [--viewport narrow|mobile|desktop|both] [--js "<expr>"] [--wait ms] [--scale n]
+  [--viewport narrow|mobile|desktop|wide|xwide|both] [--js "<expr>"] [--wait ms] [--scale n]
 ```
 
-- Defaults to **both** = all three viewports (360px narrow, 390px mobile, 1280px desktop),
+- Defaults to **both** = the three judged viewports (360px narrow, 390px mobile, 1280px
+  desktop); `wide` (1440) and `xwide` (1920) are shot by name for wide-screen layouts,
   and prints `!! HORIZONTAL OVERFLOW` per viewport when the document scrolls sideways
   (compared against the configured width — `window.innerWidth` is useless here, it grows to
   fit overflowing content under mobile emulation) — mobile-first is a platform

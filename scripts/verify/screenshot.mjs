@@ -9,14 +9,16 @@
 //   node scripts/verify/screenshot.mjs <url> <outPrefix> [options]
 //
 // Options:
-//   --viewport narrow|mobile|desktop|both   default: both (all three)
+//   --viewport narrow|mobile|desktop|wide|xwide|both   default: both = the
+//                                     three widths every diff is judged at;
+//                                     wide/xwide (1440/1920) are shot by name
 //   --js "<expression>"              evaluated in-page before the shot; may
 //                                     return a Promise (awaited) — use for
 //                                     clicks, form fills, waiting on content
 //   --wait <ms>                      extra settle time after load, default 300
 //   --scale <n>                      deviceScaleFactor, default 1
 //
-// Writes <outPrefix>-narrow.png, <outPrefix>-mobile.png and/or <outPrefix>-desktop.png.
+// Writes <outPrefix>-<viewport>.png per viewport shot (narrow/mobile/desktop by default).
 //
 // Gotchas carried over from hand-run sessions (see the
 // reference-headless-chrome-screenshots memory this script formalizes):
@@ -54,7 +56,13 @@ const VIEWPORTS = {
   narrow: { width: 360, height: 780, mobile: true },
   mobile: { width: 390, height: 844, mobile: true },
   desktop: { width: 1280, height: 800, mobile: false },
+  // Wide-screen checks (the /stories/ margins and the ≥1600 box). `extra`
+  // keeps them out of `both`, which stays the three widths every diff is
+  // judged at — flagged here rather than listed a second time elsewhere.
+  wide:  { width: 1440, height: 900, mobile: false, extra: true },
+  xwide: { width: 1920, height: 1080, mobile: false, extra: true },
 };
+const DEFAULT_SET = Object.keys(VIEWPORTS).filter((n) => !VIEWPORTS[n].extra);
 
 function parseArgs(argv) {
   const [url, outPrefix, ...rest] = argv;
@@ -169,6 +177,10 @@ async function shootViewport(port, opts, name, dims) {
     if (result.exceptionDetails) {
       throw new Error(`--js threw: ${result.exceptionDetails.exception?.description || JSON.stringify(result.exceptionDetails)}`);
     }
+    // A returned value is printed, so an expression can also MEASURE (element
+    // sizes, computed styles) instead of only clicking and waiting.
+    const value = result.result?.value;
+    if (value !== undefined) console.log(`  --js → ${typeof value === 'string' ? value : JSON.stringify(value)}`);
   }
 
   // Measured on every shot, not left to a hand-written --js — see header.
@@ -202,8 +214,8 @@ async function shootViewport(port, opts, name, dims) {
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
   // VIEWPORTS is the single source of truth — a new width is shot by default
-  // without editing a second list (forgetting that is how 360 went unshot).
-  const names = opts.viewport === 'both' ? Object.keys(VIEWPORTS) : [opts.viewport];
+  // unless it is marked `extra` (forgetting a second list is how 360 went unshot).
+  const names = opts.viewport === 'both' ? DEFAULT_SET : [opts.viewport];
   for (const n of names) {
     if (!VIEWPORTS[n]) { console.error(`unknown viewport: ${n}`); process.exit(2); }
   }

@@ -7,8 +7,8 @@
   checked (mobile rendering, Rich Results, the language toggle, every design
   block) at any time without touching a real page. Arabic twin: stories/ar/dugma/.
 
-  Demonstrates: hero, lede, byline, body sections, column figure, wide figure,
-  video block, FAQ, CTA with intent icon, related links.
+  Demonstrates: hero, lede, byline, body sections, two figures, video block,
+  FAQ, CTA. Every frame is the same 16:9 box as the text column.
 
   Every fact below comes from FACTS.md. Nothing invented, no price anywhere.
   (The video-block demo reuses the homepage hero clip — real story clips should
@@ -46,7 +46,7 @@
   <!-- The hero image is the LCP — preload it with the same srcset/sizes. -->
   <link rel="preload" as="image" fetchpriority="high"
         imagesrcset="/img/stories/dugma/hero-800.jpg 800w, /img/stories/dugma/hero-1600.jpg 1600w"
-        imagesizes="(min-width: 1100px) 1100px, 100vw">
+        imagesizes="(min-width: 1600px) min(68vw, 1280px), (min-width: 800px) 736px, 100vw">
 
   <link rel="icon" href="/img/logo/logo-mark.png" type="image/png">
   <link rel="apple-touch-icon" href="/img/logo/logo-mark.png">
@@ -108,6 +108,8 @@
 
   <a class="skip-link" href="#story-main">דלג לתוכן הראשי</a>
 
+  <!-- The header and footer between the chrome markers are stamped from stories/_template*.html by scripts/gen-stories-index.mjs — edit the page template. -->
+  <!-- chrome:header -->
   <header class="story-header">
     <div class="hero-topbar">
       <a href="/" class="logo" aria-label="לב ים — דף הבית">
@@ -171,16 +173,17 @@
       </ul>
     </nav>
   </header>
+  <!-- /chrome:header -->
   <div class="wave-divider wave-divider--orange" aria-hidden="true"></div>
 
   <main id="story-main">
     <article class="story">
 
-      <figure class="story-hero">
+      <figure class="container container-narrow story-hero">
         <img src="/img/stories/dugma/hero-1600.jpg"
              srcset="/img/stories/dugma/hero-800.jpg 800w, /img/stories/dugma/hero-1600.jpg 1600w"
-             sizes="(min-width: 1100px) 1100px, 100vw"
-             width="1600" height="800" alt="שקיעה כתומה עם סירת דייגים מתחת לפרגולה בלב ים"
+             sizes="(min-width: 1600px) min(68vw, 1280px), (min-width: 800px) 736px, 100vw"
+             width="1600" height="900" alt="שקיעה כתומה עם סירת דייגים מתחת לפרגולה בלב ים"
              fetchpriority="high" decoding="async">
       </figure>
 
@@ -220,7 +223,7 @@
         <h2>אוכל</h2>
         <p>על המטבח אחראים סמי ואיסראא. הגישה היא מהים לשולחן — אוכל מקומי טרי. אפשר להזמין ארוחה מלאה, פינוקים בין הישיבות, או ארוחת ערב חגיגית.</p>
 
-        <figure class="story-figure story-figure--wide">
+        <figure class="story-figure">
           <img src="/img/services/offsite.jpeg" alt="אירוע עסקי קבוצתי תחת הפרגולה של לב ים" width="1600" height="1066"
                loading="lazy" decoding="async">
           <figcaption>קבוצה תחת הפרגולה, מול הים.</figcaption>
@@ -250,15 +253,6 @@
           </details>
         </div>
 
-        <nav class="story-links" aria-label="קישורים נוספים">
-          <h2>עוד בלב ים</h2>
-          <ul>
-            <li><a href="/#services">מה קורה בלב ים</a></li>
-            <li><a href="/#faq">שאלות ותשובות על לב ים</a></li>
-            <li><a href="/stories/">כל הסיפורים</a></li>
-          </ul>
-        </nav>
-
       </div>
     </article>
 
@@ -277,6 +271,7 @@
     </aside>
   </main>
 
+  <!-- chrome:footer -->
   <footer class="site-footer">
     <div class="container footer-inner">
       <div class="footer-brand">
@@ -314,6 +309,7 @@
       <a href="/app" class="footer-staff-login" rel="nofollow">כניסת צוות</a>
     </div>
   </footer>
+  <!-- /chrome:footer -->
 
   <a class="wa-float"
      href="https://wa.me/972506669138?text=שלום%2C%20אשמח%20לפרטים%20על%20המתחם%20בלב%20ים"

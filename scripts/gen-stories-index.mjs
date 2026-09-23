@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
- * Regenerates sitemap.xml and both /stories/ hubs from the story pages on disk.
+ * Regenerates sitemap.xml, both /stories/ hubs and the shared chrome of every story
+ * page from the story pages on disk.
  *
  *   node scripts/gen-stories-index.mjs           write the files
  *   node scripts/gen-stories-index.mjs --check   fail if the committed files are stale
@@ -25,10 +26,23 @@
  * slugs are logged, so a `noindex` left on by mistake is visible in the build.
  *
  * Underscore-prefixed entries (_template.html, _hub.html, …) are never scanned.
+ *
+ * Chrome stamping (docs/plans/stories-authoring-tool.md, ADR 0049): the header and
+ * footer of every story page AND of both hub templates sit between
+ * <!-- chrome:header --> … <!-- /chrome:header --> (same for footer) and are
+ * REWRITTEN from the per-language page template on every run. Inside a region
+ * only CHROME_VARS may appear: {{HE_URL}} / {{AR_URL}} (the language toggle —
+ * the twin URL on a page, the hub URL on a hub) and {{STORIES_CURRENT}} (the
+ * nav's aria-current, set on the hub only). Rewrite rather than verify-only so
+ * a nav or footer change is one template edit per language; the CTA band and
+ * WhatsApp float carry per-page text, so they are deliberately outside every
+ * region. Applies to noindex pages too (dugma is the smoke test). A page
+ * missing a region, or a template region carrying any other placeholder, fails
+ * the build — that is the drift this exists to remove.
  */
 
 import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs'
-import { join, dirname, basename } from 'node:path'
+import { join, dirname, basename, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -45,6 +59,7 @@ const LANGS = [
     dir: STORIES_DIR,
     hubPath: 'stories/index.html',
     hubTemplate: '_hub.html',
+    pageTemplate: '_template.html',
     urlBase: '/stories/',
     empty: 'בקרוב.',
   },
@@ -53,6 +68,7 @@ const LANGS = [
     dir: join(STORIES_DIR, 'ar'),
     hubPath: 'stories/ar/index.html',
     hubTemplate: '_hub.ar.html',
+    pageTemplate: '_template.ar.html',
     urlBase: '/stories/ar/',
     empty: 'قريبًا.',
   },
@@ -135,6 +151,7 @@ function displayDate(iso) {
 /* ── collect pages ─────────────────────────────────────────────────────── */
 
 const skipped = []
+const pageOutputs = []
 
 function slugsIn(dir) {
   if (!existsSync(dir)) return []
@@ -142,12 +159,114 @@ function slugsIn(dir) {
     .filter((e) => e.isDirectory() && !e.name.startsWith('_') && !LANG_DIRS.has(e.name))
     .map((e) => e.name)
     .filter((slug) => existsSync(join(dir, slug, 'index.html')))
+    .map((slug) => {
+      if (!SLUG_RE.test(slug)) throw new Error(`${relative(ROOT, dir)}/${slug}/ — slugs must be english kebab-case.`)
+      return slug
+    })
 }
+
+/* ── chrome stamping ───────────────────────────────────────────────────── */
+
+// One string for the hero <img sizes> and <link imagesizes> on every page. It encodes
+// css/stories.css: the box is 46rem (736px) from 800px up and clamp(60rem, 68vw, 1280px)
+// from 1600px up; below 800 the hero is the viewport minus the gutter (100vw is close enough).
+const HERO_SIZES = '(min-width: 1600px) min(68vw, 1280px), (min-width: 800px) 736px, 100vw'
+
+const CHROME_VARS = ['HE_URL', 'AR_URL', 'STORIES_CURRENT']
+const REGION_RE = new Map(
+  ['header', 'footer'].map((name) => [
+    name,
+    new RegExp(`<!-- chrome:${name} -->[\\s\\S]*?<!-- /chrome:${name} -->`, 'g'),
+  ])
+)
+
+/** Every chrome region of one document, by name; exactly one of each or it throws. */
+function extractRegions(html, where) {
+  const regions = {}
+  for (const [name, re] of REGION_RE) {
+    const found = html.match(re)
+    if (!found || found.length !== 1) {
+      throw new Error(
+        `${where} must contain exactly one <!-- chrome:${name} --> … <!-- /chrome:${name} --> region (found ${found ? found.length : 0}).`
+      )
+    }
+    regions[name] = found[0]
+  }
+  return regions
+}
+
+const chromeCache = new Map()
+
+/** The page template's chrome, validated once per language: only CHROME_VARS may appear inside a region. */
+function templateChrome(lang) {
+  if (chromeCache.has(lang.code)) return chromeCache.get(lang.code)
+  const regions = extractRegions(readFileSync(join(STORIES_DIR, lang.pageTemplate), 'utf8'), lang.pageTemplate)
+  for (const [name, region] of Object.entries(regions)) {
+    const leftover = CHROME_VARS.reduce((r, v) => r.replaceAll(`{{${v}}}`, ''), region).match(/{{[^}]*}}/)
+    if (leftover) {
+      throw new Error(
+        `${lang.pageTemplate} chrome:${name} carries ${leftover[0]} — only ${CHROME_VARS.map((v) => `{{${v}}}`).join(', ')} may appear inside a stamped region.`
+      )
+    }
+  }
+  chromeCache.set(lang.code, regions)
+  return regions
+}
+
+/** The document with every chrome region replaced by the template's, CHROME_VARS substituted (validated first, so the diagnostic names the document). */
+function stampChrome(html, lang, vars, where) {
+  const chrome = templateChrome(lang)
+  extractRegions(html, where)
+  let out = html
+  for (const [name, re] of REGION_RE) {
+    // Function replacers throughout, so `$` in chrome or in a value is never interpreted.
+    const stamped = CHROME_VARS.reduce((r, v) => r.replaceAll(`{{${v}}}`, () => vars[v]), chrome[name])
+    out = out.replace(re, () => stamped)
+  }
+  return out
+}
+
+const pageVars = (slug) => ({ HE_URL: `/stories/${slug}/`, AR_URL: `/stories/ar/${slug}/`, STORIES_CURRENT: '' })
+const HUB_VARS = { HE_URL: '/stories/', AR_URL: '/stories/ar/', STORIES_CURRENT: ' aria-current="page"' }
+
+/** Slugs are English kebab-case (shared by both twins, and substituted into URLs). scripts/story-images.sh enforces the same rule. */
+const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/
 
 function readPages(lang) {
   const pages = []
   for (const slug of slugsIn(lang.dir)) {
-    const html = readFileSync(join(lang.dir, slug, 'index.html'), 'utf8')
+    const pagePath = join(lang.dir, slug, 'index.html')
+    const where = `${lang.urlBase}${slug}/`
+    const html = stampChrome(readFileSync(pagePath, 'utf8'), lang, pageVars(slug), where)
+    // Every page is an output like the hubs: written when its chrome drifted, stale under --check.
+    pageOutputs.push({ path: relative(ROOT, pagePath), content: html })
+
+    // Both checks look at what renders: the template ships optional blocks
+    // commented out (a video figure with its own placeholders and poster path).
+    const rendered = html.replace(/<!--[\s\S]*?-->/g, '')
+
+    // A template placeholder left anywhere in a page ships as literal text.
+    const placeholder = rendered.match(/{{[^}]*}}/)
+    if (placeholder) throw new Error(`${where} still carries the placeholder ${placeholder[0]}.`)
+
+    // The hero's `sizes` hint (the <img> and its <link rel=preload>) mirrors
+    // css/stories.css's column steps and is repeated on every page; a token
+    // change there must fail here rather than silently fetch the wrong hero
+    // file on some pages. Scoped to the two tags that name the hero file — a
+    // favicon `sizes` or a figure's own srcset hint is not this check's business.
+    for (const tag of rendered.match(/<(?:img|link)\b[^>]*hero-1600\.jpg[^>]*>/g) || []) {
+      const m = tag.match(/\s(?:image)?sizes="([^"]*)"/)
+      if (!m || m[1] !== HERO_SIZES) {
+        throw new Error(`${where} hero sizes is ${m ? `"${m[1]}"` : 'missing'}; expected "${HERO_SIZES}" (HERO_SIZES).`)
+      }
+    }
+
+    // Every image the page references (og:image, hero src/srcset, the gallery
+    // figure, video poster, the logo) must exist on disk — img/ is in the tree
+    // when this runs. Case-sensitive: macOS hides a case typo, Pages does not.
+    for (const ref of new Set(rendered.match(/\/img\/[A-Za-z0-9_/-]+\.[A-Za-z0-9]+/g) || [])) {
+      if (!existsSync(join(ROOT, ref))) throw new Error(`${where} references ${ref}, which does not exist.`)
+    }
 
     // Checked before the noindex skip so even unlisted pages (dugma) can't
     // carry a drifted pixel ID.
@@ -186,13 +305,13 @@ function readPages(lang) {
     }
 
     // The hub card's photo IS the page's og:image — one source of truth. Every
-    // indexed story must front a real photo (1200×630, /img/stories/<slug>/card.jpg
-    // by convention; HE and AR twins share the files). A logo or off-site URL
-    // fails the build rather than shipping a broken-looking hub.
+    // indexed story fronts /img/stories/<slug>/card.jpg (1200×630, written by
+    // scripts/story-images.sh; HE and AR twins share the files). A logo or any
+    // other path fails the build rather than shipping a broken-looking hub.
     const ogImage = metaProperty(html, 'og:image')
-    if (!ogImage.startsWith(`${ORIGIN}/img/`)) {
+    if (ogImage !== `${ORIGIN}/img/stories/${slug}/card.jpg`) {
       throw new Error(
-        `${lang.urlBase}${slug}/ og:image must be a photo under ${ORIGIN}/img/ — ` +
+        `${lang.urlBase}${slug}/ og:image must be ${ORIGIN}/img/stories/${slug}/card.jpg — ` +
         `the hub card reads it (got: ${ogImage || 'none'}).`
       )
     }
@@ -246,7 +365,9 @@ function assertTwins(byLang) {
 /* ── render ────────────────────────────────────────────────────────────── */
 
 function renderHub(lang, pages) {
-  const template = readFileSync(join(STORIES_DIR, lang.hubTemplate), 'utf8')
+  const template = stampChrome(
+    readFileSync(join(STORIES_DIR, lang.hubTemplate), 'utf8'), lang, HUB_VARS, lang.hubTemplate
+  )
   const marker = '<!--STORY_LIST-->'
   if (!template.includes(marker)) {
     throw new Error(`${lang.hubTemplate} is missing the ${marker} marker.`)
@@ -356,27 +477,30 @@ const byLang = Object.fromEntries(LANGS.map((lang) => [lang.code, readPages(lang
 const urlsBySlug = assertTwins(byLang)
 
 const outputs = [
+  ...pageOutputs,
   ...LANGS.map((lang) => ({ path: lang.hubPath, content: renderHub(lang, byLang[lang.code]) })),
   { path: 'sitemap.xml', content: renderSitemap(byLang, urlsBySlug) },
 ]
 
-const stale = []
+const changed = []
 for (const out of outputs) {
   const abs = join(ROOT, out.path)
   const current = existsSync(abs) ? readFileSync(abs, 'utf8') : null
   if (current === out.content) continue
-  if (CHECK) stale.push(out.path)
-  else writeFileSync(abs, out.content)
+  changed.push(out.path)
+  if (!CHECK) writeFileSync(abs, out.content)
 }
 
-if (CHECK && stale.length) {
+if (CHECK && changed.length) {
   console.error(
-    `gen-stories-index: ${stale.join(', ')} out of date.\n` +
+    `gen-stories-index: ${changed.join(', ')} out of date.\n` +
     'Run `node scripts/gen-stories-index.mjs` and commit the result.'
   )
   process.exit(1)
 }
 
 const counts = LANGS.map((l) => `${byLang[l.code].length} ${l.code}`).join(', ')
-console.log(`gen-stories-index: ${CHECK ? 'up to date' : 'wrote sitemap + hubs'} (${counts})`)
+console.log(
+  `gen-stories-index: ${changed.length ? `wrote ${changed.join(', ')}` : 'up to date'} (${counts})`
+)
 if (skipped.length) console.log(`gen-stories-index: skipped noindex — ${skipped.join(', ')}`)

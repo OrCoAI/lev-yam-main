@@ -39,7 +39,7 @@
   <!-- The hero image is the LCP — preload it with the same srcset/sizes. -->
   <link rel="preload" as="image" fetchpriority="high"
         imagesrcset="/img/stories/dugma/hero-800.jpg 800w, /img/stories/dugma/hero-1600.jpg 1600w"
-        imagesizes="(min-width: 1100px) 1100px, 100vw">
+        imagesizes="(min-width: 1600px) min(68vw, 1280px), (min-width: 800px) 736px, 100vw">
 
   <link rel="icon" href="/img/logo/logo-mark.png" type="image/png">
   <link rel="apple-touch-icon" href="/img/logo/logo-mark.png">
@@ -101,6 +101,8 @@
 
   <a class="skip-link" href="#story-main">تخطّى إلى المحتوى الأساسي</a>
 
+  <!-- The header and footer between the chrome markers are stamped from stories/_template*.html by scripts/gen-stories-index.mjs — edit the page template. -->
+  <!-- chrome:header -->
   <header class="story-header">
     <div class="hero-topbar">
       <a href="/" class="logo" aria-label="ليف يام — الصفحة الرئيسية">
@@ -164,16 +166,17 @@
       </ul>
     </nav>
   </header>
+  <!-- /chrome:header -->
   <div class="wave-divider wave-divider--orange" aria-hidden="true"></div>
 
   <main id="story-main">
     <article class="story">
 
-      <figure class="story-hero">
+      <figure class="container container-narrow story-hero">
         <img src="/img/stories/dugma/hero-1600.jpg"
              srcset="/img/stories/dugma/hero-800.jpg 800w, /img/stories/dugma/hero-1600.jpg 1600w"
-             sizes="(min-width: 1100px) 1100px, 100vw"
-             width="1600" height="800" alt="غروب برتقالي مع قارب صياد تحت العريشة في ليف يام"
+             sizes="(min-width: 1600px) min(68vw, 1280px), (min-width: 800px) 736px, 100vw"
+             width="1600" height="900" alt="غروب برتقالي مع قارب صياد تحت العريشة في ليف يام"
              fetchpriority="high" decoding="async">
       </figure>
 
@@ -213,7 +216,7 @@
         <h2>الطعام</h2>
         <p>المطبخ مسؤولية سامي وإسراء. النهج هو من البحر إلى الطاولة — طعام محلي طازج. يمكن طلب وجبة كاملة، أو ضيافات بين الجلسات، أو عشاء احتفالي.</p>
 
-        <figure class="story-figure story-figure--wide">
+        <figure class="story-figure">
           <img src="/img/services/offsite.jpeg" alt="فعالية أعمال جماعية تحت العريشة في ليف يام" width="1600" height="1066"
                loading="lazy" decoding="async">
           <figcaption>مجموعة تحت العريشة، أمام البحر.</figcaption>
@@ -243,15 +246,6 @@
           </details>
         </div>
 
-        <nav class="story-links" aria-label="روابط إضافية">
-          <h2>المزيد من ليف يام</h2>
-          <ul>
-            <li><a href="/#services">ماذا يجري في ليف يام</a></li>
-            <li><a href="/#faq">أسئلة وأجوبة عن ليف يام</a></li>
-            <li><a href="/stories/ar/">كل الحكايات</a></li>
-          </ul>
-        </nav>
-
       </div>
     </article>
 
@@ -270,6 +264,7 @@
     </aside>
   </main>
 
+  <!-- chrome:footer -->
   <footer class="site-footer">
     <div class="container footer-inner">
       <div class="footer-brand">
@@ -307,6 +302,7 @@
       <a href="/app" class="footer-staff-login" rel="nofollow">دخول الطاقم</a>
     </div>
   </footer>
+  <!-- /chrome:footer -->
 
   <a class="wa-float"
      href="https://wa.me/972506669138?text=أهلًا%2C%20بحب%20آخذ%20تفاصيل%20عن%20المكان%20في%20ليف%20يام"
