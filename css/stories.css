@@ -459,7 +459,8 @@ html[lang='ar'] .story-title { letter-spacing: 0; }
 }
 
 /* Self-hosted video: native controls, poster required, nothing loads until
-   tapped. No custom overlay, no autoplay. Poster AND playing clip are cropped
+   tapped — or, opted in with data-autoplay, until it scrolls into view, then
+   muted autoplay (js/stories.js, ADR 0051). No custom overlay. Poster AND playing clip are cropped
    into the one frame like a photo (object-fit applies to the frames too, so a
    non-16:9 clip loses its edges — the template mandates 16:9 clips); the ink
    background shows only until the poster loads. */

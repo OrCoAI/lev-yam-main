@@ -1,44 +1,35 @@
 <!doctype html>
-<!--
-  SAMPLE PAGE — Arabic twin of stories/dugma/. Permanent template smoke-test,
-  NOT production content: <meta robots="noindex">, so it is excluded from the
-  sitemap and the hub by scripts/gen-stories-index.mjs.
-
-  Demonstrates every design block. Every fact below comes from FACTS.md.
-  Nothing invented, no price anywhere. Image files are shared with the HE twin.
--->
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#2c92bf">
-  <meta name="robots" content="noindex">
 
-  <title>ماذا يوجد في مكان ليف يام | ليف يام</title>
-  <meta name="description" content="ماذا يوجد في مكان ليف يام في قرية الصيادين بجسر الزرقاء: السعة، مطبخ مجهّز، إنترنت سريع، تلفاز للعرض، حديقة وحمّامات استحمام.">
+  <title>يوم تماسك للفريق على شاطئ البحر بجسر الزرقاء | ليف يام</title>
+  <meta name="description" content="يوم تماسك للفريق على شاطئ البحر في قرية الصيادين بجسر الزرقاء: عريشة مقابل البحر وأكل محلي طازج، حوالي ساعة من تل أبيب وحوالي 25 دقيقة من حيفا.">
 
-  <meta name="levyam:published" content="2026-08-11">
-  <meta name="levyam:updated" content="2026-08-11">
+  <meta name="levyam:published" content="2026-09-23">
+  <meta name="levyam:updated" content="2026-09-23">
 
-  <link rel="canonical" href="https://levyam.com/stories/ar/dugma/">
+  <link rel="canonical" href="https://levyam.com/stories/ar/team-day-by-the-sea/">
 
-  <link rel="alternate" hreflang="he" href="https://levyam.com/stories/dugma/">
-  <link rel="alternate" hreflang="ar" href="https://levyam.com/stories/ar/dugma/">
-  <link rel="alternate" hreflang="x-default" href="https://levyam.com/stories/dugma/">
+  <link rel="alternate" hreflang="he" href="https://levyam.com/stories/team-day-by-the-sea/">
+  <link rel="alternate" hreflang="ar" href="https://levyam.com/stories/ar/team-day-by-the-sea/">
+  <link rel="alternate" hreflang="x-default" href="https://levyam.com/stories/team-day-by-the-sea/">
 
-  <meta property="og:title" content="ماذا يوجد في مكان ليف يام">
-  <meta property="og:description" content="ماذا يوجد في مكان ليف يام في قرية الصيادين بجسر الزرقاء: السعة، مطبخ مجهّز، إنترنت سريع، تلفاز للعرض، حديقة وحمّامات استحمام.">
-  <meta property="og:image" content="https://levyam.com/img/stories/dugma/card.jpg">
+  <meta property="og:title" content="يوم تماسك للفريق على شاطئ البحر بجسر الزرقاء | ليف يام">
+  <meta property="og:description" content="يوم تماسك للفريق على شاطئ البحر في قرية الصيادين بجسر الزرقاء: عريشة مقابل البحر وأكل محلي طازج، حوالي ساعة من تل أبيب وحوالي 25 دقيقة من حيفا.">
+  <meta property="og:image" content="https://levyam.com/img/stories/team-day-by-the-sea/card.jpg">
   <meta property="og:type" content="article">
   <meta property="og:locale" content="ar_IL">
   <meta property="og:locale:alternate" content="he_IL">
-  <meta property="og:url" content="https://levyam.com/stories/ar/dugma/">
+  <meta property="og:url" content="https://levyam.com/stories/ar/team-day-by-the-sea/">
 
   <!-- No font preload: css/styles.css switches html[lang="ar"] to a system Arabic
        stack, and the Heebo/Assistant @font-face unicode-ranges exclude Arabic. -->
   <!-- The hero image is the LCP — preload it with the same srcset/sizes. -->
   <link rel="preload" as="image" fetchpriority="high"
-        imagesrcset="/img/stories/dugma/hero-800.jpg 800w, /img/stories/dugma/hero-1600.jpg 1600w"
+        imagesrcset="/img/stories/team-day-by-the-sea/hero-800.jpg 800w, /img/stories/team-day-by-the-sea/hero-1600.jpg 1600w"
         imagesizes="(min-width: 1600px) min(68vw, 1280px), (min-width: 800px) 736px, 100vw">
 
   <link rel="icon" href="/img/logo/logo-mark.png" type="image/png">
@@ -67,7 +58,7 @@
     "itemListElement": [
       { "@type": "ListItem", "position": 1, "name": "ليف يام", "item": "https://levyam.com/" },
       { "@type": "ListItem", "position": 2, "name": "حكايات", "item": "https://levyam.com/stories/ar/" },
-      { "@type": "ListItem", "position": 3, "name": "ماذا يوجد في مكان ليف يام", "item": "https://levyam.com/stories/ar/dugma/" }
+      { "@type": "ListItem", "position": 3, "name": "يوم تماسك للفريق على شاطئ البحر، في قرية الصيادين بجسر الزرقاء", "item": "https://levyam.com/stories/ar/team-day-by-the-sea/" }
     ]
   }
   </script>
@@ -79,25 +70,35 @@
     "mainEntity": [
       {
         "@type": "Question",
-        "name": "كم شخصًا يتّسع المكان؟",
-        "acceptedAnswer": { "@type": "Answer", "text": "المكان مرن ويناسب مجموعات بأحجام مختلفة، من لقاء حميم حتى فعالية كبيرة. أخبرونا كم عددكم وما طبيعة الفعالية، ونجهّز المكان لكم." }
+        "name": "قديش شخص ممكن نجيب ليوم التماسك؟",
+        "acceptedAnswer": { "@type": "Answer", "text": "المكان مرن وبيناسب مجموعات بأحجام مختلفة، من لقاء حميمي لحدث كبير. احكولنا قديش رح تكونوا وشو طبيعة المناسبة، ومنجهّز المكان إلكم." }
       },
       {
         "@type": "Question",
-        "name": "هل يمكن المبيت في ليف يام؟",
-        "acceptedAnswer": { "@type": "Answer", "text": "لا. لا تتوفّر إمكانية المبيت في المكان. يمكن استئجار المكان ليوم، أو لعطلة نهاية الأسبوع، أو لفترة أطول، لكن بدون مبيت." }
+        "name": "الأكل كوشير؟",
+        "acceptedAnswer": { "@type": "Answer", "text": "مطبخ ليف يام مش كوشير. للمناسبة اللي بدها كوشير ممكن تجيبوا كيترينغ كوشير حسب الطلب." }
       },
       {
         "@type": "Question",
-        "name": "هل يوجد إنترنت وإمكانية عرض عرض تقديمي؟",
-        "acceptedAnswer": { "@type": "Answer", "text": "نعم. في المكان إنترنت سريع وتلفاز كبير للعرض. يوجد أيضًا مطبخ مجهّز، أدوات مطبخ وتقديم، حديقة، حمّامات استحمام وخدمات." }
+        "name": "شو بيصير إذا نزل شتي؟",
+        "acceptedAnswer": { "@type": "Answer", "text": "في بالمكان مساحة مسقوفة جزئيًا. للمجموعات الكبيرة بالشتا منرتّب مسبقًا حسب الطقس." }
+      },
+      {
+        "@type": "Question",
+        "name": "ممكن نبات بالمكان؟",
+        "acceptedAnswer": { "@type": "Answer", "text": "لا. ما في إمكانية مبيت بالمكان." }
+      },
+      {
+        "@type": "Question",
+        "name": "كيف منحجز يوم تماسك؟",
+        "acceptedAnswer": { "@type": "Answer", "text": "ابعتولنا رسالة واتساب مع تفاصيل عن اللي بتدوّروا عليه، ومنرجعلكم بأقرب وقت. ساعات اليوم وشروط الحجز بتنحدد باتفاق كل مناسبة." }
       }
     ]
   }
   </script>
 </head>
 
-<body data-page-slug="dugma">
+<body data-page-slug="team-day-by-the-sea">
 
   <a class="skip-link" href="#story-main">تخطّى إلى المحتوى الأساسي</a>
 
@@ -140,8 +141,8 @@
 
       <!-- Language toggle navigates to the twin URL — one URL per language. -->
       <div class="lang-toggle" role="group" aria-label="اللغة / שפה">
-        <a class="lang-opt" href="/stories/dugma/" hreflang="he" lang="he">עב</a>
-        <a class="lang-opt is-active" href="/stories/ar/dugma/" hreflang="ar" lang="ar" aria-current="page">عر</a>
+        <a class="lang-opt" href="/stories/team-day-by-the-sea/" hreflang="he" lang="he">עב</a>
+        <a class="lang-opt is-active" href="/stories/ar/team-day-by-the-sea/" hreflang="ar" lang="ar" aria-current="page">عر</a>
       </div>
 
       <button class="nav-toggle" aria-label="فتح القائمة" data-label-open="فتح القائمة" data-label-close="إغلاق القائمة" aria-expanded="false" aria-controls="mobile-nav">
@@ -173,10 +174,10 @@
     <article class="story">
 
       <figure class="container container-narrow story-hero">
-        <img src="/img/stories/dugma/hero-1600.jpg"
-             srcset="/img/stories/dugma/hero-800.jpg 800w, /img/stories/dugma/hero-1600.jpg 1600w"
+        <img src="/img/stories/team-day-by-the-sea/hero-1600.jpg"
+             srcset="/img/stories/team-day-by-the-sea/hero-800.jpg 800w, /img/stories/team-day-by-the-sea/hero-1600.jpg 1600w"
              sizes="(min-width: 1600px) min(68vw, 1280px), (min-width: 800px) 736px, 100vw"
-             width="1600" height="900" alt="غروب برتقالي مع قارب صياد تحت العريشة في ليف يام"
+             width="1600" height="900" alt="مجموعة قاعدة حول طاولات طويلة تحت عريشة ليف يام، والبحر وراها"
              fetchpriority="high" decoding="async">
       </figure>
 
@@ -186,63 +187,79 @@
           <ol>
             <li><a href="/">ليف يام</a></li>
             <li><a href="/stories/ar/">حكايات</a></li>
-            <li aria-current="page">ماذا يوجد في مكان ليف يام</li>
+            <li aria-current="page">يوم تماسك للفريق على شاطئ البحر، في قرية الصيادين بجسر الزرقاء</li>
           </ol>
         </nav>
 
-        <h1 class="story-title">ماذا يوجد في مكان ليف يام</h1>
+        <h1 class="story-title">يوم تماسك للفريق على شاطئ البحر، في قرية الصيادين بجسر الزرقاء</h1>
 
         <div class="story-lede">
-          <p>في مكان ليف يام زوايا جلوس متنوّعة، مطبخ مجهّز، إنترنت سريع، تلفاز كبير للعرض، حديقة، حمّامات استحمام وخدمات. المكان مرن ويناسب مجموعات بأحجام مختلفة، ولا تتوفّر فيه إمكانية المبيت.</p>
+          <p>ليف يام بيستضيف أيام تماسك للفريق على شاطئ البحر، في مبنى صيادين قديم بقرية الصيادين في جسر الزرقاء، حوالي ساعة من تل أبيب وحوالي 25 دقيقة من حيفا. اليوم بيصير تحت عريشة مقابل البحر، مع أكل محلي طازج من مطبخنا، والمكان بيناسب مجموعات بأحجام مختلفة.</p>
         </div>
 
         <p class="story-byline">
           بقلم <span class="story-byline-name">فريق ليف يام</span> ·
-          <time datetime="2026-08-11">11.08.2026</time>
+          <time datetime="2026-09-23">23.09.2026</time>
         </p>
 
-        <h2>المبنى والفضاء</h2>
-        <p>ليف يام يقع في مبنى صيادين عتيق في قرية الصيادين بجسر الزرقاء. شريط الشاطئ أمامه بِكر، والمكان يطلّ على البحر. هناك عريشة مقابل البحر وحديقة. قرية الصيادين هي حديقة وطنية رسمية، ودرب إسرائيل يمرّ بمحاذاة القرية.</p>
-
-        <h2>ماذا يوجد في الداخل</h2>
-        <p>المطبخ مجهّز، ويشمل أدوات مطبخ وتقديم. يوجد إنترنت سريع وتلفاز كبير للعرض، بحيث يمكن عقد يوم عمل أو يوم استراتيجية دون إحضار معدّات. توجد حمّامات استحمام، خدمات، وأدوات عمل. زوايا الجلوس متنوّعة، ويمكن توزيع المجموعة بين عدّة زوايا منها.</p>
+        <h2>وين المكان</h2>
+        <p>ليف يام موجود في قرية الصيادين بجسر الزرقاء، على شاطئ الكرمل. جسر الزرقاء هي القرية العربية المسلمة الوحيدة اللي ضلّت على الساحل في البلاد. قرية الصيادين حديقة وطنية رسمية، ومسار إسرائيل بيمرّ على طولها. بتوصلوا بالسيارة من شارع 4، وعلى ويز بتدوّروا على "<span lang="he">לב ים</span>". في موقف سيارات مرتّب عند المدخل.</p>
 
         <figure class="story-figure">
-          <img src="/img/gallery/09.jpg" alt="إطلالة من الأعلى على فضاء العمل المشترك في ليف يام" width="1600" height="1200"
-               loading="lazy" decoding="async">
-          <figcaption>فضاء العمل المشترك في ليف يام، مقابل البحر.</figcaption>
+          <img src="/img/stories/team-day-by-the-sea/group-1600.jpg"
+               srcset="/img/stories/team-day-by-the-sea/group-800.jpg 800w, /img/stories/team-day-by-the-sea/group-1600.jpg 1600w"
+               sizes="(min-width: 1600px) min(68vw, 1280px), (min-width: 800px) 736px, 100vw"
+               alt="مجموعة كبيرة واقفة على الرمل في قرية الصيادين، ووراها قوارب الصيد والمينا" width="1600" height="900" loading="lazy" decoding="async">
+          <figcaption>مجموعة على شط قرية الصيادين، مقابل المينا.</figcaption>
         </figure>
 
-        <h2>الطعام</h2>
-        <p>المطبخ مسؤولية أشخاص محليين من جسر الزرقاء. النهج هو من البحر إلى الطاولة — طعام محلي طازج. يمكن طلب وجبة كاملة، أو ضيافات بين الجلسات، أو عشاء احتفالي.</p>
+        <h2>كيف بيكون اليوم</h2>
+        <p>المكان مبنى صيادين قديم على شط بحر بكر. في عريشة مقابل البحر، ومرجة، وزوايا قعدة متنوعة، فبتقدروا تنتقلوا من جلسة عامة لحديث بمجموعات صغيرة. بالمكان في إنترنت سريع وشاشة كبيرة للعرض، لمين بدّه يدمج باليوم جلسة استراتيجية. الشط سهل الوصول وآمن، وفي دوشات وحمّامات.</p>
 
-        <figure class="story-figure">
-          <img src="/img/services/offsite.jpeg" alt="فعالية أعمال جماعية تحت العريشة في ليف يام" width="1600" height="1066"
-               loading="lazy" decoding="async">
-          <figcaption>مجموعة تحت العريشة، أمام البحر.</figcaption>
-        </figure>
+        <h2>شو ممكن ندمج باليوم</h2>
+        <p>برنامج اليوم منبنيه سوا معكم، من كذا إمكانية. ممكن تبلّشوا بجولة في قرية الصيادين اللي ليف يام بيشتغل منها. بعدها ممكن تدمجوا ورشة للفريق — للمدراء، للقيادة وغيرها — أو محاضرة تحت العريشة مقابل البحر. للنشاط الرياضي في الشط والمرجة. وممكن تختموا اليوم بموسيقى حيّة.</p>
 
         <figure class="story-figure story-video">
-          <video controls preload="none" playsinline
-                 poster="/img/hero/hero-poster.jpg" width="1600" height="900">
-            <source src="/img/hero/hero.mp4" type="video/mp4">
+          <video controls muted loop playsinline preload="none" data-autoplay
+                 poster="/img/stories/team-day-by-the-sea/clip-poster.jpg" width="1600" height="900">
+            <source src="/img/stories/team-day-by-the-sea/clip-540.mp4" type="video/mp4" media="(max-width: 800px)">
+            <source src="/img/stories/team-day-by-the-sea/clip.mp4" type="video/mp4">
           </video>
-          <figcaption>غروب الشمس على البحر في ليف يام.</figcaption>
+          <figcaption>لحظات من أيام في ليف يام: قعدة تحت العريشة، حركة مقابل البحر، لعب على الشط — وأكل من المطبخ.</figcaption>
         </figure>
+
+        <h2>الأكل</h2>
+        <p>المطبخ بإيدين ناس من أهل جسر الزرقاء. الفكرة من البحر للسفرة: أكل محلي وسمك طازج. بتقدروا تطلبوا وجبة كاملة، أو ضيافة بين الجلسات، أو عشاء احتفالي. القائمة بتنعمل حسب كل مناسبة، والتفضيلات — نباتي، نباتي صرف أو حساسية — منرتّبها مسبقًا.</p>
+
+        <h2>إيمتى</h2>
+        <p>أيام التماسك بتصير على مدار السنة، ولكل موسم طابعه. أغلب السنة القعدة برّا بتكون حلوة. بنص نهار الصيف بيكون شوب، وفي ظل وعريشة. بالشتا الطقس بيعتمد على العواصف، وفي بالمكان مساحة مسقوفة جزئيًا.</p>
+
+        <h2>مين المضيف</h2>
+        <p>ليف يام أسّسوه أور ونمر جربان، صياد من الجيل الثالث من جسر الزرقاء. ليف يام بيشتغل من جوّا القرية ولأجلها، مش بس موجود فيها. يوم التماسك هون جزء من فعاليات الأعمال عنّا، جنب أيام الاستراتيجية والخروج من الروتين.</p>
+
+
 
         <h2>أسئلة وأجوبة</h2>
         <div class="story-faq">
           <details class="faq-item">
-            <summary>كم شخصًا يتّسع المكان؟</summary>
-            <div class="faq-answer"><p>المكان مرن ويناسب مجموعات بأحجام مختلفة، من لقاء حميم حتى فعالية كبيرة. أخبرونا كم عددكم وما طبيعة الفعالية، ونجهّز المكان لكم.</p></div>
+            <summary>قديش شخص ممكن نجيب ليوم التماسك؟</summary>
+            <div class="faq-answer"><p>المكان مرن وبيناسب مجموعات بأحجام مختلفة، من لقاء حميمي لحدث كبير. احكولنا قديش رح تكونوا وشو طبيعة المناسبة، ومنجهّز المكان إلكم.</p></div>
           </details>
           <details class="faq-item">
-            <summary>هل يمكن المبيت في ليف يام؟</summary>
-            <div class="faq-answer"><p>لا. لا تتوفّر إمكانية المبيت في المكان. يمكن استئجار المكان ليوم، أو لعطلة نهاية الأسبوع، أو لفترة أطول، لكن بدون مبيت.</p></div>
+            <summary>الأكل كوشير؟</summary>
+            <div class="faq-answer"><p>مطبخ ليف يام مش كوشير. للمناسبة اللي بدها كوشير ممكن تجيبوا كيترينغ كوشير حسب الطلب.</p></div>
           </details>
           <details class="faq-item">
-            <summary>هل يوجد إنترنت وإمكانية عرض عرض تقديمي؟</summary>
-            <div class="faq-answer"><p>نعم. في المكان إنترنت سريع وتلفاز كبير للعرض. يوجد أيضًا مطبخ مجهّز، أدوات مطبخ وتقديم، حديقة، حمّامات استحمام وخدمات.</p></div>
+            <summary>شو بيصير إذا نزل شتي؟</summary>
+            <div class="faq-answer"><p>في بالمكان مساحة مسقوفة جزئيًا. للمجموعات الكبيرة بالشتا منرتّب مسبقًا حسب الطقس.</p></div>
+          </details>
+          <details class="faq-item">
+            <summary>ممكن نبات بالمكان؟</summary>
+            <div class="faq-answer"><p>لا. ما في إمكانية مبيت بالمكان.</p></div>
+          </details>
+          <details class="faq-item">
+            <summary>كيف منحجز يوم تماسك؟</summary>
+            <div class="faq-answer"><p>ابعتولنا رسالة واتساب مع تفاصيل عن اللي بتدوّروا عليه، ومنرجعلكم بأقرب وقت. ساعات اليوم وشروط الحجز بتنحدد باتفاق كل مناسبة.</p></div>
           </details>
         </div>
 
@@ -253,11 +270,11 @@
     <aside class="story-cta">
       <div class="container">
         <img class="footer-logo story-cta-mark" src="/img/logo/logo-mono-nobg.png" alt="" width="40" height="40">
-        <p class="story-cta-text">تريدون التأكّد أنّ المكان يناسب مجموعتكم؟ اكتبوا لنا كم أنتم ومتى.</p>
+        <p class="story-cta-text">عم تخططوا ليوم تماسك للفريق على شاطئ البحر؟ احكولنا قديش رح تكونوا وشو طبيعة اليوم، ومنرجعلكم بأقرب وقت.</p>
         <a class="btn btn-primary"
-           href="https://wa.me/972506669138?text=أهلًا%2C%20بحب%20آخذ%20تفاصيل%20عن%20المكان%20في%20ليف%20يام"
+           href="https://wa.me/972506669138?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%D8%8C%20%D8%A8%D9%86%D8%AE%D8%B7%D8%B7%20%D9%84%D9%8A%D9%88%D9%85%20%D8%AA%D9%85%D8%A7%D8%B3%D9%83%20%D9%84%D9%84%D9%81%D8%B1%D9%8A%D9%82%20%D8%B9%D9%84%D9%89%20%D8%B4%D8%B7%20%D8%A7%D9%84%D8%A8%D8%AD%D8%B1%20%D9%81%D9%8A%20%D9%84%D9%8A%D9%81%20%D9%8A%D8%A7%D9%85%20%D9%88%D8%A8%D8%AF%D9%91%D9%8A%20%D8%AA%D9%81%D8%A7%D8%B5%D9%8A%D9%84"
            target="_blank" rel="noopener"
-           data-bizevent-source="stories_dugma">
+           data-bizevent-source="stories_team-day-by-the-sea">
           تحدّثوا معنا عبر واتساب
         </a>
       </div>
@@ -305,7 +322,7 @@
   <!-- /chrome:footer -->
 
   <a class="wa-float"
-     href="https://wa.me/972506669138?text=أهلًا%2C%20بحب%20آخذ%20تفاصيل%20عن%20المكان%20في%20ليف%20يام"
+     href="https://wa.me/972506669138?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%D8%8C%20%D8%A8%D9%86%D8%AE%D8%B7%D8%B7%20%D9%84%D9%8A%D9%88%D9%85%20%D8%AA%D9%85%D8%A7%D8%B3%D9%83%20%D9%84%D9%84%D9%81%D8%B1%D9%8A%D9%82%20%D8%B9%D9%84%D9%89%20%D8%B4%D8%B7%20%D8%A7%D9%84%D8%A8%D8%AD%D8%B1%20%D9%81%D9%8A%20%D9%84%D9%8A%D9%81%20%D9%8A%D8%A7%D9%85%20%D9%88%D8%A8%D8%AF%D9%91%D9%8A%20%D8%AA%D9%81%D8%A7%D8%B5%D9%8A%D9%84"
      data-bizevent-source="stories_float"
      target="_blank" rel="noopener"
      aria-label="تواصلوا عبر واتساب">
