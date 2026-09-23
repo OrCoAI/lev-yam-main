@@ -39,7 +39,7 @@
   <!-- The hero image is the LCP — preload it with the same srcset/sizes. -->
   <link rel="preload" as="image" fetchpriority="high"
         imagesrcset="/img/stories/dugma/hero-800.jpg 800w, /img/stories/dugma/hero-1600.jpg 1600w"
-        imagesizes="(min-width: 1100px) 1100px, 100vw">
+        imagesizes="(min-width: 1600px) min(68vw, 1280px), (min-width: 800px) 736px, 100vw">
 
   <link rel="icon" href="/img/logo/logo-mark.png" type="image/png">
   <link rel="apple-touch-icon" href="/img/logo/logo-mark.png">
@@ -172,11 +172,11 @@
   <main id="story-main">
     <article class="story">
 
-      <figure class="story-hero">
+      <figure class="container container-narrow story-hero">
         <img src="/img/stories/dugma/hero-1600.jpg"
              srcset="/img/stories/dugma/hero-800.jpg 800w, /img/stories/dugma/hero-1600.jpg 1600w"
-             sizes="(min-width: 1100px) 1100px, 100vw"
-             width="1600" height="800" alt="غروب برتقالي مع قارب صياد تحت العريشة في ليف يام"
+             sizes="(min-width: 1600px) min(68vw, 1280px), (min-width: 800px) 736px, 100vw"
+             width="1600" height="900" alt="غروب برتقالي مع قارب صياد تحت العريشة في ليف يام"
              fetchpriority="high" decoding="async">
       </figure>
 
@@ -216,7 +216,7 @@
         <h2>الطعام</h2>
         <p>المطبخ مسؤولية سامي وإسراء. النهج هو من البحر إلى الطاولة — طعام محلي طازج. يمكن طلب وجبة كاملة، أو ضيافات بين الجلسات، أو عشاء احتفالي.</p>
 
-        <figure class="story-figure story-figure--wide">
+        <figure class="story-figure">
           <img src="/img/services/offsite.jpeg" alt="فعالية أعمال جماعية تحت العريشة في ليف يام" width="1600" height="1066"
                loading="lazy" decoding="async">
           <figcaption>مجموعة تحت العريشة، أمام البحر.</figcaption>
@@ -245,15 +245,6 @@
             <div class="faq-answer"><p>نعم. في المكان إنترنت سريع وتلفاز كبير للعرض. يوجد أيضًا مطبخ مجهّز، أدوات مطبخ وتقديم، حديقة، حمّامات استحمام وخدمات.</p></div>
           </details>
         </div>
-
-        <nav class="story-links" aria-label="روابط إضافية">
-          <h2>المزيد من ليف يام</h2>
-          <ul>
-            <li><a href="/#services">ماذا يجري في ليف يام</a></li>
-            <li><a href="/#faq">أسئلة وأجوبة عن ليف يام</a></li>
-            <li><a href="/stories/ar/">كل الحكايات</a></li>
-          </ul>
-        </nav>
 
       </div>
     </article>

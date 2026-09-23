@@ -9,7 +9,7 @@
    .wave-divider zigzags, the .contact-style CTA band, and .site-footer, all
    reused from styles.css, never re-implemented. Between the seams the reading
    surface stays quiet cream: article headings in ink, blue-deep reserved for
-   navigational titles (card titles, related links, breadcrumb hovers), orange
+   navigational titles (card titles, breadcrumb hovers), orange
    = action only; photography leads and text sits on white/cream below it —
    never text-over-photo; date is the only card metadata; zero JS beyond
    js/stories.js + js/wa-track.js.
@@ -22,8 +22,16 @@
   --story-leading:       1.7;    /* body */
   --story-leading-lede:  1.6;
   --story-leading-tight: 1.2;    /* multi-line titles */
-  /* measure: running-text cap inside .container-narrow; figures span the full 760 */
-  --story-measure:       40rem;  /* Hebrew-tuned — 760px raw is too wide for short words */
+  /* ONE box. Text, hero, figures and video all share both edges: the column is
+     exactly the reading measure plus .container's own gutter, so nothing is
+     wider than anything else — 736px of Hebrew (≈70 chars) at ≥800px viewports;
+     the ≥1600 block below widens the measure and everything follows. */
+  --story-measure: 46rem;
+  --story-column:  calc(var(--story-measure) + 2 * var(--container-gutter));
+  /* vertical rhythm — one scale, all on the 8px grid */
+  --story-gap-section: 3.5rem;          /* 56  anything → h2 */
+  --story-gap-figure:  var(--space-6);  /* 40  text ↔ figure, figure ↔ figure */
+  --story-gap-para:    1.25em;          /* ~24 paragraph → paragraph */
   /* scale — sits inside the homepage ladder; nothing outranks the homepage hero */
   --story-title:    clamp(2rem, 1.5rem + 2.2vw, 3.4rem);       /* article H1, w800 */
   --story-featured: clamp(1.5rem, 1.25rem + 1.2vw, 2.2rem);    /* hub featured title, w700 */
@@ -71,7 +79,67 @@ html[lang='ar'] .story-title { letter-spacing: 0; }
 /* ── Shared section rhythm ──────────────────────────────────────────────── */
 
 .story {
-  padding-block: var(--space-5) var(--space-7);
+  position: relative;
+  isolation: isolate; /* the wide-screen strips below sit at z-index -1, behind the content */
+  padding-block: var(--space-7); /* same breath above the hero and below the FAQ */
+  --container-narrow: var(--story-column); /* .container-narrow inside the article is the story box */
+}
+
+/* ── Wide screens: fill the margins ─────────────────────────────────────
+   Above 1280px the column leaves wide cream margins. Two things fill them,
+   both pure CSS on the article (no markup): a soft glow in each corner —
+   warm at the top, sea-blue at the bottom, bounded tiles so the paint stays
+   small however long the page — and one vertical run of the brand zigzag
+   (the .wave-divider motif on its side) per side, orange inline-start, blue
+   inline-end, echoing the page's two dividers. The zigzag is a MASK over a
+   vertical colour gradient, so one SVG serves both colours from the palette
+   tokens and the line fades in and out at the page ends for free. Texture,
+   not a wall: nothing to read, nothing to click; the .wa-float stays the
+   page's one persistent action. Mirror-symmetric: each line sits --space-7
+   outside the column box, so the two margins read as one frame. */
+@media (min-width: 1280px) {
+  .story {
+    background:
+      radial-gradient(ellipse at 0% 20%,   rgba(244, 152, 52, 0.5) 0%, transparent 70%) top left   / 24vw 560px no-repeat,
+      radial-gradient(ellipse at 100% 20%, rgba(244, 152, 52, 0.5) 0%, transparent 70%) top right  / 24vw 560px no-repeat,
+      radial-gradient(ellipse at 0% 80%,   rgba(44, 146, 191, 0.45) 0%, transparent 70%) bottom left  / 24vw 560px no-repeat,
+      radial-gradient(ellipse at 100% 80%, rgba(44, 146, 191, 0.45) 0%, transparent 70%) bottom right / 24vw 560px no-repeat;
+  }
+  .story::before,
+  .story::after {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    inline-size: 16px;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.22; /* present but soft — a texture in the cream, not a rule */
+    -webkit-mask: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='80' viewBox='0 0 16 80'%3E%3Cpath d='M8 0 L2 20 L14 60 L8 80' fill='none' stroke='%23000' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") 0 0 / 16px 80px repeat-y;
+            mask: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='80' viewBox='0 0 16 80'%3E%3Cpath d='M8 0 L2 20 L14 60 L8 80' fill='none' stroke='%23000' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") 0 0 / 16px 80px repeat-y;
+  }
+  .story::before { /* inline-start: orange, --space-7 outside the column */
+    inset-inline-start: calc(50% - var(--story-column) / 2 - var(--space-7) - 16px);
+    background: linear-gradient(180deg, transparent 0%, var(--color-orange) 25%, var(--color-orange) 75%, transparent 100%);
+  }
+  .story::after { /* inline-end: blue */
+    inset-inline-end: calc(50% - var(--story-column) / 2 - var(--space-7) - 16px);
+    background: linear-gradient(180deg, transparent 0%, var(--color-blue) 25%, var(--color-blue) 75%, transparent 100%);
+  }
+}
+
+/* ── Large screens (≥1600px): the one box grows ─────────────────────────
+   The owner's call (2026-09-23): stretched over the ~70-character reading
+   ideal. Text, hero, figures and video all follow --story-measure, and the
+   type steps up one notch with it. Below 1600 nothing here applies. */
+@media (min-width: 1600px) {
+  :root {
+    --story-measure: clamp(60rem, 68vw, 1280px);
+    --story-body:    1.25rem;
+    --story-lede:    1.6rem;
+    --story-h2:      1.8rem;
+    --story-title:   3.6rem;
+    --story-caption: 0.95rem;
+  }
 }
 
 .breadcrumbs {
@@ -79,6 +147,8 @@ html[lang='ar'] .story-title { letter-spacing: 0; }
   color: var(--color-ink-soft);
   margin-block-end: var(--space-4);
 }
+
+.story .breadcrumbs { margin-block-end: var(--space-3); } /* a label for the title, not a section */
 
 .breadcrumbs ol {
   display: flex;
@@ -285,30 +355,19 @@ html[lang='ar'] .story-title { letter-spacing: 0; }
 
 /* ── Story page ─────────────────────────────────────────────────────────── */
 
-/* Contained-wide hero (not viewport-bleed): aligns with the container edges,
-   2:1 desktop, taller 3:2 + edge-to-edge below 640px so portraits survive.
+/* Contained hero: markup carries .container.container-narrow, so it is the
+   same box as the article column; 16:9 like every other figure, inset like
+   them on every width (no mobile edge-to-edge).
    The hero img is the LCP — eager, fetchpriority=high, preloaded from <head>. */
-.story-hero {
-  max-inline-size: 1100px;
-  margin: 0 auto var(--space-5);
-  padding-inline: clamp(1rem, 4vw, 2rem);
-}
+.story-hero { margin-block-end: var(--story-gap-figure); }
 
 .story-hero img {
   inline-size: 100%;
   block-size: auto;
-  aspect-ratio: 2 / 1;
+  aspect-ratio: 16 / 9;
   object-fit: cover;
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
-}
-
-@media (max-width: 640px) {
-  .story-hero { padding-inline: 0; }
-  .story-hero img {
-    aspect-ratio: 3 / 2;
-    border-radius: 0;
-  }
 }
 
 .story-title {
@@ -329,7 +388,6 @@ html[lang='ar'] .story-title { letter-spacing: 0; }
   font-weight: 500;
   color: var(--color-ink);
   line-height: var(--story-leading-lede);
-  max-inline-size: var(--story-measure);
   text-wrap: pretty;
 }
 
@@ -355,25 +413,21 @@ html[lang='ar'] .story-title { letter-spacing: 0; }
   color: var(--color-ink);
 }
 
-/* Body typography. Running text is capped at the reading measure; figures,
-   FAQ, CTA and related links span the full narrow container. */
-.story .container-narrow > :is(p, h2, ul, ol) {
-  max-inline-size: var(--story-measure);
-}
-
+/* Body typography. No per-element measure cap: the column itself is the
+   measure, so text, figures and FAQ share the same two edges. */
 .story p,
 .story li {
   font-size: var(--story-body);
   line-height: var(--story-leading);
 }
 
-.story p { margin: 0 0 1.25em; }
+.story p { margin: 0 0 var(--story-gap-para); }
 
 .story h2 {
   font-size: var(--story-h2);
   font-weight: 700;
   line-height: var(--story-leading-tight);
-  margin-block: 2.5em 0.6em; /* asymmetric: binds each heading to its section */
+  margin-block: var(--story-gap-section) var(--space-3); /* asymmetric: binds each heading to its section */
 }
 
 /* Prose links: blue-deep + underline. Never orange — orange is action-only. */
@@ -384,11 +438,14 @@ html[lang='ar'] .story-title { letter-spacing: 0; }
 }
 
 /* Figures are beats — clearly more space than paragraphs get. */
-.story-figure { margin-block: var(--space-6); }
+.story-figure { margin-block: var(--story-gap-figure); }
 
+/* The one frame (see the tokens): full column, 16:9, cropped — never stretched. */
 .story-figure img {
   inline-size: 100%;
   block-size: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
 }
@@ -401,40 +458,20 @@ html[lang='ar'] .story-title { letter-spacing: 0; }
   line-height: 1.55;
 }
 
-/* Full-width breakout: edge-to-edge under 1100px viewports, capped at 1100px
-   and centered above. At most ONE per story. On classic-scrollbar platforms
-   100vw includes the scrollbar, so the photo's outer ~8px per side are clipped
-   by the body's overflow-x: hidden — invisible on an edge-to-edge photo, but
-   the caption needs its own inline padding to keep text off both the clipped
-   zone and the phone screen edge. */
-.story-figure--wide {
-  inline-size: min(100vw, 1100px);
-  position: relative;
-  inset-inline-start: 50%;
-  margin-inline-start: calc(min(100vw, 1100px) / -2);
-}
-
-.story-figure--wide figcaption {
-  padding-inline: clamp(1rem, 4vw, 2rem); /* the .story-hero padding scale */
-}
-
-@media (max-width: 640px) {
-  .story-figure--wide img { border-radius: 0; }
-}
-
 /* Self-hosted video: native controls, poster required, nothing loads until
-   tapped. No custom overlay, no autoplay. Ink background pillarboxes any
-   non-16:9 clip gracefully. */
+   tapped. No custom overlay, no autoplay. Poster AND playing clip are cropped
+   into the one frame like a photo (object-fit applies to the frames too, so a
+   non-16:9 clip loses its edges — the template mandates 16:9 clips); the ink
+   background shows only until the poster loads. */
 .story-video video {
   inline-size: 100%;
   block-size: auto;
   aspect-ratio: 16 / 9;
+  object-fit: cover; /* poster fills the frame instead of pillarboxing */
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
   background: var(--color-ink);
 }
-
-.story-faq { margin-block-end: var(--space-5); }
 
 /* ── CTA band ───────────────────────────────────────────────────────────── */
 
@@ -466,29 +503,6 @@ html[lang='ar'] .story-title { letter-spacing: 0; }
 
 .story-cta .btn {
   min-block-size: 48px; /* comfortable thumb target */
-}
-
-/* ── Related links (text cards — no photo grid by design) ───────────────── */
-
-.story-links ul {
-  display: grid;
-  gap: var(--space-2);
-}
-
-.story-links a {
-  display: block;
-  padding: var(--space-3);
-  background: var(--color-white);
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-sm);
-  color: var(--color-blue-deep);
-  font-weight: 500;
-}
-
-.story-links a:hover,
-.story-links a:focus-visible {
-  border-color: var(--color-blue);
-  box-shadow: var(--shadow-sm);
 }
 
 /* ── Footer ─────────────────────────────────────────────────────────────── */

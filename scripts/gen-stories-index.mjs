@@ -167,6 +167,11 @@ function slugsIn(dir) {
 
 /* ── chrome stamping ───────────────────────────────────────────────────── */
 
+// One string for the hero <img sizes> and <link imagesizes> on every page. It encodes
+// css/stories.css: the box is 46rem (736px) from 800px up and clamp(60rem, 68vw, 1280px)
+// from 1600px up; below 800 the hero is the viewport minus the gutter (100vw is close enough).
+const HERO_SIZES = '(min-width: 1600px) min(68vw, 1280px), (min-width: 800px) 736px, 100vw'
+
 const CHROME_VARS = ['HE_URL', 'AR_URL', 'STORIES_CURRENT']
 const REGION_RE = new Map(
   ['header', 'footer'].map((name) => [
@@ -243,6 +248,18 @@ function readPages(lang) {
     // A template placeholder left anywhere in a page ships as literal text.
     const placeholder = rendered.match(/{{[^}]*}}/)
     if (placeholder) throw new Error(`${where} still carries the placeholder ${placeholder[0]}.`)
+
+    // The hero's `sizes` hint (the <img> and its <link rel=preload>) mirrors
+    // css/stories.css's column steps and is repeated on every page; a token
+    // change there must fail here rather than silently fetch the wrong hero
+    // file on some pages. Scoped to the two tags that name the hero file — a
+    // favicon `sizes` or a figure's own srcset hint is not this check's business.
+    for (const tag of rendered.match(/<(?:img|link)\b[^>]*hero-1600\.jpg[^>]*>/g) || []) {
+      const m = tag.match(/\s(?:image)?sizes="([^"]*)"/)
+      if (!m || m[1] !== HERO_SIZES) {
+        throw new Error(`${where} hero sizes is ${m ? `"${m[1]}"` : 'missing'}; expected "${HERO_SIZES}" (HERO_SIZES).`)
+      }
+    }
 
     // Every image the page references (og:image, hero src/srcset, the gallery
     // figure, video poster, the logo) must exist on disk — img/ is in the tree

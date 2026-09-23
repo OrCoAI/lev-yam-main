@@ -50,7 +50,7 @@ The thinnest slice that gets a story pair from a brief to a reviewable PR, prove
 2. **Photo intake folder `media/`** at the repo root, **gitignored** (same rule as the raw hero
    video): the owner drops originals there over time; the skill lists candidates per page, the
    owner picks, and the skill writes only the optimized derivatives the template needs —
-   `img/stories/<slug>/card.jpg` (1200×630), `hero-800.jpg`, `hero-1600.jpg` (2:1) — which are
+   `img/stories/<slug>/card.jpg` (1200×630), `hero-800.jpg`, `hero-1600.jpg` (16:9 since revision 1) — which are
    committed. `media/README.md` (committed) explains the folder.
 3. **Chrome stamping in `scripts/gen-stories-index.mjs`**: the header and footer of every story
    page **and of both hub templates** are marked regions (`chrome:header` / `chrome:footer`
@@ -143,6 +143,43 @@ its last stamped state. No data left behind anywhere; `media/` is local only.
   pass the script, so the flagship page is not blocked on it; new subjects (a company day, a
   private dinner) will be.
 
+## Template revision 1 (2026-09-23, owner's markup on the review artifact)
+
+Branch `stories-template-media`, stacked on the tool branch; Tier A (touches the verify harness),
+otherwise B. Applied from the owner's change sheet:
+- **Uniform media:** hero, every figure and the video share one frame — column width, 16:9,
+  `object-fit: cover`. The `.story-figure--wide` breakout is gone; the hero is no longer
+  edge-to-edge on phones.
+- **One box:** the article column is exactly the reading measure (46rem) plus the site gutter —
+  800px at ≥800px viewports — so text, hero, figures and video share both edges. A first pass
+  had a 900px column with a 46rem text cap inside it; the owner's second look ("perfectly
+  aligned") showed that ragged 100px step for what it was, and the cap went.
+- **One rhythm:** 16 under a heading, 24 between paragraphs, 40 around media, 56 before a
+  section, 48 at both ends of the article — three tokens in `stories.css`, all on the 8px grid.
+- **Large screens (≥1600px):** the owner's next looks, on a big monitor: "too much free space on
+  the sides", then "the text should be more stretched", then "the hero text stretched to the same
+  size as the hero picture". Result: one box that grows — hero, figures, video and text all
+  `clamp(60rem, 68vw, 1280px)` wide (1280 at 1920), body type one step up (20px). Lines run to
+  ~110 characters there; the owner chose that over the ~70-character reading ideal, recorded so
+  it is not "fixed" back. Below 1600 nothing changes: 736px shared box on a laptop, edge to edge
+  on phones. The hero `sizes` hint carries the third width.
+- **Wide-screen margins (≥1280px):** a faint vertical brand zigzag (orange inline-start, blue
+  inline-end) over a soft glow, mirror-symmetric 48px outside the column. A sticky contact rail
+  (logo mark + four icons) was built and then removed the same day at the owner's request —
+  the `.wa-float` stays the page's one persistent action.
+- **Pipeline follows the frame:** `story-images.sh` now writes the hero at 16:9 (1600×900 /
+  800×450, floor 1600×900) instead of 2:1, so a real hero is cropped once, by the script, with the
+  `--focus` choice intact; the sample page's three images were regenerated through it from
+  `img/gallery/18.jpg`. The generator checks every page's hero `sizes` / `imagesizes` hint
+  against one constant (`HERO_SIZES`), since the string mirrors the CSS column steps.
+- **Removed the related-links block** ("עוד בלב ים" / "المزيد من ليف يام") from the template and
+  the sample pages; its CSS deleted. The skill's "2–3 internal links" now means links in the body.
+- Verify harness gained named `wide` (1440) and `xwide` (1920) viewports, outside the default
+  three, and prints a `--js` return value so an expression can measure.
+- Measured on localhost: 736×414 for every frame at ≥1280 (358×201 at 390), every element on
+  the same two edges at 390 / 1280 / 1440, both languages; no horizontal overflow at any width.
+- Not carried over: the review artifact's own panel copy (it is a mirror, republished after).
+
 ## Follow-ups discovered (logged, not done here)
 
 - **AR header at 1280px:** the WhatsApp icon in `.header-social` overlaps the last nav item
@@ -170,7 +207,7 @@ its last stamped state. No data left behind anywhere; `media/` is local only.
   then showed `sips` ignores the EXIF rotation flag (portrait phone photos would ship sideways)
   and that dropping an iPhone's Display P3 profile without converting shifts colours. Pillow
   applies the rotation, converts to sRGB, writes from pixels only, and **refuses a source under
-  1600×800** (the hero is the LCP image). `sips` stays only as the HEIC converter. Recorded in
+  1600×800**, raised to 1600×900 with the 16:9 frame in revision 1 (the hero is the LCP image). `sips` stays only as the HEIC converter. Recorded in
   `media/README.md`.
 - 2026-09-22 · build · the homepage gallery is a **partial** photo source: five files
   (`08`, `09`, `10`, `14`, `18`) are 1600×1200 and pass the script; the rest are ≈700 px or

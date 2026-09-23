@@ -3,8 +3,8 @@
 #
 #   scripts/story-images.sh <source-photo> <slug> [--focus top|center|bottom]
 #
-# Writes img/stories/<slug>/card.jpg (1200×630), hero-1600.jpg (1600×800) and
-# hero-800.jpg (800×400) — the sizes stories/_template*.html and the hub expect
+# Writes img/stories/<slug>/card.jpg (1200×630), hero-1600.jpg (1600×900) and
+# hero-800.jpg (800×450) — the sizes stories/_template*.html and the hub expect
 # (table in media/README.md). Pillow does the work: applies the EXIF orientation
 # (phone portraits are stored sideways with a rotate flag — ignoring it ships
 # rotated heroes), converts an embedded colour profile (iPhone Display P3) to
@@ -16,7 +16,7 @@
 # HEIC sources are converted first with macOS `sips` when Pillow cannot open
 # them. The source is never modified; originals live in the gitignored media/.
 # --focus picks which band of a tall photo survives the crop (default: center).
-# A source smaller than 1600×800 (after orientation) is refused: the hero is the
+# A source smaller than 1600×900 (after orientation) is refused: the hero is the
 # page's LCP image and an upscaled one ships blur to every visitor.
 set -euo pipefail
 
@@ -48,7 +48,7 @@ import sys
 from PIL import Image, ImageCms, ImageOps
 
 src, out, focus = sys.argv[1], sys.argv[2], sys.argv[3]
-SIZES = [('card.jpg', 1200, 630), ('hero-1600.jpg', 1600, 800), ('hero-800.jpg', 800, 400)]
+SIZES = [('card.jpg', 1200, 630), ('hero-1600.jpg', 1600, 900), ('hero-800.jpg', 800, 450)]  # hero = 16:9, the frame css/stories.css draws
 
 im = ImageOps.exif_transpose(Image.open(src))
 icc = im.info.get('icc_profile')
@@ -60,8 +60,8 @@ if icc:
         sys.exit(f"{src}: the embedded colour profile could not be converted ({e}) — re-export the photo as sRGB JPEG")
 im = im.convert('RGB')  # transparency (a PNG) becomes black: this script is for photos
 sw, sh = im.size
-if sw < 1600 or sh < 800:
-    sys.exit(f"source is {sw}×{sh} after orientation; the hero needs at least 1600×800 — pick a larger photo")
+if sw < 1600 or sh < 900:
+    sys.exit(f"source is {sw}×{sh} after orientation; the hero needs at least 1600×900 — pick a larger photo")
 
 for name, w, h in SIZES:
     scale = max(w / sw, h / sh)
