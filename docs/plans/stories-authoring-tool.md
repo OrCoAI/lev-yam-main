@@ -219,10 +219,15 @@ session, reviewed together on localhost; each pair its own PR; owner reviews the
 
 ## Follow-ups discovered (logged, not done here)
 
-- **AR header at 1280px:** the WhatsApp icon in `.header-social` overlaps the last nav item
-  ("تواصلوا معنا") on the Arabic pages — pre-existing (verified against `main` during step zero
-  on 2026-09-22), untouched by this diff. Now a one-line fix in `_template.ar.html` thanks to
-  stamping; do it with the first real Arabic page, where it will be looked at on staging anyway.
+- **Desktop header overlap — site-wide, not a one-liner (re-measured 2026-09-23):** the
+  absolutely-centred `.primary-nav` (`css/styles.css`) runs into `.header-social` between 961 and
+  ~1300px, **homepage and stories, both languages**. Overlap in px (nav's last item vs the social
+  block): AR 961→116 · 1100→47 · 1201→48 · 1280→9 · 1300→0; HE 961→77 · 1100→7 · 1201→3 · 1280→0.
+  The logo side has 120–270px free. Moving the nav next to the logo alone still leaves ~20px at
+  961 AR, so it needs a design call (tighter nav for AR, an earlier hamburger breakpoint for AR, or
+  both). **Own Tier B PR, fresh session** (owner, 2026-09-23). Method: `screenshot.mjs --viewport
+  xwide --js` with a same-origin `<iframe>` per width (media queries follow the iframe) —
+  the harness has no custom widths.
 
 ## Decisions made on the way
 
