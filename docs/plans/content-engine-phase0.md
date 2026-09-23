@@ -99,7 +99,7 @@ spec, implemented, then adversarially design-reviewed. Governing choices:
   title on cream below it (never text-over-photo), answer-first lede as large type closed
   by an orange rule (the boxed callout is gone), 40rem reading measure, figures/video span
   the 760px column with one optional full-bleed breakout, self-hosted 16:9 mp4 video block
-  (`preload="none"`, poster required, ≤8MB).
+  (`preload="none"`, poster required, ≤8MB; optional muted autoplay on scroll-into-view — ADR 0051).
 - **Header** — all six homepage nav items + WhatsApp icon + lang toggle; nav on its own
   scrollable row below 900px, inline + sticky above.
 - **Type system** — `--story-*` tokens; body 17→19px lh 1.7; `html[lang=ar]` overrides

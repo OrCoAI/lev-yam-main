@@ -42,7 +42,7 @@ The thinnest slice that gets a story pair from a brief to a reviewable PR, prove
      **and** a per-page gap list the owner answers in session; answers go into `FACTS.md` in the
      same PR (verified with Nimer where the fact is his). No page merges with a marker in it;
    - meta title ≤60, description ≤155, `BreadcrumbList` + `FAQPage` JSON-LD matching the visible
-     text, 2–3 internal links, answer-first lede, 250–500 words, one fact per sentence, no
+     text, no links in the body (ADR 0050 — was 2–3 internal links), answer-first lede, 250–500 words, one fact per sentence, no
      superlatives, **no prices**;
    - Levantine Arabic drafted from the approved Hebrew; the PR waits for a native reader's sign-off
      (owner / Nimer) before merge;
@@ -173,7 +173,8 @@ otherwise B. Applied from the owner's change sheet:
   `img/gallery/18.jpg`. The generator checks every page's hero `sizes` / `imagesizes` hint
   against one constant (`HERO_SIZES`), since the string mirrors the CSS column steps.
 - **Removed the related-links block** ("עוד בלב ים" / "المزيد من ليف يام") from the template and
-  the sample pages; its CSS deleted. The skill's "2–3 internal links" now means links in the body.
+  the sample pages; its CSS deleted. The skill's "2–3 internal links" now means links in the body *(superseded
+  2026-09-23 by ADR 0050 — no body links)*.
 - Verify harness gained named `wide` (1440) and `xwide` (1920) viewports, outside the default
   three, and prints a `--js` return value so an expression can measure.
 - Measured on localhost: 736×414 for every frame at ≥1280 (358×201 at 390), every element on
@@ -188,7 +189,7 @@ it or which gap must be answered first (those are ordered last).
 
 | # | Week | Hebrew query (as typed) | Slug | Facts |
 |---|---|---|---|---|
-| 1 | 1 | יום גיבוש על חוף הים | `team-day-by-the-sea` | ✓ — PR #83 |
+| 1 | 1 | יום גיבוש על חוף הים | `team-day-by-the-sea` | ✓ — **live 2026-09-23** (PR #83) |
 | 2 | 1 | מקום לאירוע חברה ליד קיסריה / חדרה | `company-event-near-caesarea` | answered 2026-09-23 (owner): ~10 min from Caesarea, ~15 min from Hadera by car — into `FACTS.md` with the page |
 | 3 | 1 | איך מגיעים לכפר הדייגים ג'סר א-זרקא | `how-to-get-to-jisr-az-zarqa` | ✓ (car only; transit unverified) |
 | 4 | 1 | אירוע פרטי על חוף הים | `private-event-on-the-beach` | ✓ |
@@ -266,6 +267,25 @@ session, reviewed together on localhost; each pair its own PR; owner reviews the
   stacked on #79. Owner signed off on staging; **#80 then #79 merged to main, deploy green,
   routes 200.** Photos are in `media/` (41 usable). Next: the flagship pair via `story-author`,
   its own session and PR.
+- 2026-09-23 — **flagship pair drafted** (`team-day-by-the-sea`, HE + AR) through `story-author`
+  and three localhost review rounds with the owner. Decided on the way: no body links on any
+  story page ([ADR 0050](../decisions/0050-story-pages-carry-no-body-links.md)); a story video
+  may autoplay muted once in view ([ADR 0051](../decisions/0051-story-video-may-autoplay-muted-when-in-view.md));
+  the kitchen's names stay off the pages for now (`FACTS.md`). Team-day activities added to
+  `FACTS.md`. **By-hand steps the tool does not yet script** — follow-up below:
+  - *Second 16:9 figure:* `scripts/story-images.sh <photo> tmp-x`, then rename
+    `img/stories/tmp-x/hero-{1600,800}.jpg` → `img/stories/<slug>/<name>-{1600,800}.jpg` and
+    delete `tmp-x/` (same colour conversion and metadata strip as the hero).
+  - *Video montage:* each landscape Live Photo `.mov` →
+    `ffmpeg -i in.mov -an -map_metadata -1 -vf "scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720,fps=30,format=yuv420p" -c:v libx264 -crf 18`;
+    each still → 2560×1440 sRGB JPEG (Pillow, no EXIF) →
+    `zoompan=z='1+0.0012*on':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=1280x720:fps=30`
+    for 3s; chain with `xfade=transition=fade:duration=0.6`; final encode
+    `-crf 28 -preset slow -pix_fmt yuv420p -movflags +faststart -an -map_metadata -1`
+    → `clip.mp4`, a `scale=960:540` pass → `clip-540.mp4` (phone `<source media>`), poster
+    = one frame at 800×450.
+  - **Follow-up (Tier A, own PR):** `story-images.sh --as <name>` for extra figures and a
+    committed `scripts/story-video.sh` for the montage, then skill step 5 points at them.
 
 ## Close-out
 *(appended when done — CLAUDE.md "Roadmap item close-out")*

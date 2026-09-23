@@ -82,4 +82,6 @@ implementation choices stay in their plan files; an ADR is for a decision that c
 - [0047 — Initiative #1 measures with GA4 + Search Console only; Ahrefs/Semrush are a paid decision; traffic numbers may appear in the public weekly issue](0047-analytics-wiring-ga4-and-gsc-only-public-numbers.md) — 2026-09-22
 - [0048 — The report agents hold no network write: they write a file and a deterministic step publishes it; every third-party action is SHA-pinned](0048-report-agents-hold-no-write-and-actions-are-sha-pinned.md) — 2026-09-22
 - [0049 — Story chrome is generated, not copied; a story pair merges only complete](0049-story-chrome-is-generated-and-a-pair-merges-complete.md) — 2026-09-22
+- [0050 — Story pages carry no links in the body text](0050-story-pages-carry-no-body-links.md) — 2026-09-23
+- [0051 — A story video may autoplay muted once it scrolls into view](0051-story-video-may-autoplay-muted-when-in-view.md) — 2026-09-23
 - [0052 — Stories: four pairs a week for the first month, then the owner sets the pace](0052-stories-four-pairs-a-week-for-the-first-month.md) — 2026-09-23
