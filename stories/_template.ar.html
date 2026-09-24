@@ -10,13 +10,10 @@
   spoken in Israel — conversational in body copy, tighter MSA-leaning phrasing
   for headings and labels. Both languages are RTL.
 
-  All the rules from _template.html apply unchanged: facts only from
-  /facts.txt or levyam.com, [مفقود: ...] rather than invention, never a price,
-  answer-first in the first two sentences of .story-lede, root-absolute asset
-  paths, og:image REQUIRED (same /img/stories/<slug>/card.jpg as the Hebrew
-  twin — image files are shared), meta title ≤ 60 chars, description ≤ 155,
-  FAQ text identical to the JSON-LD, at most ONE --wide figure, no H3s,
-  no links in the body text (ADR 0050).
+  All the rules in _template.html's RULES block apply unchanged. Arabic-only:
+  [مفقود: ...] is the missing-fact marker; the SAME slug and the SAME image
+  files as the Hebrew twin (og:image = /img/stories/<slug>/card.jpg); asset
+  paths stay root-absolute (this page sits one directory deeper).
 -->
 <html lang="ar" dir="rtl">
 <head>

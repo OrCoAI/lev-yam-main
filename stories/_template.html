@@ -13,7 +13,7 @@
   so a nav or footer edit is made HERE and never on a page. Underscore-prefixed
   files are ignored by the generator, so this file never appears on the site.
 
-  RULES (docs/plans/content-engine-phase0.md):
+  RULES (ADR 0050, ADR 0053; history: docs/plans/content-engine-phase0.md):
     · Facts come only from /facts.txt or levyam.com. Missing → [חסר: ...].
       Never invent. Never attribute a quote to a real person unless it is in
       the facts source and was verified with them.
@@ -31,6 +31,10 @@
       No H3s at this length.
     · No links in the body text — the nav and the WhatsApp CTA are the ways
       onward (ADR 0050).
+    · Voice: a narrative essay — the lede answers the query in two sentences,
+      then ONE true, sourced story of the place (FACTS.md §הכפר). Length:
+      400–700 words in the article body (lede + sections; FAQ and captions
+      excluded) (ADR 0053).
 
   After adding a page, refresh the sitemap, both hubs and the page chrome:
       node scripts/gen-stories-index.mjs

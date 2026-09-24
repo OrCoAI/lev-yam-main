@@ -85,3 +85,4 @@ implementation choices stay in their plan files; an ADR is for a decision that c
 - [0050 — Story pages carry no links in the body text](0050-story-pages-carry-no-body-links.md) — 2026-09-23
 - [0051 — A story video may autoplay muted once it scrolls into view](0051-story-video-may-autoplay-muted-when-in-view.md) — 2026-09-23
 - [0052 — Stories: four pairs a week for the first month, then the owner sets the pace](0052-stories-four-pairs-a-week-for-the-first-month.md) — 2026-09-23
+- [0053 — Story pages are narrative essays; researched village facts enter FACTS.md with sources first](0053-story-pages-are-narrative-essays-village-facts-sourced-in-facts.md) — 2026-09-24
