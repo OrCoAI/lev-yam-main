@@ -33,11 +33,20 @@ quote. If the target query is missing, ask for it — one closed question — be
 3. **Hebrew draft** from `_template.html`, every `{{PLACEHOLDER}}` replaced. The RULES block at
    the top of the template is the rule set (facts, no prices, answer-first, meta limits, FAQ ↔
    JSON-LD identical, every figure in the one 16:9 frame); this skill adds only:
-   - H1 carries the target query. Body 250–500 words, real names and places where `FACTS.md`
+   - H1 carries the target query. Body length and voice per the template RULES (ADR 0053), real names and places where `FACTS.md`
      has them (unless it says a name stays off the pages), no marketing generics. FAQ 3–5 Q&As. **No links in the body text** — the
      page is read top to bottom, and a link out of it mid-paragraph is not where a reader expects
      to go next (ADR 0050). The site nav and the WhatsApp CTA are the ways onward.
    - A missing fact becomes `[חסר: what is needed]` in the text, never a guess.
+   - **Research (ADR 0053):** a new village fact enters `FACTS.md` §"הכפר" — source URL,
+     confidence per the file's legend, verification date — **before** a page uses it; בינוני
+     facts are hedged ("לפי…", "כ־"). Sensitive facts go on a page only with the owner's
+     approval and only as `FACTS.md` states them — no added detail; the 1948 sentence verbatim —
+     the approved list is ADR 0053 §4 (1948
+     and the neighbours; the 1924–26 move to the ridge; the entrance under the coastal highway);
+     anything else sensitive is raised first. Residents and other businesses are never named
+     without the owner's and Nimer's OK; a quote appears only as its cited source has it, never
+     attributed to Nimer. No invented scenes, no unverified quotes.
    - `levyam:published` = today; canonical, the three `hreflang` links and `og:image` carry
      the slug.
    - CTA lead and the URL-encoded WhatsApp message are page-specific and mention the topic.
@@ -68,7 +77,7 @@ quote. If the target query is missing, ask for it — one closed question — be
    answers go into `FACTS.md` (same PR) and the markers are replaced. **A page with a marker
    left in it does not go to PR.**
 8. The PR waits for a native reader's sign-off on the Arabic (owner / Nimer) before merge.
-   Tier B for the page files; declare in the PR.
+   Tier C for a pages-only pair, B when it adds to `FACTS.md`; declare in the PR.
 
 ## Never
 

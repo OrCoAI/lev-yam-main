@@ -42,7 +42,7 @@ The thinnest slice that gets a story pair from a brief to a reviewable PR, prove
      **and** a per-page gap list the owner answers in session; answers go into `FACTS.md` in the
      same PR (verified with Nimer where the fact is his). No page merges with a marker in it;
    - meta title ≤60, description ≤155, `BreadcrumbList` + `FAQPage` JSON-LD matching the visible
-     text, no links in the body (ADR 0050 — was 2–3 internal links), answer-first lede, 250–500 words, one fact per sentence, no
+     text, no links in the body (ADR 0050 — was 2–3 internal links), answer-first lede, 400–700 words ([ADR 0053](../decisions/0053-story-pages-are-narrative-essays-village-facts-sourced-in-facts.md) — was 250–500; narrative essay), one fact per sentence, no
      superlatives, **no prices**;
    - Levantine Arabic drafted from the approved Hebrew; the PR waits for a native reader's sign-off
      (owner / Nimer) before merge;
@@ -216,10 +216,19 @@ the trend at the 2026-10-24 review.
 
 **Throughput order:** (1) script the extra-figure + video steps (Tier A PR, before week 2);
 (2) item 11 kickoff (`@claude` drafts from a brief issue) — own session; (3) two pairs per
-session, reviewed together on localhost; each pair its own PR; owner reviews the Arabic.
+session, reviewed together on localhost; each pair its own PR (Tier C when it adds only pages;
+B when it adds to `FACTS.md`); owner reviews the Arabic. Found by the 2026-09-24 gate: (4) the
+generator should check FAQ ↔ JSON-LD identity at text level (plus no `<a>` in the article outside
+the breadcrumb, no H3) — Tier B; (5) the page builder used for pairs 1–4 (content dict → both
+twins, JSON-LD derived from the same data) is uncommitted — commit it as `scripts/story-build.mjs`
+rendering from `_template*.html`, or delete it; not a third path.
 
 ## Follow-ups discovered (logged, not done here)
 
+- **Hero srcset rung (2026-09-24, gate efficiency review):** `HERO_SIZES` resolves to `100vw` on
+  phones and the ladder is 800w/1600w only, so DPR ≥ 2 phones (390–430 px) fetch the 1600w hero
+  as the LCP (230–380 KB) instead of a ~1200w rung. Fix = `story-images.sh` + `HERO_SIZES`
+  together (Tier A, own PR).
 - **Desktop header overlap — site-wide, not a one-liner (re-measured 2026-09-23):** the
   absolutely-centred `.primary-nav` (`css/styles.css`) runs into `.header-social` between 961 and
   ~1300px, **homepage and stories, both languages**. Overlap in px (nav's last item vs the social
@@ -256,6 +265,8 @@ session, reviewed together on localhost; each pair its own PR; owner reviews the
   (`08`, `09`, `10`, `14`, `18`) are 1600×1200 and pass the script; the rest are ≈700 px or
   portrait. The `media/` intake is still where new photos go, but the flagship page is not
   blocked on it.
+- 2026-09-24 · pairs 2–4 · story pages are narrative essays; researched village facts enter
+  `FACTS.md` first — [ADR 0053](../decisions/0053-story-pages-are-narrative-essays-village-facts-sourced-in-facts.md).
 
 ## Status
 
@@ -286,6 +297,13 @@ session, reviewed together on localhost; each pair its own PR; owner reviews the
     = one frame at 800×450.
   - **Follow-up (Tier A, own PR):** `story-images.sh --as <name>` for extra figures and a
     committed `scripts/story-video.sh` for the montage, then skill step 5 points at them.
+- 2026-09-24 — **pairs 2–4 drafted and pair 1 rewritten in the narrative-essay voice** (ADR 0053):
+  `company-event-near-caesarea` (the Roman water road to Caesarea), `how-to-get-to-jisr-az-zarqa`
+  (the way in: marsh paths, the Kaiser's bridge, the trail's descent), `private-event-on-the-beach`
+  (Crocodile Stream), `team-day-by-the-sea` (a day inside the fishing village; same URL,
+  `levyam:updated` bumped). ~50 sourced village facts added to `FACTS.md`; drive times from
+  Caesarea/Hadera added. Each pair its own PR (Tier C — pages only) on top of the Tier A rule PR;
+  owner reviews the Arabic.
 
 ## Close-out
 *(appended when done — CLAUDE.md "Roadmap item close-out")*
