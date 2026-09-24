@@ -511,7 +511,7 @@ proposal — the owner reorders by editing this list.*
       4 pairs a week for four weeks = 16 by 2026-10-24, then the owner sets the pace; backlog in the
       plan; item 11 pulled forward; "number one" = GSC top-3 share + manual AI-citation check**
       **→ amended 2026-09-24 ([ADR 0053](decisions/0053-story-pages-are-narrative-essays-village-facts-sourced-in-facts.md)): story pages are narrative
-      essays; village facts enter `FACTS.md` first**
+      essays; village facts enter `FACTS.md` first** **Pairs 2–4 LIVE 2026-09-24 (PRs #87, #91, #89, #90) — 4 of 16.**
       *(bug found 2026-09-23: desktop header nav overlaps the social icons at 961–1300px, site-wide,
       HE + AR — own Tier B PR; measurements in the plan's follow-ups)*
 - [ ] **3. Local SEO cluster** — near Caesarea / Hadera / Jisr, directions, "things to do",
