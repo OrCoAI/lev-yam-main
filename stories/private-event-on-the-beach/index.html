@@ -1,85 +1,35 @@
 <!doctype html>
-<!--
-  ═══ TEMPLATE — HEBREW STORY PAGE ═══════════════════════════════════════════
-
-  Copy this file to  stories/<slug>/index.html  and its Arabic twin
-  _template.ar.html  to  stories/ar/<slug>/index.html  — the same slug in both.
-  A page ships only when BOTH languages exist (docs/ARCHITECTURE.md, invariant 5;
-  the generator enforces it).
-
-  Replace every {{PLACEHOLDER}} — except inside the two chrome regions (the
-  header and footer, between the "chrome:header" / "chrome:footer" marker
-  comments): the generator overwrites those from this template on every run,
-  so a nav or footer edit is made HERE and never on a page. Underscore-prefixed
-  files are ignored by the generator, so this file never appears on the site.
-
-  RULES (ADR 0050, ADR 0053; history: docs/plans/content-engine-phase0.md):
-    · Facts come only from /facts.txt or levyam.com. Missing → [חסר: ...].
-      Never invent. Never attribute a quote to a real person unless it is in
-      the facts source and was verified with them.
-    · NEVER publish a price, a price range, or "starting from". Inquiry only.
-    · The first two sentences of .story-lede must fully answer the query.
-      One fact per sentence. No superlatives.
-    · og:image is REQUIRED and must be a real 1200×630 photo under
-      /img/stories/<slug>/ — the hub card reads it; a logo fails the build.
-      HE and AR twins share the same image files.
-    · Asset paths are root-absolute (/css/…) — the Arabic twin sits one
-      directory deeper.
-    · Meta title ≤ 60 chars, meta description ≤ 155 chars.
-    · Keep the FAQ <details> text and the JSON-LD FAQPage IDENTICAL.
-    · Every figure and the video share one frame: column width, 16:9, cropped.
-      No H3s at this length.
-    · No links in the body text — the nav and the WhatsApp CTA are the ways
-      onward (ADR 0050).
-    · Voice: a narrative essay — the lede answers the query in two sentences,
-      then ONE true, sourced story of the place (FACTS.md §הכפר). Length:
-      400–700 words in the article body (lede + sections; FAQ and captions
-      excluded) (ADR 0053).
-
-  After adding a page, refresh the sitemap, both hubs and the page chrome:
-      node scripts/gen-stories-index.mjs
-  (The deploy runs it too, so production is correct either way; CI fails on
-  a stale copy. It also refuses a leftover {{PLACEHOLDER}} and a referenced
-  /img/stories/… file that does not exist.)
--->
 <html lang="he" dir="rtl">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#2c92bf">
 
-  <title>{{TITLE_60}}</title>
-  <meta name="description" content="{{DESCRIPTION_155}}">
+  <title>אירוע פרטי על חוף הים בג'סר א-זרקא | לב ים</title>
+  <meta name="description" content="אירוע פרטי על חוף הים בכפר הדייגים בג'סר א-זרקא: חגיגה אינטימית מול הים, אוכל מקומי טרי מהים לשולחן, ומתחם שמותאם לאירוע שלכם.">
 
-  <!-- Publication dates — read by the sitemap/hub generator. -->
-  <meta name="levyam:published" content="{{YYYY-MM-DD}}">
-  <meta name="levyam:updated" content="{{YYYY-MM-DD}}">
+  <meta name="levyam:published" content="2026-09-24">
+  <meta name="levyam:updated" content="2026-09-24">
 
-  <link rel="canonical" href="https://levyam.com/stories/{{SLUG}}/">
+  <link rel="canonical" href="https://levyam.com/stories/private-event-on-the-beach/">
 
-  <!-- Both twins must list BOTH languages, with identical hrefs. -->
-  <link rel="alternate" hreflang="he" href="https://levyam.com/stories/{{SLUG}}/">
-  <link rel="alternate" hreflang="ar" href="https://levyam.com/stories/ar/{{SLUG}}/">
-  <link rel="alternate" hreflang="x-default" href="https://levyam.com/stories/{{SLUG}}/">
-  <!-- English is reserved, not built. When a twin exists, uncomment:
-  <link rel="alternate" hreflang="en" href="https://levyam.com/stories/en/{{SLUG}}/">
-  -->
+  <link rel="alternate" hreflang="he" href="https://levyam.com/stories/private-event-on-the-beach/">
+  <link rel="alternate" hreflang="ar" href="https://levyam.com/stories/ar/private-event-on-the-beach/">
+  <link rel="alternate" hreflang="x-default" href="https://levyam.com/stories/private-event-on-the-beach/">
 
-  <meta property="og:title" content="{{TITLE_60}}">
-  <meta property="og:description" content="{{DESCRIPTION_155}}">
-  <!-- REQUIRED: a real 1200×630 photo. The hub card reads this tag — the
-       generator fails the build on a logo or an off-site URL. -->
-  <meta property="og:image" content="https://levyam.com/img/stories/{{SLUG}}/card.jpg">
+  <meta property="og:title" content="אירוע פרטי על חוף הים בג'סר א-זרקא | לב ים">
+  <meta property="og:description" content="אירוע פרטי על חוף הים בכפר הדייגים בג'סר א-זרקא: חגיגה אינטימית מול הים, אוכל מקומי טרי מהים לשולחן, ומתחם שמותאם לאירוע שלכם.">
+  <meta property="og:image" content="https://levyam.com/img/stories/private-event-on-the-beach/card.jpg">
   <meta property="og:type" content="article">
   <meta property="og:locale" content="he_IL">
   <meta property="og:locale:alternate" content="ar_IL">
-  <meta property="og:url" content="https://levyam.com/stories/{{SLUG}}/">
+  <meta property="og:url" content="https://levyam.com/stories/private-event-on-the-beach/">
 
   <link rel="preload" href="/fonts/Heebo-hebrew.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/fonts/Assistant-hebrew.woff2" as="font" type="font/woff2" crossorigin>
   <!-- The hero image is the LCP — preload it with the same srcset/sizes. -->
   <link rel="preload" as="image" fetchpriority="high"
-        imagesrcset="/img/stories/{{SLUG}}/hero-800.jpg 800w, /img/stories/{{SLUG}}/hero-1600.jpg 1600w"
+        imagesrcset="/img/stories/private-event-on-the-beach/hero-800.jpg 800w, /img/stories/private-event-on-the-beach/hero-1600.jpg 1600w"
         imagesizes="(min-width: 1600px) min(68vw, 1280px), (min-width: 800px) 736px, 100vw">
 
   <link rel="icon" href="/img/logo/logo-mark.png" type="image/png">
@@ -109,7 +59,7 @@
     "itemListElement": [
       { "@type": "ListItem", "position": 1, "name": "לב ים", "item": "https://levyam.com/" },
       { "@type": "ListItem", "position": 2, "name": "סיפורים", "item": "https://levyam.com/stories/" },
-      { "@type": "ListItem", "position": 3, "name": "{{H1}}", "item": "https://levyam.com/stories/{{SLUG}}/" }
+      { "@type": "ListItem", "position": 3, "name": "אירוע פרטי על חוף הים, בכפר הדייגים בג'סר א-זרקא", "item": "https://levyam.com/stories/private-event-on-the-beach/" }
     ]
   }
   </script>
@@ -122,25 +72,35 @@
     "mainEntity": [
       {
         "@type": "Question",
-        "name": "{{FAQ_Q1}}",
-        "acceptedAnswer": { "@type": "Answer", "text": "{{FAQ_A1}}" }
+        "name": "כמה אנשים אפשר להזמין?",
+        "acceptedAnswer": { "@type": "Answer", "text": "המתחם גמיש ומתאים לקבוצות בגדלים שונים, ממפגש אינטימי ועד אירוע גדול. ספרו לנו כמה תהיו ומה אופי האירוע, ונתאים את המקום בשבילכם." }
       },
       {
         "@type": "Question",
-        "name": "{{FAQ_Q2}}",
-        "acceptedAnswer": { "@type": "Answer", "text": "{{FAQ_A2}}" }
+        "name": "האוכל כשר?",
+        "acceptedAnswer": { "@type": "Answer", "text": "המטבח של לב ים אינו כשר. לאירוע שצריך כשרות אפשר להביא קייטרינג כשר לפי בקשה." }
       },
       {
         "@type": "Question",
-        "name": "{{FAQ_Q3}}",
-        "acceptedAnswer": { "@type": "Answer", "text": "{{FAQ_A3}}" }
+        "name": "אפשר להביא ספק אוכל חיצוני?",
+        "acceptedAnswer": { "@type": "Answer", "text": "כן. התפריט מותאם לכל אירוע לפי בקשה, ואפשר לעבוד גם עם ספק חיצוני." }
+      },
+      {
+        "@type": "Question",
+        "name": "מה קורה אם יורד גשם?",
+        "acceptedAnswer": { "@type": "Answer", "text": "יש במתחם חלל מקורה חלקי. לקבוצות גדולות בחורף מתאמים מראש לפי מזג האוויר." }
+      },
+      {
+        "@type": "Question",
+        "name": "אפשר להישאר ללון?",
+        "acceptedAnswer": { "@type": "Answer", "text": "לא. אין אפשרות לינה במתחם." }
       }
     ]
   }
   </script>
 </head>
 
-<body data-page-slug="{{SLUG}}">
+<body data-page-slug="private-event-on-the-beach">
 
   <a class="skip-link" href="#story-main">דלג לתוכן הראשי</a>
 
@@ -157,7 +117,7 @@
           <li><a href="/#services">מה קורה בלב ים</a></li>
           <li><a href="/#why">מי אנחנו</a></li>
           <li><a href="/#gallery">גלריה</a></li>
-          <li><a href="/stories/"{{STORIES_CURRENT}}>סיפורים</a></li>
+          <li><a href="/stories/">סיפורים</a></li>
           <li><a href="/#faq">שאלות ותשובות</a></li>
           <li><a href="/#contact">צור קשר</a></li>
         </ul>
@@ -183,8 +143,8 @@
 
       <!-- Language toggle navigates to the twin URL — one URL per language. -->
       <div class="lang-toggle" role="group" aria-label="שפה / اللغة">
-        <a class="lang-opt is-active" href="{{HE_URL}}" hreflang="he" lang="he" aria-current="page">עב</a>
-        <a class="lang-opt" href="{{AR_URL}}" hreflang="ar" lang="ar">عر</a>
+        <a class="lang-opt is-active" href="/stories/private-event-on-the-beach/" hreflang="he" lang="he" aria-current="page">עב</a>
+        <a class="lang-opt" href="/stories/ar/private-event-on-the-beach/" hreflang="ar" lang="ar">عر</a>
       </div>
 
       <button class="nav-toggle" aria-label="פתיחת תפריט" data-label-open="פתיחת תפריט" data-label-close="סגירת תפריט" aria-expanded="false" aria-controls="mobile-nav">
@@ -203,7 +163,7 @@
         <li><a href="/#services">מה קורה בלב ים</a></li>
         <li><a href="/#why">מי אנחנו</a></li>
         <li><a href="/#gallery">גלריה</a></li>
-        <li><a href="/stories/"{{STORIES_CURRENT}}>סיפורים</a></li>
+        <li><a href="/stories/">סיפורים</a></li>
         <li><a href="/#faq">שאלות ותשובות</a></li>
         <li><a href="/#contact">צור קשר</a></li>
       </ul>
@@ -216,13 +176,11 @@
     <article class="story">
 
 
-      <!-- The photo opens the page. Title stays on cream below it — never
-           text-over-photo. Meaningful alt, in the page language. -->
       <figure class="container container-narrow story-hero">
-        <img src="/img/stories/{{SLUG}}/hero-1600.jpg"
-             srcset="/img/stories/{{SLUG}}/hero-800.jpg 800w, /img/stories/{{SLUG}}/hero-1600.jpg 1600w"
+        <img src="/img/stories/private-event-on-the-beach/hero-1600.jpg"
+             srcset="/img/stories/private-event-on-the-beach/hero-800.jpg 800w, /img/stories/private-event-on-the-beach/hero-1600.jpg 1600w"
              sizes="(min-width: 1600px) min(68vw, 1280px), (min-width: 800px) 736px, 100vw"
-             width="1600" height="900" alt="{{HERO_ALT}}"
+             width="1600" height="900" alt="שתיים מתחבקות תחת בלונים ורודים בפרגולה, והים בשקיעה מאחוריהן"
              fetchpriority="high" decoding="async">
       </figure>
 
@@ -232,86 +190,95 @@
           <ol>
             <li><a href="/">לב ים</a></li>
             <li><a href="/stories/">סיפורים</a></li>
-            <li aria-current="page">{{H1}}</li>
+            <li aria-current="page">אירוע פרטי על חוף הים, בכפר הדייגים בג'סר א-זרקא</li>
           </ol>
         </nav>
 
-        <h1 class="story-title">{{H1}}</h1>
+        <h1 class="story-title">אירוע פרטי על חוף הים, בכפר הדייגים בג'סר א-זרקא</h1>
 
-        <!-- ANSWER-FIRST. Exactly the first two sentences, fully answering the
-             query. No preamble, no marketing. -->
         <div class="story-lede">
-          <p>{{ANSWER_SENTENCE_1}} {{ANSWER_SENTENCE_2}}</p>
+          <p>לב ים מארח אירועים פרטיים על חוף הים, במבנה דייגים עתיק בכפר הדייגים של ג'סר א-זרקא. החגיגה מתקיימת תחת פרגולה מול הים, עם אוכל מקומי טרי מהמטבח שלנו. ומצפון לכפר הדייגים נשפך לים נחל שנקרא על שם התנינים שחיו בו.</p>
         </div>
 
-        <!-- Byline. Delete the whole <p> for unsigned team pages. Member pages
-             carry a byline; a quote must be verified with the person named. -->
         <p class="story-byline">
-          מאת <span class="story-byline-name">{{AUTHOR}}</span> ·
-          <time datetime="{{YYYY-MM-DD}}">{{DD.MM.YYYY}}</time>
+          מאת <span class="story-byline-name">צוות לב ים</span> ·
+          <time datetime="2026-09-24">24.09.2026</time>
         </p>
 
-        <!-- BODY — 250–500 words. One fact per sentence. Real names, real
-             dishes, real places. Anything you cannot source: [חסר: ...] -->
-        <h2>{{SECTION_1_HEADING}}</h2>
-        <p>{{PARAGRAPH}}</p>
+        <h2>איזה אירוע</h2>
+        <p>אירוע פרטי בלב ים הוא חגיגה אינטימית עם אוכל מקומי טרי, ממפגש קטן ועד אירוע גדול. אפשר גם לשכור את המקום כולו, ליום או לסוף שבוע.</p>
 
-        <h2>{{SECTION_2_HEADING}}</h2>
-        <p>{{PARAGRAPH}}</p>
-
-        <!-- Figure — the one frame: full column, 16:9, cropped. srcset 800/1400 when sizes exist. -->
         <figure class="story-figure">
-          <img src="/img/{{IMAGE_PATH}}" alt="{{ALT_TEXT}}" width="1600" height="1200"
-               loading="lazy" decoding="async">
-          <figcaption>{{CAPTION}}</figcaption>
+          <img src="/img/stories/private-event-on-the-beach/table-1600.jpg"
+               srcset="/img/stories/private-event-on-the-beach/table-800.jpg 800w, /img/stories/private-event-on-the-beach/table-1600.jpg 1600w"
+               sizes="(min-width: 1600px) min(68vw, 1280px), (min-width: 800px) 736px, 100vw"
+               alt="שולחן ארוך ערוך לחגיגה מול הים" width="1600" height="900" loading="lazy" decoding="async">
+          <figcaption>שולחן ערוך לחגיגה, מול הים.</figcaption>
         </figure>
 
-        <!-- Video — self-hosted mp4 ≤8MB, 16:9, poster required, loads nothing
-             until tapped — or, with muted loop data-autoplay on the <video>, until
-             it scrolls into view, then plays muted while on screen (js/stories.js,
-             ADR 0051). The poster itself IS fetched eagerly (preload="none"
-             does not defer it) — compress it like a figure, ~100KB.
-             Uncomment when a story needs one:
+        <h2>סיפור לשולחן: הנחל של התנינים</h2>
+        <p>השם אינו מטאפורה: תניני יאור חיו בביצות כבארה שמאחורי החוף. לפי הרישומים, ב־1877 נתפסה בנחל נקבת תנין באורך שלושה מטרים. ב־1882 רשמו סוקרים בריטים שהתנין עדיין נמצא כאן — לדברי אבו נור, בעל הטחנה שעל הנהר. כרוניקה צלבנית מ־1191 מספרת שהנהר נקרא כך משום שתנינים טרפו בו שני אבירים שרחצו במימיו. על התל שבשפך עמדה בעת העתיקה עיר ששמה קרוקודילופוליס, עיר התנינים, שסטראבו ופליניוס הזכירו. התנין האחרון ניצוד ב־1912; שרידיו נשמרו באוסף של כומר בירושלים, התגלו מחדש במרתף בית ספר ב־1978, ומוצגים היום במוזיאון הטבע ע"ש שטיינהרדט בתל אביב. מסוף 1915 לא נראו כאן תנינים. הנחל עצמו זורם כל השנה — לפי רשות הטבע והגנים, הוא ניצל מגורל נחלי החוף רק בזכות מליחות מימיו, שאינם טובים לשתייה ולרוב הגידולים. בקיץ, לפי מדריכי שביל הים, אפשר לחצות את השפך ברגליים יחפות; בחורף הוא עמוק ואין לחצותו.</p>
+
+        <h2>המקום</h2>
+        <p>המתחם הוא מבנה דייגים עתיק על רצועת חוף בתולית. יש פרגולה מול הים, מדשאה ופינות ישיבה מגוונות. החוף נגיש ובטוח, ויש מרחב פתוח לילדים. במתחם יש מקלחות ושירותים, ומטבח מאובזר עם כלי מטבח והגשה. יש גם אינטרנט מהיר וטלוויזיה גדולה להקרנה, למי שרוצה להקרין משהו בחגיגה. הים ממערב, כך שהשקיעה היא מול המים.</p>
+
         <figure class="story-figure story-video">
-          <video controls preload="none" playsinline
-                 poster="/img/stories/{{SLUG}}/clip-poster.jpg" width="1600" height="900">
-            <source src="/img/stories/{{SLUG}}/clip.mp4" type="video/mp4">
+          <video controls muted loop playsinline preload="none" data-autoplay
+                 poster="/img/stories/private-event-on-the-beach/clip-poster.jpg" width="1600" height="900">
+            <source src="/img/stories/private-event-on-the-beach/clip-540.mp4" type="video/mp4" media="(max-width: 800px)">
+            <source src="/img/stories/private-event-on-the-beach/clip.mp4" type="video/mp4">
           </video>
-          <figcaption>{{CAPTION}}</figcaption>
+          <figcaption>רגעים מחגיגות בלב ים: שולחן ערוך מול הים, פרחים, מפגשים — ואוכל מהמטבח.</figcaption>
         </figure>
-        -->
+
+        <h2>האוכל</h2>
+        <p>ארוחת ערב חגיגית, ארוחה מלאה או פינוקים לאורך הערב — את המטבח מפעילים מקומיים מג'סר א-זרקא, והגישה היא מהים לשולחן: אוכל מקומי ודגים טריים. אין תפריט קבוע: התפריט מותאם לכל חגיגה לפי בקשה, ואפשר לעבוד גם עם ספק חיצוני. צמחוני, טבעוני ואלרגנים — מתאמים מראש. המטבח אינו כשר, ולחגיגה שצריכה כשרות אפשר להביא קייטרינג כשר.</p>
+
+        <h2>מתי</h2>
+        <p>אירועים מתקיימים כל השנה, ולכל עונה אופי משלה. בקיץ הים רגוע יחסית, ורוב השנה נעים לשבת בחוץ; בצהרי הקיץ יש צל ופרגולה. הסערות החזקות מגיעות לרוב בין אוקטובר לאפריל, ואז יש במתחם חלל מקורה חלקי. שעות האירוע מתואמות לכל אירוע.</p>
+
+        <h2>איך מגיעים</h2>
+        <p>לב ים נמצא בכפר הדייגים של ג'סר א-זרקא, כשעה מתל אביב וכ־25 דקות מחיפה. מגיעים ברכב מכביש 4, ובוויז מחפשים "לב ים". יש חניה מסודרת בכניסה. המתחם נגיש חלקית — לפרטים כתבו לנו לפני ההגעה.</p>
+
+        <h2>מי מארח</h2>
+        <p>את לב ים ייסדו אור ונימר ג'רבאן, דייג דור שלישי מג'סר א-זרקא. ג'סר א-זרקא הוא הכפר הערבי-מוסלמי היחיד שנותר על קו החוף הישראלי, וכפר הדייגים הוא פארק לאומי רשמי. עיתונאי שביקר בכפר כתב שהזמנה לשתות קפה אינה כאן דבר יוצא דופן. לב ים פועל מתוך הכפר ובשבילו.</p>
 
         <h2>שאלות ותשובות</h2>
         <div class="story-faq">
           <details class="faq-item">
-            <summary>{{FAQ_Q1}}</summary>
-            <div class="faq-answer"><p>{{FAQ_A1}}</p></div>
+            <summary>כמה אנשים אפשר להזמין?</summary>
+            <div class="faq-answer"><p>המתחם גמיש ומתאים לקבוצות בגדלים שונים, ממפגש אינטימי ועד אירוע גדול. ספרו לנו כמה תהיו ומה אופי האירוע, ונתאים את המקום בשבילכם.</p></div>
           </details>
           <details class="faq-item">
-            <summary>{{FAQ_Q2}}</summary>
-            <div class="faq-answer"><p>{{FAQ_A2}}</p></div>
+            <summary>האוכל כשר?</summary>
+            <div class="faq-answer"><p>המטבח של לב ים אינו כשר. לאירוע שצריך כשרות אפשר להביא קייטרינג כשר לפי בקשה.</p></div>
           </details>
           <details class="faq-item">
-            <summary>{{FAQ_Q3}}</summary>
-            <div class="faq-answer"><p>{{FAQ_A3}}</p></div>
+            <summary>אפשר להביא ספק אוכל חיצוני?</summary>
+            <div class="faq-answer"><p>כן. התפריט מותאם לכל אירוע לפי בקשה, ואפשר לעבוד גם עם ספק חיצוני.</p></div>
+          </details>
+          <details class="faq-item">
+            <summary>מה קורה אם יורד גשם?</summary>
+            <div class="faq-answer"><p>יש במתחם חלל מקורה חלקי. לקבוצות גדולות בחורף מתאמים מראש לפי מזג האוויר.</p></div>
+          </details>
+          <details class="faq-item">
+            <summary>אפשר להישאר ללון?</summary>
+            <div class="faq-answer"><p>לא. אין אפשרות לינה במתחם.</p></div>
           </details>
         </div>
 
       </div>
     </article>
 
-    <!-- Page-specific prefilled WhatsApp CTA — the homepage contact-band
-         language (blue band, white text, orange action). Every page closes
-         zigzag → band → footer, exactly like the homepage. -->
     <div class="wave-divider wave-divider--blue" aria-hidden="true"></div>
     <aside class="story-cta">
       <div class="container">
         <img class="footer-logo story-cta-mark" src="/img/logo/logo-mono-nobg.png" alt="" width="40" height="40">
-        <p class="story-cta-text">{{CTA_LEAD}}</p>
+        <p class="story-cta-text">מתכננים אירוע פרטי על חוף הים? ספרו לנו מה אתם חוגגים וכמה תהיו, ונחזור אליכם בהקדם.</p>
         <a class="btn btn-primary"
-           href="https://wa.me/972506669138?text={{URLENCODED_HEBREW_MESSAGE}}"
+           href="https://wa.me/972506669138?text=%D7%A9%D7%9C%D7%95%D7%9D%2C%20%D7%90%D7%A0%D7%97%D7%A0%D7%95%20%D7%9E%D7%AA%D7%9B%D7%A0%D7%A0%D7%99%D7%9D%20%D7%90%D7%99%D7%A8%D7%95%D7%A2%20%D7%A4%D7%A8%D7%98%D7%99%20%D7%A2%D7%9C%20%D7%97%D7%95%D7%A3%20%D7%94%D7%99%D7%9D%20%D7%91%D7%9C%D7%91%20%D7%99%D7%9D%20%D7%95%D7%90%D7%A9%D7%9E%D7%97%20%D7%9C%D7%A4%D7%A8%D7%98%D7%99%D7%9D"
            target="_blank" rel="noopener"
-           data-bizevent-source="stories_{{SLUG}}">
+           data-bizevent-source="stories_private-event-on-the-beach">
           דברו איתנו בוואטסאפ
         </a>
       </div>
@@ -359,7 +326,7 @@
   <!-- /chrome:footer -->
 
   <a class="wa-float"
-     href="https://wa.me/972506669138?text={{URLENCODED_HEBREW_MESSAGE}}"
+     href="https://wa.me/972506669138?text=%D7%A9%D7%9C%D7%95%D7%9D%2C%20%D7%90%D7%A0%D7%97%D7%A0%D7%95%20%D7%9E%D7%AA%D7%9B%D7%A0%D7%A0%D7%99%D7%9D%20%D7%90%D7%99%D7%A8%D7%95%D7%A2%20%D7%A4%D7%A8%D7%98%D7%99%20%D7%A2%D7%9C%20%D7%97%D7%95%D7%A3%20%D7%94%D7%99%D7%9D%20%D7%91%D7%9C%D7%91%20%D7%99%D7%9D%20%D7%95%D7%90%D7%A9%D7%9E%D7%97%20%D7%9C%D7%A4%D7%A8%D7%98%D7%99%D7%9D"
      data-bizevent-source="stories_float"
      target="_blank" rel="noopener"
      aria-label="צור קשר בוואטסאפ">
