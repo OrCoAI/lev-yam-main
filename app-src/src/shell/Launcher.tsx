@@ -29,6 +29,7 @@ const MODULE_META: Record<string, ModuleMeta> = {
     to: '/finance', icon: '/app/brand/sun-orange.png', descKey: 'launcher.desc.finance',
   },
   quotes: { to: '/quotes', icon: '/app/brand/house-blue.png', descKey: 'launcher.desc.quotes' },
+  events: { to: '/events', icon: '/app/brand/halfcircle-blue.png', descKey: 'launcher.desc.events' },
 }
 
 export default function Launcher() {

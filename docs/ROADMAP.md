@@ -527,6 +527,13 @@ proposal — the owner reorders by editing this list.*
 - [ ] **8. Public "What's happening"** — the original Phase 2's public half, minimal: events table +
       one HE/AR public page reading Supabase anonymously (the first public content table — P4 gets
       tested; prereq H4 done) → *event inquiries*
+      **Kicked off 2026-09-25:** [plans/events-whats-happening.md](plans/events-whats-happening.md) —
+      scope widened by the owner ([ADR 0054](decisions/0054-whats-happening-is-db-driven-public-life-bilingual-in-the-db.md)):
+      live public life only (weekends, community, initiatives), dated + recurring items, `/app/events`
+      form **and** static pages for the big recurring ones, a detail page per item with prefilled
+      WhatsApp + `Event` JSON-LD, nav + homepage strip; Arabic enforced by a DB CHECK. Two Tier-A
+      PRs (data + admin, then public surface); outcome = `whatsapp_click` + visits on `/happening/*`,
+      check at ship + 21 days
 - [ ] **9. Backlink programme** — tourism, food/travel, Arab-society media → *referring domains*
 - [ ] **10. Paid test** — a small Meta/Google campaign against one or two pages → *cost per WhatsApp
       conversation*. **Prerequisite, owner 2026-09-22:** before spending anything, prove the paid

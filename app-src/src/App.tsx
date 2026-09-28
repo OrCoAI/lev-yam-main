@@ -12,6 +12,7 @@ import PosModule from './modules/pos/PosModule'
 import QuotesModule from './modules/quotes/QuotesModule'
 import QuotePage from './modules/quotes/QuotePage'
 import ContractPage from './modules/quotes/ContractPage'
+import EventsModule from './modules/events/EventsModule'
 import { PERM } from './lib/permissions'
 
 export default function App() {
@@ -68,6 +69,14 @@ export default function App() {
             element={
               <RequirePermission perm={PERM.quotesView}>
                 <QuotePage />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="events"
+            element={
+              <RequirePermission perm={PERM.eventsView}>
+                <EventsModule />
               </RequirePermission>
             }
           />

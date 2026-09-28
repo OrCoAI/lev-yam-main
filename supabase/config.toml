@@ -11,8 +11,8 @@ port = 54321
 # Schemas to expose in your API. Tables, views and stored procedures in this schema will get API
 # endpoints. `public` and `graphql_public` schemas are included by default.
 # Mirrors the production "Exposed schemas" list (supabase/README.md §First-time-setup);
-# `events` is deliberately withheld until Phase 2 ships its public feed UI.
-schemas = ["public", "graphql_public", "core", "finance", "quotes", "pos"]
+# `events` joined with the public "What's happening" feed (58_events_public.sql).
+schemas = ["public", "graphql_public", "core", "finance", "quotes", "pos", "events"]
 # Extra schemas to add to the search_path of every request.
 extra_search_path = ["public", "extensions"]
 # The maximum number of rows returns from a view, table, or stored procedure. Limits payload size
@@ -231,8 +231,12 @@ web3 = 30
 # secret = ""
 
 [auth.email]
-# Allow/disallow new user signups via email to your project.
-enable_signup = false
+# Must stay TRUE. The CLI maps this key to GOTRUE_EXTERNAL_EMAIL_ENABLED — the email
+# PROVIDER — so `false` here turns off email *login*, not just signup ("Email logins are
+# disabled"; set 2026-08-12, surfaced on the first stack restart after it, 2026-09-25).
+# Signup is closed by `[auth] enable_signup = false` above, which is the one that mirrors
+# the cloud projects' disable_signup.
+enable_signup = true
 # If enabled, a user will be required to confirm any email change on both the old, and new email
 # addresses. If disabled, only the new email is required to confirm.
 double_confirm_changes = true
@@ -396,8 +400,11 @@ inspector_port = 8083
 # The Deno major version to use.
 deno_version = 2
 
-# [edge_runtime.secrets]
-# secret_key = "env(SECRET_VALUE)"
+# Local only (this file is never pushed to a cloud project): with no key, the `translate`
+# function echoes "[AR] <text>" so the button works offline. A GOOGLE_TRANSLATE_API_KEY in the
+# gitignored supabase/functions/.env takes precedence and calls Google for real.
+[edge_runtime.secrets]
+TRANSLATE_FAKE = "1"
 
 [analytics]
 # Disabled: the Logflare/vector container tries to bind-mount the Docker socket,
