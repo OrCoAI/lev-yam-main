@@ -200,7 +200,7 @@ columns are nullable and can stay; the bucket is emptied by hand.
 - 2026-09-28 · Gate (code review): kept `events.visibility default 'public'` although an insert that
   omits visibility now fails the bilingual CHECK — "public by default" is vision principle 4, the
   failure is loud (never a silent leak), and every writer (form, quotes projector) sets it explicitly.
-  Raised to the owner at the gate summary; changing it would be a vision-level call.
+  Raised to the owner at the gate summary; **owner confirmed 2026-09-28: keep `'public'`.**
 - 2026-09-28 · Gate (security review): 40's `FOR ALL` write policy split into insert/update/delete
   (FOR ALL also grants SELECT, OR'd with the tightened read policy) + trigger `events.guard_source`:
   only a projecting module sets or clears `source_module`/`source_id`.
