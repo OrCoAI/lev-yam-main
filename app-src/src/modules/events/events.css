@@ -8,24 +8,38 @@
   border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--ink);
 }
 .ev-form textarea { resize: vertical; line-height: 1.5; }
+/* iOS Safari draws time inputs at its own width and ignores the column; drop
+   the native styling so they fit like every other box */
+.ev-form input[type='time'] { -webkit-appearance: none; appearance: none; display: block; text-align: start; }
+.ev-form input[type='time']::-webkit-date-and-time-value { text-align: start; }
 .ev-form input:focus, .ev-form textarea:focus { outline: 2px solid var(--sea); border-color: var(--sea); }
 .ev-form .section-title { margin: 0; }
 .ev-form .seg-btn.on { color: var(--sea-dark); }
 
-/* HE + AR: one row per field so each pair stays level; the header strip holds
-   everything that appears and disappears (translate, the review tick) */
-.ev-bi { display: grid; gap: 12px; min-width: 0; padding: 14px; border: 1px solid var(--line);
-  border-radius: 14px; background: var(--sand-2); }
-.ev-bi-head, .ev-bi-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; min-width: 0; }
-.ev-bi-head { min-height: 44px; align-items: center; }
+/* HE + AR. DOM order is HE…, bar, AR… (the phone order); on desktop the grid
+   places each box by language column and field row, so pairs stay level */
+.ev-bi { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; min-width: 0; padding: 14px;
+  border: 1px solid var(--line); border-radius: 14px; background: var(--sand-2); }
+.ev-bi > .ev-r0 { min-height: 44px; }
+@media (min-width: 641px) {
+  .ev-bi > .ev-he { grid-column: 1; }
+  .ev-bi > .ev-ar { grid-column: 2; }
+  .ev-bi > .ev-r0 { grid-row: 1; }
+  .ev-bi > .ev-r1 { grid-row: 2; }
+  .ev-bi > .ev-r2 { grid-row: 3; }
+  .ev-bi > .ev-r3 { grid-row: 4; }
+  .ev-bi > .ev-bi-hint { grid-column: 1 / -1; grid-row: 5; }
+}
 .ev-bi-lang { font-weight: 800; color: var(--sea-dark); display: flex; flex-wrap: nowrap;
   align-items: center; gap: 8px; min-width: 0; }
 .ev-bi-name { flex: none; }
-.ev-lang-tag { display: none; font-weight: 600; }
 .ev-bi-hint { margin: 0; min-height: 1.2em; }
 .ev-form input[type='text'].ev-machine-box, .ev-form textarea.ev-machine-box { border-color: #e8b44c; background: #fffaf0; }
 .ev-days .chip { min-width: 52px; }
-.ev-date-clear { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; }
+.ev-date-clear { position: relative; min-width: 0; }
+.ev-clear-x { position: absolute; top: 50%; inset-inline-end: 8px; transform: translateY(-50%);
+  width: 30px; height: 30px; border: none; border-radius: 50%; background: var(--sand-2);
+  color: var(--muted); font: inherit; font-size: 0.85rem; line-height: 1; cursor: pointer; }
 .ev-machine { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px;
   font-size: 0.8rem; font-weight: 700; white-space: nowrap; cursor: pointer;
   background: #fff4dc; border: 1px solid #e8b44c; color: #7a5200; }
@@ -56,12 +70,13 @@
 .badge.ev-badge-machine { color: #7a5200; border: 1px solid #e8b44c; background: #fff4dc; }
 
 @media (max-width: 640px) {
-  /* stacked: each field shows its Hebrew box then its Arabic box, labelled */
-  .ev-bi-head, .ev-bi-row { grid-template-columns: 1fr; }
-  .ev-bi-he { display: none; }
-  .ev-bi-lang { flex-wrap: wrap; }
-  .ev-lang-tag { display: inline; }
-  .ev-bi-row { padding-bottom: 12px; border-bottom: 1px dashed var(--line); }
+  /* one column in DOM order: all Hebrew, the translate bar, all Arabic */
+  .ev-bi { grid-template-columns: 1fr; }
+  .ev-bi-ar { flex-wrap: wrap; margin-top: 4px; padding-top: 14px; border-top: 1px dashed var(--line); }
+  /* the seven days on one line */
+  .chips.ev-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+  .ev-days .chip { width: 100%; min-width: 0; min-height: 40px; padding: 6px 0; border-radius: 10px;
+    font-size: 0.74rem; white-space: nowrap; }
   /* the summary line already shows the title; the when-line would crowd it */
   .rowline .ev-when { display: none; }
 }

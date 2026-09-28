@@ -187,17 +187,19 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
     }
   }
 
-  // One row per field, Hebrew beside Arabic, so each pair stays level however
-  // much is typed or translated. Everything that comes and goes (the translate
-  // state, the "I checked" tick) lives in the fixed header strip, never between
-  // the boxes.
+  // DOM order is the phone order — all Hebrew, the translate bar, all Arabic
+  // (write, translate, review) — so keyboard and screen-reader order match the
+  // screen. On desktop, grid placement (events.css: .ev-he/.ev-ar + .ev-rN)
+  // puts each Arabic box level with its Hebrew twin. Everything that comes and
+  // goes (the translate state, the "I checked" tick) lives in the fixed bar,
+  // never between the boxes.
   const FIELDS = [
     { key: 'title', label: et.fTitle, rows: 0, max: 120 },
     { key: 'summary', label: et.fSummary, rows: 2, max: 240 },
     { key: 'body', label: et.fBody, rows: 7, max: undefined },
   ] as const
 
-  function box(field: (typeof FIELDS)[number], lang: Lang) {
+  function box(field: (typeof FIELDS)[number], lang: Lang, i: number) {
     const k = `${field.key}_${lang}` as keyof typeof text
     const common = {
       value: text[k],
@@ -210,11 +212,8 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
       onChange: (e: { target: { value: string } }) => set(k)(e.target.value),
     }
     return (
-      <label className="field" key={lang}>
-        <span className="field-label">
-          {field.label}
-          <span className="ev-lang-tag"> · {lang === 'he' ? et.hebrew : et.arabic}</span>
-        </span>
+      <label className={`field ev-${lang} ev-r${i + 1}`} key={`${field.key}-${lang}`}>
+        <span className="field-label">{field.label}</span>
         {field.rows ? <textarea rows={field.rows} {...common} /> : <input type="text" {...common} />}
       </label>
     )
@@ -222,41 +221,35 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
 
   const bilingual = (
     <div className="ev-bi">
-      <div className="ev-bi-head">
-        <div className="ev-bi-lang ev-bi-he">{et.hebrew}</div>
-        <div className="ev-bi-lang ev-bi-ar">
-          <span className="ev-bi-name">{et.arabic}</span>
-          <button
-            type="button"
-            className="btn-ghost btn-sm"
-            disabled={pending !== null}
-            onClick={() => void translate()}
-          >
-            {pending === 'translate' ? et.translating : `⇄ ${et.translate}`}
-          </button>
-          {/* always laid out, only shown — its arrival must not move the boxes */}
-          <label
-            className="ev-machine"
-            title={et.machineNote}
-            style={{ visibility: arMachine ? 'visible' : 'hidden' }}
-            aria-hidden={!arMachine}
-          >
-            <input
-              type="checkbox"
-              checked={arState === 'checked'}
-              tabIndex={arMachine ? 0 : -1}
-              onChange={(e) => setArState(e.target.checked ? 'checked' : 'machine')}
-            />
-            <span>{et.arabicChecked}</span>
-          </label>
-        </div>
+      <div className="ev-bi-lang ev-he ev-r0">{et.hebrew}</div>
+      {FIELDS.map((f, i) => box(f, 'he', i))}
+      <div className="ev-bi-lang ev-bi-ar ev-ar ev-r0">
+        <span className="ev-bi-name">{et.arabic}</span>
+        <button
+          type="button"
+          className="btn-ghost btn-sm"
+          disabled={pending !== null}
+          onClick={() => void translate()}
+        >
+          {pending === 'translate' ? et.translating : `⇄ ${et.translate}`}
+        </button>
+        {/* always laid out, only shown — its arrival must not move the boxes */}
+        <label
+          className="ev-machine"
+          title={et.machineNote}
+          style={{ visibility: arMachine ? 'visible' : 'hidden' }}
+          aria-hidden={!arMachine}
+        >
+          <input
+            type="checkbox"
+            checked={arState === 'checked'}
+            tabIndex={arMachine ? 0 : -1}
+            onChange={(e) => setArState(e.target.checked ? 'checked' : 'machine')}
+          />
+          <span>{et.arabicChecked}</span>
+        </label>
       </div>
-      {FIELDS.map((f) => (
-        <div className="ev-bi-row" key={f.key}>
-          {box(f, 'he')}
-          {box(f, 'ar')}
-        </div>
-      ))}
+      {FIELDS.map((f, i) => box(f, 'ar', i))}
       <p className="field-hint muted ev-bi-hint">
         {arMachine ? et.machineNote : hasStory ? `${et.fBody}: ${et.bodyOptionalWithStory}` : '\u00a0'}
       </p>
@@ -311,19 +304,20 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
         {recurring ? (
           <div className="field">
             <span className="field-label">{et.untilOptional}</span>
+            {/* the clear ✕ sits inside the box, so "until" is as wide as "from" */}
             <div className="ev-date-clear">
               <DateField value={until} onChange={setUntil} />
-              {/* always laid out, only shown — so setting a date moves nothing */}
-              <button
-                type="button"
-                className="btn-ghost btn-sm"
-                style={{ visibility: until ? 'visible' : 'hidden' }}
-                aria-hidden={!until}
-                tabIndex={until ? 0 : -1}
-                onClick={() => setUntil('')}
-              >
-                {et.clearDate}
-              </button>
+              {until && (
+                <button
+                  type="button"
+                  className="ev-clear-x"
+                  aria-label={et.clearDateLabel}
+                  title={et.clearDateLabel}
+                  onClick={() => setUntil('')}
+                >
+                  ✕
+                </button>
+              )}
             </div>
           </div>
         ) : (
