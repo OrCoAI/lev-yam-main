@@ -69,6 +69,84 @@ Owner decisions 2026-09-25 (alignment Q1–Q6):
   and billing on, an API key restricted to that API, then `supabase secrets set
   GOOGLE_TRANSLATE_API_KEY=…` on staging and prod. Until then the button answers "not configured".
 
+## PR 2 — owner's direction (2026-09-28) and the kickoff agenda
+
+After PR 1 shipped, the owner set two requirements for the public pages, in their words:
+*"I want those pages to be very easy to share through whatsapp or different ways through links.
+The pages should be like a real cool landing page that is providing the full information of the
+event and relevant information about lev yam."*
+
+This widens scope item 4 (a detail page "rendered from the DB — full information, photo, and the
+WhatsApp CTA") into **a landing page per item**, and it makes **link sharing a first-class
+outcome**. PR 2 therefore opens with its own step zero — the questions below, closed-form, one
+by one, before any code — and the answers become an ADR that amends
+[0054](../decisions/0054-whats-happening-is-db-driven-public-life-bilingual-in-the-db.md) §4.
+
+### What the two requirements imply
+- **A shared link is judged by its preview.** WhatsApp, Facebook, Telegram and iMessage build
+  the preview from the page's `og:title` / `og:description` / `og:image` **without running
+  JavaScript**. A template filled in the browser (the plan's current design) would show every
+  item with the same generic "מה קורה" title and venue photo in the preview. For the item's own
+  photo and title to appear, the HTML that the crawler fetches must already carry them — which
+  means per-item HTML exists on the server, not only in the browser. This is the one decision
+  that changes the architecture, so it is question 1.
+- **A landing page has more than the event.** Beyond the item's own text, photos and CTA it
+  carries the venue's story: where Lev Yam is and how to get there, what the place is, the
+  village, practical answers, what else is coming up, and how to reach us. Every venue fact comes
+  from `FACTS.md` only (public repo: no prices, no resident names); anything missing is a
+  `[חסר]` marker that blocks the PR, as on story pages.
+
+### Questions to align on at the PR 2 kickoff (Gate 1, closed-form)
+1. **How a page gets its own preview** — the load-bearing choice:
+   - *(a) Generate a static page per item at deploy* (`/happening/<slug>/` + `/happening/ar/<slug>/`
+     as real files written by a build script from `events.feed`), and **trigger a site rebuild
+     when an item is published** (the form calls a small Edge Function that fires a GitHub
+     `repository_dispatch`, or the deploy runs on a schedule). Item live in ~2–3 minutes instead
+     of seconds; previews, indexing and per-item sitemap entries all work; needs a GitHub token
+     as a Supabase secret (Tier A, security review) or a cron. **Recommended.**
+   - *(b) Keep browser-filled pages*; every shared link previews as the generic hub card.
+   - *(c) A Cloudflare Worker in front of levyam.com* injecting the tags per request — only if
+     the production domain's DNS is on Cloudflare (staging is; prod is GitHub Pages — to check).
+   - *(d) Both:* browser-filled for instant liveness **and** a generated static copy for
+     crawlers, the generated URL being the one the share buttons hand out.
+2. **URL shape:** `/happening/<slug>/` (clean; needs 1a/1d) vs `/happening/item/?e=<slug>`.
+3. **Share row on the page:** WhatsApp share (`wa.me/?text=<title + link>`), copy link, the
+   phone's native share sheet (Web Share API), a QR for print — which of these, and where
+   (under the hero, sticky on phones, both).
+4. **Landing-page blocks and their order** — pick from: hero (cover photo, title, when, CTA);
+   the event's full text; the gallery; "where and how to get here" (Waze / Google Maps links,
+   the road from Caesarea / Hadera, parking — from FACTS); "about Lev Yam" (2–3 lines + venue
+   photos); the village ("ג'סר א-זרקא" פירושו "הגשר הכחול", ADR 0053 rules); practical Q&A
+   (only facts we have); "also coming up" (the next 3 live items); contact (WhatsApp, and
+   the socials FACTS lists); footer. Which blocks are fixed on every page, which are optional.
+5. **Per-item fields beyond today's:** is the fixed layout enough (title, summary, body, gallery,
+   when), or does the owner want 2–3 optional structured fields — e.g. "who it's for", "what to
+   bring / meeting point", a one-line "why come", a custom CTA sentence? New columns = a small
+   schema file (Tier A) + rls_matrix + the form.
+6. **Preview and CTA wording:** the preview shows cover photo + title + summary (default);
+   the prefilled WhatsApp message per language ("שלום, אשמח להגיע ל<שם> ב<תאריך>" — owner's
+   wording); the share message text.
+7. **Design direction:** inside the marketing site's chrome and typography (same header/footer,
+   brand fonts and colours — one site), or a distinct immersive layout (full-bleed hero, sticky
+   CTA, minimal header) that still uses the brand. Phone-first either way (ADR 0001).
+8. **Expired-link behaviour:** someone opens a shared link after the item ended — a plain "not
+   found" (current plan, `noindex`), or "this one has passed — here is what's coming up" with
+   the live list. Recommended: the latter.
+9. **Do written story pairs still exist for the big recurring items** ("both", kickoff Q3), or
+   does a landing page this complete replace them? Affects `story_slug`'s role.
+10. **Measuring shares:** `whatsapp_click` already covers the CTA (ADR 0006 — no new GA4 event
+    by default). Do share-button taps get counted (Dynatrace-only, like the homepage
+    intents) or not at all? The Outcome metric table gains a "shares" row only if yes.
+11. **Still in:** the homepage strip of the next 3 items and the nav link — confirm.
+
+### Consequences to expect from the likely answers
+- 1a/1d changes ADR 0054's "live within seconds, no PR" to "live within minutes, no PR", and
+  resolves open question 2 (per-item sitemap entries) the other way — they become possible.
+- A rebuild trigger from Supabase to GitHub is a new automation through the same rails
+  (ADR 0039 spirit): a scoped token, a workflow that only rebuilds, no agent involved.
+- The landing-page blocks make PR 2 partly a *content* PR: FACTS gaps surface as `[חסר]` and
+  the Arabic needs a native reader's pass before merge (ADR 0007's rule, applied to templates).
+
 ## Explicitly out of scope
 - **Member-proposed initiatives** (propose → approve → run) — Phase 3. The owner's "initiatives"
   here are items the *team* publishes; Phase 3 initiatives will project into the same table.
