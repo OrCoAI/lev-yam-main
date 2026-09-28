@@ -24,8 +24,13 @@ behind GoDaddy DNS, so a request-time worker was not an option without moving th
 2. **Publishing triggers the rebuild.** A new Edge Function, `rebuild-site`, re-checks
    `events.manage` and dispatches the tier's deploy workflow through GitHub's API with a
    **fine-grained token scoped to this one repository and to Actions read/write only** — it can
-   start or cancel a run and nothing else. A nightly scheduled deploy retires passed items. An item
-   is live within minutes, still with no PR and no agent.
+   dispatch, re-run, cancel or delete runs of this repo's workflows on any ref; it cannot push code,
+   read secrets or change settings. A `github.ref` guard on each deploy job (`main` for prod,
+   `staging` for staging) and the `github-pages` environment's `main`-only branch policy are what
+   keep a dispatch from publishing anything but the tier's own branch. A nightly scheduled deploy
+   **on prod only** retires passed items (a schedule runs from the default branch, so it would
+   overwrite staging's branch under verification). An item is live within minutes, still with no
+   PR and no agent.
 3. **The page is a landing page, immersive and in the brand:** full-bleed hero, the item's text,
    gallery, the next three live items, "where and how to get here", "about Lev Yam", the standard
    footer. Every venue fact comes from `FACTS.md`. Not included: a practical-answers block, a
@@ -48,12 +53,13 @@ behind GoDaddy DNS, so a request-time worker was not an option without moving th
 - The marketing deploy now reads the platform's Supabase project at build time, and a feed
   fetch failure fails the build on purpose: a site whose shared links 404 is worse than a
   delayed deploy.
-- A GitHub token lives as a Supabase secret for the first time. Its blast radius is bounded to
-  starting or cancelling this repository's workflows; the rebuild is the same rails as a human
-  push (the workflow builds `main` as it is). Secrets are set one at a time — `--env-file`
-  uploads everything (2026-09-28, plan gotcha).
+- A GitHub token lives as a Supabase secret for the first time. Its blast radius is this
+  repository's workflow runs (dispatch, re-run, cancel, delete, on any ref) and nothing in the
+  code, secrets or settings; the `github.ref` job guards and the prod environment's branch policy
+  are what bound what it can publish. Secrets are set one at a time — `--env-file` uploads
+  everything (2026-09-28, plan gotcha).
 - `59_events_landing.sql` is a schema change hand-applied to prod with a before/after record, as 58 was.
-- Two deploy workflows gain a nightly schedule; a passed item is visible until the next run, and
-  the page's own load-time check covers that window.
+- `deploy.yml` gains a nightly schedule (staging does not); a passed or unpublished item's page
+  is served until the next rebuild, and the page's own load-time check covers that window.
 - Sharing is measured: Dynatrace `levyam.share` and, by exception to ADR 0006, GA4 `share_click`
   ([0057](0057-ga4-carries-share-click-for-happening-landing-pages.md)).

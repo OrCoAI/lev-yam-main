@@ -21,7 +21,7 @@ outside that loop.
   `levyam.share` (`event.channel`, `event.lang`, `event.page_slug`) **and** GA4 `share_click`
   (`page_slug`, `channel` ∈ `whatsapp | copy | native | qr`, `lang`). No Meta Pixel event.
 - `share_click` is **not** a key event in the GA4 UI; `whatsapp_click` stays the one key event.
-- The plan's Outcome metric table gains a "shares" row, reported as a first read with no pass line.
+- The plan's Outcome metric gains a fourth measure, shares, reported as a first read with no pass line.
 - Tier separation stays console-side (0006): no hostname guard in the snippet.
 
 ## Consequences

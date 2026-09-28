@@ -621,7 +621,7 @@ is bilingual HE/AR like the marketing site.*
       edge function; WhatsApp stays as a parallel channel)
 - [ ] Event signup/tickets on the public "What's happening" feed (capacity, confirmation) —
       the path is written: [plans/events-whats-happening.md](plans/events-whats-happening.md) "Path to
-      booking" (owner, 2026-09-28); the landing page's CTA is already one swappable block
+      booking" (owner, 2026-09-28); PR 2 builds the landing page's CTA as one swappable block
 - [ ] Digital menu (QR at the table) — read-only first, sourced from POS items
 - [ ] Table ordering → POS kitchen pipeline (only after the QR menu is proven)
 - [ ] Notifications channel (WhatsApp/email confirmations) — needed once booking goes public

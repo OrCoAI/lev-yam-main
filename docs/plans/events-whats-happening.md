@@ -16,7 +16,7 @@ default") and invariant 6 (visibility flag on public content) meet a real public
 |---|---|
 | Metric | (1) GA4 `whatsapp_click` with `page_slug` = `happening` or `happening-*`; (2) GA4 sessions landing on `/happening/*` (HE + AR); (3) Search Console impressions for `/happening/*` URLs; (4) *added at the PR 2 kickoff, ADR 0057:* GA4 `share_click` by `channel` on `happening-*` pages |
 | Source | GA4 Data API + Search Console — the weekly-review analytics snapshot ([ADR 0047](../decisions/0047-analytics-wiring-ga4-and-gsc-only-public-numbers.md)) |
-| Baseline (today) | 0 / 0 / 0 — the pages do not exist (2026-09-25) |
+| Baseline (today) | 0 / 0 / 0 / 0 — the pages do not exist (2026-09-25) |
 | Target | clicks ≥ 10 in the first 21 days; visits, impressions and shares are a first read (reported, no pass line) |
 | Check date | ship + 21 days (date written here at merge) — `weekly-review` lists it when due |
 | Verdict owner | owner |
@@ -34,10 +34,12 @@ Owner decisions 2026-09-25 (alignment Q1–Q6):
 3. **Two ways to add an item ("both"):**
    - **Quick path — a form in `/app/events`** (owner + manager): HE + AR title, short summary and
      description, date or recurrence, times, one photo, publish / unpublish. Live on levyam.com
-     within seconds, no PR.
-   - **Big path — a static story-style page** for the major recurring items, written through the
+     ~~within seconds~~ **within minutes** (since the PR 2 kickoff — a rebuild, ADR 0056), no PR.
+   - ~~**Big path — a static story-style page** for the major recurring items, written through the
      `story-author` flow as an HE + AR pair. The DB item then carries that pair's `story_slug` and
-     the list links there instead of the generated detail page.
+     the list links there instead of the generated detail page.~~ **Since the PR 2 kickoff (ADR 0056
+     §7): every item gets its generated landing page; `story_slug` is an optional "read the full
+     story" link on it, no longer a second way to add an item.**
 4. **Public pages (HE + AR, one URL per language, `hreflang`):**
    - `/happening/` and `/happening/ar/` — the list of live items, next occurrence first.
    - A **detail page per item** rendered from the DB — full information, photo, and the
@@ -63,10 +65,12 @@ Owner decisions 2026-09-25 (alignment Q1–Q6):
   form (HE/AR, phone-first), photo gallery, the `translate` Edge Function.
 - **PR 2 — public surface** *(re-scoped at its own kickoff, 2026-09-28 — see "PR 2 — the landing
   pages")*: generated landing pages + hubs, `scripts/gen-happening.mjs`, `js/happening.js`, the
-  `rebuild-site` function + nightly schedule, `59_events_landing.sql` (two optional fields,
-  `events.passed`), share row + `share_click`, homepage strip, nav link in both `_template*.html`
-  + generator, JSON-LD, prefilled WhatsApp, `assemble-site.sh`, per-item `sitemap.xml` entries,
-  `llms.txt` line.
+  `rebuild-site` function + the prod nightly schedule + `github.ref` guards on both deploy
+  workflows, `59_events_landing.sql` (two optional fields, `events.passed`), share row +
+  `share_click`, homepage strip, nav link in both `_template*.html` + generator, JSON-LD, prefilled
+  WhatsApp, `assemble-site.sh` (env on the assemble step, underscore purge widened to
+  `_site/happening`), `404.html` (`/happening/*` → `/happening/`), `ci.yml` fixture step, per-item
+  `sitemap.xml` entries, `llms.txt` line.
 
 - **Owner setup for the button:** a Google Cloud project with the Cloud Translation API enabled
   and billing on, an API key restricted to that API, then `supabase secrets set
@@ -108,13 +112,18 @@ added; the answers are recorded here and in the two ADRs.
 
 **Generation.** `scripts/gen-happening.mjs <tier>` runs inside `scripts/assemble-site.sh` after the
 static copy. It reads the platform project's URL + anon key from the environment (prod: the
-`VITE_SUPABASE_*` secrets already on `deploy.yml`; staging: the hard-coded staging values in
-`deploy-staging.yml`; local: the local stack), fetches `events.feed` and `events.passed`
+`VITE_SUPABASE_*` secrets, added as `env:` on the *Assemble site* step of `deploy.yml` — today they
+are on the platform build step only; staging: the hard-coded staging values already on the step
+that calls `build-site.sh`; local: the local stack), fetches `events.feed` and `events.passed`
 (anon REST, the same column grants the browser has) and renders, from `happening/_item.html` /
 `_item.ar.html`, one page per item per language into **`_site/` only** — never into the checkout,
-because the items are not known at commit time and `ci.yml --check` would otherwise always be
-stale. It also appends the live items' URLs (both languages, reciprocal `hreflang`) to
-`_site/sitemap.xml`. A feed fetch failure **fails the build** — a site whose shared links 404 is
+because the items are not known at commit time. **The hubs** `/happening/` and `/happening/ar/`
+work the same way: `happening/index.html` and `happening/ar/index.html` are committed shells with
+an `<!--ITEM_LIST-->` marker (like `stories/_hub.html`), the generator writes the filled copy into
+`_site/` so the cards are crawlable, and `js/happening.js` refreshes them from the feed on load.
+The underscore purge in `assemble-site.sh` is widened to `_site/happening` so `_item*.html` is
+never served. The generator also appends the live items' URLs (both languages, reciprocal
+`hreflang`) to `_site/sitemap.xml`. A feed fetch failure **fails the build** — a site whose shared links 404 is
 worse than a delayed deploy; a re-run fixes it. `ci.yml` runs the renderer against a committed
 fixture (`--fixture`, no network) so the templates are tested on every PR. The generator stamps
 the `chrome:footer` region of the happening templates and hubs the way `gen-stories-index.mjs`
@@ -124,23 +133,34 @@ stamps story chrome (ADR 0049), so a footer change stays one edit per language.
 re-checked server-side, then `POST /repos/OrCoAI/lev-yam-main/actions/workflows/<workflow>/dispatches`
 with `{ ref }`. Secrets per project, set one by one (`supabase secrets set NAME=value`, never
 `--env-file`): `GITHUB_DISPATCH_TOKEN` — a **fine-grained PAT scoped to this one repository with
-Actions: read + write only** (it can start or cancel a run; it cannot push code, read secrets or
-change settings), 1-year expiry noted in `supabase/README.md`; `REBUILD_WORKFLOW`
+Actions: read + write only**. Honest scope: it can dispatch, re-run, cancel or delete runs of any
+of this repo's `workflow_dispatch` workflows **on any ref the caller names** (the ref is a request
+parameter, not a token property); it cannot push code, read secrets or change settings. Two
+guards make the rebuild the only thing it can *publish*: a job-level `if: github.ref ==
+'refs/heads/main'` on `deploy.yml` and `if: github.ref == 'refs/heads/staging'` on
+`deploy-staging.yml` (a dispatch on any other ref no-ops), and, as the prod backstop, the
+`github-pages` environment's deployment-branch policy, which is already `main` only. The report
+workflows it could also fire only burn a subscription run. 1-year expiry noted in
+`supabase/README.md`; `REBUILD_WORKFLOW`
 (`deploy.yml` / `deploy-staging.yml`); `REBUILD_REF` (`main` / `staging`). Local dev answers
 `not_configured`. The form calls it after any save that changes public state (publish, unpublish,
 edit of a public item) and shows "העמוד הציבורי יתעדכן תוך כמה דקות". Repeated calls collapse
 into the workflow's own `concurrency` group. Telemetry: fixed result codes only (ADR 0013).
-**Nightly rebuild:** both deploy workflows gain `schedule: cron '30 22 * * *'` (00:30 / 01:30
+**Nightly rebuild — prod only:** `deploy.yml` gains `schedule: cron '30 22 * * *'` (00:30 / 01:30
 Jerusalem) so a passed item leaves the sitemap and flips to its passed state without anyone
-publishing. Same rails as the report jobs (ADR 0039 spirit): a scoped token, a workflow that only
-rebuilds, no agent.
+publishing. **Not on staging:** a `schedule` trigger always runs from the default branch, so a
+staging nightly would overwrite whatever branch is mid-verification with `main` (ADR 0012 flow);
+staging rebuilds only on push or on the `rebuild-site` dispatch with `ref: staging`. Same rails as
+the report jobs (ADR 0039 spirit): a scoped token, a workflow that only rebuilds, no agent.
 
 **Expired state.** `events.passed` is a second anon-readable view: public items whose last
 occurrence passed within the last 90 days, same public columns. The generator renders them with
 `noindex`, a "האירוע הזה כבר עבר" banner, the next-3 block and the CTA, and leaves them out of
 the sitemap. After 90 days the page is gone and `404.html` routes `/happening/*` to
 `/happening/`. Every generated page also checks the feed on load: an item that passed since the
-last rebuild flips to the passed state at once, and text/gallery edits show without waiting.
+last rebuild flips to the passed state at once, and text/gallery edits show without waiting. A slug
+found in neither view (unpublished since the last rebuild) renders the same passed/unavailable
+state on load, so an unpublish is honoured within seconds even before the rebuild lands.
 
 **The page** (HE and AR, one URL each, `hreflang`, `canonical`, `og:title` = item title,
 `og:description` = summary, `og:image` = cover at 1200-wide, `Event` JSON-LD with
@@ -157,7 +177,10 @@ last rebuild flips to the passed state at once, and text/gallery edits show with
 7. **About Lev Yam** — 2–3 lines from FACTS §זהות + 2–3 venue photos from the existing gallery.
 8. **Standard site footer.**
 On phones a **sticky bottom bar** keeps the CTA and share reachable. The QR is rendered at build
-time as inline SVG (the `qrcode` package as an `app-src` devDependency — already installed before
+time as inline SVG (the `qrcode` package as an `app-src` devDependency, imported from `scripts/`
+through `createRequire` against `app-src/package.json` since there is no root `package.json`;
+`npm ci` in `app-src` already precedes assemble in both deploy workflows, and the `ci.yml` fixture
+step is placed after "Install platform dependencies" for the same reason — already installed before
 assemble runs; no client JS, no CDN), behind a "QR להדפסה" toggle.
 
 **Analytics.** `js/wa-track.js` gains `LevYamTrack.shareClick({ channel, lang })` → Dynatrace
@@ -194,7 +217,8 @@ HE + AR in `js/app.js`. Story chrome: the same nav entry in `_template.html` / `
    `REBUILD_WORKFLOW=deploy-staging.yml`, `REBUILD_REF=staging` (three separate commands). Prod:
    `--project-ref teyxtdccsrkdpqnbfcga`, `REBUILD_WORKFLOW=deploy.yml`, `REBUILD_REF=main`.
 3. `supabase functions deploy rebuild-site --no-verify-jwt --use-api --project-ref <ref>`.
-4. Hand-apply `59_events_landing.sql` on prod after the staging round, then `audit-grants` → 0 drift.
+4. Hand-apply `59_events_landing.sql` on prod after the staging round, then
+   `node supabase/tests/audit-grants.mjs --ref teyxtdccsrkdpqnbfcga` → 0 drift.
 
 ### Path to booking (strategy — Phase 4, not built here)
 Written at the owner's request on 2026-09-28 so PR 2 leaves the door open. Roadmap Phase 4
@@ -231,7 +255,8 @@ Written at the owner's request on 2026-09-28 so PR 2 leaves the door open. Roadm
 - **Past events archive** — the owner chose "only what is live".
 - ~~**Per-item URLs in `sitemap.xml`**~~ — **in since the PR 2 kickoff** (generated at deploy).
 - **English** (`/happening/en/`) — out of the Q4 mandate like `/stories/en/`.
-- **A new GA4 event** — reuses `whatsapp_click` via `js/wa-track.js` ([ADR 0006](../decisions/0006-ga4-carries-whatsapp-click-tier-separation-console-side.md)).
+- ~~**A new GA4 event** — reuses `whatsapp_click` via `js/wa-track.js` ([ADR 0006](../decisions/0006-ga4-carries-whatsapp-click-tier-separation-console-side.md)).~~
+  **`share_click` added at the PR 2 kickoff** ([ADR 0057](../decisions/0057-ga4-carries-share-click-for-happening-landing-pages.md)); still no Meta Pixel event for shares.
 
 ## Schema, RLS, permissions
 New file `supabase/schema/58_events_public.sql` (the spine in `40_events.sql` stays as is):
@@ -277,7 +302,8 @@ New file `supabase/schema/58_events_public.sql` (the spine in `40_events.sql` st
   always allowed and the form says what publishing still needs — the message re-words itself as
   fields fill and disappears when they are complete (the DB check is the real gate). Module i18n
   dictionary HE + AR.
-- **`/happening/` + `/happening/ar/`** (static HTML shells, no build, like `stories/`): cards with
+- **`/happening/` + `/happening/ar/`** (committed shells with an `<!--ITEM_LIST-->` marker, filled
+  by the generator into `_site/` and refreshed on load — see "Generation"): cards with
   photo, title, next date/time, summary → the item's landing page. ~~Detail page
   `/happening/item/?e=<slug>` rendered in the browser~~ → **since the PR 2 kickoff: a generated
   static landing page per item**, `/happening/<slug>/` + `/happening/ar/<slug>/`, see "PR 2 — the
@@ -331,8 +357,11 @@ variable in the file, so prod also received the local OTEL_* values (environment
 telemetry section. Set one secret with an explicit `NAME=value`, never with `--env-file`.
 
 ## Rollback
-Unpublish every item (`visibility = 'internal'`) — the public pages render empty-state within
-seconds with no deploy. Full rollback: revert PR 2 (pages, nav, strip), then PR 1's UI; the added
+Unpublish every item (`visibility = 'internal'`) — the hubs, the strip and each item page's
+load-time check show the empty/unavailable state within seconds; the generated item HTML itself
+stays on levyam.com until the next successful rebuild lands (the `rebuild-site` trigger, the prod
+nightly, or a manual `workflow_dispatch` of `deploy.yml` if the trigger is what broke). Full
+rollback: revert PR 2 (pages, generator, workflows, nav, strip), then PR 1's UI; the added
 columns are nullable and can stay; the bucket is emptied by hand.
 
 ## Checks
@@ -352,8 +381,9 @@ columns are nullable and can stay; the bucket is emptied by hand.
   so it cannot read what the public may not ✔ (3) the two new fields join the bilingual CHECK;
   `events.passed` exposes the same public columns only ✔ (5) HE + AR pages, the Arabic CTA text
   gets a native reader's pass ✔ (6) `visibility` still the only switch; a rebuild is triggered, never
-  a write from GitHub to the DB ✔ ARCHITECTURE §6c: `main` stays branch-protected — the dispatch
-  builds `main` as it is, it cannot change it ✔. A new coupling to record in ARCHITECTURE at close-out:
+  a write from GitHub to the DB ✔ ARCHITECTURE §6c: `main` stays branch-protected — the token
+  cannot push; a dispatch on a foreign ref is stopped by the `github.ref` job guard and, for prod,
+  by the `github-pages` environment's `main`-only deployment-branch policy ✔. A new coupling to record in ARCHITECTURE at close-out:
   **the marketing deploy now depends on the platform project at build time** (feed fetch fails the
   build). *Vision* — P4 (public by default) now reaches the share sheet; the "Path to booking"
   keeps Phase 4's "act on it" for the 2027-01-01 review, so the Q4 mandate (ADR 0046) is
