@@ -107,6 +107,16 @@ button, [role='button'] { touch-action: manipulation; }
   padding: 10px 14px;
   margin: 12px 0;
 }
+/* a form's save error as a box the eye lands on, not a red line — pair with
+   .error for the colour and role="alert" so it is announced */
+.error-box {
+  padding: 10px 14px;
+  border: 1px solid var(--danger);
+  border-radius: 12px;
+  background: var(--warn-tint);
+  font-weight: 600;
+  line-height: 1.45;
+}
 
 /* ---------- buttons ---------- */
 .btn-primary, .btn-ghost {
