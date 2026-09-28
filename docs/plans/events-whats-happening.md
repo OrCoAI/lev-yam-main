@@ -121,8 +121,10 @@ New file `supabase/schema/58_events_public.sql` (the spine in `40_events.sql` st
 ## UI surface
 - **`/app/events`** (new module folder `app-src/src/modules/events/`): list (upcoming / recurring /
   unpublished, `.rowline`), form with HE and AR fields side by side on desktop, stacked on phone;
-  dated/recurring toggle; weekday chips; photo upload with preview; publish button disabled until
-  both languages are filled (the DB check is the real gate). Module i18n dictionary HE + AR.
+  dated/recurring toggle; weekday chips; photo gallery (equal tiles, cover mark, remove ✕); save is
+  always allowed and the form says what publishing still needs — the message re-words itself as
+  fields fill and disappears when they are complete (the DB check is the real gate). Module i18n
+  dictionary HE + AR.
 - **`/happening/` + `/happening/ar/`** (static HTML shells, no build, like `stories/`): cards with
   photo, title, next date/time, summary → detail. Detail page `/happening/item/?e=<slug>` and
   `/happening/ar/item/?e=<slug>`, rendered by `js/happening.js` (anon key, fetch against
@@ -179,6 +181,14 @@ columns are nullable and can stay; the bucket is emptied by hand.
   private/business story stays on the homepage and stories. Recorded in ADR 0054.
 
 ## Open questions
+- *(logged at the gate, 2026-09-28, security review of the form round)* `events.valid_image_paths`
+  accepts any `<uuid>/` prefix, so a row written by hand (not via the form) could reference and
+  then, on removal, delete another item's object. Not an escalation — the bucket's delete policy is
+  bucket-wide for `events.manage` — but pass `id` into the helper (`p like id::text || '/%'`) with
+  the next schema change so two rows can never share an object.
+- *(same review)* `friendlyError`'s fallback shows raw PostgREST text (table/constraint names, no
+  data) for unmapped errors, e.g. an RLS refusal. Pre-existing; map the RLS message to
+  `errNotWritten` and fall back to a generic bilingual line when the module doc is written.
 - *(logged at the gate, 2026-09-28)* `events.tasks` is readable with `events.view` alone, so staff
   without `quotes.view` could see task rows of quote events they can no longer see. Empty today
   (quotes' checklists still live in quotes); must be closed when checklists migrate into
@@ -193,6 +203,11 @@ columns are nullable and can stay; the bucket is emptied by hand.
    no resident names in captions.
 
 ## Decisions made on the way
+- 2026-09-28 · Owner's staging review: the save error must go away once fixed → the form's checks
+  run live (shown after the first save attempt, `role="status"`), a server answer is kept only
+  while the form is unchanged since that attempt, and the fields freeze while a request is in
+  flight (gate finding: an edit made meanwhile hid the answer). Gallery redone as equal tiles.
+  `.error-box` added to the shell CSS as the shared save-error box.
 - 2026-09-28 · Staging apply: `supabase secrets set` also uploads everything under `config.toml`'s
   `[edge_runtime.secrets]`, so a local-only `TRANSLATE_FAKE` landed on staging (inert: a real key
   wins). Removed there; the no-key echo is now decided by the function's own URL (local stack only)

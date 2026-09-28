@@ -24,6 +24,9 @@ interface Props {
  *  or drafted and then confirmed. Only 'machine' blocks publishing (ADR 0055). */
 type ArState = 'human' | 'machine' | 'checked'
 
+/** events_slug_format / events_story_slug_format (58_events_public.sql) */
+const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/
+
 // A URL slug as it is typed: lower case, spaces become hyphens.
 function SlugInput({ label, hint, value, onChange }: {
   label: string
@@ -72,8 +75,14 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
   const arMachine = arState !== 'human' // the draft marks (outline, pill) stay until a person edits
   // what is in flight, if anything — both disable the buttons
   const [pending, setPending] = useState<null | 'translate' | 'save'>(null)
-  // raw error, translated at render (as in EventsModule) so a language switch re-words it
-  const [error, setError] = useState<unknown>(null)
+  // The form's own checks run on every render, so the message they produce
+  // goes away the moment the owner fixes what it named. They only show once
+  // a save has been tried, so a fresh form does not open with a red box.
+  const [attempted, setAttempted] = useState(false)
+  // An error the server (or the upload) answered, with the form as it was at
+  // that moment: it describes that attempt, so any later edit clears it.
+  // Raw, translated at render (as in EventsModule) so a language switch re-words it.
+  const [serverError, setServerError] = useState<{ err: unknown; at: string } | null>(null)
 
   const set = (k: keyof typeof text) => (v: string) => {
     setText((t) => ({ ...t, [k]: v }))
@@ -81,11 +90,19 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
     if (k.endsWith('_ar')) setArState('human')
   }
 
+  // everything the owner can change — a server error is shown while this still
+  // matches what it was answered for. Every field added to the form goes here too.
+  const fingerprint = JSON.stringify([
+    recurring, date, weekdays, until, startsAt, endsAt, text, slug, storySlug, publish, arState,
+    photos.map((p) => p.key),
+  ])
+  const fail = (err: unknown) => setServerError({ err, at: fingerprint })
+
   async function translate() {
     const hasArabic = [text.title_ar, text.summary_ar, text.body_ar].some((v) => v.trim())
     if (hasArabic && !window.confirm(et.confirmOverwrite)) return
     setPending('translate')
-    setError(null)
+    setServerError(null)
     try {
       const ar = await translateToArabic({
         title: text.title_he,
@@ -101,7 +118,7 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
       setArState('machine')
     } catch (e) {
       // 'forbidden' here means "may not translate", not "not saved"
-      setError(e instanceof Error && e.message === 'forbidden' ? new Error('translate_forbidden') : e)
+      fail(e instanceof Error && e.message === 'forbidden' ? new Error('translate_forbidden') : e)
     }
     setPending(null)
   }
@@ -129,17 +146,32 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
     return missing
   }
 
-  async function submit() {
-    if (!date) return setError(et.errDate)
-    if (recurring && weekdays.length === 0) return setError(et.errWeekdays)
+  /** The first thing the DB would refuse, in the owner's words — null when the
+   *  form would save. Mirrors 58_events_public.sql's checks; the DB is the gate. */
+  function problem(): string | null {
+    if (!date) return et.errDate
+    if (recurring && weekdays.length === 0) return et.errWeekdays
+    if (recurring && until && until < date) return et.errRecurrence
+    if (slug && !SLUG_RE.test(slug)) return et.errSlugFormat
+    if (storySlug && !SLUG_RE.test(storySlug)) return et.errStorySlug
     if (publish) {
       const missing = missingForPublish()
-      if (missing.length) return setError(`${et.errMissing} ${missing.join(' · ')}`)
-      if (arState === 'machine') return setError(et.errReviewArabic)
+      if (missing.length) return `${et.errMissing} ${missing.join(' · ')}`
+      if (arState === 'machine') return et.errReviewArabic
     }
+    return null
+  }
+  const live = problem()
+  // the live problem, else the server's answer while the form is still the one it answered
+  const shownError: string | null =
+    (attempted && live) || (serverError?.at === fingerprint ? friendlyError(et, serverError.err) : null)
+
+  async function submit() {
+    setAttempted(true)
+    if (live) return
 
     setPending('save')
-    setError(null)
+    setServerError(null)
     const id = initial?.id ?? crypto.randomUUID()
     let uploaded: string[] = []
     try {
@@ -182,7 +214,7 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
     } catch (e) {
       // the row never took the new photos — don't leave them orphaned in a public bucket
       await removeImages(uploaded)
-      setError(e)
+      fail(e)
       setPending(null)
     }
   }
@@ -194,9 +226,9 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
   // goes (the translate state, the "I checked" tick) lives in the fixed bar,
   // never between the boxes.
   const FIELDS = [
-    { key: 'title', label: et.fTitle, rows: 0, max: 120 },
-    { key: 'summary', label: et.fSummary, rows: 2, max: 240 },
-    { key: 'body', label: et.fBody, rows: 7, max: undefined },
+    { key: 'title', label: et.fTitle, hint: '', rows: 0, max: 120 },
+    { key: 'summary', label: et.fSummary, hint: et.fSummaryHint, rows: 2, max: 240 },
+    { key: 'body', label: et.fBody, hint: et.fBodyHint, rows: 7, max: undefined },
   ] as const
 
   function box(field: (typeof FIELDS)[number], lang: Lang, i: number) {
@@ -213,7 +245,10 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
     }
     return (
       <label className={`field ev-${lang} ev-r${i + 1}`} key={`${field.key}-${lang}`}>
-        <span className="field-label">{field.label}</span>
+        <span className="field-label">
+          {field.label}
+          {field.hint && <span className="ev-label-hint"> — {field.hint}</span>}
+        </span>
         {field.rows ? <textarea rows={field.rows} {...common} /> : <input type="text" {...common} />}
       </label>
     )
@@ -262,6 +297,10 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
     <div className="card ev-form">
       <h2 className="section-title">{initial ? et.formEdit : et.formNew}</h2>
 
+      {/* Frozen while a save or translation is in flight: the request carries
+          the form as it was at the click, so an edit made meanwhile would be
+          lost on success and would hide the answer on failure (fingerprint). */}
+      <fieldset className="ev-fields" disabled={pending !== null}>
       {/* four titled sections: tight inside, a clear gap + divider between */}
       <section className="ev-sec">
         <h3 className="ev-sec-title">{et.secWhen}</h3>
@@ -315,7 +354,7 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
                 {until && (
                   <button
                     type="button"
-                    className="ev-clear-x"
+                    className="ev-x ev-clear-x"
                     aria-label={et.clearDateLabel}
                     title={et.clearDateLabel}
                     onClick={() => setUntil('')}
@@ -359,7 +398,7 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
         <PhotosField photos={photos} onChange={setPhotos} />
       </section>
 
-      <section className="ev-sec ev-sec-end">
+      <section className="ev-sec">
         <label className="ev-publish">
           <input type="checkbox" checked={publish} onChange={(e) => setPublish(e.target.checked)} />
           <span>
@@ -367,8 +406,16 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
             <span className="field-hint muted"> — {et.publishedHint}</span>
           </span>
         </label>
+      </section>
+      </fieldset>
 
-        {error != null && <div className="error">{friendlyError(et, error)}</div>}
+      <div className="ev-actions">
+        {/* the live message re-words itself as fields fill — polite, not an interruption */}
+        {shownError && (
+          <div className="error error-box" role={attempted && live ? 'status' : 'alert'}>
+            {shownError}
+          </div>
+        )}
 
         <div className="field-actions">
           <button className="btn-primary btn-block" disabled={pending !== null} onClick={() => void submit()}>
@@ -378,7 +425,7 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
             {et.cancel}
           </button>
         </div>
-      </section>
+      </div>
     </div>
   )
 }
