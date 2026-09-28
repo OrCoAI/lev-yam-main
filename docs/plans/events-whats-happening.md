@@ -119,8 +119,13 @@ that calls `build-site.sh`; local: the local stack), fetches `events.feed` and `
 `_item.ar.html`, one page per item per language into **`_site/` only** — never into the checkout,
 because the items are not known at commit time. **The hubs** `/happening/` and `/happening/ar/`
 work the same way: `happening/index.html` and `happening/ar/index.html` are committed shells with
-an `<!--ITEM_LIST-->` marker (like `stories/_hub.html`), the generator writes the filled copy into
-`_site/` so the cards are crawlable, and `js/happening.js` refreshes them from the feed on load.
+an `<!--ITEM_LIST-->` marker (the marker idea from `stories/_hub.html`; unlike it, these shells are
+themselves served — the marker is a comment and `js/happening.js` fills it on load), the generator
+writes the filled copy into `_site/` so the cards are crawlable, and `js/happening.js` refreshes
+them from the feed on load. So the generator has **two targets**: chrome stamping into the
+*checkout* (the happening shells and templates, like story chrome — with its own `--check` mode in
+`ci.yml`, since the stories check does not cover them and a footer edit would otherwise drift
+silently), and item/hub fill into `_site/` only.
 The underscore purge in `assemble-site.sh` is widened to `_site/happening` so `_item*.html` is
 never served. The generator also appends the live items' URLs (both languages, reciprocal
 `hreflang`) to `_site/sitemap.xml`. A feed fetch failure **fails the build** — a site whose shared links 404 is
@@ -138,9 +143,14 @@ of this repo's `workflow_dispatch` workflows **on any ref the caller names** (th
 parameter, not a token property); it cannot push code, read secrets or change settings. Two
 guards make the rebuild the only thing it can *publish*: a job-level `if: github.ref ==
 'refs/heads/main'` on `deploy.yml` and `if: github.ref == 'refs/heads/staging'` on
-`deploy-staging.yml` (a dispatch on any other ref no-ops), and, as the prod backstop, the
-`github-pages` environment's deployment-branch policy, which is already `main` only. The report
-workflows it could also fire only burn a subscription run. 1-year expiry noted in
+`deploy-staging.yml` (a dispatch on any other ref no-ops *once that ref carries the guard* — a
+dispatch runs the workflow file at the dispatched ref, so a stale branch that predates the guard is
+not covered; the guard must test `github.ref`, never `event_name == 'push'`, because the nightly
+schedule and the `rebuild-site` dispatch both run on `refs/heads/main` and must pass it), and, as
+the prod backstop that does not depend on the ref, the `github-pages` environment's
+deployment-branch policy, which is already `main` only. Staging has no such policy, so its bounded
+exposure is a stale branch published to a noindex tier. The report workflows it could also fire only
+burn a subscription run. 1-year expiry noted in
 `supabase/README.md`; `REBUILD_WORKFLOW`
 (`deploy.yml` / `deploy-staging.yml`); `REBUILD_REF` (`main` / `staging`). Local dev answers
 `not_configured`. The form calls it after any save that changes public state (publish, unpublish,
@@ -150,8 +160,11 @@ into the workflow's own `concurrency` group. Telemetry: fixed result codes only 
 Jerusalem) so a passed item leaves the sitemap and flips to its passed state without anyone
 publishing. **Not on staging:** a `schedule` trigger always runs from the default branch, so a
 staging nightly would overwrite whatever branch is mid-verification with `main` (ADR 0012 flow);
-staging rebuilds only on push or on the `rebuild-site` dispatch with `ref: staging`. Same rails as
-the report jobs (ADR 0039 spirit): a scoped token, a workflow that only rebuilds, no agent.
+staging rebuilds only on push or on the `rebuild-site` dispatch with `ref: staging`. Consequence
+for the staging sign-off: staging never retires a passed item on its own, so the passed state is
+verified there through the load-time flip or by pressing publish/unpublish once in `/app/events`
+(which dispatches with `ref: staging`) — that is a named step in the staging click-list. Same rails
+as the report jobs (ADR 0039 spirit): a scoped token, a workflow that only rebuilds, no agent.
 
 **Expired state.** `events.passed` is a second anon-readable view: public items whose last
 occurrence passed within the last 90 days, same public columns. The generator renders them with
@@ -159,8 +172,10 @@ occurrence passed within the last 90 days, same public columns. The generator re
 the sitemap. After 90 days the page is gone and `404.html` routes `/happening/*` to
 `/happening/`. Every generated page also checks the feed on load: an item that passed since the
 last rebuild flips to the passed state at once, and text/gallery edits show without waiting. A slug
-found in neither view (unpublished since the last rebuild) renders the same passed/unavailable
-state on load, so an unpublish is honoured within seconds even before the rebuild lands.
+found in neither view (unpublished since the last rebuild) renders an *unavailable* state on load —
+a neutral line ("הפריט אינו זמין כרגע", not the "passed" banner, which would be untrue for a
+withdrawn item) plus the next-3 block — so an unpublish is honoured within seconds even before the
+rebuild lands.
 
 **The page** (HE and AR, one URL each, `hreflang`, `canonical`, `og:title` = item title,
 `og:description` = summary, `og:image` = cover at 1200-wide, `Event` JSON-LD with

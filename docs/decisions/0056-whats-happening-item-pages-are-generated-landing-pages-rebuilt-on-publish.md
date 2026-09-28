@@ -26,8 +26,11 @@ behind GoDaddy DNS, so a request-time worker was not an option without moving th
    **fine-grained token scoped to this one repository and to Actions read/write only** — it can
    dispatch, re-run, cancel or delete runs of this repo's workflows on any ref; it cannot push code,
    read secrets or change settings. A `github.ref` guard on each deploy job (`main` for prod,
-   `staging` for staging) and the `github-pages` environment's `main`-only branch policy are what
-   keep a dispatch from publishing anything but the tier's own branch. A nightly scheduled deploy
+   `staging` for staging; it covers a ref once that ref carries it, and it lets the nightly schedule
+   and the dispatch through since both run on `main`) and the `github-pages` environment's
+   `main`-only branch policy — the one guard that does not depend on the ref — are what keep a
+   dispatch from publishing anything but the tier's own branch; staging's bounded exposure is a
+   stale branch on a noindex tier. A nightly scheduled deploy
    **on prod only** retires passed items (a schedule runs from the default branch, so it would
    overwrite staging's branch under verification). An item is live within minutes, still with no
    PR and no agent.
