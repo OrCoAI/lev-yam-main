@@ -21,6 +21,6 @@ At kickoff the owner chose to type both languages rather than auto-translate, an
 
 ## Consequences
 
-- A new Edge Function and a new secret, so the change is Tier A. The key must be set on the staging and prod projects before the button works there; without it, the function answers `not_configured`. Local dev echoes `[AR] <text>` (`TRANSLATE_FAKE` in `config.toml`), so the real Google path is first exercised on staging.
+- A new Edge Function and a new secret, so the change is Tier A. The key must be set on the staging and prod projects before the button works there; without it, the function answers `not_configured`. Local dev without a key echoes `[AR] <text>`. The function decides that from its own URL (the local stack only), because a config-file secret was pushed to staging by `supabase secrets set` (2026-09-28). With the key in the gitignored `supabase/functions/.env`, local calls Google for real.
 - Telemetry records only fixed codes, never the text being translated (ADR 0013).
 - Story pages keep their rule: native-reader sign-off before merge (ADR 0007). This ADR covers `/app/events` items only.

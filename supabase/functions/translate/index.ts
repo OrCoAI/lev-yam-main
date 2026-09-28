@@ -15,9 +15,11 @@
 //   supabase functions deploy translate --no-verify-jwt
 // Secret (never in the repo):
 //   supabase secrets set --project-ref <ref> GOOGLE_TRANSLATE_API_KEY=<key>
-// Local dev: `TRANSLATE_FAKE = "1"` in config.toml's [edge_runtime.secrets]
-// returns a marked echo when no key is configured; a key in the gitignored
-// supabase/functions/.env takes precedence. Never set it on a cloud project.
+// Local dev without a key: the function echoes "[AR] <text>" so the button
+// works offline. That mode is decided by where it runs, not by a setting — a
+// config secret was tried and `supabase secrets set` silently pushed it to the
+// cloud (2026-09-28). Cloud functions see an https *.supabase.co URL and can
+// never enter it; a key in the gitignored supabase/functions/.env wins locally.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import * as http from '../_shared/http.ts'
@@ -36,8 +38,9 @@ const admin = createClient(
 const db = admin.schema('core')
 
 const API_KEY = Deno.env.get('GOOGLE_TRANSLATE_API_KEY')
-// a real key always wins; the echo is only a no-key local fallback
-const FAKE = !API_KEY && Deno.env.get('TRANSLATE_FAKE') === '1'
+// the local stack's functions reach the API at http://kong:8000
+const LOCAL = /^http:\/\/(kong|localhost|127\.0\.0\.1)(:\d+)?$/.test(Deno.env.get('SUPABASE_URL') ?? '')
+const FAKE = !API_KEY && LOCAL
 
 const FIELDS = ['title', 'summary', 'body'] as const
 type Field = (typeof FIELDS)[number]

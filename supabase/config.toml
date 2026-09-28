@@ -400,11 +400,11 @@ inspector_port = 8083
 # The Deno major version to use.
 deno_version = 2
 
-# Local only (this file is never pushed to a cloud project): with no key, the `translate`
-# function echoes "[AR] <text>" so the button works offline. A GOOGLE_TRANSLATE_API_KEY in the
-# gitignored supabase/functions/.env takes precedence and calls Google for real.
-[edge_runtime.secrets]
-TRANSLATE_FAKE = "1"
+# Keep this section empty: `supabase secrets set --project-ref <cloud>` uploads whatever is
+# listed here along with the named secret (it pushed a local-only flag to staging on
+# 2026-09-28). The `translate` function's no-key echo is decided by its own URL instead.
+# [edge_runtime.secrets]
+# secret_key = "env(SECRET_VALUE)"
 
 [analytics]
 # Disabled: the Logflare/vector container tries to bind-mount the Docker socket,

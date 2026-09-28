@@ -193,6 +193,10 @@ columns are nullable and can stay; the bucket is emptied by hand.
    no resident names in captions.
 
 ## Decisions made on the way
+- 2026-09-28 · Staging apply: `supabase secrets set` also uploads everything under `config.toml`'s
+  `[edge_runtime.secrets]`, so a local-only `TRANSLATE_FAKE` landed on staging (inert: a real key
+  wins). Removed there; the no-key echo is now decided by the function's own URL (local stack only)
+  and the config section is kept empty with a warning.
 - 2026-09-28 · Gate (code review): kept `events.visibility default 'public'` although an insert that
   omits visibility now fails the bilingual CHECK — "public by default" is vision principle 4, the
   failure is loud (never a silent leak), and every writer (form, quotes projector) sets it explicitly.
