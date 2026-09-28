@@ -536,7 +536,12 @@ proposal — the owner reorders by editing this list.*
       check at ship + 21 days
       **PR 1 merged + on prod 2026-09-28** ([#93](https://github.com/OrCoAI/lev-yam-main/pull/93)): schema 58,
       `/app/events` ("מה קורה") with gallery + translate button ([ADR 0055](decisions/0055-whats-happening-arabic-may-be-machine-drafted-but-never-published-unreviewed.md)),
-      `translate` function; prod hand-applied and audited. **Next: PR 2**, the public `/happening/` pages.
+      `translate` function; prod hand-applied and audited.
+      **PR 2 kicked off 2026-09-28** ([ADR 0056](decisions/0056-whats-happening-item-pages-are-generated-landing-pages-rebuilt-on-publish.md),
+      [ADR 0057](decisions/0057-ga4-carries-share-click-for-happening-landing-pages.md)): a generated static
+      landing page per item, rebuilt on publish through a scoped GitHub token; share row + sticky bar;
+      two optional fields (`59_events_landing.sql`); `share_click` in GA4; the landing page replaces
+      the story pair; a written "Path to booking" for Phase 4. One Tier-A PR — **next: build it.**
 - [ ] **9. Backlink programme** — tourism, food/travel, Arab-society media → *referring domains*
 - [ ] **10. Paid test** — a small Meta/Google campaign against one or two pages → *cost per WhatsApp
       conversation*. **Prerequisite, owner 2026-09-22:** before spending anything, prove the paid
@@ -614,7 +619,9 @@ is bilingual HE/AR like the marketing site.*
 
 - [ ] Online booking on levyam.com → bookings module (anon insert with verification via an
       edge function; WhatsApp stays as a parallel channel)
-- [ ] Event signup/tickets on the public "What's happening" feed (capacity, confirmation)
+- [ ] Event signup/tickets on the public "What's happening" feed (capacity, confirmation) —
+      the path is written: [plans/events-whats-happening.md](plans/events-whats-happening.md) "Path to
+      booking" (owner, 2026-09-28); the landing page's CTA is already one swappable block
 - [ ] Digital menu (QR at the table) — read-only first, sourced from POS items
 - [ ] Table ordering → POS kitchen pipeline (only after the QR menu is proven)
 - [ ] Notifications channel (WhatsApp/email confirmations) — needed once booking goes public
