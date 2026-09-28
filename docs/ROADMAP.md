@@ -534,6 +534,9 @@ proposal — the owner reorders by editing this list.*
       WhatsApp + `Event` JSON-LD, nav + homepage strip; Arabic enforced by a DB CHECK. Two Tier-A
       PRs (data + admin, then public surface); outcome = `whatsapp_click` + visits on `/happening/*`,
       check at ship + 21 days
+      **PR 1 merged + on prod 2026-09-28** ([#93](https://github.com/OrCoAI/lev-yam-main/pull/93)): schema 58,
+      `/app/events` ("מה קורה") with gallery + translate button ([ADR 0055](decisions/0055-whats-happening-arabic-may-be-machine-drafted-but-never-published-unreviewed.md)),
+      `translate` function; prod hand-applied and audited. **Next: PR 2**, the public `/happening/` pages.
 - [ ] **9. Backlink programme** — tourism, food/travel, Arab-society media → *referring domains*
 - [ ] **10. Paid test** — a small Meta/Google campaign against one or two pages → *cost per WhatsApp
       conversation*. **Prerequisite, owner 2026-09-22:** before spending anything, prove the paid
