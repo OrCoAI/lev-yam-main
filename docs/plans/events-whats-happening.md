@@ -160,6 +160,23 @@ first time, and the grant audit does not see column-level grants (ADR 0005). In 
    On staging, press "תרגום מעברית" once right after deploying: a 411 means the cloud gateway drops
    Content-Length and the function's body-size gate needs a byte-limited reader instead.
 
+### Prod apply record — 2026-09-28
+Done through the management API, owner's go-ahead in the session. Before: exactly 40's state
+(15 columns, 9 anon column grants, 3 policies, module disabled under 'יומן ואירועים', no bucket),
+19 internal quote-sourced rows, no public rows. After 58: the ten comparisons against local all
+match (20 anon columns, 7 policies, 2 triggers, 12 constraints, bucket, 4 storage policies, 7
+functions with their ACLs, `feed`, the module row enabled as 'מה קורה'); row counts unchanged;
+`audit-grants` 0 drift / 0 undeclared. `events` added to the exposed schemas; anon probes with
+the live publishable key: `feed` 200 `[]`, `notes` / `owner_id` / `source_module` / `next_date`
+42501. `translate` deployed (`--no-verify-jwt --use-api`), key set; anonymous POST 401, preflight
+for levyam.com 200. Left for the owner: press translate once on prod after the merge.
+
+**Gotcha paid for:** `supabase secrets set --env-file supabase/functions/.env` uploads *every*
+variable in the file, so prod also received the local OTEL_* values (environment name `local`).
+`OTEL_ENVIRONMENT`, the endpoint and the revision were restored in the session;
+`OTEL_EXPORTER_OTLP_HEADERS` (the ingest token) must be re-set by the owner per the README's
+telemetry section. Set one secret with an explicit `NAME=value`, never with `--env-file`.
+
 ## Rollback
 Unpublish every item (`visibility = 'internal'`) — the public pages render empty-state within
 seconds with no deploy. Full rollback: revert PR 2 (pages, nav, strip), then PR 1's UI; the added
