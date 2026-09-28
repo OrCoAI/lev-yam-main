@@ -22,4 +22,6 @@ insert into storage.buckets (id, name, public)
 values ('quotes-docs', 'quotes-docs', false)
 on conflict (id) do update set public = false;
 
--- No storage.objects policies — intentionally none (see header).
+-- No storage.objects policies for quotes-docs — intentionally none (see header).
+-- The public events-public bucket (58_events_public.sql) carries its own
+-- policies, each scoped to bucket_id = 'events-public'; none reaches this bucket.

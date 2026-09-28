@@ -7,6 +7,19 @@
 // body-only distinction instead of a real browser-enforced CORS boundary.
 import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2'
 
+/** The browser origins that may call the platform's functions. staging.levyam.com
+ *  talks to the SEPARATE lev-yam-staging project, so listing it here does not let
+ *  staging reach production data (see admin-invite for the full note). New
+ *  functions pass this; admin-invite / admin-user-ops still hold their own
+ *  identical copies and move to it on their next edit (they are deployed, and a
+ *  refactor alone is no reason to redeploy them). */
+export const ALLOWED_ORIGINS = new Set([
+  'http://localhost:5173',
+  'https://staging.levyam.com',
+  'https://levyam.com',
+  'https://www.levyam.com',
+])
+
 export const cors = (origin: string | null, allowedOrigins: Set<string>) => ({
   // 'null' matches no real Origin header, so disallowed origins get a
   // response the browser won't let their script read — same effect as

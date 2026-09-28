@@ -265,10 +265,32 @@ insert into quotes.contracts (id, quote_id, contract_number, status, signed_date
 values ('cccccccc-0000-0000-0000-000000000002', 'cccccccc-0000-0000-0000-000000000001',
         'C-RLS-TEST-1', 'signed', current_date, 'rls-test signer', now());
 
--- events: one public + one internal
-insert into events.events (id, title, event_date, status, visibility)
-values ('dddddddd-0000-0000-0000-000000000001', 'rls-test public',   current_date, 'confirmed', 'public'),
-       ('dddddddd-0000-0000-0000-000000000002', 'rls-test internal', current_date, 'confirmed', 'internal');
+-- events: one public + one internal. A public row must carry both languages
+-- and a slug since 58_events_public.sql (events_public_bilingual).
+insert into events.events (id, title, event_date, status, visibility,
+                           slug, title_he, title_ar, summary_he, summary_ar, body_he, body_ar)
+values ('dddddddd-0000-0000-0000-000000000001', 'rls-test public',   current_date, 'confirmed', 'public',
+        'rls-test-public', 'בדיקה', 'اختبار', 'בדיקה', 'اختبار', 'בדיקה', 'اختبار'),
+       ('dddddddd-0000-0000-0000-000000000002', 'rls-test internal', current_date, 'confirmed', 'internal',
+        null, '', '', '', '', '', '');
+
+-- 58_events_public: the live rule and the quote-name rule need their own rows.
+-- Prefixed 'rls-evt' so the 'rls-test%' event counts above stay what they were.
+--   …003 public, dated yesterday      → readable row, but off the live feed
+--   …004 public, recurring every day  → on the feed, next date = today
+--   …005 internal, projected by quotes (title = a customer name), fully
+--        bilingual so only events_public_not_quote can refuse publishing it
+insert into events.events (id, title, event_date, status, visibility,
+                           slug, title_he, title_ar, summary_he, summary_ar, body_he, body_ar,
+                           recur_weekdays, source_module, source_id)
+values ('dddddddd-0000-0000-0000-000000000003', 'rls-evt past', current_date - 1, 'confirmed', 'public',
+        'rls-evt-past', 'עבר', 'ماضي', 'עבר', 'ماضي', 'עבר', 'ماضي', null, null, null),
+       ('dddddddd-0000-0000-0000-000000000004', 'rls-evt weekly', current_date - 30, 'confirmed', 'public',
+        'rls-evt-weekly', 'שבועי', 'أسبوعي', 'שבועי', 'أسبوعي', 'שבועי', 'أسبوعي',
+        array[0,1,2,3,4,5,6]::smallint[], null, null),
+       ('dddddddd-0000-0000-0000-000000000005', 'rls-evt quote', current_date, 'confirmed', 'internal',
+        'rls-evt-quote', 'לקוח', 'زبون', 'לקוח', 'زبون', 'לקוח', 'زبون',
+        null, 'quotes', 'cccccccc-0000-0000-0000-00000000ffff');
 
 -- pos: a live table, a paid bill + line, and one expense of each kind
 insert into pos.pos_tables (id, num, name) values ('rls-test-t1', 999, 'rls-test');
@@ -324,6 +346,148 @@ select pg_temp.assert_denied('anon cannot read finance.entries',
   $q$ select 1 from finance.entries limit 1 $q$);
 select pg_temp.assert_denied('anon cannot read quotes.quotes',
   $q$ select 1 from quotes.quotes limit 1 $q$);
+
+-- =====================================================================
+--  58_events_public — the public "What's happening" surface
+-- =====================================================================
+-- anon: the feed is the live rule; the table's private columns stay closed
+select pg_temp.assert_rows('anon: feed hides a public item whose date has passed',
+  $q$ select 1 from events.feed where slug = 'rls-evt-past' $q$, 0);
+select pg_temp.assert_rows('anon: feed shows a recurring item with next_date = today (Jerusalem)',
+  $q$ select 1 from events.feed where slug = 'rls-evt-weekly'
+       and next_date = (now() at time zone 'Asia/Jerusalem')::date $q$, 1);
+select pg_temp.assert_rows('anon: feed reads the gallery column (column grant)',
+  $q$ select image_paths from events.feed where slug = 'rls-test-public' $q$, 1);
+select pg_temp.assert_rows('anon: feed reads the Arabic fields',
+  $q$ select title_ar, summary_ar, body_ar from events.feed where slug = 'rls-test-public' $q$, 1);
+select pg_temp.assert_rows('anon: never sees a quote-sourced event',
+  $q$ select 1 from events.events where title like 'rls-evt quote' $q$, 0);
+select pg_temp.assert_denied('anon cannot read events.owner_id (column grant)',
+  $q$ select owner_id from events.events limit 1 $q$);
+select pg_temp.assert_denied('anon cannot read events.source_module (column grant)',
+  $q$ select source_module from events.events limit 1 $q$);
+select pg_temp.assert_denied('anon cannot create an event',
+  $q$ insert into events.events (title, event_date, visibility) values ('rls-evt anon', current_date, 'internal') $q$);
+select pg_temp.assert_denied('anon cannot upload to events-public',
+  $q$ insert into storage.objects (bucket_id, name) values ('events-public', 'rls-evt/anon.jpg') $q$);
+
+-- staff (events.view, no events.manage, no quotes.view)
+select pg_temp.become('aaaaaaaa-0000-0000-0000-000000000003');
+select pg_temp.assert_rows('staff: quote-sourced event hidden without quotes.view (customer name)',
+  $q$ select 1 from events.events where title = 'rls-evt quote' $q$, 0);
+select pg_temp.assert_rows('staff: still sees the direct internal event (events.view)',
+  $q$ select 1 from events.events where title = 'rls-test internal' $q$, 1);
+select pg_temp.assert_denied('staff: cannot create an event (no events.manage)',
+  $q$ insert into events.events (title, event_date, visibility) values ('rls-evt staff', current_date, 'internal') $q$);
+select pg_temp.assert_noop('staff: event update is a silent noop (no events.manage)',
+  $q$ update events.events set notes = 'x' where title = 'rls-test internal' $q$);
+select pg_temp.assert_denied('staff: cannot upload to events-public (no events.manage)',
+  $q$ insert into storage.objects (bucket_id, name) values ('events-public', 'rls-evt/staff.jpg') $q$);
+
+-- manager (events.manage + quotes.view)
+select pg_temp.become('aaaaaaaa-0000-0000-0000-000000000002');
+select pg_temp.assert_rows('manager: next_date computed column matches the feed rule',
+  $q$ select 1 from events.events e
+     where e.slug = 'rls-evt-weekly'
+       and events.next_date(e) = (now() at time zone 'Asia/Jerusalem')::date $q$, 1);
+select pg_temp.assert_rows('manager: next_date is null for an item whose date passed',
+  $q$ select 1 from events.events e where e.slug = 'rls-evt-past' and events.next_date(e) is null $q$, 1);
+select pg_temp.assert_rows('manager: sees the quote-sourced event (quotes.view)',
+  $q$ select 1 from events.events where title = 'rls-evt quote' $q$, 1);
+select pg_temp.assert_ok('manager: can publish a bilingual dated event',
+  $q$ insert into events.events (title, event_date, visibility, slug, title_he, title_ar,
+       summary_he, summary_ar, body_he, body_ar)
+     values ('rls-evt new', current_date + 7, 'public', 'rls-evt-new', 'חדש', 'جديد',
+       'חדש', 'جديد', 'חדש', 'جديد') $q$);
+select pg_temp.assert_ok('manager: can publish an item that links to a story pair with no body',
+  $q$ insert into events.events (title, event_date, visibility, slug, title_he, title_ar,
+       summary_he, summary_ar, story_slug)
+     values ('rls-evt story', current_date, 'public', 'rls-evt-story', 'סיפור', 'حكاية',
+       'סיפור', 'حكاية', 'team-day-by-the-sea') $q$);
+select pg_temp.assert_check_denied('manager: public event without Arabic refused (invariant 5)',
+  $q$ insert into events.events (title, event_date, visibility, slug, title_he,
+       summary_he, body_he)
+     values ('rls-evt he-only', current_date, 'public', 'rls-evt-he-only', 'רק עברית',
+       'רק עברית', 'רק עברית') $q$);
+select pg_temp.assert_check_denied('manager: public event without a slug refused',
+  $q$ insert into events.events (title, event_date, visibility, title_he, title_ar,
+       summary_he, summary_ar, body_he, body_ar)
+     values ('rls-evt noslug', current_date, 'public', 'א', 'ا', 'א', 'ا', 'א', 'ا') $q$);
+select pg_temp.assert_check_denied('manager: unconfirmed machine Arabic cannot be public (ADR 0055)',
+  $q$ update events.events set ar_machine_translated = true where title = 'rls-evt new' $q$);
+select pg_temp.assert_ok('manager: a machine-Arabic item can be saved as a draft',
+  $q$ update events.events set visibility = 'internal', ar_machine_translated = true
+     where title = 'rls-evt new' $q$);
+select pg_temp.assert_ok('manager: confirming the Arabic lets it publish again',
+  $q$ update events.events set visibility = 'public', ar_machine_translated = false
+     where title = 'rls-evt new' $q$);
+select pg_temp.assert_check_denied('manager: cannot make a quote-sourced event public',
+  $q$ update events.events set visibility = 'public' where title = 'rls-evt quote' $q$);
+select pg_temp.assert_check_denied('manager: slug must be lower-case latin with hyphens',
+  $q$ update events.events set slug = 'Bad Slug' where title = 'rls-evt new' $q$);
+select pg_temp.assert_ok('manager: a gallery of well-formed photo paths is accepted',
+  $q$ update events.events set image_paths = array[
+       'dddddddd-0000-0000-0000-000000000004/cover.jpg',
+       'dddddddd-0000-0000-0000-000000000004/two.webp'] where title = 'rls-evt new' $q$);
+select pg_temp.assert_check_denied('manager: a gallery photo cannot point outside the bucket layout',
+  $q$ update events.events set image_paths = array[
+       'dddddddd-0000-0000-0000-000000000004/cover.jpg', '../quotes-docs/x.jpg']
+     where title = 'rls-evt new' $q$);
+select pg_temp.assert_check_denied('manager: a gallery holds at most 8 photos',
+  $q$ update events.events set image_paths = array(
+       select 'dddddddd-0000-0000-0000-000000000004/p' || g || '.jpg' from generate_series(1, 9) g)
+     where title = 'rls-evt new' $q$);
+select pg_temp.assert_check_denied('manager: recurrence weekday outside 0-6 refused',
+  $q$ update events.events set recur_weekdays = array[7]::smallint[] where title = 'rls-evt new' $q$);
+select pg_temp.assert_ok('manager: can upload to events-public (events.manage)',
+  $q$ insert into storage.objects (bucket_id, name) values ('events-public', 'rls-evt/manager.jpg') $q$);
+select pg_temp.assert_rows('manager: quotes-docs still unreachable (events policies are bucket-scoped)',
+  $q$ select 1 from storage.objects where bucket_id = 'quotes-docs' $q$, 0);
+select pg_temp.assert_denied('manager: cannot write into quotes-docs through the events policies',
+  $q$ insert into storage.objects (bucket_id, name) values ('quotes-docs', 'rls-evt/x.txt') $q$);
+select pg_temp.assert_raises('manager: cannot detach an event from its quote (source guard)',
+  $q$ update events.events set source_module = null, source_id = null where title = 'rls-evt quote' $q$,
+  'מקור');
+select pg_temp.assert_denied('manager: cannot create a quote-sourced event directly',
+  $q$ insert into events.events (title, event_date, visibility, source_module, source_id)
+     values ('rls-evt forged', current_date, 'internal', 'quotes', gen_random_uuid()) $q$);
+
+-- a custom role with events.manage but NOT quotes.view (the gap the split
+-- write policies close). Savepoint: the extra user/role must not change the
+-- user counts asserted further down.
+reset role;
+savepoint evt_editor;
+insert into auth.users (instance_id, id, aud, role, email, encrypted_password, banned_until,
+                        created_at, updated_at)
+values ('00000000-0000-0000-0000-000000000000', 'aaaaaaaa-0000-0000-0000-000000000006',
+        'authenticated', 'authenticated', 'rls-test-evteditor@levyam.test',
+        extensions.crypt(gen_random_uuid()::text, extensions.gen_salt('bf')), 'infinity', now(), now());
+insert into core.roles (key, label_he, label_ar) values ('rls-evt-editor', 'בדיקה', 'اختبار');
+insert into core.role_permissions (role_id, permission_id)
+select r.id, p.id from core.roles r join core.permissions p on p.key in ('events.view', 'events.manage')
+where r.key = 'rls-evt-editor';
+insert into core.user_roles (user_id, role_id)
+select 'aaaaaaaa-0000-0000-0000-000000000006', id from core.roles where key = 'rls-evt-editor';
+select pg_temp.become('aaaaaaaa-0000-0000-0000-000000000006');
+select pg_temp.assert_rows('events-only editor: cannot read a quote-sourced event',
+  $q$ select 1 from events.events where title = 'rls-evt quote' $q$, 0);
+select pg_temp.assert_noop('events-only editor: cannot update a quote-sourced event',
+  $q$ update events.events set notes = 'x' where title = 'rls-evt quote' $q$);
+select pg_temp.assert_noop('events-only editor: cannot delete a quote-sourced event',
+  $q$ delete from events.events where title = 'rls-evt quote' $q$);
+select pg_temp.assert_rows('events-only editor: the calendar view hides the quote event too',
+  $q$ select 1 from events.calendar where title = 'rls-evt quote' $q$, 0);
+select pg_temp.assert_raises('events-only editor: cannot attach a direct event to a quote',
+  $q$ update events.events set source_module = 'quotes', source_id = gen_random_uuid()
+     where title = 'rls-evt new' $q$, 'מקור');
+select pg_temp.assert_denied('events-only editor: an upsert cannot reach a quote row',
+  $q$ insert into events.events (id, title, event_date, visibility)
+     values ('dddddddd-0000-0000-0000-000000000005', 'x', current_date, 'internal')
+     on conflict (id) do update set notes = 'x' $q$);
+select pg_temp.assert_ok('events-only editor: still edits direct events',
+  $q$ update events.events set notes = 'ok' where title = 'rls-evt new' $q$);
+reset role;
+rollback to savepoint evt_editor;
 
 -- =====================================================================
 --  NO-ROLE authenticated user — catalog is readable, module data is not

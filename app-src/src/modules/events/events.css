@@ -1,0 +1,128 @@
+/* /app/events — every class prefixed ev- (MODULE-TEMPLATE §3: namespace module CSS) */
+
+.ev-add { margin-bottom: 14px; }
+
+.ev-form { display: grid; gap: 0; margin-bottom: 18px; min-width: 0; }
+/* the fields, frozen (disabled) while a request is in flight; a fieldset's
+   default min-width: min-content would break the phone layout */
+.ev-fields { display: grid; gap: 0; min-width: 0; margin: 0; padding: 0; border: 0; }
+.ev-fields:disabled { opacity: 0.65; }
+/* sections: 12px inside, 22px + a divider between */
+.ev-sec { display: grid; gap: 12px; min-width: 0; margin-top: 22px; padding-top: 20px;
+  border-top: 1px solid var(--line); }
+.ev-fields > .ev-sec:first-child { margin-top: 14px; padding-top: 0; border-top: none; }
+/* the error + save/cancel, part of the publish section visually */
+.ev-actions { display: grid; gap: 12px; min-width: 0; margin-top: 12px; }
+.ev-sec-title { margin: 0; font-size: 0.95rem; font-weight: 800; color: var(--ink); }
+.ev-sec .field-hint { margin-top: -2px; }
+.ev-form input[type='text'], .ev-form input[type='time'], .ev-form textarea {
+  font: inherit; width: 100%; max-width: 100%; min-width: 0; min-height: 46px; padding: 12px 14px;
+  border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--ink);
+}
+.ev-form textarea { resize: vertical; line-height: 1.5; }
+/* iOS Safari draws time inputs at its own width and ignores the column; drop
+   the native styling so they fit like every other box */
+.ev-form input[type='time'] { -webkit-appearance: none; appearance: none; display: block; text-align: start; }
+.ev-form input[type='time']::-webkit-date-and-time-value { text-align: start; }
+.ev-form input:focus, .ev-form textarea:focus { outline: 2px solid var(--sea); border-color: var(--sea); }
+.ev-form .section-title { margin: 0; }
+.ev-form .seg-btn.on { color: var(--sea-dark); }
+
+/* HE + AR. DOM order is HE…, bar, AR… (the phone order); on desktop the grid
+   places each box by language column and field row, so pairs stay level */
+.ev-bi { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; min-width: 0; padding: 14px;
+  border: 1px solid var(--line); border-radius: 14px; background: var(--sand-2); }
+.ev-bi > .ev-r0 { min-height: 44px; }
+@media (min-width: 641px) {
+  .ev-bi > .ev-he { grid-column: 1; }
+  .ev-bi > .ev-ar { grid-column: 2; }
+  .ev-bi > .ev-r0 { grid-row: 1; }
+  .ev-bi > .ev-r1 { grid-row: 2; }
+  .ev-bi > .ev-r2 { grid-row: 3; }
+  .ev-bi > .ev-r3 { grid-row: 4; }
+  .ev-bi > .ev-bi-hint { grid-column: 1 / -1; grid-row: 5; }
+  /* the button in the exact middle of the Arabic column: name | button | pill */
+  .ev-bi-lang.ev-bi-ar { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; }
+  .ev-bi-ar .ev-bi-actions { display: contents; }
+  .ev-bi-ar .ev-machine { justify-self: end; }
+}
+.ev-bi-lang { font-weight: 800; color: var(--sea-dark); display: flex; flex-wrap: nowrap;
+  align-items: center; gap: 8px; min-width: 0; }
+.ev-bi-name { flex: none; }
+/* the translate button sits centred in its bar; the reserved "checked" pill beside it */
+.ev-bi-actions { flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px;
+  flex-wrap: wrap; min-width: 0; }
+.ev-bi-hint { margin: 0; min-height: 1.2em; }
+.ev-form input[type='text'].ev-machine-box, .ev-form textarea.ev-machine-box { border-color: #e8b44c; background: #fffaf0; }
+.ev-label-hint { font-weight: 400; }
+.ev-days .chip { min-width: 52px; }
+.ev-date-clear { position: relative; min-width: 0; }
+/* the round ✕ — one base, placed by its modifier (clear a date, remove a photo) */
+.ev-x { position: absolute; inset-inline-end: 8px; display: grid; place-items: center;
+  border: none; border-radius: 50%; font: inherit; line-height: 1; cursor: pointer; }
+.ev-clear-x { top: 50%; transform: translateY(-50%); width: 30px; height: 30px;
+  background: var(--sand-2); color: var(--muted); font-size: 0.85rem; }
+.ev-machine { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px;
+  font-size: 0.8rem; font-weight: 700; white-space: nowrap; cursor: pointer;
+  background: #fff4dc; border: 1px solid #e8b44c; color: #7a5200; }
+.ev-machine input { width: 16px; height: 16px; margin: 0; accent-color: #b07800; }
+
+/* gallery: equal tiles — photo (remove ✕ on top) + one full-width row under it
+   (cover mark or "make cover"), so every row of tiles lines up */
+.ev-gallery { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.ev-photo { display: grid; grid-template-rows: auto 1fr; gap: 6px; min-width: 0; }
+.ev-photo-img { position: relative; }
+.ev-photo img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover;
+  border-radius: 12px; border: 1px solid var(--line); background: var(--sand-2); }
+.ev-cover img { outline: 3px solid var(--ok); outline-offset: -3px; }
+.ev-photo-x { top: 6px; inset-inline-end: 6px; width: 34px; height: 34px;
+  background: rgba(255, 255, 255, 0.94); color: var(--ink); font-size: 0.9rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3); }
+.ev-photo-x:hover { background: #fff; color: var(--danger); }
+.ev-photo-cover, .btn-ghost.ev-photo-make { display: flex; align-items: center; justify-content: center;
+  width: 100%; min-height: 36px; padding: 0 8px; border-radius: 999px; font-size: 0.78rem; font-weight: 700;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ev-photo-cover { background: var(--ok); color: #fff; }
+/* the "add" tile: the grid's last cell, as tall as its neighbours; alone, a full-width bar */
+.ev-photo-add { grid-template-rows: 1fr; }
+.ev-file { position: relative; overflow: hidden; cursor: pointer; height: 100%; min-height: 120px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 8px;
+  border: 2px dashed var(--line); border-radius: 12px; background: var(--sand-2);
+  color: var(--sea-dark); font-weight: 700; font-size: 0.85rem; text-align: center; }
+.ev-file:hover, .ev-file:focus-within { border-color: var(--sea); background: #fff; }
+.ev-file-plus { font-size: 1.6rem; line-height: 1; }
+.ev-photo-add:only-child { grid-column: 1 / -1; }
+.ev-photo-add:only-child .ev-file { flex-direction: row; gap: 8px; min-height: 64px; }
+.ev-file input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+.ev-publish { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
+.ev-publish input { width: 22px; height: 22px; margin-top: 2px; accent-color: var(--sea); flex: none; }
+
+/* list */
+.ev-title { font-weight: 700; }
+.ev-when { font-size: 0.82rem; }
+.ev-slug { font-size: 0.82rem; overflow-wrap: anywhere; }
+.ev-ended .ev-title { color: var(--muted); }
+/* state colours on the shared .badge pill (styles.css) — .badge.x, since styles.css loads after this file */
+.badge.ev-badge-live { background: var(--ok); color: #fff; }
+.badge.ev-badge-draft { background: #fff; border: 1px solid var(--sea); }
+.badge.ev-badge-ended { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+.badge.ev-badge-machine { color: #7a5200; border: 1px solid #e8b44c; background: #fff4dc; }
+
+@media (max-width: 640px) {
+  /* one column in DOM order: all Hebrew, the translate bar, all Arabic */
+  .ev-bi { grid-template-columns: 1fr; }
+  .ev-bi-ar { flex-direction: column; align-items: stretch; gap: 10px; margin-top: 6px; padding-top: 16px;
+    border-top: 1px dashed var(--line); }
+  .ev-bi-actions { flex-direction: column; gap: 8px; }
+  /* the seven days on one line */
+  .chips.ev-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+  .ev-days .chip { width: 100%; min-width: 0; min-height: 40px; padding: 6px 0; border-radius: 10px;
+    font-size: 0.74rem; white-space: nowrap; }
+  /* the summary line already shows the title; the when-line would crowd it */
+  .rowline .ev-when { display: none; }
+  /* two tiles across, whatever the phone; the row under a photo is a thumb-sized target */
+  .ev-gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ev-photo-cover, .btn-ghost.ev-photo-make { min-height: 44px; }
+}
