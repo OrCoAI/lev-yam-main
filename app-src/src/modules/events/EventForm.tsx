@@ -225,29 +225,31 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
       {FIELDS.map((f, i) => box(f, 'he', i))}
       <div className="ev-bi-lang ev-bi-ar ev-ar ev-r0">
         <span className="ev-bi-name">{et.arabic}</span>
-        <button
-          type="button"
-          className="btn-ghost btn-sm"
-          disabled={pending !== null}
-          onClick={() => void translate()}
-        >
-          {pending === 'translate' ? et.translating : `⇄ ${et.translate}`}
-        </button>
-        {/* always laid out, only shown — its arrival must not move the boxes */}
-        <label
-          className="ev-machine"
-          title={et.machineNote}
-          style={{ visibility: arMachine ? 'visible' : 'hidden' }}
-          aria-hidden={!arMachine}
-        >
-          <input
-            type="checkbox"
-            checked={arState === 'checked'}
-            tabIndex={arMachine ? 0 : -1}
-            onChange={(e) => setArState(e.target.checked ? 'checked' : 'machine')}
-          />
-          <span>{et.arabicChecked}</span>
-        </label>
+        <div className="ev-bi-actions">
+          <button
+            type="button"
+            className="btn-ghost btn-sm"
+            disabled={pending !== null}
+            onClick={() => void translate()}
+          >
+            {pending === 'translate' ? et.translating : `⇄ ${et.translate}`}
+          </button>
+          {/* always laid out, only shown — its arrival must not move the boxes */}
+          <label
+            className="ev-machine"
+            title={et.machineNote}
+            style={{ visibility: arMachine ? 'visible' : 'hidden' }}
+            aria-hidden={!arMachine}
+          >
+            <input
+              type="checkbox"
+              checked={arState === 'checked'}
+              tabIndex={arMachine ? 0 : -1}
+              onChange={(e) => setArState(e.target.checked ? 'checked' : 'machine')}
+            />
+            <span>{et.arabicChecked}</span>
+          </label>
+        </div>
       </div>
       {FIELDS.map((f, i) => box(f, 'ar', i))}
       <p className="field-hint muted ev-bi-hint">
@@ -260,107 +262,123 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
     <div className="card ev-form">
       <h2 className="section-title">{initial ? et.formEdit : et.formNew}</h2>
 
-      <div className="seg seg-2" role="group" aria-label={et.kind}>
-        <button
-          type="button"
-          className={`seg-btn${!recurring ? ' on' : ''}`}
-          onClick={() => setRecurring(false)}
-        >
-          {et.kindDated}
-        </button>
-        <button
-          type="button"
-          className={`seg-btn${recurring ? ' on' : ''}`}
-          onClick={() => setRecurring(true)}
-        >
-          {et.kindRecurring}
-        </button>
-      </div>
-
-      {recurring && (
-        <div className="field">
-          <span className="field-label">{et.weekdays}</span>
-          <div className="chips ev-days">
-            {et.weekdayShort.map((label, d) => (
-              <button
-                key={d}
-                type="button"
-                className={`chip${weekdays.includes(d) ? ' on' : ''}`}
-                aria-pressed={weekdays.includes(d)}
-                onClick={() => toggleDay(d)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+      {/* four titled sections: tight inside, a clear gap + divider between */}
+      <section className="ev-sec">
+        <h3 className="ev-sec-title">{et.secWhen}</h3>
+        <div className="seg seg-2" role="group" aria-label={et.kind}>
+          <button
+            type="button"
+            className={`seg-btn${!recurring ? ' on' : ''}`}
+            onClick={() => setRecurring(false)}
+          >
+            {et.kindDated}
+          </button>
+          <button
+            type="button"
+            className={`seg-btn${recurring ? ' on' : ''}`}
+            onClick={() => setRecurring(true)}
+          >
+            {et.kindRecurring}
+          </button>
         </div>
-      )}
 
-      <div className="field-row">
-        <label className="field">
-          <span className="field-label">{recurring ? et.startsFrom : et.date}</span>
-          <DateField value={date} onChange={setDate} />
-        </label>
-        {recurring ? (
+        {recurring && (
           <div className="field">
-            <span className="field-label">{et.untilOptional}</span>
-            {/* the clear ✕ sits inside the box, so "until" is as wide as "from" */}
-            <div className="ev-date-clear">
-              <DateField value={until} onChange={setUntil} />
-              {until && (
+            <span className="field-label">{et.weekdays}</span>
+            <div className="chips ev-days">
+              {et.weekdayShort.map((label, d) => (
                 <button
+                  key={d}
                   type="button"
-                  className="ev-clear-x"
-                  aria-label={et.clearDateLabel}
-                  title={et.clearDateLabel}
-                  onClick={() => setUntil('')}
+                  className={`chip${weekdays.includes(d) ? ' on' : ''}`}
+                  aria-pressed={weekdays.includes(d)}
+                  onClick={() => toggleDay(d)}
                 >
-                  ✕
+                  {label}
                 </button>
-              )}
+              ))}
             </div>
           </div>
-        ) : (
-          <span />
         )}
-      </div>
 
-      <div className="field-row">
-        <label className="field">
-          <span className="field-label">{et.startsAt}</span>
-          <input type="time" dir="ltr" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} />
+        <div className="field-row">
+          <label className="field">
+            <span className="field-label">{recurring ? et.startsFrom : et.date}</span>
+            <DateField value={date} onChange={setDate} />
+          </label>
+          {recurring ? (
+            <div className="field">
+              <span className="field-label">{et.untilOptional}</span>
+              {/* the clear ✕ sits inside the box, so "until" is as wide as "from" */}
+              <div className="ev-date-clear">
+                <DateField value={until} onChange={setUntil} />
+                {until && (
+                  <button
+                    type="button"
+                    className="ev-clear-x"
+                    aria-label={et.clearDateLabel}
+                    title={et.clearDateLabel}
+                    onClick={() => setUntil('')}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <span />
+          )}
+        </div>
+
+        <div className="field-row">
+          <label className="field">
+            <span className="field-label">{et.startsAt}</span>
+            <input type="time" dir="ltr" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} />
+          </label>
+          <label className="field">
+            <span className="field-label">{et.endsAt}</span>
+            <input type="time" dir="ltr" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} />
+          </label>
+        </div>
+
+      </section>
+
+      <section className="ev-sec">
+        <h3 className="ev-sec-title">{et.secText}</h3>
+        {bilingual}
+      </section>
+
+      <section className="ev-sec">
+        <h3 className="ev-sec-title">{et.secLink}</h3>
+        <SlugInput label={et.slug} hint={et.slugHint} value={slug} onChange={setSlug} />
+        <SlugInput label={et.storySlug} hint={et.storySlugHint} value={storySlug} onChange={setStorySlug} />
+      </section>
+
+      <section className="ev-sec">
+        <h3 className="ev-sec-title">{et.secPhotos}</h3>
+        <PhotosField photos={photos} onChange={setPhotos} />
+      </section>
+
+      <section className="ev-sec ev-sec-end">
+        <label className="ev-publish">
+          <input type="checkbox" checked={publish} onChange={(e) => setPublish(e.target.checked)} />
+          <span>
+            <strong>{et.published}</strong>
+            <span className="field-hint muted"> — {et.publishedHint}</span>
+          </span>
         </label>
-        <label className="field">
-          <span className="field-label">{et.endsAt}</span>
-          <input type="time" dir="ltr" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} />
-        </label>
-      </div>
 
-      {bilingual}
+        {error != null && <div className="error">{friendlyError(et, error)}</div>}
 
-      <SlugInput label={et.slug} hint={et.slugHint} value={slug} onChange={setSlug} />
-      <SlugInput label={et.storySlug} hint={et.storySlugHint} value={storySlug} onChange={setStorySlug} />
-
-      <PhotosField photos={photos} onChange={setPhotos} />
-
-      <label className="ev-publish">
-        <input type="checkbox" checked={publish} onChange={(e) => setPublish(e.target.checked)} />
-        <span>
-          <strong>{et.published}</strong>
-          <span className="field-hint muted"> — {et.publishedHint}</span>
-        </span>
-      </label>
-
-      {error != null && <div className="error">{friendlyError(et, error)}</div>}
-
-      <div className="field-actions">
-        <button className="btn-primary btn-block" disabled={pending !== null} onClick={() => void submit()}>
-          {pending === 'save' ? et.saving : et.save}
-        </button>
-        <button className="btn-ghost" disabled={pending !== null} onClick={onCancel}>
-          {et.cancel}
-        </button>
-      </div>
+        <div className="field-actions">
+          <button className="btn-primary btn-block" disabled={pending !== null} onClick={() => void submit()}>
+            {pending === 'save' ? et.saving : et.save}
+          </button>
+          <button className="btn-ghost" disabled={pending !== null} onClick={onCancel}>
+            {et.cancel}
+          </button>
+        </div>
+      </section>
     </div>
   )
 }

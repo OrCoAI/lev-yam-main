@@ -59,7 +59,7 @@ export default function PhotosField({
 
   return (
     <div className="field">
-      <span className="field-label">{et.photos}</span>
+      <span className="field-hint muted">{et.photos}</span>
       {photos.length > 0 && (
         <ul className="ev-gallery">
           {photos.map((p, i) => (

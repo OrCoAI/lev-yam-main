@@ -2,7 +2,13 @@
 
 .ev-add { margin-bottom: 14px; }
 
-.ev-form { display: grid; gap: 14px; margin-bottom: 18px; min-width: 0; }
+.ev-form { display: grid; gap: 0; margin-bottom: 18px; min-width: 0; }
+/* sections: 12px inside, 22px + a divider between */
+.ev-sec { display: grid; gap: 12px; min-width: 0; margin-top: 22px; padding-top: 20px;
+  border-top: 1px solid var(--line); }
+.ev-form > .section-title + .ev-sec { margin-top: 14px; padding-top: 0; border-top: none; }
+.ev-sec-title { margin: 0; font-size: 0.95rem; font-weight: 800; color: var(--ink); }
+.ev-sec .field-hint { margin-top: -2px; }
 .ev-form input[type='text'], .ev-form input[type='time'], .ev-form textarea {
   font: inherit; width: 100%; max-width: 100%; min-width: 0; min-height: 46px; padding: 12px 14px;
   border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--ink);
@@ -29,10 +35,17 @@
   .ev-bi > .ev-r2 { grid-row: 3; }
   .ev-bi > .ev-r3 { grid-row: 4; }
   .ev-bi > .ev-bi-hint { grid-column: 1 / -1; grid-row: 5; }
+  /* the button in the exact middle of the Arabic column: name | button | pill */
+  .ev-bi-lang.ev-bi-ar { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; }
+  .ev-bi-ar .ev-bi-actions { display: contents; }
+  .ev-bi-ar .ev-machine { justify-self: end; }
 }
 .ev-bi-lang { font-weight: 800; color: var(--sea-dark); display: flex; flex-wrap: nowrap;
   align-items: center; gap: 8px; min-width: 0; }
 .ev-bi-name { flex: none; }
+/* the translate button sits centred in its bar; the reserved "checked" pill beside it */
+.ev-bi-actions { flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px;
+  flex-wrap: wrap; min-width: 0; }
 .ev-bi-hint { margin: 0; min-height: 1.2em; }
 .ev-form input[type='text'].ev-machine-box, .ev-form textarea.ev-machine-box { border-color: #e8b44c; background: #fffaf0; }
 .ev-days .chip { min-width: 52px; }
@@ -52,7 +65,8 @@
   border-radius: 12px; border: 1px solid var(--line); }
 .ev-gallery .ev-cover img { outline: 3px solid var(--ok); outline-offset: -3px; }
 .ev-gallery-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-.ev-file { justify-self: start; position: relative; overflow: hidden; cursor: pointer; }
+.ev-file { justify-self: start; position: relative; overflow: hidden; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 0 18px; }
 .ev-file input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 
 .ev-publish { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
@@ -72,7 +86,9 @@
 @media (max-width: 640px) {
   /* one column in DOM order: all Hebrew, the translate bar, all Arabic */
   .ev-bi { grid-template-columns: 1fr; }
-  .ev-bi-ar { flex-wrap: wrap; margin-top: 4px; padding-top: 14px; border-top: 1px dashed var(--line); }
+  .ev-bi-ar { flex-direction: column; align-items: stretch; gap: 10px; margin-top: 6px; padding-top: 16px;
+    border-top: 1px dashed var(--line); }
+  .ev-bi-actions { flex-direction: column; gap: 8px; }
   /* the seven days on one line */
   .chips.ev-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
   .ev-days .chip { width: 100%; min-width: 0; min-height: 40px; padding: 6px 0; border-radius: 10px;
