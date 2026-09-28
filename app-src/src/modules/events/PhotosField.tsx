@@ -1,0 +1,102 @@
+// The gallery editor: add several photos at once, remove one, make one the
+// cover. Order is the order they show on the public detail page; [0] is the
+// card's cover. New files stay local (object URLs) until the form saves.
+import { useEffect, useRef } from 'react'
+import { MAX_PHOTOS, imageUrl } from './api'
+import { useET } from './i18n'
+
+export interface Photo {
+  key: string
+  /** set for a photo already in the bucket */
+  path?: string
+  /** set for a photo chosen in this form, not uploaded yet */
+  file?: File
+  url: string
+}
+
+export function photosFromPaths(paths: string[]): Photo[] {
+  return paths.map((path) => ({ key: path, path, url: imageUrl(path) }))
+}
+
+export default function PhotosField({
+  photos,
+  onChange,
+}: {
+  photos: Photo[]
+  onChange: (next: Photo[]) => void
+}) {
+  const et = useET()
+  // every object URL this form created, revoked when the form goes away
+  const created = useRef<string[]>([])
+  useEffect(() => {
+    const urls = created.current
+    return () => urls.forEach((u) => URL.revokeObjectURL(u))
+  }, [])
+
+  function add(files: FileList | null) {
+    if (!files) return
+    const room = MAX_PHOTOS - photos.length
+    const added = [...files].slice(0, Math.max(0, room)).map((file) => {
+      const url = URL.createObjectURL(file)
+      created.current.push(url)
+      return { key: url, file, url }
+    })
+    onChange([...photos, ...added])
+  }
+
+  function remove(key: string) {
+    const gone = photos.find((p) => p.key === key)
+    if (gone?.file) URL.revokeObjectURL(gone.url) // release the picked file now, not at close
+    onChange(photos.filter((p) => p.key !== key))
+  }
+
+  function makeCover(key: string) {
+    const p = photos.find((x) => x.key === key)
+    if (p) onChange([p, ...photos.filter((x) => x.key !== key)])
+  }
+
+  const full = photos.length >= MAX_PHOTOS
+
+  return (
+    <div className="field">
+      <span className="field-label">{et.photos}</span>
+      {photos.length > 0 && (
+        <ul className="ev-gallery">
+          {photos.map((p, i) => (
+            <li key={p.key} className={i === 0 ? 'ev-cover' : undefined}>
+              <img src={p.url} alt="" />
+              <div className="ev-gallery-actions">
+                {i === 0 ? (
+                  <span className="badge ev-badge-live">{et.photoIsCover}</span>
+                ) : (
+                  <button type="button" className="btn-ghost btn-sm" onClick={() => makeCover(p.key)}>
+                    {et.photoCover}
+                  </button>
+                )}
+                <button type="button" className="btn-ghost btn-sm" onClick={() => remove(p.key)}>
+                  {et.photoRemove}
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      {full ? (
+        <span className="field-hint muted">{et.photoLimit}</span>
+      ) : (
+        <label className="btn-ghost btn-sm ev-file">
+          + {et.photoAdd}
+          <input
+            type="file"
+            multiple
+            accept="image/jpeg,image/png,image/webp"
+            onChange={(e) => {
+              add(e.target.files)
+              e.target.value = '' // picking the same file again still fires
+            }}
+          />
+        </label>
+      )}
+    </div>
+  )
+}

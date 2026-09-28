@@ -86,3 +86,5 @@ implementation choices stay in their plan files; an ADR is for a decision that c
 - [0051 — A story video may autoplay muted once it scrolls into view](0051-story-video-may-autoplay-muted-when-in-view.md) — 2026-09-23
 - [0052 — Stories: four pairs a week for the first month, then the owner sets the pace](0052-stories-four-pairs-a-week-for-the-first-month.md) — 2026-09-23
 - [0053 — Story pages are narrative essays; researched village facts enter FACTS.md with sources first](0053-story-pages-are-narrative-essays-village-facts-sourced-in-facts.md) — 2026-09-24
+- [0054 — "What's happening" shows the venue's public life, is published from /app, and refuses a public row without Arabic](0054-whats-happening-is-db-driven-public-life-bilingual-in-the-db.md) — 2026-09-25
+- [0055 — A "What's happening" item's Arabic may be machine-drafted (Google) but is never published unreviewed](0055-whats-happening-arabic-may-be-machine-drafted-but-never-published-unreviewed.md) — 2026-09-28

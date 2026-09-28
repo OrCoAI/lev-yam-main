@@ -511,7 +511,7 @@ proposal — the owner reorders by editing this list.*
       4 pairs a week for four weeks = 16 by 2026-10-24, then the owner sets the pace; backlog in the
       plan; item 11 pulled forward; "number one" = GSC top-3 share + manual AI-citation check**
       **→ amended 2026-09-24 ([ADR 0053](decisions/0053-story-pages-are-narrative-essays-village-facts-sourced-in-facts.md)): story pages are narrative
-      essays; village facts enter `FACTS.md` first**
+      essays; village facts enter `FACTS.md` first** **Pairs 2–4 LIVE 2026-09-24 (PRs #87, #91, #89, #90) — 4 of 16.**
       *(bug found 2026-09-23: desktop header nav overlaps the social icons at 961–1300px, site-wide,
       HE + AR — own Tier B PR; measurements in the plan's follow-ups)*
 - [ ] **3. Local SEO cluster** — near Caesarea / Hadera / Jisr, directions, "things to do",
@@ -527,6 +527,13 @@ proposal — the owner reorders by editing this list.*
 - [ ] **8. Public "What's happening"** — the original Phase 2's public half, minimal: events table +
       one HE/AR public page reading Supabase anonymously (the first public content table — P4 gets
       tested; prereq H4 done) → *event inquiries*
+      **Kicked off 2026-09-25:** [plans/events-whats-happening.md](plans/events-whats-happening.md) —
+      scope widened by the owner ([ADR 0054](decisions/0054-whats-happening-is-db-driven-public-life-bilingual-in-the-db.md)):
+      live public life only (weekends, community, initiatives), dated + recurring items, `/app/events`
+      form **and** static pages for the big recurring ones, a detail page per item with prefilled
+      WhatsApp + `Event` JSON-LD, nav + homepage strip; Arabic enforced by a DB CHECK. Two Tier-A
+      PRs (data + admin, then public surface); outcome = `whatsapp_click` + visits on `/happening/*`,
+      check at ship + 21 days
 - [ ] **9. Backlink programme** — tourism, food/travel, Arab-society media → *referring domains*
 - [ ] **10. Paid test** — a small Meta/Google campaign against one or two pages → *cost per WhatsApp
       conversation*. **Prerequisite, owner 2026-09-22:** before spending anything, prove the paid

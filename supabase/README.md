@@ -62,8 +62,10 @@ Then `cp app-src/.env.example app-src/.env.local` (already points at the local s
    is idempotent and safe to re-run anywhere.
 2. **Expose schemas to the API** — Project Settings → API → **Exposed schemas**: add `core`
    (and each new module schema). Without this, the client can't query them. Current prod
-   list (verified live 2026-07-16): `public, graphql_public, core, finance, quotes, pos` —
-   `events` is deliberately NOT exposed until Phase 2 ships the public feed UI.
+   list (verified live 2026-07-16): `public, graphql_public, core, finance, quotes, pos`.
+   **`events` is added with `58_events_public.sql`** (the public "What's happening" feed,
+   2026-09): apply 58 first, then expose — never the other way round, or staff can read
+   quote-projected customer names before 58's select policy lands.
 3. **Configure Auth URLs** — Authentication → URL Configuration: set **Site URL** to
    `https://levyam.com/app` and add **Redirect URLs** `https://levyam.com/app/*`,
    `https://www.levyam.com/app/*`, `http://localhost:5173/app/*`. Without this, invite

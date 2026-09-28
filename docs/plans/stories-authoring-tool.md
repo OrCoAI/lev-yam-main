@@ -304,6 +304,12 @@ rendering from `_template*.html`, or delete it; not a third path.
   `levyam:updated` bumped). ~50 sourced village facts added to `FACTS.md`; drive times from
   Caesarea/Hadera added. Each pair its own PR (Tier C — pages only) on top of the Tier A rule PR;
   owner reviews the Arabic.
+- 2026-09-24 — **merged and live** after the owner's staging + Arabic sign-off: [#87](https://github.com/OrCoAI/lev-yam-main/pull/87)
+  (rules, `FACTS.md`, ADR 0053, flagship rewrite), [#91](https://github.com/OrCoAI/lev-yam-main/pull/91)
+  (company; its first number #88 was auto-closed by GitHub when #87's branch was deleted — merge a stacked
+  base **without** `--delete-branch`, retarget the next PR to `main`, then delete), [#89](https://github.com/OrCoAI/lev-yam-main/pull/89)
+  (directions), [#90](https://github.com/OrCoAI/lev-yam-main/pull/90) (private event). **4 of 16 pairs live.**
+  Next: pairs 5–8 (week 2 of the backlog).
 
 ## Close-out
 *(appended when done — CLAUDE.md "Roadmap item close-out")*
