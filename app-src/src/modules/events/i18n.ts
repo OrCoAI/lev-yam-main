@@ -19,7 +19,7 @@ const he = {
   colItem: 'פריט',
   colState: 'מצב',
   colSummary: 'תקציר',
-  colLink: 'כתובת באתר',
+  colLink: 'עמוד באתר',
   stateLive: 'באתר',
   stateDraft: 'טיוטה',
   stateEnded: 'הסתיים',
@@ -56,6 +56,10 @@ const he = {
   fBody: 'כל המידע',
   fBodyHint: 'לעמוד הפריט',
   bodyOptionalWithStory: 'לא חובה כשהפריט מקושר לסיפור',
+  fAudience: 'למי זה מתאים',
+  fAudienceHint: 'לא חובה — למשל "למשפחות עם ילדים"',
+  fBring: 'מה להביא / נקודת מפגש',
+  fBringHint: 'לא חובה — למשל "מים וכובע, נפגשים בכניסה"',
   slug: 'שם בכתובת',
   slugHint: 'אותיות אנגליות קטנות, ספרות ומקפים — למשל weekend-open-house',
   storySlug: 'קישור לסיפור קיים (לא חובה)',
@@ -71,11 +75,17 @@ const he = {
   cancel: 'ביטול',
   saving: 'שומר…',
 
+  // the site rebuild after a save that changes what the public sees
+  rebuildQueued: 'נשמר. העמוד הציבורי יתעדכן תוך כמה דקות.',
+  rebuildNotConfigured: 'נשמר. (עדכון אוטומטי של האתר לא מוגדר בסביבה הזו.)',
+  rebuildFailed: 'נשמר, אבל עדכון האתר לא הופעל — האתר יתעדכן בעדכון הלילי.',
+
   // validation + DB errors
   errWeekdays: 'בחרו לפחות יום אחד בשבוע.',
   errDate: 'חסר תאריך.',
   errMissing: 'כדי לפרסם חסר:',
   errBilingual: 'אי אפשר לפרסם בלי כותרת, תקציר ומידע מלא בעברית ובערבית, ובלי שם בכתובת.',
+  errOptionalBilingual: '"למי זה מתאים" ו"מה להביא" מתפרסמים רק בשתי השפות — מלאו את שתיהן או השאירו ריק.',
   errSlugTaken: 'השם בכתובת כבר תפוס — בחרו שם אחר.',
   errSlugFormat: 'השם בכתובת: אותיות אנגליות קטנות, ספרות ומקפים בלבד.',
   errStorySlug: 'שם הסיפור: אותיות אנגליות קטנות, ספרות ומקפים בלבד.',
@@ -117,7 +127,7 @@ const ar: Dict = {
   colItem: 'البند',
   colState: 'الحالة',
   colSummary: 'ملخّص',
-  colLink: 'العنوان بالموقع',
+  colLink: 'الصفحة بالموقع',
   stateLive: 'بالموقع',
   stateDraft: 'مسودة',
   stateEnded: 'خلص',
@@ -153,6 +163,10 @@ const ar: Dict = {
   fBody: 'كل المعلومات',
   fBodyHint: 'لصفحة البند',
   bodyOptionalWithStory: 'مش ضروري إذا البند مربوط بحكاية',
+  fAudience: 'لمين بيناسب',
+  fAudienceHint: 'مش ضروري — مثلاً "للعائلات مع أولاد"',
+  fBring: 'شو نجيب / وين نلتقي',
+  fBringHint: 'مش ضروري — مثلاً "مي وطاقية، منلتقي عالمدخل"',
   slug: 'الاسم بالعنوان',
   slugHint: 'أحرف إنجليزية صغيرة وأرقام وشَرطات — مثلاً weekend-open-house',
   storySlug: 'رابط لحكاية موجودة (مش ضروري)',
@@ -168,10 +182,15 @@ const ar: Dict = {
   cancel: 'إلغاء',
   saving: 'عم يحفظ…',
 
+  rebuildQueued: 'انحفظ. الصفحة العامة بتتحدّث خلال كم دقيقة.',
+  rebuildNotConfigured: 'انحفظ. (التحديث التلقائي للموقع مش مجهّز بهالبيئة.)',
+  rebuildFailed: 'انحفظ، بس تحديث الموقع ما اشتغل — الموقع بيتحدّث بالتحديث الليلي.',
+
   errWeekdays: 'اختاروا يوم واحد بالأسبوع عالأقل.',
   errDate: 'ناقص تاريخ.',
   errMissing: 'عشان تنشروا ناقص:',
   errBilingual: 'ما بينفع تنشروا بدون عنوان وملخّص ومعلومات كاملة بالعبري والعربي، وبدون اسم بالعنوان.',
+  errOptionalBilingual: '"لمين بيناسب" و"شو نجيب" بينشروا بس باللغتين — عبّوا التنتين أو خلّوهم فاضيين.',
   errSlugTaken: 'الاسم بالعنوان مستعمل — اختاروا اسم تاني.',
   errSlugFormat: 'الاسم بالعنوان: أحرف إنجليزية صغيرة وأرقام وشَرطات بس.',
   errStorySlug: 'اسم الحكاية: أحرف إنجليزية صغيرة وأرقام وشَرطات بس.',
@@ -203,6 +222,7 @@ export type EventsDict = Dict
 export function friendlyError(et: Dict, err: unknown): string {
   const msg = err instanceof Error ? err.message : String((err as { message?: string })?.message ?? err)
   const map: [string, string][] = [
+    ['events_public_optional_bilingual', et.errOptionalBilingual],
     ['events_public_bilingual', et.errBilingual],
     ['events_events_slug_uniq', et.errSlugTaken],
     ['events_story_slug_format', et.errStorySlug],

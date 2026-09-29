@@ -290,7 +290,15 @@ values ('dddddddd-0000-0000-0000-000000000003', 'rls-evt past', current_date - 1
         array[0,1,2,3,4,5,6]::smallint[], null, null),
        ('dddddddd-0000-0000-0000-000000000005', 'rls-evt quote', current_date, 'confirmed', 'internal',
         'rls-evt-quote', 'לקוח', 'زبون', 'לקוח', 'زبون', 'לקוח', 'زبون',
-        null, 'quotes', 'cccccccc-0000-0000-0000-00000000ffff');
+        null, 'quotes', 'cccccccc-0000-0000-0000-00000000ffff'),
+-- 59_events_landing: events.passed keeps a public item for 90 days after it
+-- is over (…003 above, dated yesterday, is the one it shows) and nothing else:
+--   …006 public, dated 100 days ago   → over the window, gone
+--   …007 internal, dated yesterday    → never public, never shown
+       ('dddddddd-0000-0000-0000-000000000006', 'rls-evt long-past', current_date - 100, 'confirmed', 'public',
+        'rls-evt-long-past', 'מזמן', 'من زمان', 'מזמן', 'من زمان', 'מזמן', 'من زمان', null, null, null),
+       ('dddddddd-0000-0000-0000-000000000007', 'rls-evt past-internal', current_date - 1, 'confirmed', 'internal',
+        'rls-evt-past-internal', 'פנימי', 'داخلي', 'פנימי', 'داخلي', 'פנימי', 'داخلي', null, null, null);
 
 -- pos: a live table, a paid bill + line, and one expense of each kind
 insert into pos.pos_tables (id, num, name) values ('rls-test-t1', 999, 'rls-test');
@@ -362,6 +370,19 @@ select pg_temp.assert_rows('anon: feed reads the Arabic fields',
   $q$ select title_ar, summary_ar, body_ar from events.feed where slug = 'rls-test-public' $q$, 1);
 select pg_temp.assert_rows('anon: never sees a quote-sourced event',
   $q$ select 1 from events.events where title like 'rls-evt quote' $q$, 0);
+-- 59_events_landing: the two optional lines and the passed view
+select pg_temp.assert_rows('anon: feed reads the optional audience/bring fields (column grant)',
+  $q$ select audience_he, audience_ar, bring_he, bring_ar from events.feed where slug = 'rls-test-public' $q$, 1);
+select pg_temp.assert_rows('anon: passed shows a public item that ended within 90 days',
+  $q$ select 1 from events.passed where slug = 'rls-evt-past' and last_date = current_date - 1 $q$, 1);
+select pg_temp.assert_rows('anon: passed hides an item that ended more than 90 days ago',
+  $q$ select 1 from events.passed where slug = 'rls-evt-long-past' $q$, 0);
+select pg_temp.assert_rows('anon: passed hides an internal item that ended yesterday',
+  $q$ select 1 from events.passed where slug = 'rls-evt-past-internal' $q$, 0);
+select pg_temp.assert_rows('anon: passed hides a live item and an open-ended recurring one',
+  $q$ select 1 from events.passed where slug in ('rls-test-public', 'rls-evt-weekly') $q$, 0);
+select pg_temp.assert_denied('anon cannot read events.notes through the passed view',
+  $q$ select 1 from events.passed p join events.events e on e.id = p.id where e.notes = '' $q$);
 select pg_temp.assert_denied('anon cannot read events.owner_id (column grant)',
   $q$ select owner_id from events.events limit 1 $q$);
 select pg_temp.assert_denied('anon cannot read events.source_module (column grant)',
@@ -395,10 +416,10 @@ select pg_temp.assert_rows('manager: next_date is null for an item whose date pa
 select pg_temp.assert_rows('manager: sees the quote-sourced event (quotes.view)',
   $q$ select 1 from events.events where title = 'rls-evt quote' $q$, 1);
 select pg_temp.assert_ok('manager: can publish a bilingual dated event',
-  $q$ insert into events.events (title, event_date, visibility, slug, title_he, title_ar,
+  $q$ insert into events.events (id, title, event_date, visibility, slug, title_he, title_ar,
        summary_he, summary_ar, body_he, body_ar)
-     values ('rls-evt new', current_date + 7, 'public', 'rls-evt-new', 'חדש', 'جديد',
-       'חדש', 'جديد', 'חדש', 'جديد') $q$);
+     values ('dddddddd-0000-0000-0000-000000000009', 'rls-evt new', current_date + 7, 'public',
+       'rls-evt-new', 'חדש', 'جديد', 'חדש', 'جديد', 'חדש', 'جديد') $q$);
 select pg_temp.assert_ok('manager: can publish an item that links to a story pair with no body',
   $q$ insert into events.events (title, event_date, visibility, slug, title_he, title_ar,
        summary_he, summary_ar, story_slug)
@@ -421,21 +442,39 @@ select pg_temp.assert_ok('manager: a machine-Arabic item can be saved as a draft
 select pg_temp.assert_ok('manager: confirming the Arabic lets it publish again',
   $q$ update events.events set visibility = 'public', ar_machine_translated = false
      where title = 'rls-evt new' $q$);
+-- 59_events_landing: an optional line shown in one language only is refused on a public row
+select pg_temp.assert_check_denied('manager: public item with audience in Hebrew only refused (invariant 5)',
+  $q$ update events.events set audience_he = 'למשפחות' where title = 'rls-evt new' $q$);
+select pg_temp.assert_check_denied('manager: public item with bring in Arabic only refused',
+  $q$ update events.events set bring_ar = 'جيبوا مي' where title = 'rls-evt new' $q$);
+select pg_temp.assert_ok('manager: optional lines in both languages are accepted',
+  $q$ update events.events set audience_he = 'למשפחות', audience_ar = 'للعائلات',
+       bring_he = 'מים וכובע', bring_ar = 'مي وطاقية' where title = 'rls-evt new' $q$);
+select pg_temp.assert_ok('manager: a draft may hold one language of an optional line',
+  $q$ update events.events set visibility = 'internal', bring_ar = '' where title = 'rls-evt new' $q$);
+select pg_temp.assert_check_denied('manager: publishing that draft is refused until the Arabic is filled',
+  $q$ update events.events set visibility = 'public' where title = 'rls-evt new' $q$);
+select pg_temp.assert_ok('manager: filled in both, it publishes',
+  $q$ update events.events set visibility = 'public', bring_ar = 'مي وطاقية' where title = 'rls-evt new' $q$);
 select pg_temp.assert_check_denied('manager: cannot make a quote-sourced event public',
   $q$ update events.events set visibility = 'public' where title = 'rls-evt quote' $q$);
 select pg_temp.assert_check_denied('manager: slug must be lower-case latin with hyphens',
   $q$ update events.events set slug = 'Bad Slug' where title = 'rls-evt new' $q$);
-select pg_temp.assert_ok('manager: a gallery of well-formed photo paths is accepted',
+select pg_temp.assert_ok('manager: a gallery of well-formed photo paths under the row''s own id is accepted',
   $q$ update events.events set image_paths = array[
-       'dddddddd-0000-0000-0000-000000000004/cover.jpg',
-       'dddddddd-0000-0000-0000-000000000004/two.webp'] where title = 'rls-evt new' $q$);
+       'dddddddd-0000-0000-0000-000000000009/cover.jpg',
+       'dddddddd-0000-0000-0000-000000000009/two.webp'] where title = 'rls-evt new' $q$);
 select pg_temp.assert_check_denied('manager: a gallery photo cannot point outside the bucket layout',
   $q$ update events.events set image_paths = array[
-       'dddddddd-0000-0000-0000-000000000004/cover.jpg', '../quotes-docs/x.jpg']
+       'dddddddd-0000-0000-0000-000000000009/cover.jpg', '../quotes-docs/x.jpg']
      where title = 'rls-evt new' $q$);
+-- 59_events_landing: a path under ANOTHER row's id is refused (two rows can never share an object)
+select pg_temp.assert_check_denied('manager: a gallery photo under another item''s id is refused',
+  $q$ update events.events set image_paths = array[
+       'dddddddd-0000-0000-0000-000000000004/cover.jpg'] where title = 'rls-evt new' $q$);
 select pg_temp.assert_check_denied('manager: a gallery holds at most 8 photos',
   $q$ update events.events set image_paths = array(
-       select 'dddddddd-0000-0000-0000-000000000004/p' || g || '.jpg' from generate_series(1, 9) g)
+       select 'dddddddd-0000-0000-0000-000000000009/p' || g || '.jpg' from generate_series(1, 9) g)
      where title = 'rls-evt new' $q$);
 select pg_temp.assert_check_denied('manager: recurrence weekday outside 0-6 refused',
   $q$ update events.events set recur_weekdays = array[7]::smallint[] where title = 'rls-evt new' $q$);

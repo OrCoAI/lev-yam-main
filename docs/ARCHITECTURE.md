@@ -236,6 +236,19 @@ rule stopped being honor-system).*
 - **Staging is the pre-prod stop** for anything with a deployed surface (ADR 0012); `main`
   deploys straight to production with the grant audit gating the deploy (ADR 0005).
 - **Decisions are logged, not remembered:** every dated rule has an ADR in `docs/decisions/`.
+- **The marketing deploy reads the platform project at build time** *(added 2026-09-28,
+  [ADR 0056](decisions/0056-whats-happening-item-pages-are-generated-landing-pages-rebuilt-on-publish.md)):*
+  `scripts/gen-happening.mjs` fetches `events.feed` / `events.passed` as anon during
+  `assemble-site.sh` and renders one landing page per public item; a feed failure fails the
+  deploy on purpose. Two consequences: the platform's public views are now part of the
+  marketing site's build contract (a column dropped from the feed is a deploy break, caught
+  by CI's fixture render only if the fixture is updated with it), and a deploy can be
+  *triggered* from the platform — the `rebuild-site` Edge Function dispatches the tier's
+  workflow with a GitHub token scoped to Actions on this one repository. The token never
+  reaches the browser, the workflow only rebuilds what the tier's branch already holds, and a
+  dispatch on any other ref is stopped by the `github.ref` job guards and, for prod, by the
+  `github-pages` environment's `main`-only branch policy. `main` stays branch-protected: nothing
+  here can push.
 
 ## 7. Invariants — the rules that must never break
 

@@ -2,6 +2,7 @@
 // events.view reads); every write asserts it touched a row, because PostgREST
 // answers an RLS-filtered UPDATE/DELETE with a silent 204 (MODULE-TEMPLATE §3).
 import { invokeFunction, supabase } from '../../lib/supabase'
+import type { EventsDict } from './i18n'
 import type { EventItem, EventPayload } from './types'
 
 const events = () => supabase.schema('events')
@@ -9,7 +10,8 @@ const BUCKET = 'events-public'
 
 const COLUMNS =
   'id,title,event_date,starts_at,ends_at,status,visibility,slug,title_he,title_ar,' +
-  'summary_he,summary_ar,body_he,body_ar,image_paths,story_slug,recur_weekdays,recur_until,ar_machine_translated,next_date,updated_at'
+  'summary_he,summary_ar,body_he,body_ar,image_paths,story_slug,recur_weekdays,recur_until,' +
+  'audience_he,audience_ar,bring_he,bring_ar,ar_machine_translated,next_date,updated_at'
 
 /** Items created here — quote projections (customer names) are never listed. */
 export async function listItems(): Promise<EventItem[]> {
@@ -48,6 +50,8 @@ export type HebrewText = {
   title: string
   summary: string
   body: string
+  audience: string
+  bring: string
 }
 
 /** Hebrew → Arabic through the `translate` edge function (it holds the Google
@@ -55,6 +59,39 @@ export type HebrewText = {
 export function translateToArabic(text: HebrewText): Promise<Partial<HebrewText>> {
   return invokeFunction<Partial<HebrewText>>('translate', text)
 }
+
+/** What the site answered a rebuild request with. 'not_configured' is the
+ *  local stack (or a project whose GitHub token was never set) — not an error. */
+export type RebuildResult = 'dispatched' | 'not_configured'
+
+/** Ask GitHub to rebuild the public site so a publish/unpublish/edit of a
+ *  public item reaches levyam.com (the landing pages are static, ADR 0056).
+ *  The `rebuild-site` function holds the token and re-checks events.manage. */
+export async function requestRebuild(): Promise<RebuildResult> {
+  const { result } = await invokeFunction<{ result: RebuildResult }>('rebuild-site', {})
+  return result
+}
+
+/** Trigger the site rebuild and say what happened, in the owner's words.
+ *  A failed dispatch is reported, never thrown: the row is saved either way and
+ *  the nightly rebuild (prod) catches up. */
+export async function rebuildNote(et: EventsDict): Promise<string> {
+  try {
+    return (await requestRebuild()) === 'dispatched' ? et.rebuildQueued : et.rebuildNotConfigured
+  } catch {
+    return et.rebuildFailed
+  }
+}
+
+/** The public landing page of an item, on the site this app is served from
+ *  (levyam.com, staging.levyam.com). Under `npm run dev` nothing serves the
+ *  static site, so the link 404s there — expected. */
+export function landingPath(slug: string, lang: 'he' | 'ar'): string {
+  return lang === 'ar' ? `/happening/ar/${slug}/` : `/happening/${slug}/`
+}
+
+/** Days after its last date a passed item's page stays up (events.passed, 59). */
+export const PASSED_PAGE_DAYS = 90
 
 export function imageUrl(path: string): string {
   return supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl

@@ -25,6 +25,12 @@ export interface EventItem {
   /** 0 = Sunday … 6 = Saturday; null = a dated item */
   recur_weekdays: number[] | null
   recur_until: string | null
+  /** the landing page's optional lines (59_events_landing.sql): who it is for, what to
+   *  bring / where to meet. A public row fills each in both languages or in neither. */
+  audience_he: string
+  audience_ar: string
+  bring_he: string
+  bring_ar: string
   /** the Arabic is an unconfirmed machine draft — the DB refuses to publish it (ADR 0055) */
   ar_machine_translated: boolean
   /** read-only, computed by events.next_date() — the same live rule as the public feed;

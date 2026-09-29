@@ -1,0 +1,525 @@
+/* ═══ "What's happening" — /happening/ hubs, the landing pages, the homepage strip ═══
+   Layered on css/styles.css (tokens, fonts, .container, .btn, .lang-toggle,
+   .site-footer). The hubs also load css/stories.css for .hub-hero,
+   .breadcrumbs and .story-header. Only what this surface adds lives here.
+
+   Design (plan decisions table, Q7): immersive and in the brand — a
+   full-bleed cover with the title over it (the one place on the site text sits
+   on a photo: a landing page is judged in the first second of a shared link),
+   then a cream "sheet" that carries the content in the story column, the
+   homepage's blue band furniture at the seams, and the standard footer. On
+   phones a sticky bottom bar keeps the CTA and the share reachable. Orange is
+   action only. Both languages are RTL; logical properties throughout.
+   Every class is hp-* (happening). Mobile-first.                            */
+
+:root {
+  --hp-column: calc(46rem + 2 * var(--container-gutter)); /* = --story-column, the site's reading box */
+  --hp-sticky-h: 76px;
+}
+
+/* ── Cards (hubs, "also coming up", the homepage strip) ────────────────── */
+
+.hp-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-4);
+}
+
+.hp-grid-empty {
+  grid-column: 1 / -1;
+}
+.hp-grid-empty p {
+  margin: 0;
+  padding: var(--space-5) var(--space-4);
+  text-align: center;
+  color: var(--color-ink-soft);
+  background: var(--color-white);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.hp-card {
+  display: flex;
+  flex-direction: column;
+  block-size: 100%;
+  background: var(--color-white);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  color: inherit;
+}
+.hp-card:focus-visible {
+  outline: 3px solid var(--color-orange);
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hp-card { transition: box-shadow 0.2s ease, transform 0.2s ease; }
+  .hp-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+}
+
+.hp-card-media {
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--color-blue) 18%, var(--color-cream));
+}
+.hp-card-media img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+.hp-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  flex: 1;
+}
+
+.hp-card-date {
+  order: -1; /* the date leads the card: it is what a visitor scans for */
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--color-orange-deep);
+  font-variant-numeric: tabular-nums;
+}
+
+.hp-card-title {
+  margin: 0;
+  font-size: var(--text-lead);
+  font-weight: 700;
+  color: var(--color-blue-deep);
+  line-height: 1.2;
+}
+
+.hp-card-desc {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--color-ink-soft);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
+/* The hub: the first (soonest) item is featured, as on the stories hub. */
+.hp-hub .hp-grid > li:first-child { grid-column: 1 / -1; }
+.hp-hub .hp-grid > li:first-child .hp-card-title { font-size: clamp(1.5rem, 1.25rem + 1.2vw, 2.2rem); }
+@media (min-width: 820px) {
+  .hp-hub .hp-grid > li:first-child .hp-card {
+    display: grid;
+    grid-template-columns: 3fr 2fr;
+    align-items: stretch;
+  }
+  .hp-hub .hp-grid > li:first-child .hp-card-media { aspect-ratio: auto; min-block-size: 340px; }
+  .hp-hub .hp-grid > li:first-child .hp-card-body { justify-content: center; padding: clamp(1.5rem, 3vw, 2.25rem); }
+}
+
+.hp-hub { padding-block: var(--space-6) var(--space-7); }
+.container-hp { max-inline-size: 1200px; }
+
+/* ── The homepage strip ────────────────────────────────────────────────── */
+
+.happening-strip {
+  padding-block: clamp(2rem, 2.5vw + 1.25rem, 3.5rem);
+  background: var(--color-cream);
+}
+.happening-strip .section-sub { margin-block-end: var(--space-4); }
+.hp-grid-strip { max-inline-size: 1200px; margin-inline: auto; }
+.hp-strip-more {
+  text-align: center;
+  margin: var(--space-5) 0 0;
+}
+.hp-more-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: 44px;
+  padding: 0.5rem var(--space-4);
+  border: 2px solid var(--color-blue);
+  border-radius: var(--radius-pill);
+  color: var(--color-blue-deep);
+  font-weight: 700;
+}
+.hp-more-link:hover,
+.hp-more-link:focus-visible { background: var(--color-blue); color: var(--color-cream); }
+
+/* ── Landing page: minimal header over the hero ────────────────────────── */
+
+.hp-page { background: var(--color-cream); }
+
+.hp-header {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: linear-gradient(to bottom, rgba(12, 26, 36, 0.55) 0%, rgba(12, 26, 36, 0.2) 70%, transparent 100%);
+}
+.hp-logo { flex-shrink: 0; display: flex; }
+.hp-logo img { block-size: 52px; inline-size: auto; filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.35)); }
+.hp-all {
+  margin-inline-start: auto;
+  min-block-size: 36px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 247, 234, 0.4);
+  border-radius: var(--radius-pill);
+  color: var(--color-cream);
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: rgba(12, 26, 36, 0.28);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  white-space: nowrap;
+}
+.hp-all:hover, .hp-all:focus-visible { background: rgba(255, 247, 234, 0.95); color: var(--color-blue-deep); }
+.hp-header .lang-opt { display: inline-flex; align-items: center; justify-content: center; }
+
+/* ── Hero: the cover, the title over it ────────────────────────────────── */
+
+.hp-hero {
+  position: relative;
+  min-block-size: min(88svh, 720px); /* phones: the cover fills the first screen */
+  display: grid;
+  align-items: end;
+  background: var(--color-ink);
+  color: var(--color-cream);
+  isolation: isolate;
+}
+.hp-hero-img {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  z-index: -2;
+}
+.hp-hero-veil {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(to bottom,
+    rgba(26, 51, 64, 0.1) 0%,
+    rgba(26, 51, 64, 0.25) 40%,
+    rgba(26, 51, 64, 0.72) 75%,
+    rgba(26, 51, 64, 0.92) 100%);
+}
+.hp-hero-body {
+  padding-block: var(--space-7) calc(var(--space-6) + 28px); /* the sheet's rounded top overlaps by 28px */
+  max-inline-size: var(--hp-column);
+}
+.hp-kicker {
+  margin: 0 0 var(--space-2);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: rgba(255, 247, 234, 0.8);
+}
+.hp-title {
+  margin: 0;
+  color: var(--color-cream); /* styles.css colours every h1 ink; here it sits on the photo */
+  font-size: clamp(2rem, 1.4rem + 3vw, 3.8rem);
+  font-weight: 800;
+  line-height: 1.12;
+  text-wrap: balance;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+}
+.hp-when {
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-lead);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.hp-when::before {
+  content: '';
+  display: block;
+  inline-size: 48px;
+  block-size: 3px;
+  background: var(--color-orange);
+  border-radius: var(--radius-pill);
+  margin-block-end: var(--space-3);
+}
+.hp-summary {
+  margin: var(--space-3) 0 0;
+  font-size: clamp(1.05rem, 1rem + 0.4vw, 1.3rem);
+  line-height: 1.55;
+  color: rgba(255, 247, 234, 0.92);
+  text-wrap: pretty;
+}
+@media (min-width: 800px) {
+  .hp-hero { min-block-size: min(72vh, 620px); } /* the CTA stays within the first screen */
+}
+html[lang='ar'] .hp-title { letter-spacing: 0; line-height: 1.25; }
+html[lang='ar'] .hp-summary { line-height: 1.75; }
+
+/* ── The sheet: everything below the hero ──────────────────────────────── */
+
+.hp-sheet {
+  position: relative;
+  margin-block-start: -28px;
+  background: var(--color-cream);
+  border-start-start-radius: 28px;
+  border-start-end-radius: 28px;
+  padding-block: var(--space-5) var(--space-7);
+}
+.hp-sheet > .container-narrow { --container-narrow: var(--hp-column); }
+
+.hp-sheet h2 {
+  font-size: clamp(1.3rem, 1.1rem + 0.8vw, 1.7rem);
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0 0 var(--space-3);
+}
+.hp-section { margin-block-start: var(--space-7); }
+.hp-section p, .hp-section li, .hp-facts dd {
+  font-size: clamp(1.0625rem, 1rem + 0.3vw, 1.1875rem);
+  line-height: 1.7;
+}
+html[lang='ar'] .hp-section p, html[lang='ar'] .hp-section li, html[lang='ar'] .hp-facts dd { line-height: 1.85; }
+.hp-section p { margin: 0 0 1.25em; }
+.hp-section p:last-child { margin-block-end: 0; }
+
+/* the passed / unavailable notices (data-hp-banner, toggled by js/happening.js) */
+.hp-banner {
+  margin: 0 0 var(--space-5);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-orange) 16%, var(--color-white));
+  border-inline-start: 4px solid var(--color-orange);
+  color: var(--color-ink);
+  font-weight: 600;
+}
+.hp-banner a { color: var(--color-blue-deep); text-decoration: underline; text-underline-offset: 3px; }
+/* an unpublished item: only the notice and "also coming up" remain */
+body[data-hp-state='unavailable'] [data-hp-live] { display: none; }
+
+/* ── The CTA block (one swappable <section data-cta>) + the share row ──── */
+
+.hp-actions {
+  display: grid;
+  gap: var(--space-3);
+}
+.hp-cta { inline-size: 100%; min-block-size: 52px; font-size: 1.05rem; }
+@media (min-width: 640px) {
+  .hp-cta { inline-size: auto; justify-self: start; min-inline-size: 280px; }
+}
+.hp-share {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+.hp-share-label {
+  font-size: 0.85rem;
+  color: var(--color-ink-soft);
+  margin: 0;
+  inline-size: 100%;
+}
+.hp-share-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-block-size: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
+  background: var(--color-white);
+  color: var(--color-blue-deep);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  list-style: none; /* the QR <summary> */
+}
+.hp-share-btn::-webkit-details-marker { display: none; }
+.hp-share-btn:hover, .hp-share-btn:focus-visible { border-color: var(--color-blue); background: color-mix(in srgb, var(--color-blue) 8%, var(--color-white)); }
+.hp-share-btn:focus-visible { outline: 3px solid var(--color-orange); outline-offset: 2px; }
+.hp-share-btn.is-done { border-color: #1e9e5a; color: #1e9e5a; }
+.hp-share-btn svg { flex-shrink: 0; }
+
+.hp-qr { display: contents; } /* the <details> takes no box of its own: summary sits in the row, the panel below it */
+.hp-qr-box {
+  inline-size: 100%;
+  margin-block-start: var(--space-2);
+  padding: var(--space-4);
+  background: var(--color-white);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+}
+.hp-qr-box svg { inline-size: 200px; block-size: 200px; }
+.hp-qr-box p { margin: 0; font-size: 0.85rem; color: var(--color-ink-soft); text-align: center; }
+
+/* ── Who it's for / what to bring ──────────────────────────────────────── */
+
+.hp-facts {
+  margin: var(--space-5) 0 0;
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-white);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+.hp-facts > div { display: grid; gap: 4px; }
+/* an author display beats the UA's [hidden] rule — the built `hidden` (an empty
+   line, or both empty) and js/happening.js's toggles must still win */
+.hp-facts[hidden], .hp-facts > div[hidden] { display: none; }
+.hp-facts dt {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--color-orange-deep);
+}
+.hp-facts dd { margin: 0; }
+
+/* ── The full text + story link ────────────────────────────────────────── */
+
+.hp-story-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-block-start: var(--space-3);
+  color: var(--color-blue-deep);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ── Gallery: a swipeable strip, edge to edge on phones ────────────────── */
+
+.hp-gallery {
+  display: flex;
+  gap: var(--space-3);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding-inline: var(--container-gutter);
+  margin-inline: calc(-1 * var(--container-gutter));
+  padding-block-end: var(--space-2);
+  scrollbar-width: thin;
+}
+.hp-gallery-item {
+  flex: 0 0 min(82vw, 520px);
+  margin: 0;
+  scroll-snap-align: start;
+}
+.hp-gallery-item img {
+  display: block;
+  inline-size: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  background: color-mix(in srgb, var(--color-blue) 18%, var(--color-cream));
+}
+@media (min-width: 800px) {
+  .hp-gallery-item { flex-basis: calc(50% - var(--space-3) / 2); }
+}
+
+/* ── Where & how to get here ───────────────────────────────────────────── */
+
+.hp-nav-btns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  margin-block-end: var(--space-4);
+}
+.hp-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-block-size: 52px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+  border: 2px solid var(--color-blue);
+  color: var(--color-blue-deep);
+  font-weight: 700;
+}
+.hp-nav-btn:hover, .hp-nav-btn:focus-visible { background: var(--color-blue); color: var(--color-cream); }
+.hp-drive {
+  list-style: none;
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-2);
+}
+.hp-drive li {
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-white);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-line);
+  font-size: 0.95rem;
+}
+.hp-drive strong { display: block; color: var(--color-blue-deep); }
+
+/* ── About Lev Yam ─────────────────────────────────────────────────────── */
+
+.hp-about-photos {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+  margin: var(--space-4) 0;
+}
+.hp-about-photos img {
+  inline-size: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  display: block;
+}
+
+/* ── Sticky bar (phones) ───────────────────────────────────────────────── */
+
+.hp-sticky {
+  position: fixed;
+  inset-block-end: 0;
+  inset-inline: 0;
+  z-index: 60;
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  padding: 10px var(--space-3) calc(10px + env(safe-area-inset-bottom));
+  background: rgba(255, 247, 234, 0.96);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 -4px 20px rgba(26, 51, 64, 0.12);
+}
+.hp-sticky .hp-cta { flex: 1; min-block-size: 48px; font-size: 1rem; }
+.hp-sticky .hp-share-btn { min-inline-size: 48px; justify-content: center; padding: 0 12px; }
+.hp-page { padding-block-end: var(--hp-sticky-h); }
+@media (min-width: 800px) {
+  .hp-sticky { display: none; }
+  .hp-page { padding-block-end: 0; }
+}
+
+/* ── Wide screens: fill the margins with the site's zigzag texture ─────── */
+@media (min-width: 1280px) {
+  .hp-sheet {
+    background:
+      radial-gradient(ellipse at 0% 20%,   rgba(244, 152, 52, 0.4) 0%, transparent 70%) top left   / 24vw 560px no-repeat,
+      radial-gradient(ellipse at 100% 20%, rgba(244, 152, 52, 0.4) 0%, transparent 70%) top right  / 24vw 560px no-repeat,
+      radial-gradient(ellipse at 0% 80%,   rgba(44, 146, 191, 0.35) 0%, transparent 70%) bottom left  / 24vw 560px no-repeat,
+      radial-gradient(ellipse at 100% 80%, rgba(44, 146, 191, 0.35) 0%, transparent 70%) bottom right / 24vw 560px no-repeat,
+      var(--color-cream);
+  }
+}
+
+@media print {
+  .hp-header, .hp-sticky, .hp-share, .site-footer { display: none !important; }
+  .hp-hero { min-block-size: auto; }
+}
