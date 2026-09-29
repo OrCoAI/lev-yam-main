@@ -225,6 +225,13 @@ HE + AR in `js/app.js`. Story chrome: the same nav entry in `_template.html` / `
 (one generator run stamps every story page).
 
 **Owner setup (before staging sign-off):**
+0. *(done 2026-09-29 in the build session)* 59 applied on **staging** with
+   `supabase db query --linked -f supabase/schema/59_events_landing.sql` followed by
+   `notify pgrst, 'reload schema'` (a new view is invisible to PostgREST until the cache reloads —
+   the first staging deploy failed on `events.passed` 404 for exactly that reason). **Not**
+   `supabase db push`: the staging project's migration history does not record the baseline, so a
+   push would replay all 25 schema files, including the pre-cut-over POS layers the README warns
+   about. Prod (step 4) is applied the same way, by hand, followed by the reload notify.
 1. GitHub → Settings → Developer settings → Fine-grained tokens → *Generate new token*: resource
    owner `OrCoAI`, **only** repository `lev-yam-main`, repository permissions **Actions: Read and
    write**, nothing else, expiry 1 year. Copy it once.
@@ -232,8 +239,10 @@ HE + AR in `js/app.js`. Story chrome: the same nav entry in `_template.html` / `
    `REBUILD_WORKFLOW=deploy-staging.yml`, `REBUILD_REF=staging` (three separate commands). Prod:
    `--project-ref teyxtdccsrkdpqnbfcga`, `REBUILD_WORKFLOW=deploy.yml`, `REBUILD_REF=main`.
 3. `supabase functions deploy rebuild-site --no-verify-jwt --use-api --project-ref <ref>`.
-4. Hand-apply `59_events_landing.sql` on prod after the staging round, then
-   `node supabase/tests/audit-grants.mjs --ref teyxtdccsrkdpqnbfcga` → 0 drift.
+4. Hand-apply `59_events_landing.sql` on prod after the staging round **and before the merge**
+   (the prod build fetches `events.passed` and fails closed without it), then
+   `notify pgrst, 'reload schema'`, then `node supabase/tests/audit-grants.mjs --ref teyxtdccsrkdpqnbfcga`
+   → 0 drift, and probe as anon: `/rest/v1/passed` answers 200, `/rest/v1/events?select=notes` is refused.
 
 ### Path to booking (strategy — Phase 4, not built here)
 Written at the owner's request on 2026-09-28 so PR 2 leaves the door open. Roadmap Phase 4
