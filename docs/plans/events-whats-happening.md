@@ -183,7 +183,9 @@ rebuild lands.
 1. **Hero** — cover photo full-bleed, title, when (next date + time, recurrence line), summary;
    WhatsApp CTA (prefilled) + share row (WhatsApp · copy · share · QR).
 2. **Who it's for / what to bring** — labelled lines, only when filled.
-3. **Full text** (`body_*`), then a "read the full story" link when `story_slug` is set.
+3. **Full text** (`body_*`) — ~~then a "read the full story" link when `story_slug` is set~~
+   (dropped 2026-09-29, ADR 0058: no link between initiatives and stories; the tiles now also
+   carry cost + booking, and "also coming up" became "יוזמות נוספות", last on the page).
 4. **Gallery** — swipeable, the same image set as the form (cover first).
 5. **Also coming up** — the next 3 other live items (rendered at build, refreshed on load).
 6. **Where & how to get here** — Waze "לב ים", Google Maps by coordinates, drive times from
@@ -227,7 +229,14 @@ HE + AR in `js/app.js`. Story chrome: the same nav entry in `_template.html` / `
 **Owner setup (before staging sign-off):**
 0. *(done 2026-09-29 in the build session)* 59 applied on **staging** with
    `supabase db query --linked -f supabase/schema/59_events_landing.sql` followed by
-   `notify pgrst, 'reload schema'` (a new view is invisible to PostgREST until the cache reloads —
+   `notify pgrst, 'reload schema'` — **and the same for `60_events_cost.sql`** (2026-09-29; it
+   drops `story_slug`, so any staging row that linked a story loses the link by design). **Always
+   `supabase db query` on a tier, never `psql -f`:** `db query` runs the file as one statement
+   through the management API, i.e. one transaction, so 60's drop-CHECK → re-add-CHECK sequence
+   cannot be left half-applied; `psql -f` autocommits per statement (locally use `psql -1 -f`).
+   `db query` does not return `raise notice`, so **before** applying 60 on a tier run
+   `select slug from events.events where visibility = 'public' and (btrim(body_he) = '' or btrim(body_ar) = '')`
+   — those rows are the ones 60 demotes to internal (they published through a story link) — (a new view is invisible to PostgREST until the cache reloads —
    the first staging deploy failed on `events.passed` 404 for exactly that reason). **Not**
    `supabase db push`: the staging project's migration history does not record the baseline, so a
    push would replay all 25 schema files, including the pre-cut-over POS layers the README warns
@@ -239,8 +248,11 @@ HE + AR in `js/app.js`. Story chrome: the same nav entry in `_template.html` / `
    `REBUILD_WORKFLOW=deploy-staging.yml`, `REBUILD_REF=staging` (three separate commands). Prod:
    `--project-ref teyxtdccsrkdpqnbfcga`, `REBUILD_WORKFLOW=deploy.yml`, `REBUILD_REF=main`.
 3. `supabase functions deploy rebuild-site --no-verify-jwt --use-api --project-ref <ref>`.
-4. Hand-apply `59_events_landing.sql` on prod after the staging round **and before the merge**
-   (the prod build fetches `events.passed` and fails closed without it), then
+4. Hand-apply `59_events_landing.sql` **then `60_events_cost.sql`** on prod after the staging round **and before the merge**
+   (the prod build fetches `events.passed` and fails closed without 59; without 60 the public
+   site still builds but **`/app/events` is unusable** — its column list names `cost_he`,
+   `cost_ar`, `booking_required`, so every list read answers 400 — and no audit catches a
+   missing file, only surplus privileges), then
    `notify pgrst, 'reload schema'`, then `node supabase/tests/audit-grants.mjs --ref teyxtdccsrkdpqnbfcga`
    → 0 drift, and probe as anon: `/rest/v1/passed` answers 200, `/rest/v1/events?select=notes` is refused.
 
@@ -264,7 +276,11 @@ Written at the owner's request on 2026-09-28 so PR 2 leaves the door open. Roadm
 
 ### Changes to earlier decisions
 - 0054 §3's second path (a written story pair for the big recurring items) is no longer a
-  requirement; `story_slug` is an optional link (ADR 0056).
+  requirement; `story_slug` is an optional link (ADR 0056). **Then dropped altogether: an
+  initiative's page stands alone, no link to stories (ADR 0058, 2026-09-29).**
+- Rows 5, 7 and 9 of the PR 2 table are superseded by ADR 0058: a third structured field pair
+  (cost) plus a booking flag; the full site header instead of the minimal one, "יוזמות נוספות"
+  last; no story link.
 - 0054 §4 "live within seconds, no PR" → "live within minutes, no PR" (ADR 0056).
 - Out-of-scope item "per-item URLs in `sitemap.xml`" is **in**: the generator writes them.
 - ADR 0006's "one hand-written GA4 event" gains a second, `share_click` (ADR 0057).
@@ -443,6 +459,31 @@ columns are nullable and can stay; the bucket is emptied by hand.
    no resident names in captions.
 
 ## Decisions made on the way
+- 2026-09-29 · **PR 2, the owner's localhost review** (before the gate; [ADR 0058](../decisions/0058-initiatives-stand-alone-cost-booking-fields-section-named-yozmot.md)) —
+  the owner walked the built page on localhost and reworked it in short iterations:
+  - **The section is "יוזמות" / "مبادرات"** (nav on every page, hub title, strip, breadcrumbs,
+    404, `llms.txt`); the URL and the code keep `happening`.
+  - **No connection between initiatives and stories:** `story_slug` dropped, the body required
+    for every public item (`60_events_cost.sql`, the `publishable()` story clause removed);
+    the "read the full story" link and the form's field are gone.
+  - **Cost + booking** (`cost_he/ar`, `booking_required`) entered at creation, shown as one
+    tile ("עלות והרשמה") — the same both-or-neither CHECK; `translate` covers the cost text.
+  - **The page:** the full site header + zigzag instead of the minimal header; an action panel
+    (CTA + share row as round icon buttons) beside the fact tiles on desktop, one shape for
+    every box; tiles with the brand's marks (sun / house / logo stamp / heart / palm), "מתי"
+    without the next date (the hero carries it), "איפה" on two lines; the photos as an
+    automatic 3-second crossfade (blur-in, slow zoom; arrows, dots, swipe, keys; pauses on
+    hover, hidden tab, off-screen; no autoplay under reduced motion); "יוזמות נוספות" last,
+    three across on desktop; drive-time boxes, the accessibility line, the about photos and
+    the second about paragraph removed; the about text is the owner's; the sticky CTA carries
+    the WhatsApp icon and tucks away while the panel is on screen; desktop column 1120px.
+  - **The hub:** a month calendar (browser-rendered from the feed, recurring items expanded,
+    nothing before today marked, opens on the first month with something) with the day's
+    items beside it; the owner's standfirst; a uniform responsive card grid (no featured card).
+  - The Arabic header nav overlapped its social icons at 1280px on every page since the seventh
+    nav item: the compact nav size now holds until 1366px for Arabic (`css/styles.css`).
+  - Deferred (owner's call): a passed item still shows its CTA (dateless) under the banner;
+    the hero stays the cover photo, not a slideshow.
 - 2026-09-29 · **PR 2 gate** (simplify → code-review + security-review as subagents):
   - **An item's text can never fail a deploy:** the template engine substitutes in one pass and
     checks for stray placeholders on the template only, so `{{…}}` in a title renders literally
@@ -534,11 +575,16 @@ PR; the merge date and the outcome-check date are filled in at merge.*
   paths)` pinned to the row's id. `rls_matrix.sql` +13 assertions (green locally). Baseline
   regenerated. **Prod: hand-applied after the staging round, then `audit-grants --ref` → 0 drift**
   (owner setup step 4).
+- `supabase/schema/60_events_cost.sql` (the owner's localhost review, ADR 0058): `cost_he/ar`
+  + `booking_required`; the both-or-neither CHECK covers cost; `story_slug` and its CHECK
+  dropped, `events.publishable()` without the story clause (body required), both views
+  recreated. `rls_matrix.sql`: +3 assertions, the story-link case inverted. Baseline
+  regenerated. **Staging + prod: hand-applied like 59 (steps 0 and 4).**
 - `supabase/functions/rebuild-site`: signed-in + `events.manage` re-checked, dispatches
   `REBUILD_WORKFLOW` on `REBUILD_REF` with `GITHUB_DISPATCH_TOKEN` (fixed result codes only);
   `not_configured` without the token. `translate` gains the two optional fields.
-- `/app/events`: the two optional lines (HE/AR paired, translate covers them, live check for
-  the both-or-neither rule); every save that changes public state, the publish/unpublish toggle
+- `/app/events`: the two optional lines and the cost pair + booking switch (HE/AR paired,
+  translate covers them, live check for the both-or-neither rule); the story-link field is gone; every save that changes public state, the publish/unpublish toggle
   and a delete of a public item call `rebuild-site` and show what it answered; the list's link
   column is the landing page URL.
 - The public surface: `happening/_item.html` + `_item.ar.html` (landing templates),
@@ -565,8 +611,8 @@ origin; `RLS MATRIX: ALL ASSERTIONS PASSED`; lint / typecheck / tests / both gen
 / the fixture render green.
 
 **Left out / pending:** the owner's setup (PAT + three secrets per project, function deploy,
-hand-apply 59 on prod) — listed above under "Owner setup"; the native reader's pass on the AR
-CTA line; `og:image` is the cover at its stored size (≤1600px), not a 1200-wide render
+hand-apply 59 + 60 on prod) — listed above under "Owner setup"; the native reader's pass on the AR
+CTA line, the section name "مبادرات" and the about paragraph; `og:image` is the cover at its stored size (≤1600px), not a 1200-wide render
 (Supabase image transforms are a paid feature). Not built, by decision: a practical-answers
 block, a contact block, a village block, booking (Phase 4, "Path to booking").
 

@@ -1901,6 +1901,17 @@ p:last-child {
     font-size: 0.8125rem;
   }
 }
+/* The Arabic labels run wider (seven items since /happening/): the compact
+   size holds until 1366px, where the centred nav would otherwise overlap
+   the social icons at its inline end. */
+@media (min-width: 961px) and (max-width: 1366px) {
+  html[lang='ar'] .primary-nav ul {
+    gap: var(--space-3);
+  }
+  html[lang='ar'] .primary-nav a {
+    font-size: 0.8125rem;
+  }
+}
 
 /* ── Responsive: Mobile nav breakpoint (≤960px) ──────────────────────── */
 @media (max-width: 960px) {

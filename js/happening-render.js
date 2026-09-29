@@ -14,11 +14,11 @@
    same way. Everything interpolated into markup is escaped here; callers never
    build HTML from item text themselves.
 
-   `item` is a row of events.feed / events.passed (58/59_events_*.sql):
+   `item` is a row of events.feed / events.passed (58–60_events_*.sql):
    slug, title_he/ar, summary_he/ar, body_he/ar, audience_he/ar, bring_he/ar,
-   image_paths (ordered, [0] = cover), story_slug, event_date, starts_at,
-   ends_at, recur_weekdays (0 = Sunday), recur_until, next_date (feed) or
-   last_date (passed).                                                       */
+   cost_he/ar, booking_required, image_paths (ordered, [0] = cover),
+   event_date, starts_at, ends_at, recur_weekdays (0 = Sunday), recur_until,
+   next_date (feed) or last_date (passed).                                   */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
   else root.LevYamHappeningRender = factory();
@@ -45,7 +45,19 @@
       next: 'הבא',
       until: 'עד',
       brand: 'לב ים',
-      hubName: 'מה קורה',
+      hubName: 'יוזמות',
+      photos: 'תמונות',
+      prevPhoto: 'התמונה הקודמת',
+      nextPhoto: 'התמונה הבאה',
+      photoN: function (n) { return 'תמונה ' + n; },
+      bookingRequired: 'הרשמה מראש בוואטסאפ',
+      bookingNone: 'ללא הרשמה מראש',
+      months: ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'],
+      dow: ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'],
+      calPrev: 'חודש קודם',
+      calNext: 'חודש הבא',
+      calEmpty: 'אין יוזמות בחודש הזה.',
+      toPage: 'לעמוד היוזמה',
       empty: 'אין אירועים קרובים כרגע — עקבו אחרינו, בקרוב יהיה.',
       cta: function (title, date) { return 'שלום, אשמח להגיע ל' + title + (date ? ' ב־' + date : ''); },
       base: '/happening/'
@@ -58,7 +70,19 @@
       next: 'الجاي',
       until: 'لحد',
       brand: 'ليف يام',
-      hubName: 'شو في',
+      hubName: 'مبادرات',
+      photos: 'صور',
+      prevPhoto: 'الصورة السابقة',
+      nextPhoto: 'الصورة الجاية',
+      photoN: function (n) { return 'صورة ' + n; },
+      bookingRequired: 'التسجيل المسبق عالواتساب',
+      bookingNone: 'بدون تسجيل مسبق',
+      months: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'],
+      dow: ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س'],
+      calPrev: 'الشهر السابق',
+      calNext: 'الشهر الجاي',
+      calEmpty: 'ما في مبادرات بهالشهر.',
+      toPage: 'لصفحة المبادرة',
       empty: 'ما في فعاليات قريبة هلق — تابعونا، قريبًا بيصير.',
       cta: function (title, date) { return 'أهلًا، بحب أجي على ' + title + (date ? ' بتاريخ ' + date : ''); },
       base: '/happening/ar/'
@@ -151,21 +175,54 @@
      own date (a passed item keeps its date). */
   function keyDate(item) { return item.next_date || item.event_date || ''; }
 
-  /* The full "when" line of a landing page. */
-  function whenText(item, lang) {
+  /* The pieces of a landing page's "when": the pattern or the date first,
+     then the hours, a recurring item's next occurrence (when asked for) and
+     its end date. */
+  function whenParts(item, lang, withNext) {
     var l = labels(lang);
     var parts = [];
     if (isRecurring(item)) {
       parts.push(l.every + ' ' + joinDays(item.recur_weekdays, lang));
       if (hours(item)) parts.push(hours(item));
-      if (item.next_date) parts.push(l.next + ': ' + dayShort(item.next_date, lang));
+      if (withNext && item.next_date) parts.push(l.next + ': ' + dayShort(item.next_date, lang));
       if (item.recur_until) parts.push(l.until + ' ' + displayDate(item.recur_until));
     } else {
       var d = keyDate(item);
       parts.push(d ? l.dayWord + weekdayName(d, lang) + ', ' + displayDate(d) : '');
       if (hours(item)) parts.push(hours(item));
     }
-    return parts.filter(Boolean).join(' · ');
+    return parts;
+  }
+
+  /* The hero's full "when" line. */
+  function whenText(item, lang) {
+    return whenParts(item, lang, true).filter(Boolean).join(' · ');
+  }
+
+  /* The "when" tile, two lines: the pattern or the date, then the rest — no
+     next date, the hero carries it. */
+  function whenLines(item, lang) {
+    var parts = whenParts(item, lang, false);
+    return [parts[0], parts.slice(1).join(' · ')];
+  }
+
+  /* The cost tile's fixed second line (60_events_cost: booking_required). */
+  function bookingText(item, lang) {
+    var l = labels(lang);
+    return item.booking_required ? l.bookingRequired : l.bookingNone;
+  }
+  /* The tile shows when there is a cost line or a booking to mention. */
+  function hasCost(item, lang) { return Boolean(item.booking_required) || Boolean(text(item, 'cost', lang)); }
+
+  /* The fact tiles sit in two columns; with an odd count the last one shown
+     spans both. The name of that tile ('cost' | 'audience' | 'bring') or
+     null — "when" and "where" always show, so neither is ever the odd one. */
+  function wideFact(item, lang) {
+    var shown = ['when', 'where'];
+    if (hasCost(item, lang)) shown.push('cost');
+    if (text(item, 'audience', lang)) shown.push('audience');
+    if (text(item, 'bring', lang)) shown.push('bring');
+    return shown.length % 2 ? shown[shown.length - 1] : null;
   }
 
   /* The card's shorter line. */
@@ -232,14 +289,131 @@
       .map(function (p) { return '<p>' + escapeHtml(p) + '</p>'; }).join('\n');
   }
 
+  /* Both languages are RTL, so "previous" sits at the inline start (right)
+     and points right; "next" sits at the inline end and points left. */
+  var CHEVRON_PREV = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>';
+  var CHEVRON_NEXT = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>';
+
+  /* The photos: one framed photo, or the slideshow js/happening.js runs — the
+     slides stacked, arrows, a dot per photo and a counter. The first slide
+     starts active so the page reads right before (and without) JavaScript. */
   function galleryHtml(cfg, item, lang) {
     var paths = item.image_paths || [];
     if (!paths.length) return '';
+    var l = labels(lang);
     var title = text(item, 'title', lang);
-    return paths.map(function (p, i) {
-      return '<figure class="hp-gallery-item"><img src="' + escapeHtml(imageUrl(cfg, p)) + '" alt="' +
-        escapeHtml(title + ' — ' + (i + 1)) + '" loading="lazy" decoding="async" width="1600" height="1200"></figure>';
-    }).join('\n');
+    var n = paths.length;
+    var slides = paths.map(function (p, i) {
+      return '<figure class="hp-slide' + (i === 0 ? ' is-active' : '') + '"><img src="' + escapeHtml(imageUrl(cfg, p)) + '" alt="' +
+        escapeHtml(title + ' — ' + (i + 1)) + '"' + (i === 0 ? '' : ' loading="lazy"') + ' decoding="async" width="1600" height="1200"></figure>';
+    }).join('');
+    if (n === 1) return '<div class="hp-slides">' + slides + '</div>';
+    var dots = paths.map(function (_, i) {
+      return '<button type="button" class="hp-slide-dot' + (i === 0 ? ' is-active' : '') + '" data-slide-to="' + i + '" aria-label="' +
+        escapeHtml(l.photoN(i + 1)) + '"' + (i === 0 ? ' aria-current="true"' : '') + '></button>';
+    }).join('');
+    return '<div class="hp-slides" data-slides role="group" aria-roledescription="carousel" aria-label="' + escapeHtml(l.photos) + '" tabindex="0">' +
+      slides +
+      '<button type="button" class="hp-slide-arrow" data-slide-step="-1" aria-label="' + escapeHtml(l.prevPhoto) + '">' + CHEVRON_PREV + '</button>' +
+      '<button type="button" class="hp-slide-arrow" data-slide-step="1" aria-label="' + escapeHtml(l.nextPhoto) + '">' + CHEVRON_NEXT + '</button>' +
+      '<div class="hp-slide-dots">' + dots + '</div>' +
+      '<span class="hp-slide-count" data-slide-count aria-hidden="true">1 / ' + n + '</span>' +
+    '</div>';
+  }
+
+  /* ── The hub's calendar: pure date maths + markup; js/happening.js holds
+     the month and the selected day and re-renders on every click. All dates
+     are ISO strings handled at noon UTC (weekdayOf), so the machine's zone
+     never moves a day. A recurring item is expanded day by day inside the
+     month; nothing before `today` is marked (the feed only carries live
+     items, and a day that passed is not an invitation). ── */
+  function toDate(iso) { return new Date(iso + 'T12:00:00Z'); }
+  function toIso(d) { return d.toISOString().slice(0, 10); }
+  function addDays(iso, n) { var d = toDate(iso); d.setUTCDate(d.getUTCDate() + n); return toIso(d); }
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+  function monthStart(year, month) { return year + '-' + pad2(month + 1) + '-01'; }
+  function monthEnd(year, month) { return toIso(new Date(Date.UTC(year, month + 1, 0, 12))); }
+
+  /* The dates an item happens on within [from, to] (ISO, inclusive). */
+  function occurrences(item, from, to) {
+    var out = [];
+    if (isRecurring(item)) {
+      var start = item.event_date > from ? item.event_date : from;
+      var end = item.recur_until && item.recur_until < to ? item.recur_until : to;
+      for (var d = start; d <= end; d = addDays(d, 1)) {
+        if (item.recur_weekdays.indexOf(weekdayOf(d)) !== -1) out.push(d);
+      }
+    } else if (item.event_date && item.event_date >= from && item.event_date <= to) {
+      out.push(item.event_date);
+    }
+    return out;
+  }
+
+  /* { 'YYYY-MM-DD': [item, …] } for one month, from `today` on. */
+  function monthIndex(items, year, month, today) {
+    var first = monthStart(year, month), last = monthEnd(year, month);
+    var from = today > first ? today : first;
+    var map = {};
+    if (from > last) return map;
+    items.forEach(function (item) {
+      occurrences(item, from, last).forEach(function (d) { (map[d] = map[d] || []).push(item); });
+    });
+    /* a day's items by time of day, an untimed one first — the feed's own order */
+    var t = function (item) { return item.starts_at || ''; };
+    Object.keys(map).forEach(function (d) {
+      map[d].sort(function (a, b) { return t(a) < t(b) ? -1 : t(a) > t(b) ? 1 : 0; });
+    });
+    return map;
+  }
+
+  /* The month: a header with the two arrows, the weekday letters, the days.
+     A marked day is a button (aria-pressed = selected); the rest are plain. */
+  function calendarHtml(items, lang, year, month, selected, today) {
+    var l = labels(lang);
+    var index = monthIndex(items, year, month, today);
+    var daysIn = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+    var cells = '';
+    for (var b = weekdayOf(monthStart(year, month)); b > 0; b--) cells += '<span class="hp-cal-day is-blank" aria-hidden="true"></span>';
+    for (var n = 1; n <= daysIn; n++) {
+      var iso = year + '-' + pad2(month + 1) + '-' + pad2(n);
+      var mine = (index[iso] || []).slice(0, 3); /* at most three dots, three names */
+      var cls = 'hp-cal-day' + (iso === today ? ' is-today' : '') + (iso < today ? ' is-past' : '') + (iso === selected ? ' is-selected' : '');
+      if (mine.length) {
+        var names = mine.map(function (it) { return text(it, 'title', lang); }).join(', ');
+        cells += '<button type="button" class="' + cls + '" data-cal-day="' + iso + '" aria-pressed="' + (iso === selected) + '" aria-label="' +
+          escapeHtml(l.dayWord + weekdayName(iso, lang) + ' ' + displayDate(iso) + ': ' + names) + '">' +
+          '<span class="hp-cal-num">' + n + '</span><span class="hp-cal-dots">' +
+          mine.map(function () { return '<i></i>'; }).join('') + '</span></button>';
+      } else {
+        cells += '<span class="' + cls + '"><span class="hp-cal-num">' + n + '</span></span>';
+      }
+    }
+    var atCurrent = monthStart(year, month) <= today;
+    return '<div class="hp-cal-head">' +
+        '<button type="button" class="hp-cal-nav" data-cal-step="-1" aria-label="' + escapeHtml(l.calPrev) + '"' + (atCurrent ? ' disabled' : '') + '>' + CHEVRON_PREV + '</button>' +
+        '<h2 class="hp-cal-title">' + escapeHtml(l.months[month] + ' ' + year) + '</h2>' +
+        '<button type="button" class="hp-cal-nav" data-cal-step="1" aria-label="' + escapeHtml(l.calNext) + '">' + CHEVRON_NEXT + '</button>' +
+      '</div>' +
+      '<div class="hp-cal-grid">' +
+        l.dow.map(function (d) { return '<span class="hp-cal-dow">' + d + '</span>'; }).join('') + cells +
+      '</div>';
+  }
+
+  /* The selected day's items beside (or under) the month, or a one-line note. */
+  function dayPanelHtml(cfg, items, lang, iso) {
+    var l = labels(lang);
+    if (!iso) return '<p class="hp-cal-note">' + escapeHtml(l.calEmpty) + '</p>';
+    return '<h3 class="hp-cal-day-title">' + escapeHtml(l.dayWord + weekdayName(iso, lang) + ', ' + displayDate(iso)) + '</h3>' +
+      '<ul class="hp-cal-list">' + items.map(function (item) {
+        return '<li><a class="hp-cal-item" href="' + escapeHtml(pageUrl(item, lang)) + '">' +
+          '<img src="' + escapeHtml(cover(cfg, item)) + '" alt="" width="120" height="90" loading="lazy" decoding="async">' +
+          '<span class="hp-cal-item-body">' +
+            '<strong>' + escapeHtml(text(item, 'title', lang)) + '</strong>' +
+            (hours(item) ? '<span class="hp-cal-item-time">' + escapeHtml(hours(item)) + '</span>' : '') +
+            '<span class="hp-cal-item-desc">' + escapeHtml(text(item, 'summary', lang)) + '</span>' +
+            '<span class="hp-cal-item-go">' + escapeHtml(l.toPage) + ' ←</span>' +
+          '</span></a></li>';
+      }).join('') + '</ul>';
   }
 
   return {
@@ -258,7 +432,15 @@
     isRecurring: isRecurring,
     keyDate: keyDate,
     whenText: whenText,
+    whenLines: whenLines,
     whenShort: whenShort,
+    bookingText: bookingText,
+    hasCost: hasCost,
+    wideFact: wideFact,
+    occurrences: occurrences,
+    monthIndex: monthIndex,
+    calendarHtml: calendarHtml,
+    dayPanelHtml: dayPanelHtml,
     pageUrl: pageUrl,
     ctaText: ctaText,
     ctaHref: ctaHref,

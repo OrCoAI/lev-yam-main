@@ -2,17 +2,27 @@
 <!--
   ═══ TEMPLATE — ARABIC LANDING PAGE for one "What's happening" item ═══════
 
-  The twin of _item.html (read its header for the rules). Rendered by
-  scripts/gen-happening.mjs into _site/happening/ar/<slug>/index.html.
-  Levantine register, as the rest of the site (js/app.js). Venue facts from
-  FACTS.md; the Arabic wording of the getting-here lines is the reviewed text
-  of /stories/ar/how-to-get-to-jisr-az-zarqa/.
+  Rendered by scripts/gen-happening.mjs at deploy, once per live (and recently
+  passed) item, into _site/happening/<slug>/index.html — never into the
+  checkout: the items live in the platform DB (events.feed / events.passed)
+  and are not known at commit time. The Hebrew twin is _item.html.
+
+  {{VAR}} is HTML-escaped by the generator; {{{VAR}}} is inserted raw (markup
+  the generator built itself). A block between the #IF:NAME and #ENDIF:NAME
+  marker comments is kept only when that value is present. A leftover
+  placeholder fails the build. The header and footer between the chrome
+  markers are stamped from stories/_template.ar.html (scripts/lib/chrome.mjs,
+  ADR 0049) — edit them there; the language toggle's {{HE_URL}} / {{AR_URL}}
+  stay as placeholders the generator fills per item.
+
+  Every venue fact here comes from FACTS.md (getting here, about Lev Yam).
+  No prices, ever. Underscore-prefixed files are never served.
 -->
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#1a3340">
+  <meta name="theme-color" content="#2c92bf">
   <!--#IF:PASSED-->
   <meta name="robots" content="noindex">
   <!--#ENDIF:PASSED-->
@@ -25,6 +35,8 @@
   <link rel="alternate" hreflang="ar" href="https://levyam.com/happening/ar/{{SLUG}}/">
   <link rel="alternate" hreflang="x-default" href="https://levyam.com/happening/{{SLUG}}/">
 
+  <!-- The preview a shared link gets in WhatsApp / Facebook / Telegram / iMessage —
+       read without JavaScript, which is why this page exists as HTML (ADR 0056). -->
   <meta property="og:title" content="{{TITLE}} | ليف يام">
   <meta property="og:description" content="{{SUMMARY}}">
   <meta property="og:image" content="{{OG_IMAGE}}">
@@ -34,13 +46,15 @@
   <meta property="og:url" content="https://levyam.com/happening/ar/{{SLUG}}/">
   <meta name="twitter:card" content="summary_large_image">
 
-  <!-- No font preload: css/styles.css switches html[lang="ar"] to a system Arabic stack. -->
+  <link rel="preload" href="/fonts/Heebo-hebrew.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/Assistant-hebrew.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" as="image" fetchpriority="high" href="{{COVER}}">
 
   <link rel="icon" href="/img/logo/logo-mark.png" type="image/png">
   <link rel="apple-touch-icon" href="/img/logo/logo-mark.png">
 
   <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/stories.css">
   <link rel="stylesheet" href="/css/happening.css">
 
   <!-- ═══ DYNATRACE RUM TAG ═══ -->
@@ -58,6 +72,7 @@
   {{{BREADCRUMB_JSONLD}}}
   </script>
   <!--#IF:JSONLD-->
+  <!-- Event (dated) or Event + eventSchedule (recurring). Never `offers` — no prices. -->
   <script type="application/ld+json">
   {{{JSONLD}}}
   </script>
@@ -68,24 +83,84 @@
 
   <a class="skip-link" href="#hp-main">تخطّى إلى المحتوى الأساسي</a>
 
-  <header class="hp-header">
-    <a href="/" class="hp-logo" aria-label="ليف يام — الصفحة الرئيسية">
-      <img src="/img/logo/logo-mono-nobg.png" alt="ليف يام" width="52" height="52">
-    </a>
-    <a href="/happening/ar/" class="hp-all">كل الفعاليات</a>
-    <div class="lang-toggle" role="group" aria-label="اللغة / שפה">
-      <a class="lang-opt" href="{{HE_URL}}" hreflang="he" lang="he">עב</a>
-      <a class="lang-opt is-active" href="{{AR_URL}}" hreflang="ar" lang="ar" aria-current="page">عر</a>
+  <!-- The site header, exactly as on every story page (stamped — see the banner). -->
+  <!-- chrome:header -->
+  <header class="story-header">
+    <div class="hero-topbar">
+      <a href="/" class="logo" aria-label="ليف يام — الصفحة الرئيسية">
+        <img src="/img/logo/logo-mono-nobg.png" alt="ليف يام" width="52" height="52">
+      </a>
+
+      <nav class="primary-nav" aria-label="القائمة الرئيسية">
+        <ul>
+          <li><a href="/#services">ماذا يجري في ليف يام</a></li>
+          <li><a href="/#why">مَن نحن</a></li>
+          <li><a href="/#gallery">معرض الصور</a></li>
+          <li><a href="/stories/ar/">حكايات</a></li>
+          <li><a href="/happening/ar/">مبادرات</a></li>
+          <li><a href="/#faq">أسئلة وأجوبة</a></li>
+          <li><a href="/#contact">تواصلوا معنا</a></li>
+        </ul>
+      </nav>
+
+      <div class="header-social">
+        <a href="https://wa.me/972506669138?text=أهلًا%2C%20بحب%20آخذ%20تفاصيل%20عن%20ليف%20يام" target="_blank" rel="noopener" aria-label="ليف يام على واتساب" data-bizevent-source="stories_header">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.978-1.306A9.966 9.966 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+        </a>
+        <a href="mailto:info@levyam.com" aria-label="أرسلوا إيميل إلى ليف يام">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg>
+        </a>
+        <a href="https://www.google.com/maps/place/Lev+Yam+-+%D7%9C%D7%91+%D7%99%D7%9D,+%D7%9B%D7%91%D7%99%D7%A9,+Jisr+az-Zarqa%E2%80%AD/@32.0867773,34.76303,3020m/data=!3m1!1e3!4m2!3m1!1s0x151d0d00273dd215:0x2c5f32d242e69755?entry=ttu" target="_blank" rel="noopener" aria-label="تنقّلوا إلى ليف يام على الخرائط">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+        </a>
+        <a href="https://www.instagram.com/levyam_" target="_blank" rel="noopener" aria-label="ليف يام على إنستغرام">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none"/></svg>
+        </a>
+        <a href="https://m.facebook.com/profile.php?id=61585790351617" target="_blank" rel="noopener" aria-label="ليف يام على فيسبوك">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+        </a>
+      </div>
+
+      <!-- Language toggle navigates to the twin URL — one URL per language. -->
+      <div class="lang-toggle" role="group" aria-label="اللغة / שפה">
+        <a class="lang-opt" href="{{HE_URL}}" hreflang="he" lang="he">עב</a>
+        <a class="lang-opt is-active" href="{{AR_URL}}" hreflang="ar" lang="ar" aria-current="page">عر</a>
+      </div>
+
+      <button class="nav-toggle" aria-label="فتح القائمة" data-label-open="فتح القائمة" data-label-close="إغلاق القائمة" aria-expanded="false" aria-controls="mobile-nav">
+        <span></span><span></span><span></span>
+      </button>
     </div>
+
+    <nav id="mobile-nav" class="mobile-nav" hidden aria-label="قائمة الهاتف">
+      <div class="mobile-nav-header">
+        <span class="mobile-nav-brand">ليف يام</span>
+        <button class="mobile-nav-close" aria-label="إغلاق القائمة">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <ul>
+        <li><a href="/#services">ماذا يجري في ليف يام</a></li>
+        <li><a href="/#why">مَن نحن</a></li>
+        <li><a href="/#gallery">معرض الصور</a></li>
+        <li><a href="/stories/ar/">حكايات</a></li>
+        <li><a href="/happening/ar/">مبادرات</a></li>
+        <li><a href="/#faq">أسئلة وأجوبة</a></li>
+        <li><a href="/#contact">تواصلوا معنا</a></li>
+      </ul>
+    </nav>
   </header>
+  <!-- /chrome:header -->
+  <div class="wave-divider wave-divider--orange" aria-hidden="true"></div>
 
   <main id="hp-main">
 
+    <!-- ═══ HERO — the cover, the title over it ═══ -->
     <section class="hp-hero" aria-labelledby="hp-title">
       <img class="hp-hero-img" src="{{COVER}}" alt="" fetchpriority="high" decoding="async" data-hp="cover">
       <div class="hp-hero-veil" aria-hidden="true"></div>
       <div class="hp-hero-body container">
-        <p class="hp-kicker">شو في بليف يام</p>
+        <p class="hp-kicker"><img src="/img/icons/sun-orange.png" alt="" width="14" height="14">مبادرات ليف يام</p>
         <h1 id="hp-title" class="hp-title" data-hp="title">{{TITLE}}</h1>
         <p class="hp-when"><time datetime="{{DATE_ISO}}" data-hp="when">{{WHEN}}</time></p>
         <p class="hp-summary" data-hp="summary">{{SUMMARY}}</p>
@@ -95,81 +170,96 @@
     <div class="hp-sheet">
       <div class="container container-narrow">
 
+        <!-- State notices (js/happening.js flips them from the live feed on load). -->
         <div class="hp-banner" data-hp-banner="passed"{{PASSED_HIDDEN}} role="status">
-          هالفعالية خلصت. <a href="/happening/ar/">شو في هلق بليف يام ←</a>
+          هالفعالية خلصت. <a href="/happening/ar/">للمبادرات الجاية بليف يام ←</a>
         </div>
         <div class="hp-banner" data-hp-banner="unavailable" hidden role="status">
-          هالبند مش متاح هلق. <a href="/happening/ar/">شو في هلق بليف يام ←</a>
+          هالبند مش متاح هلق. <a href="/happening/ar/">للمبادرات الجاية بليف يام ←</a>
         </div>
 
+        <!-- The action panel and the facts: stacked on phones, side by side on desktop. -->
+        <div class="hp-top">
+        <!-- ═══ CTA + SHARE — one swappable block (Phase 4 puts a booking form here; plan "Path to booking") ═══ -->
         <section class="hp-actions" data-cta data-hp-live aria-label="الحضور والمشاركة">
           <a class="btn btn-primary hp-cta" href="{{CTA_HREF}}" data-hp="cta" data-bizevent-source="happening-cta" target="_blank" rel="noopener">
-            بحب أجي — واتساب
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.978-1.306A9.966 9.966 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+            بحب أجي
           </a>
           <div class="hp-share" role="group" aria-label="مشاركة الصفحة">
-            <p class="hp-share-label">شاركوا الصفحة:</p>
-            <a class="hp-share-btn" data-share="whatsapp" data-hp="share-wa" href="{{SHARE_WA_HREF}}" target="_blank" rel="noopener">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.978-1.306A9.966 9.966 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
-              واتساب
-            </a>
-            <button class="hp-share-btn" type="button" data-share="copy" data-copied="انتسخ الرابط ✓">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M10 13a5 5 0 007.07 0l3-3a5 5 0 00-7.07-7.07l-1.5 1.5"/><path d="M14 11a5 5 0 00-7.07 0l-3 3a5 5 0 007.07 7.07l1.5-1.5"/></svg>
-              <span data-label>نسخ الرابط</span>
-            </button>
-            <button class="hp-share-btn" type="button" data-share="native">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
-              <span data-label>مشاركة</span>
-            </button>
-            <details class="hp-qr" data-share-qr>
-              <summary class="hp-share-btn" data-share="qr">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM19 14h2v2h-2zM14 19h2v2h-2zM19 19h2v2h-2z"/></svg>
-                QR للطباعة
-              </summary>
-              <div class="hp-qr-box">
-                {{{QR_SVG}}}
-                <p>امسحوا الرمز لفتح الصفحة — لورقة بتنطبع وبتنعلّق عالمدخل</p>
-              </div>
-            </details>
+            <p class="hp-share-label">شاركوا الصفحة</p>
+            <div class="hp-share-row">
+              <a class="hp-share-btn" data-share="whatsapp" data-hp="share-wa" href="{{SHARE_WA_HREF}}" target="_blank" rel="noopener">
+                <span class="hp-share-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.978-1.306A9.966 9.966 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></span>
+                <span data-label>واتساب</span>
+              </a>
+              <button class="hp-share-btn" type="button" data-share="copy" data-copied="انتسخ ✓">
+                <span class="hp-share-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M10 13a5 5 0 007.07 0l3-3a5 5 0 00-7.07-7.07l-1.5 1.5"/><path d="M14 11a5 5 0 00-7.07 0l-3 3a5 5 0 007.07 7.07l1.5-1.5"/></svg></span>
+                <span data-label>نسخ</span>
+              </button>
+              <button class="hp-share-btn" type="button" data-share="native" data-copied="انتسخ ✓">
+                <span class="hp-share-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg></span>
+                <span data-label>مشاركة</span>
+              </button>
+              <details class="hp-qr" data-share-qr>
+                <summary class="hp-share-btn" data-share="qr">
+                  <span class="hp-share-ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM19 14h2v2h-2zM14 19h2v2h-2zM19 19h2v2h-2z"/></svg></span>
+                  <span data-label>QR للطباعة</span>
+                </summary>
+                <div class="hp-qr-box">
+                  {{{QR_SVG}}}
+                  <p>امسحوا الرمز لفتح الصفحة — لورقة بتنطبع وبتنعلّق عالمدخل</p>
+                </div>
+              </details>
+            </div>
           </div>
         </section>
 
-        <dl class="hp-facts" data-hp="facts" data-hp-live{{FACTS_HIDDEN}}>
-          <div data-hp="audience"{{AUDIENCE_HIDDEN}}>
+        <!-- ═══ THE FACTS — when, where, cost, and (when filled) who it's for / what to bring ═══ -->
+        <dl class="hp-facts" data-hp-live>
+          <div class="hp-fact hp-fact-when">
+            <dt>إيمتى</dt>
+            <dd><time datetime="{{DATE_ISO}}" data-hp="when-tile"><span class="hp-fact-line" data-hp-line>{{WHEN_FIRST}}</span><span class="hp-fact-line" data-hp-line{{WHEN_REST_HIDDEN}}>{{WHEN_REST}}</span></time></dd>
+          </div>
+          <div class="hp-fact hp-fact-where">
+            <dt>وين</dt>
+            <dd><span class="hp-fact-line">ليف يام، قرية الصيادين بجسر الزرقاء</span><a class="hp-fact-line" href="#hp-here">كيف بتوصلوا</a></dd>
+          </div>
+          <div class="hp-fact hp-fact-cost{{COST_WIDE}}" data-hp="cost"{{COST_HIDDEN}}>
+            <dt>التكلفة والتسجيل</dt>
+            <dd><span class="hp-fact-line" data-hp-line{{COST_LINE_HIDDEN}}>{{COST}}</span><span class="hp-fact-line" data-hp-line>{{BOOKING}}</span></dd>
+          </div>
+          <div class="hp-fact hp-fact-who{{AUDIENCE_WIDE}}" data-hp="audience"{{AUDIENCE_HIDDEN}}>
             <dt>لمين بيناسب</dt>
             <dd>{{AUDIENCE}}</dd>
           </div>
-          <div data-hp="bring"{{BRING_HIDDEN}}>
+          <div class="hp-fact hp-fact-bring{{BRING_WIDE}}" data-hp="bring"{{BRING_HIDDEN}}>
             <dt>شو نجيب / وين نلتقي</dt>
             <dd>{{BRING}}</dd>
           </div>
         </dl>
+        </div>
 
-        <section class="hp-section" data-hp-live aria-label="كل التفاصيل">
-          <h2>كل التفاصيل</h2>
-          <div data-hp="body">
+        <!-- ═══ THE FULL TEXT ═══ -->
+        <section class="hp-section" data-hp-live aria-labelledby="hp-details-title">
+          <h2 id="hp-details-title">كل التفاصيل</h2>
+          <div class="hp-body" data-hp="body">
             {{{BODY_HTML}}}
           </div>
-          <!--#IF:STORY-->
-          <a class="hp-story-link" href="{{STORY_URL}}">لقراءة الحكاية كاملة ←</a>
-          <!--#ENDIF:STORY-->
         </section>
 
-        <section class="hp-section" data-hp-live aria-label="صور"{{GALLERY_HIDDEN}}>
-          <h2>صور</h2>
-          <div class="hp-gallery" data-hp="gallery">
+        <!-- ═══ PHOTOS — the same photos as the form, cover first; a crossfade when there are several ═══ -->
+        <section class="hp-section" data-hp-live aria-labelledby="hp-photos-title"{{GALLERY_HIDDEN}}>
+          <h2 id="hp-photos-title">صور</h2>
+          <div data-hp="gallery" data-hp-paths="{{PATHS_JSON}}">
             {{{GALLERY_HTML}}}
           </div>
         </section>
 
-        <section class="hp-section" aria-labelledby="hp-next-title">
-          <h2 id="hp-next-title">كمان قريبًا بليف يام</h2>
-          <ul class="hp-grid" data-hp="next">
-            {{{NEXT_HTML}}}
-          </ul>
-        </section>
-
-        <section class="hp-section" aria-labelledby="hp-here-title">
+        <!-- ═══ WHERE & HOW TO GET HERE — FACTS.md §מיקום והגעה; car only (public transport is unverified) ═══ -->
+        <section class="hp-section" id="hp-here" aria-labelledby="hp-here-title">
           <h2 id="hp-here-title">وين المكان وكيف بتوصلوا</h2>
+          <p>ليف يام بقرية الصيادين بجسر الزرقاء، على شاطئ الكرمل. بتوصلوا بالسيارة من شارع 4؛ لما تنزلوا بالقرية باتجاه البحر بتوصلوا لقرية الصيادين، وفي موقف سيارات مرتّب عند المدخل.</p>
           <div class="hp-nav-btns">
             <a class="hp-nav-btn" href="https://www.waze.com/ul?ll=32.536803%2C34.902106&navigate=yes" target="_blank" rel="noopener">
               <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
@@ -180,25 +270,21 @@
               Google Maps
             </a>
           </div>
-          <p>ليف يام بقرية الصيادين بجسر الزرقاء، على شاطئ الكرمل. بتوصلوا بالسيارة من شارع 4؛ لما تنزلوا بالقرية باتجاه البحر بتوصلوا لقرية الصيادين، وفي موقف سيارات مرتّب عند المدخل.</p>
-          <ul class="hp-drive" aria-label="أوقات السفر">
-            <li><strong>حوالي ساعة</strong> من تل أبيب</li>
-            <li><strong>حوالي 25 دقيقة</strong> من حيفا</li>
-            <li><strong>حوالي 10 دقايق</strong> من قيسارية</li>
-            <li><strong>حوالي 15 دقيقة</strong> من الخضيرة</li>
-          </ul>
-          <p>المكان مهيّأ جزئيًا. لتفاصيل عن إمكانية الوصول ابعتولنا على واتساب قبل ما توصلوا، ومنرتّب.</p>
         </section>
 
+        <!-- ═══ ABOUT LEV YAM — FACTS.md §זהות ═══ -->
         <section class="hp-section" aria-labelledby="hp-about-title">
           <h2 id="hp-about-title">عن ليف يام</h2>
-          <p>ليف يام فضاء لريادة الأعمال الاجتماعية على خط الماء بقرية الصيادين بجسر الزرقاء، قائم على الشراكة والبساطة والقبول. أسّسوه أور ونمر جربان، صيّاد من الجيل التالت بالقرية.</p>
-          <div class="hp-about-photos" aria-hidden="true">
-            <img src="/img/gallery/05.jpg" alt="" loading="lazy" decoding="async" width="600" height="600">
-            <img src="/img/gallery/11.jpg" alt="" loading="lazy" decoding="async" width="600" height="600">
-            <img src="/img/gallery/16.jpg" alt="" loading="lazy" decoding="async" width="600" height="600">
-          </div>
-          <p>كل جمعة وسبت في هون بيت مفتوح مع أكل محلي وفعاليات متغيّرة، وكل يوم أحد رواد أعمال ومبدعين بيتجمّعوا ليفتحوا الأسبوع سوا. ليف يام مش "موجود" بجسر الزرقاء وبس، بل بيشتغل من جوّاتها ولأجلها — مش كخلفية، بل كشريكة. <a href="/#why">مَن نحن ←</a></p>
+          <p>على خط الماء بقرية الصيادين الساحرة، الأخيرة من نوعها بإسرائيل، أقمنا ليف يام - فضاء لريادة الأعمال الاجتماعية قائم على الشراكة والبساطة والقبول.</p>
+        </section>
+
+        <!-- ═══ MORE INITIATIVES — the next three live items, refreshed on load; the page ends here ═══ -->
+        <section class="hp-section hp-next" aria-labelledby="hp-next-title">
+          <h2 id="hp-next-title"><img class="hp-mark" src="/img/icons/sun-orange.png" alt="" width="40" height="40" loading="lazy" decoding="async">مبادرات تانية</h2>
+          <ul class="hp-grid" data-hp="next">
+            {{{NEXT_HTML}}}
+          </ul>
+          <p class="hp-more"><a class="hp-more-link" href="/happening/ar/">كل المبادرات</a></p>
         </section>
 
       </div>
@@ -245,12 +331,18 @@
   </footer>
   <!-- /chrome:footer -->
 
+  <!-- Phones: the CTA and a share stay within thumb reach while reading. -->
   <div class="hp-sticky" data-hp-live>
-    <a class="btn btn-primary hp-cta" href="{{CTA_HREF}}" data-hp="cta" data-bizevent-source="happening-sticky" target="_blank" rel="noopener">بحب أجي</a>
-    <button class="hp-share-btn" type="button" data-share="native" aria-label="مشاركة الصفحة" data-copied="انتسخ ✓">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
+    <a class="btn btn-primary hp-cta" href="{{CTA_HREF}}" data-hp="cta" data-bizevent-source="happening-sticky" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.978-1.306A9.966 9.966 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>بحب أجي</a>
+    <button class="hp-sticky-share" type="button" data-share="native" aria-label="مشاركة الصفحة" title="مشاركة الصفحة" data-copied="انتسخ ✓">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
     </button>
   </div>
+
+  <!-- Wider screens: the site's floating WhatsApp button, carrying this item's message. -->
+  <a class="wa-float hp-float" href="{{CTA_HREF}}" data-hp="cta" data-hp-live data-bizevent-source="happening-float" target="_blank" rel="noopener" aria-label="بحب أجي — واتساب">
+    <svg viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><path fill="currentColor" d="M16 2C8.27 2 2 8.27 2 16c0 2.46.66 4.86 1.91 6.97L2 30l7.27-1.87A13.93 13.93 0 0016 30c7.73 0 14-6.27 14-14S23.73 2 16 2zm7.26 19.2c-.3.84-1.76 1.6-2.42 1.66-.65.07-1.27.3-4.27-1C13.12 20.5 10.9 17.3 10.73 17.1c-.17-.2-1.42-1.9-1.42-3.62s.9-2.57 1.22-2.92c.32-.35.7-.44.94-.44.23 0 .47.01.67.01.22 0 .52-.08.81.62.3.7 1.03 2.5 1.12 2.68.1.18.16.4.03.63-.13.24-.2.38-.39.58-.2.2-.41.46-.58.62-.19.18-.39.37-.17.73.23.35.99 1.63 2.13 2.64 1.46 1.3 2.7 1.7 3.08 1.9.37.17.59.14.8-.08.22-.23.94-1.1 1.2-1.47.25-.37.5-.31.84-.18.35.12 2.2 1.04 2.58 1.23.38.18.62.27.72.42.1.15.1.87-.2 1.72z"/></svg>
+  </a>
 
   <script src="/js/wa-track.js" defer></script>
   <script src="/js/happening-config.js" defer></script>
