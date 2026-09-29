@@ -542,7 +542,8 @@ proposal — the owner reorders by editing this list.*
       landing page per item, rebuilt on publish through a scoped GitHub token; share row + sticky bar;
       two optional fields (`59_events_landing.sql`); `share_click` in GA4; the landing page replaces
       the story pair; a written "Path to booking" for Phase 4. One Tier-A PR.
-      **PR 2 built 2026-09-28** (branch `events-landing-pages`): schema 59, `rebuild-site` function,
+      **PR 2 built 2026-09-28**, reworked on the owner's localhost review 2026-09-29 (ADR 0058: "יוזמות",
+      no story link, cost + booking, calendar hub, schema 60) (branch `events-landing-pages`): schema 59, `rebuild-site` function,
       generator + templates + hubs + share row + strip + nav, nightly prod rebuild; verified on
       localhost, RLS matrix green. **Next:** staging sign-off, the owner's setup (PAT + secrets,
       function deploy, hand-apply 59 on prod), merge — then the outcome check at ship + 21 days.

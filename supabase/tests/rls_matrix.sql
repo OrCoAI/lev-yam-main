@@ -373,6 +373,11 @@ select pg_temp.assert_rows('anon: never sees a quote-sourced event',
 -- 59_events_landing: the two optional lines and the passed view
 select pg_temp.assert_rows('anon: feed reads the optional audience/bring fields (column grant)',
   $q$ select audience_he, audience_ar, bring_he, bring_ar from events.feed where slug = 'rls-test-public' $q$, 1);
+select pg_temp.assert_rows('60: the story link column is gone (no row can carry one)',
+  $q$ select 1 from information_schema.columns
+     where table_schema = 'events' and table_name = 'events' and column_name = 'story_slug' $q$, 0);
+select pg_temp.assert_rows('anon: feed reads the cost/booking fields (60, column grant)',
+  $q$ select cost_he, cost_ar, booking_required from events.feed where slug = 'rls-test-public' $q$, 1);
 select pg_temp.assert_rows('anon: passed shows a public item that ended within 90 days',
   $q$ select 1 from events.passed where slug = 'rls-evt-past' and last_date = current_date - 1 $q$, 1);
 select pg_temp.assert_rows('anon: passed hides an item that ended more than 90 days ago',
@@ -420,11 +425,11 @@ select pg_temp.assert_ok('manager: can publish a bilingual dated event',
        summary_he, summary_ar, body_he, body_ar)
      values ('dddddddd-0000-0000-0000-000000000009', 'rls-evt new', current_date + 7, 'public',
        'rls-evt-new', 'חדש', 'جديد', 'חדש', 'جديد', 'חדש', 'جديد') $q$);
-select pg_temp.assert_ok('manager: can publish an item that links to a story pair with no body',
+select pg_temp.assert_check_denied('manager: public item without a body refused (60: the page is its own detail page)',
   $q$ insert into events.events (title, event_date, visibility, slug, title_he, title_ar,
-       summary_he, summary_ar, story_slug)
-     values ('rls-evt story', current_date, 'public', 'rls-evt-story', 'סיפור', 'حكاية',
-       'סיפור', 'حكاية', 'team-day-by-the-sea') $q$);
+       summary_he, summary_ar)
+     values ('rls-evt nobody', current_date, 'public', 'rls-evt-nobody', 'סיפור', 'حكاية',
+       'סיפור', 'حكاية') $q$);
 select pg_temp.assert_check_denied('manager: public event without Arabic refused (invariant 5)',
   $q$ insert into events.events (title, event_date, visibility, slug, title_he,
        summary_he, body_he)
@@ -450,6 +455,12 @@ select pg_temp.assert_check_denied('manager: public item with bring in Arabic on
 select pg_temp.assert_ok('manager: optional lines in both languages are accepted',
   $q$ update events.events set audience_he = 'למשפחות', audience_ar = 'للعائلات',
        bring_he = 'מים וכובע', bring_ar = 'مي وطاقية' where title = 'rls-evt new' $q$);
+-- 60_events_cost: the cost line is optional and bilingual the same way; the booking flag is free
+select pg_temp.assert_check_denied('manager: public item with cost in Hebrew only refused',
+  $q$ update events.events set cost_he = 'חינם' where title = 'rls-evt new' $q$);
+select pg_temp.assert_ok('manager: cost in both languages plus the booking flag accepted',
+  $q$ update events.events set cost_he = 'חינם', cost_ar = 'مجانًا', booking_required = true
+       where title = 'rls-evt new' $q$);
 select pg_temp.assert_ok('manager: a draft may hold one language of an optional line',
   $q$ update events.events set visibility = 'internal', bring_ar = '' where title = 'rls-evt new' $q$);
 select pg_temp.assert_check_denied('manager: publishing that draft is refused until the Arabic is filled',

@@ -25,7 +25,7 @@ interface Props {
  *  or drafted and then confirmed. Only 'machine' blocks publishing (ADR 0055). */
 type ArState = 'human' | 'machine' | 'checked'
 
-/** events_slug_format / events_story_slug_format (58_events_public.sql) */
+/** events_slug_format (58_events_public.sql) */
 const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/
 
 // A URL slug as it is typed: lower case, spaces become hyphens.
@@ -71,9 +71,11 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
     audience_ar: initial?.audience_ar ?? '',
     bring_he: initial?.bring_he ?? '',
     bring_ar: initial?.bring_ar ?? '',
+    cost_he: initial?.cost_he ?? '',
+    cost_ar: initial?.cost_ar ?? '',
   })
+  const [booking, setBooking] = useState(initial?.booking_required ?? false)
   const [slug, setSlug] = useState(initial?.slug ?? '')
-  const [storySlug, setStorySlug] = useState(initial?.story_slug ?? '')
   const [publish, setPublish] = useState(initial ? initial.visibility === 'public' : false)
   const [photos, setPhotos] = useState<Photo[]>(() => photosFromPaths(initial?.image_paths ?? []))
   const [arState, setArState] = useState<ArState>(initial?.ar_machine_translated ? 'machine' : 'human')
@@ -98,15 +100,15 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
   // everything the owner can change — a server error is shown while this still
   // matches what it was answered for. Every field added to the form goes here too.
   const fingerprint = JSON.stringify([
-    recurring, date, weekdays, until, startsAt, endsAt, text, slug, storySlug, publish, arState,
+    recurring, date, weekdays, until, startsAt, endsAt, text, booking, slug, publish, arState,
     photos.map((p) => p.key),
   ])
   const fail = (err: unknown) => setServerError({ err, at: fingerprint })
 
   async function translate() {
-    const hasArabic = [text.title_ar, text.summary_ar, text.body_ar, text.audience_ar, text.bring_ar].some(
-      (v) => v.trim(),
-    )
+    const hasArabic = [
+      text.title_ar, text.summary_ar, text.body_ar, text.audience_ar, text.bring_ar, text.cost_ar,
+    ].some((v) => v.trim())
     if (hasArabic && !window.confirm(et.confirmOverwrite)) return
     setPending('translate')
     setServerError(null)
@@ -117,6 +119,7 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
         body: text.body_he,
         audience: text.audience_he,
         bring: text.bring_he,
+        cost: text.cost_he,
       })
       setText((t) => ({
         ...t,
@@ -125,6 +128,7 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
         body_ar: ar.body ?? t.body_ar,
         audience_ar: ar.audience ?? t.audience_ar,
         bring_ar: ar.bring ?? t.bring_ar,
+        cost_ar: ar.cost ?? t.cost_ar,
       }))
       setArState('machine')
     } catch (e) {
@@ -133,8 +137,6 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
     }
     setPending(null)
   }
-  const hasStory = storySlug.trim() !== ''
-
   function toggleDay(d: number) {
     setWeekdays((cur) => (cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d].sort()))
   }
@@ -149,10 +151,8 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
     need(text.title_ar, `${et.fTitle} (${et.arabic})`)
     need(text.summary_he, `${et.fSummary} (${et.hebrew})`)
     need(text.summary_ar, `${et.fSummary} (${et.arabic})`)
-    if (!hasStory) {
-      need(text.body_he, `${et.fBody} (${et.hebrew})`)
-      need(text.body_ar, `${et.fBody} (${et.arabic})`)
-    }
+    need(text.body_he, `${et.fBody} (${et.hebrew})`)
+    need(text.body_ar, `${et.fBody} (${et.arabic})`)
     need(slug, et.slug)
     return missing
   }
@@ -164,14 +164,17 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
     if (recurring && weekdays.length === 0) return et.errWeekdays
     if (recurring && until && until < date) return et.errRecurrence
     if (slug && !SLUG_RE.test(slug)) return et.errSlugFormat
-    if (storySlug && !SLUG_RE.test(storySlug)) return et.errStorySlug
     if (publish) {
       const missing = missingForPublish()
       if (missing.length) return `${et.errMissing} ${missing.join(' · ')}`
       if (arState === 'machine') return et.errReviewArabic
       // events_public_optional_bilingual (59): a shown line exists in both languages
       const half = (he: string, ar: string) => Boolean(he.trim()) !== Boolean(ar.trim())
-      if (half(text.audience_he, text.audience_ar) || half(text.bring_he, text.bring_ar)) {
+      if (
+        half(text.audience_he, text.audience_ar) ||
+        half(text.bring_he, text.bring_ar) ||
+        half(text.cost_he, text.cost_ar)
+      ) {
         return et.errOptionalBilingual
       }
     }
@@ -216,13 +219,15 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
         body_he: text.body_he.trim(),
         body_ar: text.body_ar.trim(),
         image_paths,
-        story_slug: storySlug.trim() || null,
         recur_weekdays: recurring ? weekdays : null,
         recur_until: recurring && until ? until : null,
         audience_he: text.audience_he.trim(),
         audience_ar: text.audience_ar.trim(),
         bring_he: text.bring_he.trim(),
         bring_ar: text.bring_ar.trim(),
+        cost_he: text.cost_he.trim(),
+        cost_ar: text.cost_ar.trim(),
+        booking_required: booking,
         ar_machine_translated: arState === 'machine',
       }
       if (initial) await updateItem(id, payload)
@@ -253,9 +258,10 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
     { key: 'title', label: et.fTitle, hint: '', rows: 0, max: 120 },
     { key: 'summary', label: et.fSummary, hint: et.fSummaryHint, rows: 2, max: 240 },
     { key: 'body', label: et.fBody, hint: et.fBodyHint, rows: 7, max: undefined },
-    // the landing page's optional lines (59): shown only when filled, in both languages
+    // the landing page's optional lines (59, 60): shown only when filled, in both languages
     { key: 'audience', label: et.fAudience, hint: et.fAudienceHint, rows: 0, max: 160 },
     { key: 'bring', label: et.fBring, hint: et.fBringHint, rows: 0, max: 200 },
+    { key: 'cost', label: et.fCost, hint: et.fCostHint, rows: 0, max: 120 },
   ] as const
 
   function box(field: (typeof FIELDS)[number], lang: Lang, i: number) {
@@ -315,7 +321,7 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
       </div>
       {FIELDS.map((f, i) => box(f, 'ar', i))}
       <p className="field-hint muted ev-bi-hint">
-        {arMachine ? et.machineNote : hasStory ? `${et.fBody}: ${et.bodyOptionalWithStory}` : '\u00a0'}
+        {arMachine ? et.machineNote : '\u00a0'}
       </p>
     </div>
   )
@@ -335,6 +341,7 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
           <button
             type="button"
             className={`seg-btn${!recurring ? ' on' : ''}`}
+            aria-pressed={!recurring}
             onClick={() => setRecurring(false)}
           >
             {et.kindDated}
@@ -342,6 +349,7 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
           <button
             type="button"
             className={`seg-btn${recurring ? ' on' : ''}`}
+            aria-pressed={recurring}
             onClick={() => setRecurring(true)}
           >
             {et.kindRecurring}
@@ -412,12 +420,23 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
       <section className="ev-sec">
         <h3 className="ev-sec-title">{et.secText}</h3>
         {bilingual}
+        {/* the cost tile's second line: a flag, worded by the page in each language */}
+        <div className="field">
+          <span className="field-label">{et.fBooking}</span>
+          <div className="seg seg-2" role="group" aria-label={et.fBooking}>
+            <button type="button" className={`seg-btn${!booking ? ' on' : ''}`} aria-pressed={!booking} onClick={() => setBooking(false)}>
+              {et.bookingNone}
+            </button>
+            <button type="button" className={`seg-btn${booking ? ' on' : ''}`} aria-pressed={booking} onClick={() => setBooking(true)}>
+              {et.bookingRequired}
+            </button>
+          </div>
+        </div>
       </section>
 
       <section className="ev-sec">
         <h3 className="ev-sec-title">{et.secLink}</h3>
         <SlugInput label={et.slug} hint={et.slugHint} value={slug} onChange={setSlug} />
-        <SlugInput label={et.storySlug} hint={et.storySlugHint} value={storySlug} onChange={setStorySlug} />
       </section>
 
       <section className="ev-sec">

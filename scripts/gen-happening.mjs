@@ -16,8 +16,8 @@
  *                                                       no network (ci.yml, local screenshots)
  *
  * Two targets, on purpose:
- *   1. The CHECKOUT gets only chrome stamping (the footer of the two landing
- *      templates, the header + footer of the two hub shells) — the same rewrite
+ *   1. The CHECKOUT gets only chrome stamping (the header + footer of the two
+ *      landing templates and the two hub shells) — the same rewrite
  *      scripts/gen-stories-index.mjs does for story pages (ADR 0049), so a nav
  *      or footer edit is one template edit per language and CI's --check
  *      catches drift.
@@ -80,10 +80,11 @@ if (!CHECK && !OUT && !args.includes('--stamp')) {
 
 const stamped = []
 for (const lang of LANGS) {
-  // the landing template carries its own minimal header — only the footer is chrome
+  // the landing template's header is the story chrome too; its language toggle
+  // points at the item's twin, so the two URL placeholders stay for fill() below
   stamped.push({
     path: lang.template,
-    content: stampChrome(readFileSync(join(ROOT, lang.template), 'utf8'), lang.code, chromeVars('', ''), lang.template, ['footer']),
+    content: stampChrome(readFileSync(join(ROOT, lang.template), 'utf8'), lang.code, chromeVars('{{HE_URL}}', '{{AR_URL}}'), lang.template),
   })
   stamped.push({
     path: lang.hub,
@@ -121,10 +122,18 @@ async function fetchView(cfg, view, query) {
   return checkItems(rows, view)
 }
 
+/** A photo is `<the row's id>/<name>.<ext>` in the public bucket (events_image_paths_valid);
+ *  the fixture's are site paths under /img/. Checked here too, so a public page never
+ *  depends on a CHECK it cannot see. */
+const imagePathRe = (id) => (FIXTURE ? /^\/img\/[a-z0-9._/-]+$/ : new RegExp(`^${id}/[a-z0-9-]+\\.(jpg|jpeg|png|webp)$`))
 function checkItems(rows, view) {
   for (const it of rows) {
     if (typeof it.slug !== 'string' || !SLUG_RE.test(it.slug)) throw new Error(`events.${view}: item ${it.id} has a slug this script will not write a directory for: ${JSON.stringify(it.slug)}`)
     if (!Array.isArray(it.image_paths)) throw new Error(`events.${view}: item ${it.slug} has no image_paths array.`)
+    const re = imagePathRe(it.id)
+    for (const p of it.image_paths) {
+      if (typeof p !== 'string' || !re.test(p)) throw new Error(`events.${view}: item ${it.slug} has a photo path this script will not publish: ${JSON.stringify(p)}`)
+    }
   }
   return rows
 }
@@ -262,11 +271,18 @@ async function renderItem(lang, item, state, others) {
   const cover = R.cover(cfg, item)
   const audience = R.text(item, 'audience', code)
   const bring = R.text(item, 'bring', code)
+  const cost = R.text(item, 'cost', code)
+  const whenLines = R.whenLines(item, code)
+  const wide = R.wideFact(item, code) // the tile that spans both columns, if any
+  const wideClass = (name) => (wide === name ? ' hp-fact-wide' : '')
   const vars = {
     SLUG: item.slug,
     TITLE: R.text(item, 'title', code),
     SUMMARY: R.text(item, 'summary', code),
     WHEN: R.whenText(item, code),
+    WHEN_FIRST: whenLines[0],
+    WHEN_REST: whenLines[1],
+    WHEN_REST_HIDDEN: hiddenAttr(whenLines[1]),
     DATE_ISO: R.keyDate(item),
     COVER: cover,
     OG_IMAGE: absolute(cover),
@@ -278,13 +294,19 @@ async function renderItem(lang, item, state, others) {
     BRING: bring,
     AUDIENCE_HIDDEN: hiddenAttr(audience),
     BRING_HIDDEN: hiddenAttr(bring),
-    FACTS_HIDDEN: hiddenAttr(audience || bring),
-    STORY_URL: item.story_slug ? `${code === 'ar' ? '/stories/ar/' : '/stories/'}${item.story_slug}/` : '',
+    COST: cost,
+    COST_WIDE: wideClass('cost'),
+    AUDIENCE_WIDE: wideClass('audience'),
+    BRING_WIDE: wideClass('bring'),
+    COST_LINE_HIDDEN: hiddenAttr(cost),
+    COST_HIDDEN: hiddenAttr(R.hasCost(item, code)),
+    BOOKING: R.bookingText(item, code),
     CTA_HREF: R.ctaHref(item, code),
     SHARE_WA_HREF: R.shareWaHref(item, code, url),
     GALLERY_HIDDEN: hiddenAttr(item.image_paths.length),
     BODY_HTML: R.paragraphsHtml(R.text(item, 'body', code)),
     GALLERY_HTML: R.galleryHtml(cfg, item, code),
+    PATHS_JSON: JSON.stringify(item.image_paths), // js/happening.js rebuilds the photos only when this changes
     NEXT_HTML: R.listHtml(cfg, others, code, { heading: 'h3' }),
     QR_SVG: await QRCode.toString(url, { type: 'svg', margin: 1, errorCorrectionLevel: 'M' }),
     BREADCRUMB_JSONLD: breadcrumbLd(item, code, url),
@@ -292,7 +314,6 @@ async function renderItem(lang, item, state, others) {
   }
   const flags = {
     PASSED: state === 'passed',
-    STORY: Boolean(item.story_slug && SLUG_RE.test(item.story_slug)),
     JSONLD: state === 'live',
   }
   const src = generatedFrom(stampedByPath[lang.template], lang.template, 'the item lives in /app/events')

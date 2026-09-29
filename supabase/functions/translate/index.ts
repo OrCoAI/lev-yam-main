@@ -44,9 +44,9 @@ const API_KEY = Deno.env.get('GOOGLE_TRANSLATE_API_KEY')
 const LOCAL = /^http:\/\/(kong|localhost|127\.0\.0\.1)(:\d+)?$/.test(Deno.env.get('SUPABASE_URL') ?? '')
 const FAKE = !API_KEY && LOCAL
 
-const FIELDS = ['title', 'summary', 'body', 'audience', 'bring'] as const
+const FIELDS = ['title', 'summary', 'body', 'audience', 'bring', 'cost'] as const
 type Field = (typeof FIELDS)[number]
-// A title + summary + a long body + the two optional lines is ~3k characters;
+// A title + summary + a long body + the three optional lines is ~3k characters;
 // the cap bounds what one call can cost.
 const MAX_CHARS = 8000
 

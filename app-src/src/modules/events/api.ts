@@ -10,8 +10,9 @@ const BUCKET = 'events-public'
 
 const COLUMNS =
   'id,title,event_date,starts_at,ends_at,status,visibility,slug,title_he,title_ar,' +
-  'summary_he,summary_ar,body_he,body_ar,image_paths,story_slug,recur_weekdays,recur_until,' +
-  'audience_he,audience_ar,bring_he,bring_ar,ar_machine_translated,next_date,updated_at'
+  'summary_he,summary_ar,body_he,body_ar,image_paths,recur_weekdays,recur_until,' +
+  'audience_he,audience_ar,bring_he,bring_ar,cost_he,cost_ar,booking_required,' +
+  'ar_machine_translated,next_date,updated_at'
 
 /** Items created here — quote projections (customer names) are never listed. */
 export async function listItems(): Promise<EventItem[]> {
@@ -52,6 +53,7 @@ export type HebrewText = {
   body: string
   audience: string
   bring: string
+  cost: string
 }
 
 /** Hebrew → Arabic through the `translate` edge function (it holds the Google

@@ -15,7 +15,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#2c92bf">
 
-  <title>מה קורה בלב ים | אירועים, בית פתוח, קהילה</title>
+  <title>יוזמות בלב ים | אירועים, בית פתוח, קהילה</title>
   <meta name="description" content="מה קורה עכשיו בלב ים, כפר הדייגים בג'סר א-זרקא: בית פתוח בסופי שבוע, יום ראשון לקהילה, סדנאות ואירועים פתוחים — התאריכים הקרובים ופרטים לכל אחד.">
 
   <link rel="canonical" href="https://levyam.com/happening/">
@@ -23,7 +23,7 @@
   <link rel="alternate" hreflang="ar" href="https://levyam.com/happening/ar/">
   <link rel="alternate" hreflang="x-default" href="https://levyam.com/happening/">
 
-  <meta property="og:title" content="מה קורה בלב ים">
+  <meta property="og:title" content="יוזמות בלב ים">
   <meta property="og:description" content="בית פתוח בסופי שבוע, יום ראשון לקהילה, סדנאות ואירועים פתוחים — התאריכים הקרובים בלב ים, כפר הדייגים בג'סר א-זרקא.">
   <meta property="og:image" content="https://levyam.com/img/logo/logo-full.png">
   <meta property="og:type" content="website">
@@ -57,7 +57,7 @@
     "@type": "BreadcrumbList",
     "itemListElement": [
       { "@type": "ListItem", "position": 1, "name": "לב ים", "item": "https://levyam.com/" },
-      { "@type": "ListItem", "position": 2, "name": "מה קורה", "item": "https://levyam.com/happening/" }
+      { "@type": "ListItem", "position": 2, "name": "יוזמות", "item": "https://levyam.com/happening/" }
     ]
   }
   </script>
@@ -80,7 +80,7 @@
           <li><a href="/#why">מי אנחנו</a></li>
           <li><a href="/#gallery">גלריה</a></li>
           <li><a href="/stories/">סיפורים</a></li>
-          <li><a href="/happening/" aria-current="page">מה קורה</a></li>
+          <li><a href="/happening/" aria-current="page">יוזמות</a></li>
           <li><a href="/#faq">שאלות ותשובות</a></li>
           <li><a href="/#contact">צור קשר</a></li>
         </ul>
@@ -127,7 +127,7 @@
         <li><a href="/#why">מי אנחנו</a></li>
         <li><a href="/#gallery">גלריה</a></li>
         <li><a href="/stories/">סיפורים</a></li>
-        <li><a href="/happening/" aria-current="page">מה קורה</a></li>
+        <li><a href="/happening/" aria-current="page">יוזמות</a></li>
         <li><a href="/#faq">שאלות ותשובות</a></li>
         <li><a href="/#contact">צור קשר</a></li>
       </ul>
@@ -141,17 +141,23 @@
         <nav class="breadcrumbs" aria-label="מסלול ניווט">
           <ol>
             <li><a href="/">לב ים</a></li>
-            <li aria-current="page">מה קורה</li>
+            <li aria-current="page">יוזמות</li>
           </ol>
         </nav>
 
-        <h1 class="section-title">מה קורה</h1>
-        <p class="hub-standfirst">הדברים הקרובים בלב ים — בית פתוח בסופי שבוע, יום ראשון לקהילה, סדנאות ואירועים פתוחים. לוחצים על פריט לכל הפרטים.</p>
+        <h1 class="section-title">יוזמות</h1>
+        <p class="hub-standfirst">כל היוזמות המתקיימות בלב ים מופיעות פה, תבחרו תאריך בלוח שנה או תלחצו על יוזמה לקבלת כל הפרטים.</p>
       </div>
     </div>
     <div class="wave-divider wave-divider--orange" aria-hidden="true"></div>
 
+    <!-- The month, filled by js/happening.js from the live feed (a marked day
+         opens its items). Hidden until the feed answers; the cards below are
+         the list a crawler, a no-JS reader or a failed fetch gets. -->
+    <section class="hp-cal container container-hp" data-happening-calendar aria-label="לוח היוזמות" hidden></section>
+
     <div class="hp-hub container container-hp">
+      <h2 class="hp-hub-title">כל היוזמות</h2>
       <ul class="hp-grid" data-happening-list>
 <!--ITEM_LIST-->
       </ul>

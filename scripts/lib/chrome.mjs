@@ -15,8 +15,9 @@
  * other placeholder, fails the build — that is the drift this exists to remove.
  *
  * Used by scripts/gen-stories-index.mjs (pages + story hubs, both regions) and
- * scripts/gen-happening.mjs (hubs: both regions; landing templates: the footer
- * only — they carry their own minimal header).
+ * scripts/gen-happening.mjs (hubs and landing templates, both regions; a
+ * landing template keeps {{HE_URL}} / {{AR_URL}} as literal placeholders,
+ * filled per item when the page is rendered).
  */
 
 import { readFileSync } from 'node:fs'
@@ -41,10 +42,10 @@ const REGION_RE = new Map(
   ])
 )
 
-/** The named chrome regions of one document, by name; exactly one of each or it throws. */
-function extractRegions(html, where, names = REGIONS) {
+/** The two chrome regions of one document, by name; exactly one of each or it throws. */
+function extractRegions(html, where) {
   const regions = {}
-  for (const name of names) {
+  for (const name of REGIONS) {
     const found = html.match(REGION_RE.get(name))
     if (!found || found.length !== 1) {
       throw new Error(
@@ -78,19 +79,19 @@ function templateChrome(code) {
 }
 
 /**
- * The document with each named chrome region replaced by the template's,
+ * The document with both chrome regions replaced by the template's,
  * CHROME_VARS substituted. Every CHROME_VAR must be given (an omitted one
  * would ship as a literal placeholder). Validated first, so the diagnostic
  * names the document, not the template.
  */
-export function stampChrome(html, code, vars, where, names = REGIONS) {
+export function stampChrome(html, code, vars, where) {
   for (const v of CHROME_VARS) {
     if (typeof vars[v] !== 'string') throw new Error(`stampChrome(${where}): missing chrome var ${v}.`)
   }
   const chrome = templateChrome(code)
-  extractRegions(html, where, names)
+  extractRegions(html, where)
   let out = html
-  for (const name of names) {
+  for (const name of REGIONS) {
     // Function replacers throughout, so `$` in chrome or in a value is never interpreted.
     const stamped = CHROME_VARS.reduce((r, v) => r.replaceAll(`{{${v}}}`, () => vars[v]), chrome[name])
     out = out.replace(REGION_RE.get(name), () => stamped)
