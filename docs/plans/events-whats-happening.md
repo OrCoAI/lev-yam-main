@@ -104,7 +104,7 @@ added; the answers are recorded here and in the two ADRs.
 | 8 | Expired link | **"This one has passed" + the live list**, never a bare 404 while the item is recent. |
 | 9 | Story pairs for big recurring items | **The landing page replaces them.** `story_slug` stays as an optional "read the full story" link on the page. Supersedes 0054 §3's second path as a *requirement*. |
 | 10 | Measuring shares | **Dynatrace and GA4.** A second hand-written GA4 event, `share_click` — a deliberate exception to ADR 0006, recorded in ADR 0057. |
-| 11 | Homepage strip + nav link | **Both in.** |
+| 11 | Homepage strip + nav link | **Both in.** → **Strip out** (owner, 2026-09-29 staging review: initiatives appear only under `/happening/`); the nav link stays. |
 | + | Booking system (owner's addition on Q6) | **A "Path to booking" section in this plan, and hooks in the build:** the CTA is one swappable block; nothing booking-related enters the schema now. Roadmap Phase 4 links here. |
 | — | Delivery | **One PR, Tier A** (owner's choice over a 2a/2b split). |
 
@@ -221,9 +221,10 @@ same before/after record as 58):
   item with `audience_he` filled and `audience_ar` empty; a path under another row's id is
   refused.
 
-**Homepage strip + nav.** `index.html`: a "מה קורה" strip (next 3 items, rendered in the browser
-from the feed — the homepage is not per-item) + a nav entry linking `/happening/`; dictionary keys
-HE + AR in `js/app.js`. Story chrome: the same nav entry in `_template.html` / `_template.ar.html`
+**Homepage nav.** ~~`index.html`: a "מה קורה" strip (next 3 items, rendered in the browser
+from the feed — the homepage is not per-item)~~ (removed 2026-09-29: the homepage carries no
+initiatives, only the nav entry) + a nav entry linking `/happening/`; dictionary keys HE + AR in
+`js/app.js`. Story chrome: the same nav entry in `_template.html` / `_template.ar.html`
 (one generator run stamps every story page).
 
 **Owner setup (before staging sign-off):**
@@ -351,9 +352,9 @@ New file `supabase/schema/58_events_public.sql` (the spine in `40_events.sql` st
   `/happening/item/?e=<slug>` rendered in the browser~~ → **since the PR 2 kickoff: a generated
   static landing page per item**, `/happening/<slug>/` + `/happening/ar/<slug>/`, see "PR 2 — the
   landing pages"; `js/happening.js` hydrates it from `events.feed` on load.
-- **Homepage:** a 3-card strip + nav link; `index.html` + `js/app.js` dictionary keys HE + AR.
+- **Homepage:** ~~a 3-card strip +~~ nav link only (strip removed 2026-09-29); `index.html` + `js/app.js` dictionary keys HE + AR.
 - **Step zero screenshots** at 360 / 390 / 1280 for: the admin form (HE + AR), the list page and a
-  detail page in both languages, the homepage strip.
+  detail page in both languages ~~, the homepage strip~~.
 
 ## Prod apply checklist (PR 1) — from the gate's security review, 2026-09-28
 
@@ -400,11 +401,11 @@ variable in the file, so prod also received the local OTEL_* values (environment
 telemetry section. Set one secret with an explicit `NAME=value`, never with `--env-file`.
 
 ## Rollback
-Unpublish every item (`visibility = 'internal'`) — the hubs, the strip and each item page's
+Unpublish every item (`visibility = 'internal'`) — the hubs and each item page's
 load-time check show the empty/unavailable state within seconds; the generated item HTML itself
 stays on levyam.com until the next successful rebuild lands (the `rebuild-site` trigger, the prod
 nightly, or a manual `workflow_dispatch` of `deploy.yml` if the trigger is what broke). Full
-rollback: revert PR 2 (pages, generator, workflows, nav, strip), then PR 1's UI; the added
+rollback: revert PR 2 (pages, generator, workflows, nav), then PR 1's UI; the added
 columns are nullable and can stay; the bucket is emptied by hand.
 
 ## Checks
@@ -484,6 +485,8 @@ columns are nullable and can stay; the bucket is emptied by hand.
     nav item: the compact nav size now holds until 1366px for Arabic (`css/styles.css`).
   - Deferred (owner's call): a passed item still shows its CTA (dateless) under the banner;
     the hero stays the cover photo, not a slideshow.
+  - **The homepage strip is out** (owner, on the staging round): initiatives appear only under
+    `/happening/`; the homepage keeps the nav entry and loads none of the happening scripts.
 - 2026-09-29 · **PR 2 gate** (simplify → code-review + security-review as subagents):
   - **An item's text can never fail a deploy:** the template engine substitutes in one pass and
     checks for stray placeholders on the template only, so `{{…}}` in a title renders literally
@@ -508,13 +511,13 @@ columns are nullable and can stay; the bucket is emptied by hand.
     place per surface (`js/app.js` keys `nav_happening*`, the two story templates). Flagged at
     the PR: it sits near the older "מה קורה בלב ים" (services) entry.
   - **One renderer, two runtimes:** `js/happening-render.js` is a dependency-free UMD script —
-    the browser (hubs, strip, landing pages) and `scripts/gen-happening.mjs` (Node,
+    the browser (hubs, landing pages; the strip until 2026-09-29) and `scripts/gen-happening.mjs` (Node,
     `createRequire`) render a card, a date line, the CTA text and the share text from the same
     functions, so a page built at deploy and a page refreshed on load can never differ.
   - **Per-tier feed config is a file, not a build-time substitution:** `js/happening-config.js`
     holds the local stack in the checkout (ADR 0004 — local never touches prod; the prod anon
     key is not in the repo, only in the `VITE_*` secrets) and is rewritten into `_site/` from
-    the env by the generator. The homepage strip, the hubs and the landing pages all read it.
+    the env by the generator. The hubs and the landing pages read it (the homepage no longer loads it).
   - **Chrome stamping is shared:** `scripts/lib/chrome.mjs` (extracted from
     `gen-stories-index.mjs`, one implementation) stamps story chrome and happening chrome; a
     fourth chrome var `HAPPENING_CURRENT` marks the happening hub's nav entry.
@@ -592,7 +595,8 @@ PR; the merge date and the outcome-check date are filled in at merge.*
   `happening/_fixture.json`, `scripts/gen-happening.mjs` (stamp / check / render / fixture),
   `scripts/lib/chrome.mjs`, `js/happening-render.js`, `js/happening.js`,
   `js/happening-config.js`, `css/happening.css`; `js/wa-track.js` `shareClick` (ADR 0057);
-  homepage strip + nav entry (`index.html`, `js/app.js`), nav entry in both story templates
+  homepage nav entry (`index.html`, `js/app.js`; the strip shipped and was removed on the
+  staging round, 2026-09-29 — the homepage carries no initiatives), nav entry in both story templates
   (every story page re-stamped); `404.html` routes `/happening/*` to the hub of its language;
   `llms.txt` section; `sitemap.xml` entries at deploy.
 - Delivery: `assemble-site.sh` copies `happening/`, runs the generator, purges `_*` under
@@ -605,7 +609,7 @@ PR; the merge date and the outcome-check date are filled in at merge.*
 **Verified locally (gate step zero + /verify):** screenshots at 360/390/1280 of the HE + AR
 landing page (hero, CTA + share row, facts, body, gallery, next-3, getting-here, about, footer,
 sticky bar, QR panel), the passed and unavailable load-time states against the real local feed,
-both hubs, the homepage strip in HE and AR, the `/app/events` list and form; `rebuild-site`
+both hubs, the homepage nav in HE and AR (no strip), the `/app/events` list and form; `rebuild-site`
 answered `not_configured` to the owner, `forbidden` to staff, `origin_not_allowed` to a foreign
 origin; `RLS MATRIX: ALL ASSERTIONS PASSED`; lint / typecheck / tests / both generators' `--check`
 / the fixture render green.

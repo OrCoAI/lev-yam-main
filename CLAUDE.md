@@ -85,7 +85,8 @@ The public life of the venue, published from `/app/events` ([ADR 0054](docs/deci
   (UMD: browser + the generator) — item text and markup are never built anywhere else.
 - Every venue fact on a landing page comes from `FACTS.md`; no prices; the CTA is one swappable
   `<section data-cta>` (the plan's "Path to booking").
-- **Visitors see "יוזמות" / "مبادرات"** (nav, hub title, strip, breadcrumbs) — the URL, module and
+- **Visitors see "יוזמות" / "مبادرات"** (nav, hub title, breadcrumbs; the homepage carries only
+  the nav entry, never a strip of items) — the URL, module and
   code keep `happening`. An item's page stands alone: no link to a story pair, the body is
   required to publish; cost + booking are structured fields ([ADR 0058](docs/decisions/0058-initiatives-stand-alone-cost-booking-fields-section-named-yozmot.md)).
   The hub's month calendar is browser-rendered from the feed; the cards are the no-JS list.

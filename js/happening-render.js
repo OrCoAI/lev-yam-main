@@ -1,8 +1,8 @@
 /* ── "What's happening" — the shared renderer ────────────────────────────
    One implementation of every piece of item text and markup the public
    surface shows: the date line, the card, the prefilled WhatsApp message, the
-   share text and the page URL. Loaded by the browser (the hubs, the landing
-   pages and the homepage strip, through js/happening.js) AND by
+   share text and the page URL. Loaded by the browser (the hubs and the landing
+   pages, through js/happening.js) AND by
    scripts/gen-happening.mjs at build time through Node's createRequire — so
    a card rendered at deploy and a card refreshed on load are the same card.
 

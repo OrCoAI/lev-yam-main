@@ -1,4 +1,4 @@
-/* ═══ "What's happening" — /happening/ hubs, the landing pages, the homepage strip ═══
+/* ═══ "What's happening" — the /happening/ hubs and the landing pages ═══
    Layered on css/styles.css (tokens, fonts, .container, .btn, .lang-toggle,
    .site-footer). The hubs also load css/stories.css for .hub-hero,
    .breadcrumbs and .story-header. Only what this surface adds lives here.
@@ -22,7 +22,7 @@
   --hp-tile-edge: 1px solid color-mix(in srgb, var(--color-line) 70%, transparent);
 }
 
-/* ── Cards (hubs, "also coming up", the homepage strip) ────────────────── */
+/* ── Cards (the hubs, "more initiatives") ──────────────────────────────── */
 
 .hp-grid {
   list-style: none;
@@ -127,18 +127,8 @@
 .hp-hub { padding-block: var(--space-5) var(--space-7); }
 .container-hp { max-inline-size: 1200px; }
 
-/* ── The homepage strip ────────────────────────────────────────────────── */
+/* ── The outline pill link ("לכל היוזמות", the story link) ──────────────── */
 
-.happening-strip {
-  padding-block: clamp(2rem, 2.5vw + 1.25rem, 3.5rem);
-  background: var(--color-cream);
-}
-.happening-strip .section-sub { margin-block-end: var(--space-4); }
-.hp-grid-strip { max-inline-size: 1200px; margin-inline: auto; }
-.hp-strip-more {
-  text-align: center;
-  margin: var(--space-5) 0 0;
-}
 .hp-more-link {
   display: inline-flex;
   align-items: center;

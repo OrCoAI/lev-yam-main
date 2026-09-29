@@ -531,7 +531,7 @@ proposal — the owner reorders by editing this list.*
       scope widened by the owner ([ADR 0054](decisions/0054-whats-happening-is-db-driven-public-life-bilingual-in-the-db.md)):
       live public life only (weekends, community, initiatives), dated + recurring items, `/app/events`
       form **and** static pages for the big recurring ones, a detail page per item with prefilled
-      WhatsApp + `Event` JSON-LD, nav + homepage strip; Arabic enforced by a DB CHECK. Two Tier-A
+      WhatsApp + `Event` JSON-LD, nav (+ a homepage strip, removed 2026-09-29); Arabic enforced by a DB CHECK. Two Tier-A
       PRs (data + admin, then public surface); outcome = `whatsapp_click` + visits on `/happening/*`,
       check at ship + 21 days
       **PR 1 merged + on prod 2026-09-28** ([#93](https://github.com/OrCoAI/lev-yam-main/pull/93)): schema 58,
@@ -544,7 +544,7 @@ proposal — the owner reorders by editing this list.*
       the story pair; a written "Path to booking" for Phase 4. One Tier-A PR.
       **PR 2 built 2026-09-28**, reworked on the owner's localhost review 2026-09-29 (ADR 0058: "יוזמות",
       no story link, cost + booking, calendar hub, schema 60) (branch `events-landing-pages`): schema 59, `rebuild-site` function,
-      generator + templates + hubs + share row + strip + nav, nightly prod rebuild; verified on
+      generator + templates + hubs + share row + nav (strip out), nightly prod rebuild; verified on
       localhost, RLS matrix green. **Next:** staging sign-off, the owner's setup (PAT + secrets,
       function deploy, hand-apply 59 on prod), merge — then the outcome check at ship + 21 days.
 - [ ] **9. Backlink programme** — tourism, food/travel, Arab-society media → *referring domains*
