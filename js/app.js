@@ -52,11 +52,6 @@ const LevYamI18n = (function () {
 
       intro_p_html: 'על קו המים של כפר הדייגים הקסום, האחרון מסוגו בישראל, הקמנו את <strong class="intro-brand">לב ים</strong> - מרחב ליזמות עסקית חברתית המבוסס על שותפות, פשטות וקבלה.',
 
-      // the "what's happening" strip — the next live items from /app/events (js/happening.js)
-      happening_title: 'יוזמות',
-      happening_sub: 'הדברים הקרובים בלב ים — בית פתוח, קהילה, סדנאות',
-      happening_all: 'לכל היוזמות',
-
       services_title: 'מה קורה בלב ים',
       services_intro: 'אל מול נוף עוצר נשימה, ליד הדייגים - בתוך הכפר, קורים הדברים הכי טובים',
 
@@ -220,10 +215,6 @@ const LevYamI18n = (function () {
       hero_cta_services: 'ماذا يجري في ليف يام',
 
       intro_p_html: 'على خط الماء في قرية الصيادين الساحرة، الأخيرة من نوعها في البلاد، أقمنا <strong class="intro-brand">ليف يام</strong> — فضاءً لريادة الأعمال الاجتماعية، قائمًا على الشراكة والبساطة والقبول.',
-
-      happening_title: 'مبادرات',
-      happening_sub: 'الأشياء الجاية بليف يام — بيت مفتوح، مجتمع، ورشات',
-      happening_all: 'كل المبادرات',
 
       services_title: 'ماذا يجري في ليف يام',
       services_intro: 'أمام منظر يخطف الأنفاس، إلى جانب الصيادين — في قلب القرية، تحدث أجمل الأشياء',

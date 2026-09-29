@@ -9,7 +9,7 @@
   <meta name="description" content="מרחב ליזמות עסקית חברתית המבוסס על שותפות, פשטות וקבלה.">
 
   <!-- Read by scripts/gen-stories-index.mjs for the homepage's <lastmod>. -->
-  <meta name="levyam:updated" content="2026-09-28">
+  <meta name="levyam:updated" content="2026-09-29">
 
   <meta property="og:title" content="לב ים | מרחב יזמות עסקית חברתית על קו המים">
   <meta property="og:description" content="מרחב ליזמות עסקית חברתית המבוסס על שותפות, פשטות וקבלה.">
@@ -30,7 +30,6 @@
   <link rel="apple-touch-icon" href="img/logo/logo-mark.png">
 
   <link rel="stylesheet" href="css/styles.css">
-  <link rel="stylesheet" href="css/happening.css">
 
   <!-- ═══ DYNATRACE RUM TAG ═══ -->
   <script type="text/javascript" src="https://js-cdn.dynatracelabs.com/jstag/14868fa4215/bf37083dis/716e4cb7cadaf3f3_complete.js" crossorigin="anonymous"></script>
@@ -244,22 +243,6 @@
       <div class="container container-narrow">
         <p class="lead" data-i18n-html="intro_p_html">
           על קו המים של כפר הדייגים הקסום, האחרון מסוגו בישראל, הקמנו את <strong class="intro-brand">לב ים</strong> - מרחב ליזמות עסקית חברתית המבוסס על שותפות, פשטות וקבלה.
-        </p>
-      </div>
-    </section>
-
-    <!-- ═══ WHAT'S HAPPENING — the next three live items from /app/events, rendered by
-         js/happening.js from the platform's public feed; hidden until there is one.
-         Each card leads to the item's landing page (/happening/<slug>/, ADR 0056). -->
-    <section class="happening-strip" id="happening" aria-labelledby="happening-title" hidden data-happening-strip>
-      <div class="container">
-        <header class="section-header">
-          <h2 id="happening-title" class="section-title" data-i18n="happening_title">יוזמות</h2>
-          <p class="section-sub" data-i18n="happening_sub">הדברים הקרובים בלב ים — בית פתוח, קהילה, סדנאות</p>
-        </header>
-        <ul class="hp-grid hp-grid-strip" data-happening-list data-limit="3" data-heading="h3"></ul>
-        <p class="hp-strip-more">
-          <a class="hp-more-link" href="/happening/" data-i18n="happening_all" data-i18n-href="nav_happening_href">לכל היוזמות</a>
         </p>
       </div>
     </section>
@@ -699,10 +682,5 @@
        deferred scripts execute in document order. -->
   <script src="js/wa-track.js" defer></script>
   <script src="js/app.js" defer></script>
-  <!-- The "what's happening" strip: config (per tier), the shared renderer, then the behaviour —
-       after app.js so its langchange event finds a listener. -->
-  <script src="js/happening-config.js" defer></script>
-  <script src="js/happening-render.js" defer></script>
-  <script src="js/happening.js" defer></script>
 </body>
 </html>

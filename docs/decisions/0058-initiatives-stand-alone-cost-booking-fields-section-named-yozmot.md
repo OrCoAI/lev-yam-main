@@ -28,8 +28,9 @@ into every page), so each is recorded here rather than left in the diff.
    A cost line is not a price list: it is the item's own wording, and "no prices in the repo"
    ([story rules](../../CLAUDE.md)) still applies to everything the repo authors.
 3. **The section is "יוזמות" / "مبادرات"** everywhere a visitor sees it: the nav entry on the
-   homepage, every story page and both hubs, the hub title, the homepage strip, breadcrumbs, the
-   404 page and `llms.txt`. The URL stays `/happening/`; the module key, the schema and the code
+   homepage, every story page and both hubs, the hub title, breadcrumbs, the 404 page and
+   `llms.txt`. **The homepage shows no initiatives** (the strip of the kickoff's row 11 is out,
+   owner 2026-09-29): they live only under `/happening/`, reached through that nav entry. The URL stays `/happening/`; the module key, the schema and the code
    keep their names. "مبادرات" is the Arabic the owner has not yet reviewed with a native reader —
    it goes on that pass with the CTA line.
 4. **The hub carries a month calendar** rendered in the browser from the live feed (a recurring

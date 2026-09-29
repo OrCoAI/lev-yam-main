@@ -1,9 +1,8 @@
 'use strict';
 
 /* ── Behaviour for the "What's happening" surface ─────────────────────────
-   Three places load this, after js/happening-config.js and
+   Two places load this, after js/happening-config.js and
    js/happening-render.js:
-     · the homepage strip   (index.html — the next 3 live items)
      · the hubs             (/happening/, /happening/ar/ — the full list)
      · a landing page       (/happening/<slug>/ — generated at deploy)
    Every page is static HTML rendered at deploy (scripts/gen-happening.mjs);
@@ -47,28 +46,13 @@
     return liveItems;
   }
 
-  /* ── lists: the hubs and the homepage strip ────────────────────────── */
+  /* ── the hubs' list ────────────────────────────────────────────────── */
   var lists = document.querySelectorAll('[data-happening-list]');
-  var strip = document.querySelector('[data-happening-strip]');
-  var listItems = null;
-
-  function renderLists() {
-    if (!listItems) return;
-    var l = lang();
-    lists.forEach(function (ul) {
-      var limit = parseInt(ul.getAttribute('data-limit'), 10) || listItems.length;
-      ul.innerHTML = R.listHtml(cfg, listItems.slice(0, limit), l, { heading: ul.getAttribute('data-heading') || 'h2', eager: !strip });
-    });
-    if (strip) strip.hidden = listItems.length === 0;
-  }
-
   if (lists.length) {
     live().then(function (items) {
-      listItems = items;
-      renderLists();
-    }).catch(function () { /* the built list (or the hidden strip) stands */ });
-    /* the homepage swaps language in place (js/app.js) — the cards follow */
-    document.addEventListener('langchange', renderLists);
+      var l = lang();
+      lists.forEach(function (ul) { ul.innerHTML = R.listHtml(cfg, items, l, { heading: 'h2', eager: true }); });
+    }).catch(function () { /* the built list stands */ });
   }
 
   /* ── the hub's calendar: one month at a time, a marked day opens its
