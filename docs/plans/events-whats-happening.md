@@ -248,7 +248,11 @@ initiatives, only the nav entry) + a nav entry linking `/happening/`; dictionary
 2. `supabase secrets set --project-ref vhvghcehkcbtygomixmu GITHUB_DISPATCH_TOKEN=<token>`, then
    `REBUILD_WORKFLOW=deploy-staging.yml`, `REBUILD_REF=staging` (three separate commands). Prod:
    `--project-ref teyxtdccsrkdpqnbfcga`, `REBUILD_WORKFLOW=deploy.yml`, `REBUILD_REF=main`.
-3. `supabase functions deploy rebuild-site --no-verify-jwt --use-api --project-ref <ref>`.
+3. `supabase functions deploy rebuild-site --no-verify-jwt --use-api --project-ref <ref>`, and
+   **redeploy `translate`** the same way (`supabase functions deploy translate --no-verify-jwt --use-api --project-ref <ref>`):
+   this PR adds `audience`, `bring` and `cost` to the fields the function drafts, and a copy
+   deployed before that silently skips them — the button answers 200 and leaves the three
+   Arabic lines empty. Staging redeployed 2026-09-29; prod goes with step 4.
 4. Hand-apply `59_events_landing.sql` **then `60_events_cost.sql`** on prod after the staging round **and before the merge**
    (the prod build fetches `events.passed` and fails closed without 59; without 60 the public
    site still builds but **`/app/events` is unusable** — its column list names `cost_he`,
@@ -256,6 +260,7 @@ initiatives, only the nav entry) + a nav entry linking `/happening/`; dictionary
    missing file, only surplus privileges), then
    `notify pgrst, 'reload schema'`, then `node supabase/tests/audit-grants.mjs --ref teyxtdccsrkdpqnbfcga`
    → 0 drift, and probe as anon: `/rest/v1/passed` answers 200, `/rest/v1/events?select=notes` is refused.
+   Then the prod `translate` redeploy from step 3 (an anonymous POST still answers 401).
 
 ### Path to booking (strategy — Phase 4, not built here)
 Written at the owner's request on 2026-09-28 so PR 2 leaves the door open. Roadmap Phase 4
