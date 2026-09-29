@@ -43,9 +43,21 @@ jobs:
       - name: Stories sitemap/hub drift check
         run: node scripts/gen-stories-index.mjs --check
 
+      # The /happening/ shells and landing templates carry the same generated
+      # chrome (ADR 0049/0056); the stories check above does not cover them.
+      - name: Happening chrome drift check
+        run: node scripts/gen-happening.mjs --check
+
       - name: Install platform dependencies
         working-directory: app-src
         run: npm ci
+
+      # The landing pages are rendered at deploy from the live feed, so a
+      # template error would otherwise surface only in a deploy. Render the
+      # committed fixture instead (no network; needs app-src's `qrcode`, hence
+      # after npm ci).
+      - name: Happening landing pages render (fixture)
+        run: node scripts/gen-happening.mjs --fixture --out "$RUNNER_TEMP/happening-fixture"
 
       # Rails that let Tier C be trusted (G6). Lint gate: errors only — policy and
       # warning inventory in ADR 0037. Tests: POS bill math + finance helpers.

@@ -294,7 +294,10 @@ New file `supabase/schema/58_events_public.sql` (the spine in `40_events.sql` st
 - **`events.feed` rewritten** to the live rule and the public columns only: public ∧ confirmed/
   in_progress ∧ (dated: `event_date >= today` in `Asia/Jerusalem`; recurring: `recur_until` null
   or `>= today`), with a computed `next_date`. Anon **column** grants extended to exactly the new
-  public columns; `notes`, `owner_id`, `source_*`, and the internal `title` stay unreachable.
+  public columns; `notes`, `owner_id` and `source_*` stay unreachable. *(Correction at the PR 2
+  gate, 2026-09-29: the internal `title` has been anon-readable since 40 and both views select
+  it; the form writes the Hebrew title into it and a quote-sourced row can never be public, so
+  nothing beyond the public text is exposed — the sentence, not the grant, was wrong.)*
 - **Storage:** bucket `events-public` (public read); insert/update/delete on `storage.objects`
   gated by `core.has_permission('events.manage')`; image types only, size cap (pattern from
   `50_storage.sql`).
@@ -408,11 +411,13 @@ columns are nullable and can stay; the bucket is emptied by hand.
   private/business story stays on the homepage and stories. Recorded in ADR 0054.
 
 ## Open questions
-- *(logged at the gate, 2026-09-28, security review of the form round)* `events.valid_image_paths`
+- ~~*(logged at the gate, 2026-09-28, security review of the form round)* `events.valid_image_paths`
   accepts any `<uuid>/` prefix, so a row written by hand (not via the form) could reference and
   then, on removal, delete another item's object. Not an escalation — the bucket's delete policy is
   bucket-wide for `events.manage` — but pass `id` into the helper (`p like id::text || '/%'`) with
-  the next schema change so two rows can never share an object.
+  the next schema change so two rows can never share an object.~~ **Closed by
+  `59_events_landing.sql` (PR 2): the helper takes the row's `id`; `rls_matrix` asserts a path
+  under another item's id is refused.**
 - *(same review)* `friendlyError`'s fallback shows raw PostgREST text (table/constraint names, no
   data) for unmapped errors, e.g. an RLS refusal. Pre-existing; map the RLS message to
   `errNotWritten` and fall back to a generic bilingual line when the module doc is written.
@@ -429,6 +434,54 @@ columns are nullable and can stay; the bucket is emptied by hand.
    no resident names in captions.
 
 ## Decisions made on the way
+- 2026-09-29 · **PR 2 gate** (simplify → code-review + security-review as subagents):
+  - **An item's text can never fail a deploy:** the template engine substitutes in one pass and
+    checks for stray placeholders on the template only, so `{{…}}` in a title renders literally
+    (both reviews found the old order made a hostile or careless row fail every prod deploy).
+  - **JSON-LD is JSON-escaped:** `<` → `\u003c` in both blocks (covers `</script`, `<!--<script`
+    and `<script`); the breadcrumb block is built by the generator instead of HTML-escaped in the
+    template.
+  - **CI order:** `qrcode` loads only on a render, so `gen-happening --check` runs before `npm ci`.
+  - **A passed item's CTA carries no date** (the next occurrence only) — it keeps the button (Q8)
+    but does not ask to come on a date that is over.
+  - **`misconfigured`** (500) when the token is set but the workflow/ref secrets are malformed —
+    the form says the rebuild failed, not "not set up here".
+  - **Pre-merge order made explicit:** 59 is hand-applied on prod *before* the merge — the prod
+    deploy fetches `events.passed` and fails closed until it exists.
+  - Follow-ups (not this PR): `LevYamTrack.onWhatsAppClick`'s matcher should skip the numberless
+    share link so landing pages can share `js/stories.js`'s handler; lists could select card
+    columns only; merged remote branches predating the `github.ref` guards should be deleted
+    (a raw token holder could dispatch their old workflow files onto staging — noindex, bounded).
+- 2026-09-28 · **PR 2 build** (from the decisions table, no re-asking):
+  - **Nav label:** "מה קורה" / "شو في" — the module's own name (PR 1, seen by the owner), placed
+    after "סיפורים" in every nav (homepage, story chrome, hubs). The owner can rename it in one
+    place per surface (`js/app.js` keys `nav_happening*`, the two story templates). Flagged at
+    the PR: it sits near the older "מה קורה בלב ים" (services) entry.
+  - **One renderer, two runtimes:** `js/happening-render.js` is a dependency-free UMD script —
+    the browser (hubs, strip, landing pages) and `scripts/gen-happening.mjs` (Node,
+    `createRequire`) render a card, a date line, the CTA text and the share text from the same
+    functions, so a page built at deploy and a page refreshed on load can never differ.
+  - **Per-tier feed config is a file, not a build-time substitution:** `js/happening-config.js`
+    holds the local stack in the checkout (ADR 0004 — local never touches prod; the prod anon
+    key is not in the repo, only in the `VITE_*` secrets) and is rewritten into `_site/` from
+    the env by the generator. The homepage strip, the hubs and the landing pages all read it.
+  - **Chrome stamping is shared:** `scripts/lib/chrome.mjs` (extracted from
+    `gen-stories-index.mjs`, one implementation) stamps story chrome and happening chrome; a
+    fourth chrome var `HAPPENING_CURRENT` marks the happening hub's nav entry.
+  - **The fixture may carry absolute image paths** (`/img/gallery/…`) so CI and local
+    screenshots render real photos; the renderer serves an absolute path as-is and prefixes a
+    bucket path. The DB never produces an absolute path (`events_image_paths_valid`).
+  - **JSON-LD date-times carry the Asia/Jerusalem offset** for their date (IST/IDT, computed
+    with `Intl`), recurring items get `eventSchedule`; a passed page has no `Event` JSON-LD
+    (it is `noindex`). Never `offers`.
+  - **The AR CTA/share wording** (`أهلًا، بحب أجي على <الاسم> بتاريخ <التاريخ>`,
+    `الجاي:` for the next occurrence) and the AR landing texts reuse the reviewed phrasing of
+    `/stories/ar/how-to-get-to-jisr-az-zarqa/` and `js/app.js`; **the CTA line still needs the
+    native reader's pass before merge** (decisions table, Q6).
+  - **Found in step zero:** an author `display: grid` beats the UA's `[hidden]` rule — the
+    facts card needed an explicit `[hidden] { display: none }`; and the local functions'
+    origin allow-list has `localhost:5173`, not `127.0.0.1:5173` (a `rebuild_failed` note in
+    dev is that, not the function).
 - 2026-09-28 · **PR 2 kickoff** (11 closed-form questions + the owner's booking addition): a
   generated static landing page per item, rebuilt on publish through a scoped GitHub token; share
   row + sticky bar; two optional fields; `share_click` in GA4; story pairs no longer required;
@@ -462,7 +515,56 @@ columns are nullable and can stay; the bucket is emptied by hand.
   WhatsApp text; the page shows public life, not private events · [ADR 0054](../decisions/0054-whats-happening-is-db-driven-public-life-bilingual-in-the-db.md)
 
 ## Close-out
-*(appended when done — CLAUDE.md "Roadmap item close-out")*
+*PR 1 merged 2026-09-28 (#93, on prod). PR 2 built 2026-09-28 — this section is written at the
+PR; the merge date and the outcome-check date are filled in at merge.*
+
+**What shipped (PR 2, Tier A):**
+- `supabase/schema/59_events_landing.sql`: `audience_he/ar`, `bring_he/ar` (+ CHECK
+  `events_public_optional_bilingual`), `events.feed` with the four columns + anon column grants,
+  `events.passed` (90-day window, anon + authenticated select), `events.valid_image_paths(id,
+  paths)` pinned to the row's id. `rls_matrix.sql` +13 assertions (green locally). Baseline
+  regenerated. **Prod: hand-applied after the staging round, then `audit-grants --ref` → 0 drift**
+  (owner setup step 4).
+- `supabase/functions/rebuild-site`: signed-in + `events.manage` re-checked, dispatches
+  `REBUILD_WORKFLOW` on `REBUILD_REF` with `GITHUB_DISPATCH_TOKEN` (fixed result codes only);
+  `not_configured` without the token. `translate` gains the two optional fields.
+- `/app/events`: the two optional lines (HE/AR paired, translate covers them, live check for
+  the both-or-neither rule); every save that changes public state, the publish/unpublish toggle
+  and a delete of a public item call `rebuild-site` and show what it answered; the list's link
+  column is the landing page URL.
+- The public surface: `happening/_item.html` + `_item.ar.html` (landing templates),
+  `happening/index.html` + `ar/index.html` (served hub shells, chrome-stamped),
+  `happening/_fixture.json`, `scripts/gen-happening.mjs` (stamp / check / render / fixture),
+  `scripts/lib/chrome.mjs`, `js/happening-render.js`, `js/happening.js`,
+  `js/happening-config.js`, `css/happening.css`; `js/wa-track.js` `shareClick` (ADR 0057);
+  homepage strip + nav entry (`index.html`, `js/app.js`), nav entry in both story templates
+  (every story page re-stamped); `404.html` routes `/happening/*` to the hub of its language;
+  `llms.txt` section; `sitemap.xml` entries at deploy.
+- Delivery: `assemble-site.sh` copies `happening/`, runs the generator, purges `_*` under
+  `_site/happening`; `deploy.yml` nightly schedule + `github.ref` guards on both jobs + feed env
+  on the assemble step + `/happening/` smoke checks; `deploy-staging.yml` `github.ref` guard;
+  `ci.yml` chrome `--check` + fixture render. `supabase/README.md` documents the three secrets
+  and the token's honest scope; `CLAUDE.md` gains the What's-happening conventions and the
+  second GA4 event; ARCHITECTURE §6c records the build-time coupling.
+
+**Verified locally (gate step zero + /verify):** screenshots at 360/390/1280 of the HE + AR
+landing page (hero, CTA + share row, facts, body, gallery, next-3, getting-here, about, footer,
+sticky bar, QR panel), the passed and unavailable load-time states against the real local feed,
+both hubs, the homepage strip in HE and AR, the `/app/events` list and form; `rebuild-site`
+answered `not_configured` to the owner, `forbidden` to staff, `origin_not_allowed` to a foreign
+origin; `RLS MATRIX: ALL ASSERTIONS PASSED`; lint / typecheck / tests / both generators' `--check`
+/ the fixture render green.
+
+**Left out / pending:** the owner's setup (PAT + three secrets per project, function deploy,
+hand-apply 59 on prod) — listed above under "Owner setup"; the native reader's pass on the AR
+CTA line; `og:image` is the cover at its stored size (≤1600px), not a 1200-wide render
+(Supabase image transforms are a paid feature). Not built, by decision: a practical-answers
+block, a contact block, a village block, booking (Phase 4, "Path to booking").
+
+**Alignment:** VISION — P4 (public by default) now reaches the share sheet and the WhatsApp
+preview; the Q4 mandate (ADR 0046) is unchanged. ARCHITECTURE — every invariant re-checked in
+the PR 2 re-check above holds; the one new coupling (build-time read of the platform project)
+is recorded in §6c. **Verdict: aligned.**
 
 ## Outcome check
 *(appended on the check date: metric value vs target, verdict, what it changes)*

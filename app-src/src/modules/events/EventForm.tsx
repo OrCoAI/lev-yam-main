@@ -8,7 +8,7 @@ import { useState } from 'react'
 import { type Lang } from '../../lib/i18n'
 import DateField from '../finance/DateField'
 import { jerusalemDate } from '../pos/logic'
-import { insertItem, removeImages, translateToArabic, updateItem, uploadImage } from './api'
+import { insertItem, rebuildNote, removeImages, translateToArabic, updateItem, uploadImage } from './api'
 import { friendlyError, useET } from './i18n'
 import PhotosField, { photosFromPaths, type Photo } from './PhotosField'
 import { hhmm } from './format'
@@ -16,7 +16,8 @@ import type { EventItem, EventPayload } from './types'
 
 interface Props {
   initial: EventItem | null
-  onDone: () => void
+  /** called after a successful save; `note` is what the site rebuild answered, for the list to show */
+  onDone: (note: string | null) => void
   onCancel: () => void
 }
 
@@ -66,6 +67,10 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
     summary_ar: initial?.summary_ar ?? '',
     body_he: initial?.body_he ?? '',
     body_ar: initial?.body_ar ?? '',
+    audience_he: initial?.audience_he ?? '',
+    audience_ar: initial?.audience_ar ?? '',
+    bring_he: initial?.bring_he ?? '',
+    bring_ar: initial?.bring_ar ?? '',
   })
   const [slug, setSlug] = useState(initial?.slug ?? '')
   const [storySlug, setStorySlug] = useState(initial?.story_slug ?? '')
@@ -99,7 +104,9 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
   const fail = (err: unknown) => setServerError({ err, at: fingerprint })
 
   async function translate() {
-    const hasArabic = [text.title_ar, text.summary_ar, text.body_ar].some((v) => v.trim())
+    const hasArabic = [text.title_ar, text.summary_ar, text.body_ar, text.audience_ar, text.bring_ar].some(
+      (v) => v.trim(),
+    )
     if (hasArabic && !window.confirm(et.confirmOverwrite)) return
     setPending('translate')
     setServerError(null)
@@ -108,12 +115,16 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
         title: text.title_he,
         summary: text.summary_he,
         body: text.body_he,
+        audience: text.audience_he,
+        bring: text.bring_he,
       })
       setText((t) => ({
         ...t,
         title_ar: ar.title ?? t.title_ar,
         summary_ar: ar.summary ?? t.summary_ar,
         body_ar: ar.body ?? t.body_ar,
+        audience_ar: ar.audience ?? t.audience_ar,
+        bring_ar: ar.bring ?? t.bring_ar,
       }))
       setArState('machine')
     } catch (e) {
@@ -158,6 +169,11 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
       const missing = missingForPublish()
       if (missing.length) return `${et.errMissing} ${missing.join(' · ')}`
       if (arState === 'machine') return et.errReviewArabic
+      // events_public_optional_bilingual (59): a shown line exists in both languages
+      const half = (he: string, ar: string) => Boolean(he.trim()) !== Boolean(ar.trim())
+      if (half(text.audience_he, text.audience_ar) || half(text.bring_he, text.bring_ar)) {
+        return et.errOptionalBilingual
+      }
     }
     return null
   }
@@ -203,6 +219,10 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
         story_slug: storySlug.trim() || null,
         recur_weekdays: recurring ? weekdays : null,
         recur_until: recurring && until ? until : null,
+        audience_he: text.audience_he.trim(),
+        audience_ar: text.audience_ar.trim(),
+        bring_he: text.bring_he.trim(),
+        bring_ar: text.bring_ar.trim(),
         ar_machine_translated: arState === 'machine',
       }
       if (initial) await updateItem(id, payload)
@@ -210,7 +230,11 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
       uploaded = [] // the row references them now — never roll these back
       // photos the owner removed are no longer referenced by the row
       await removeImages((initial?.image_paths ?? []).filter((p) => !image_paths.includes(p)))
-      onDone()
+      // The landing pages are static (ADR 0056): a save that changes what the
+      // public sees — publishing, unpublishing, or editing a public item — asks
+      // the site to rebuild. A draft edit changes nothing public and asks nothing.
+      const wasPublic = initial?.visibility === 'public'
+      onDone(publish || wasPublic ? await rebuildNote(et) : null)
     } catch (e) {
       // the row never took the new photos — don't leave them orphaned in a public bucket
       await removeImages(uploaded)
@@ -229,6 +253,9 @@ export default function EventForm({ initial, onDone, onCancel }: Props) {
     { key: 'title', label: et.fTitle, hint: '', rows: 0, max: 120 },
     { key: 'summary', label: et.fSummary, hint: et.fSummaryHint, rows: 2, max: 240 },
     { key: 'body', label: et.fBody, hint: et.fBodyHint, rows: 7, max: undefined },
+    // the landing page's optional lines (59): shown only when filled, in both languages
+    { key: 'audience', label: et.fAudience, hint: et.fAudienceHint, rows: 0, max: 160 },
+    { key: 'bring', label: et.fBring, hint: et.fBringHint, rows: 0, max: 200 },
   ] as const
 
   function box(field: (typeof FIELDS)[number], lang: Lang, i: number) {

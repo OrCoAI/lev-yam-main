@@ -40,7 +40,9 @@
   .ev-bi > .ev-r1 { grid-row: 2; }
   .ev-bi > .ev-r2 { grid-row: 3; }
   .ev-bi > .ev-r3 { grid-row: 4; }
-  .ev-bi > .ev-bi-hint { grid-column: 1 / -1; grid-row: 5; }
+  .ev-bi > .ev-r4 { grid-row: 5; }
+  .ev-bi > .ev-r5 { grid-row: 6; }
+  .ev-bi > .ev-bi-hint { grid-column: 1 / -1; grid-row: 7; }
   /* the button in the exact middle of the Arabic column: name | button | pill */
   .ev-bi-lang.ev-bi-ar { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; }
   .ev-bi-ar .ev-bi-actions { display: contents; }

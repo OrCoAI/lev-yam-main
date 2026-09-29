@@ -28,24 +28,19 @@
  * Underscore-prefixed entries (_template.html, _hub.html, …) are never scanned.
  *
  * Chrome stamping (docs/plans/stories-authoring-tool.md, ADR 0049): the header and
- * footer of every story page AND of both hub templates sit between
- * <!-- chrome:header --> … <!-- /chrome:header --> (same for footer) and are
- * REWRITTEN from the per-language page template on every run. Inside a region
- * only CHROME_VARS may appear: {{HE_URL}} / {{AR_URL}} (the language toggle —
- * the twin URL on a page, the hub URL on a hub) and {{STORIES_CURRENT}} (the
- * nav's aria-current, set on the hub only). Rewrite rather than verify-only so
- * a nav or footer change is one template edit per language; the CTA band and
- * WhatsApp float carry per-page text, so they are deliberately outside every
- * region. Applies to noindex pages too (dugma is the smoke test). A page
- * missing a region, or a template region carrying any other placeholder, fails
- * the build — that is the drift this exists to remove.
+ * footer of every story page AND of both hub templates are REWRITTEN from the
+ * per-language page template on every run — the mechanism and its rules live
+ * in scripts/lib/chrome.mjs, shared with scripts/gen-happening.mjs. Rewrite
+ * rather than verify-only so a nav or footer change is one template edit per
+ * language; the CTA band and WhatsApp float carry per-page text, so they are
+ * deliberately outside every region. Applies to noindex pages too (dugma is
+ * the smoke test).
  */
 
 import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs'
-import { join, dirname, basename, relative } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join, basename, relative } from 'node:path'
+import { ROOT, chromeVars, stampChrome } from './lib/chrome.mjs'
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const ORIGIN = 'https://levyam.com'
 const STORIES_DIR = join(ROOT, 'stories')
 
@@ -59,7 +54,6 @@ const LANGS = [
     dir: STORIES_DIR,
     hubPath: 'stories/index.html',
     hubTemplate: '_hub.html',
-    pageTemplate: '_template.html',
     urlBase: '/stories/',
     empty: 'בקרוב.',
   },
@@ -68,7 +62,6 @@ const LANGS = [
     dir: join(STORIES_DIR, 'ar'),
     hubPath: 'stories/ar/index.html',
     hubTemplate: '_hub.ar.html',
-    pageTemplate: '_template.ar.html',
     urlBase: '/stories/ar/',
     empty: 'قريبًا.',
   },
@@ -172,62 +165,8 @@ function slugsIn(dir) {
 // from 1600px up; below 800 the hero is the viewport minus the gutter (100vw is close enough).
 const HERO_SIZES = '(min-width: 1600px) min(68vw, 1280px), (min-width: 800px) 736px, 100vw'
 
-const CHROME_VARS = ['HE_URL', 'AR_URL', 'STORIES_CURRENT']
-const REGION_RE = new Map(
-  ['header', 'footer'].map((name) => [
-    name,
-    new RegExp(`<!-- chrome:${name} -->[\\s\\S]*?<!-- /chrome:${name} -->`, 'g'),
-  ])
-)
-
-/** Every chrome region of one document, by name; exactly one of each or it throws. */
-function extractRegions(html, where) {
-  const regions = {}
-  for (const [name, re] of REGION_RE) {
-    const found = html.match(re)
-    if (!found || found.length !== 1) {
-      throw new Error(
-        `${where} must contain exactly one <!-- chrome:${name} --> … <!-- /chrome:${name} --> region (found ${found ? found.length : 0}).`
-      )
-    }
-    regions[name] = found[0]
-  }
-  return regions
-}
-
-const chromeCache = new Map()
-
-/** The page template's chrome, validated once per language: only CHROME_VARS may appear inside a region. */
-function templateChrome(lang) {
-  if (chromeCache.has(lang.code)) return chromeCache.get(lang.code)
-  const regions = extractRegions(readFileSync(join(STORIES_DIR, lang.pageTemplate), 'utf8'), lang.pageTemplate)
-  for (const [name, region] of Object.entries(regions)) {
-    const leftover = CHROME_VARS.reduce((r, v) => r.replaceAll(`{{${v}}}`, ''), region).match(/{{[^}]*}}/)
-    if (leftover) {
-      throw new Error(
-        `${lang.pageTemplate} chrome:${name} carries ${leftover[0]} — only ${CHROME_VARS.map((v) => `{{${v}}}`).join(', ')} may appear inside a stamped region.`
-      )
-    }
-  }
-  chromeCache.set(lang.code, regions)
-  return regions
-}
-
-/** The document with every chrome region replaced by the template's, CHROME_VARS substituted (validated first, so the diagnostic names the document). */
-function stampChrome(html, lang, vars, where) {
-  const chrome = templateChrome(lang)
-  extractRegions(html, where)
-  let out = html
-  for (const [name, re] of REGION_RE) {
-    // Function replacers throughout, so `$` in chrome or in a value is never interpreted.
-    const stamped = CHROME_VARS.reduce((r, v) => r.replaceAll(`{{${v}}}`, () => vars[v]), chrome[name])
-    out = out.replace(re, () => stamped)
-  }
-  return out
-}
-
-const pageVars = (slug) => ({ HE_URL: `/stories/${slug}/`, AR_URL: `/stories/ar/${slug}/`, STORIES_CURRENT: '' })
-const HUB_VARS = { HE_URL: '/stories/', AR_URL: '/stories/ar/', STORIES_CURRENT: ' aria-current="page"' }
+const pageVars = (slug) => chromeVars(`/stories/${slug}/`, `/stories/ar/${slug}/`)
+const HUB_VARS = chromeVars('/stories/', '/stories/ar/', { STORIES_CURRENT: ' aria-current="page"' })
 
 /** Slugs are English kebab-case (shared by both twins, and substituted into URLs). scripts/story-images.sh enforces the same rule. */
 const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/
@@ -237,7 +176,7 @@ function readPages(lang) {
   for (const slug of slugsIn(lang.dir)) {
     const pagePath = join(lang.dir, slug, 'index.html')
     const where = `${lang.urlBase}${slug}/`
-    const html = stampChrome(readFileSync(pagePath, 'utf8'), lang, pageVars(slug), where)
+    const html = stampChrome(readFileSync(pagePath, 'utf8'), lang.code, pageVars(slug), where)
     // Every page is an output like the hubs: written when its chrome drifted, stale under --check.
     pageOutputs.push({ path: relative(ROOT, pagePath), content: html })
 
@@ -366,7 +305,7 @@ function assertTwins(byLang) {
 
 function renderHub(lang, pages) {
   const template = stampChrome(
-    readFileSync(join(STORIES_DIR, lang.hubTemplate), 'utf8'), lang, HUB_VARS, lang.hubTemplate
+    readFileSync(join(STORIES_DIR, lang.hubTemplate), 'utf8'), lang.code, HUB_VARS, lang.hubTemplate
   )
   const marker = '<!--STORY_LIST-->'
   if (!template.includes(marker)) {

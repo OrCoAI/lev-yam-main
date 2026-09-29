@@ -6,7 +6,8 @@ import { useI18n } from '../../lib/i18n'
 import { useCan, PERM } from '../../lib/permissions'
 import { useRowDisclosure } from '../../lib/useRowDisclosure'
 import { shortDate } from '../finance/format'
-import { deleteItem, listItems, updateItem } from './api'
+import { jerusalemDate } from '../pos/logic'
+import { PASSED_PAGE_DAYS, deleteItem, landingPath, listItems, rebuildNote, updateItem } from './api'
 import EventForm from './EventForm'
 import { hhmm } from './format'
 import { friendlyError, useET, type EventsDict } from './i18n'
@@ -35,6 +36,20 @@ function whenText(et: EventsDict, item: EventItem): string {
   return [`${et.every} ${days}`, hours, until].filter(Boolean).join(' · ')
 }
 
+/** The item's public page: a link while a page exists (live, or over for less than
+ *  PASSED_PAGE_DAYS — the "this one has passed" page), plain text otherwise. */
+function LandingLink({ path, live }: { path: string; live: boolean }) {
+  return live ? (
+    <a href={path} target="_blank" rel="noopener" className="ev-slug" dir="ltr">
+      {path}
+    </a>
+  ) : (
+    <bdi dir="ltr" className="ev-slug">
+      {path}
+    </bdi>
+  )
+}
+
 export default function EventsModule() {
   const et = useET()
   const { lang } = useI18n()
@@ -46,6 +61,8 @@ export default function EventsModule() {
   const [loading, setLoading] = useState(true)
   // raw error, translated at render so a language switch re-words it
   const [error, setError] = useState<unknown>(null)
+  // what the site rebuild answered after the last public change — one line, until the next action
+  const [note, setNote] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   // null = form closed; 'new' = blank form; an item = editing it
   const [editing, setEditing] = useState<EventItem | 'new' | null>(null)
@@ -94,11 +111,15 @@ export default function EventsModule() {
   // the form's save (it writes the visibility it loaded), so the list waits
   const rowLocked = busy || editing !== null
 
-  async function run(fn: () => Promise<void>) {
+  // `rebuild`: the action changed what the public sees, so the static site is
+  // asked to rebuild afterwards (ADR 0056); the answer is shown as a note
+  async function run(fn: () => Promise<void>, rebuild = false) {
     setBusy(true)
+    setNote(null)
     try {
       await fn()
       setError(null)
+      if (rebuild) setNote(await rebuildNote(et))
       reload()
     } catch (e) {
       setError(e)
@@ -107,14 +128,15 @@ export default function EventsModule() {
   }
 
   function togglePublish(item: EventItem) {
-    void run(() =>
-      updateItem(item.id, { visibility: item.visibility === 'public' ? 'internal' : 'public' }),
+    void run(
+      () => updateItem(item.id, { visibility: item.visibility === 'public' ? 'internal' : 'public' }),
+      true,
     )
   }
 
   function remove(item: EventItem) {
     if (!window.confirm(et.confirmDelete)) return
-    void run(() => deleteItem(item))
+    void run(() => deleteItem(item), item.visibility === 'public')
   }
 
   return (
@@ -132,8 +154,9 @@ export default function EventsModule() {
         <EventForm
           key={editing === 'new' ? 'new' : editing.id}
           initial={editing === 'new' ? null : editing}
-          onDone={() => {
+          onDone={(saved) => {
             setEditing(null)
+            setNote(saved)
             reload()
           }}
           onCancel={() => setEditing(null)}
@@ -144,6 +167,11 @@ export default function EventsModule() {
         <div className="error">
           {et.errorPrefix} {friendlyError(et, error)}
         </div>
+      )}
+      {note && (
+        <p className="notice" role="status">
+          {note}
+        </p>
       )}
 
       {loading ? (
@@ -180,12 +208,15 @@ export default function EventsModule() {
                     {pick(item.summary_he, item.summary_ar)}
                   </td>
                   <td className="rl-more" data-label={et.colLink}>
-                    {item.slug ? (
-                      <bdi dir="ltr" className="ev-slug">
-                        {item.story_slug ? `/stories/${item.story_slug}/` : item.slug}
-                      </bdi>
-                    ) : (
-                      ''
+                    {item.slug && (
+                      <LandingLink
+                        path={landingPath(item.slug, lang)}
+                        live={
+                          state === 'live' ||
+                          (state === 'ended' &&
+                            (Date.parse(jerusalemDate()) - Date.parse(shown)) / 86_400_000 <= PASSED_PAGE_DAYS)
+                        }
+                      />
                     )}
                   </td>
                   {canManage && (

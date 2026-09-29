@@ -1,19 +1,8 @@
 <!doctype html>
 <!--
-  ═══ TEMPLATE — ARABIC STORY PAGE ═══════════════════════════════════════════
-
-  Arabic twin of _template.html. Copy to  stories/ar/<slug>/index.html  using
-  the SAME English kebab-case slug as the Hebrew page. Neither page ships alone
-  (docs/ARCHITECTURE.md, invariant 5; the generator enforces it).
-
-  Arabic follows the site's house style (js/app.js): Levantine/Palestinian as
-  spoken in Israel — conversational in body copy, tighter MSA-leaning phrasing
-  for headings and labels. Both languages are RTL.
-
-  All the rules in _template.html's RULES block apply unchanged. Arabic-only:
-  [مفقود: ...] is the missing-fact marker; the SAME slug and the SAME image
-  files as the Hebrew twin (og:image = /img/stories/<slug>/card.jpg); asset
-  paths stay root-absolute (this page sits one directory deeper).
+  ═══ HUB SHELL — ARABIC — /happening/ar/ ════════════════════════════════════
+  The twin of ../index.html — read its header. Chrome stamped from
+  stories/_template.ar.html.
 -->
 <html lang="ar" dir="rtl">
 <head>
@@ -21,39 +10,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#2c92bf">
 
-  <title>{{TITLE_60_AR}}</title>
-  <meta name="description" content="{{DESCRIPTION_155_AR}}">
+  <title>شو في بليف يام | فعاليات، بيت مفتوح، مجتمع</title>
+  <meta name="description" content="شو في هلق بليف يام، قرية الصيادين بجسر الزرقاء: بيت مفتوح بنهاية الأسبوع، يوم أحد للمجتمع، ورشات وفعاليات مفتوحة — التواريخ الجاية وتفاصيل كل وحدة.">
 
-  <meta name="levyam:published" content="{{YYYY-MM-DD}}">
-  <meta name="levyam:updated" content="{{YYYY-MM-DD}}">
+  <link rel="canonical" href="https://levyam.com/happening/ar/">
+  <link rel="alternate" hreflang="he" href="https://levyam.com/happening/">
+  <link rel="alternate" hreflang="ar" href="https://levyam.com/happening/ar/">
+  <link rel="alternate" hreflang="x-default" href="https://levyam.com/happening/">
 
-  <link rel="canonical" href="https://levyam.com/stories/ar/{{SLUG}}/">
-
-  <link rel="alternate" hreflang="he" href="https://levyam.com/stories/{{SLUG}}/">
-  <link rel="alternate" hreflang="ar" href="https://levyam.com/stories/ar/{{SLUG}}/">
-  <link rel="alternate" hreflang="x-default" href="https://levyam.com/stories/{{SLUG}}/">
-
-  <meta property="og:title" content="{{TITLE_60_AR}}">
-  <meta property="og:description" content="{{DESCRIPTION_155_AR}}">
-  <!-- REQUIRED: the same 1200×630 photo as the Hebrew twin. -->
-  <meta property="og:image" content="https://levyam.com/img/stories/{{SLUG}}/card.jpg">
-  <meta property="og:type" content="article">
+  <meta property="og:title" content="شو في بليف يام">
+  <meta property="og:description" content="بيت مفتوح بنهاية الأسبوع، يوم أحد للمجتمع، ورشات وفعاليات مفتوحة — التواريخ الجاية بليف يام، قرية الصيادين بجسر الزرقاء.">
+  <meta property="og:image" content="https://levyam.com/img/logo/logo-full.png">
+  <meta property="og:type" content="website">
   <meta property="og:locale" content="ar_IL">
   <meta property="og:locale:alternate" content="he_IL">
-  <meta property="og:url" content="https://levyam.com/stories/ar/{{SLUG}}/">
-
-  <!-- No font preload: css/styles.css switches html[lang="ar"] to a system Arabic
-       stack, and the Heebo/Assistant @font-face unicode-ranges exclude Arabic. -->
-  <!-- The hero image is the LCP — preload it with the same srcset/sizes. -->
-  <link rel="preload" as="image" fetchpriority="high"
-        imagesrcset="/img/stories/{{SLUG}}/hero-800.jpg 800w, /img/stories/{{SLUG}}/hero-1600.jpg 1600w"
-        imagesizes="(min-width: 1600px) min(68vw, 1280px), (min-width: 800px) 736px, 100vw">
+  <meta property="og:url" content="https://levyam.com/happening/ar/">
 
   <link rel="icon" href="/img/logo/logo-mark.png" type="image/png">
   <link rel="apple-touch-icon" href="/img/logo/logo-mark.png">
 
   <link rel="stylesheet" href="/css/styles.css">
   <link rel="stylesheet" href="/css/stories.css">
+  <link rel="stylesheet" href="/css/happening.css">
 
   <!-- ═══ DYNATRACE RUM TAG ═══ -->
   <script type="text/javascript" src="https://js-cdn.dynatracelabs.com/jstag/14868fa4215/bf37083dis/716e4cb7cadaf3f3_complete.js" crossorigin="anonymous"></script>
@@ -62,10 +40,7 @@
   <noscript><img height="1" width="1" style="display:none"
     src="https://www.facebook.com/tr?id=3961552923978842&ev=PageView&noscript=1"/></noscript>
 
-  <!-- ═══ META PIXEL + GA4 ═══
-       Both bootstraps live in js/vendor-tags.js so the pixel ID and the GA4
-       measurement ID exist in one place instead of once per page. The <noscript>
-       pixel above must stay inline to work at all. -->
+  <!-- ═══ META PIXEL + GA4 ═══ (both bootstraps live in js/vendor-tags.js) -->
   <script src="/js/vendor-tags.js" async></script>
 
   <script type="application/ld+json">
@@ -74,42 +49,16 @@
     "@type": "BreadcrumbList",
     "itemListElement": [
       { "@type": "ListItem", "position": 1, "name": "ليف يام", "item": "https://levyam.com/" },
-      { "@type": "ListItem", "position": 2, "name": "حكايات", "item": "https://levyam.com/stories/ar/" },
-      { "@type": "ListItem", "position": 3, "name": "{{H1_AR}}", "item": "https://levyam.com/stories/ar/{{SLUG}}/" }
-    ]
-  }
-  </script>
-
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    "mainEntity": [
-      {
-        "@type": "Question",
-        "name": "{{FAQ_Q1_AR}}",
-        "acceptedAnswer": { "@type": "Answer", "text": "{{FAQ_A1_AR}}" }
-      },
-      {
-        "@type": "Question",
-        "name": "{{FAQ_Q2_AR}}",
-        "acceptedAnswer": { "@type": "Answer", "text": "{{FAQ_A2_AR}}" }
-      },
-      {
-        "@type": "Question",
-        "name": "{{FAQ_Q3_AR}}",
-        "acceptedAnswer": { "@type": "Answer", "text": "{{FAQ_A3_AR}}" }
-      }
+      { "@type": "ListItem", "position": 2, "name": "شو في", "item": "https://levyam.com/happening/ar/" }
     ]
   }
   </script>
 </head>
 
-<body data-page-slug="{{SLUG}}">
+<body data-page-slug="happening">
 
-  <a class="skip-link" href="#story-main">تخطّى إلى المحتوى الأساسي</a>
+  <a class="skip-link" href="#hp-main">تخطّى إلى المحتوى الأساسي</a>
 
-  <!-- The header and footer between the chrome markers are stamped from stories/_template*.html by scripts/gen-stories-index.mjs — edit the page template. -->
   <!-- chrome:header -->
   <header class="story-header">
     <div class="hero-topbar">
@@ -122,8 +71,8 @@
           <li><a href="/#services">ماذا يجري في ليف يام</a></li>
           <li><a href="/#why">مَن نحن</a></li>
           <li><a href="/#gallery">معرض الصور</a></li>
-          <li><a href="/stories/ar/"{{STORIES_CURRENT}}>حكايات</a></li>
-          <li><a href="/happening/ar/"{{HAPPENING_CURRENT}}>شو في</a></li>
+          <li><a href="/stories/ar/">حكايات</a></li>
+          <li><a href="/happening/ar/" aria-current="page">شو في</a></li>
           <li><a href="/#faq">أسئلة وأجوبة</a></li>
           <li><a href="/#contact">تواصلوا معنا</a></li>
         </ul>
@@ -149,8 +98,8 @@
 
       <!-- Language toggle navigates to the twin URL — one URL per language. -->
       <div class="lang-toggle" role="group" aria-label="اللغة / שפה">
-        <a class="lang-opt" href="{{HE_URL}}" hreflang="he" lang="he">עב</a>
-        <a class="lang-opt is-active" href="{{AR_URL}}" hreflang="ar" lang="ar" aria-current="page">عر</a>
+        <a class="lang-opt" href="/happening/" hreflang="he" lang="he">עב</a>
+        <a class="lang-opt is-active" href="/happening/ar/" hreflang="ar" lang="ar" aria-current="page">عر</a>
       </div>
 
       <button class="nav-toggle" aria-label="فتح القائمة" data-label-open="فتح القائمة" data-label-close="إغلاق القائمة" aria-expanded="false" aria-controls="mobile-nav">
@@ -169,101 +118,46 @@
         <li><a href="/#services">ماذا يجري في ليف يام</a></li>
         <li><a href="/#why">مَن نحن</a></li>
         <li><a href="/#gallery">معرض الصور</a></li>
-        <li><a href="/stories/ar/"{{STORIES_CURRENT}}>حكايات</a></li>
-        <li><a href="/happening/ar/"{{HAPPENING_CURRENT}}>شو في</a></li>
+        <li><a href="/stories/ar/">حكايات</a></li>
+        <li><a href="/happening/ar/" aria-current="page">شو في</a></li>
         <li><a href="/#faq">أسئلة وأجوبة</a></li>
         <li><a href="/#contact">تواصلوا معنا</a></li>
       </ul>
     </nav>
   </header>
   <!-- /chrome:header -->
-  <div class="wave-divider wave-divider--orange" aria-hidden="true"></div>
 
-  <main id="story-main">
-    <article class="story">
-
-      <figure class="container container-narrow story-hero">
-        <img src="/img/stories/{{SLUG}}/hero-1600.jpg"
-             srcset="/img/stories/{{SLUG}}/hero-800.jpg 800w, /img/stories/{{SLUG}}/hero-1600.jpg 1600w"
-             sizes="(min-width: 1600px) min(68vw, 1280px), (min-width: 800px) 736px, 100vw"
-             width="1600" height="900" alt="{{HERO_ALT_AR}}"
-             fetchpriority="high" decoding="async">
-      </figure>
-
-      <div class="container container-narrow">
-
-        <nav class="breadcrumbs" aria-label="مسار التصفّح">
+  <main id="hp-main">
+    <div class="hub-hero">
+      <div class="container">
+        <nav class="breadcrumbs" aria-label="مسار التنقّل">
           <ol>
             <li><a href="/">ليف يام</a></li>
-            <li><a href="/stories/ar/">حكايات</a></li>
-            <li aria-current="page">{{H1_AR}}</li>
+            <li aria-current="page">شو في</li>
           </ol>
         </nav>
 
-        <h1 class="story-title">{{H1_AR}}</h1>
-
-        <div class="story-lede">
-          <p>{{ANSWER_SENTENCE_1_AR}} {{ANSWER_SENTENCE_2_AR}}</p>
-        </div>
-
-        <p class="story-byline">
-          بقلم <span class="story-byline-name">{{AUTHOR_AR}}</span> ·
-          <time datetime="{{YYYY-MM-DD}}">{{DD.MM.YYYY}}</time>
-        </p>
-
-        <h2>{{SECTION_1_HEADING_AR}}</h2>
-        <p>{{PARAGRAPH_AR}}</p>
-
-        <h2>{{SECTION_2_HEADING_AR}}</h2>
-        <p>{{PARAGRAPH_AR}}</p>
-
-        <figure class="story-figure">
-          <img src="/img/{{IMAGE_PATH}}" alt="{{ALT_TEXT_AR}}" width="1600" height="1200"
-               loading="lazy" decoding="async">
-          <figcaption>{{CAPTION_AR}}</figcaption>
-        </figure>
-
-        <!-- Video — self-hosted mp4 ≤8MB, 16:9, poster required, loads nothing
-             until tapped — or, with muted loop data-autoplay on the <video>, until
-             it scrolls into view, then plays muted while on screen (js/stories.js,
-             ADR 0051). The poster is fetched eagerly — compress it like a figure, ~100KB):
-        <figure class="story-figure story-video">
-          <video controls preload="none" playsinline
-                 poster="/img/stories/{{SLUG}}/clip-poster.jpg" width="1600" height="900">
-            <source src="/img/stories/{{SLUG}}/clip.mp4" type="video/mp4">
-          </video>
-          <figcaption>{{CAPTION_AR}}</figcaption>
-        </figure>
-        -->
-
-        <h2>أسئلة وأجوبة</h2>
-        <div class="story-faq">
-          <details class="faq-item">
-            <summary>{{FAQ_Q1_AR}}</summary>
-            <div class="faq-answer"><p>{{FAQ_A1_AR}}</p></div>
-          </details>
-          <details class="faq-item">
-            <summary>{{FAQ_Q2_AR}}</summary>
-            <div class="faq-answer"><p>{{FAQ_A2_AR}}</p></div>
-          </details>
-          <details class="faq-item">
-            <summary>{{FAQ_Q3_AR}}</summary>
-            <div class="faq-answer"><p>{{FAQ_A3_AR}}</p></div>
-          </details>
-        </div>
-
+        <h1 class="section-title">شو في</h1>
+        <p class="hub-standfirst">الأشياء الجاية بليف يام — بيت مفتوح بنهاية الأسبوع، يوم أحد للمجتمع، ورشات وفعاليات مفتوحة. اكبسوا على بند لكل التفاصيل.</p>
       </div>
-    </article>
+    </div>
+    <div class="wave-divider wave-divider--orange" aria-hidden="true"></div>
+
+    <div class="hp-hub container container-hp">
+      <ul class="hp-grid" data-happening-list>
+<!--ITEM_LIST-->
+      </ul>
+    </div>
 
     <div class="wave-divider wave-divider--blue" aria-hidden="true"></div>
     <aside class="story-cta">
       <div class="container">
         <img class="footer-logo story-cta-mark" src="/img/logo/logo-mono-nobg.png" alt="" width="40" height="40">
-        <p class="story-cta-text">{{CTA_LEAD_AR}}</p>
+        <p class="story-cta-text">بدكم تعرفوا شو في بنهاية الأسبوع الجاية، أو تخطّطوا إشي إلكم؟ ابعتولنا رسالة.</p>
         <a class="btn btn-primary"
-           href="https://wa.me/972506669138?text={{URLENCODED_ARABIC_MESSAGE}}"
+           href="https://wa.me/972506669138?text=أهلًا%2C%20بحب%20أعرف%20شو%20في%20بليف%20يام"
            target="_blank" rel="noopener"
-           data-bizevent-source="stories_{{SLUG}}">
+           data-bizevent-source="happening_hub">
           تحدّثوا معنا عبر واتساب
         </a>
       </div>
@@ -311,8 +205,8 @@
   <!-- /chrome:footer -->
 
   <a class="wa-float"
-     href="https://wa.me/972506669138?text={{URLENCODED_ARABIC_MESSAGE}}"
-     data-bizevent-source="stories_float"
+     href="https://wa.me/972506669138?text=أهلًا%2C%20بحب%20أعرف%20شو%20في%20بليف%20يام"
+     data-bizevent-source="happening_float"
      target="_blank" rel="noopener"
      aria-label="تواصلوا عبر واتساب">
     <svg viewBox="0 0 32 32" width="32" height="32" aria-hidden="true">
@@ -322,5 +216,8 @@
 
   <script src="/js/wa-track.js" defer></script>
   <script src="/js/stories.js" defer></script>
+  <script src="/js/happening-config.js" defer></script>
+  <script src="/js/happening-render.js" defer></script>
+  <script src="/js/happening.js" defer></script>
 </body>
 </html>

@@ -13,6 +13,12 @@
    same links. whatsapp_click sits next to it: it is named, it carries the slug,
    and it is the one marked as a key event in the GA4 UI.
 
+   A share of a "What's happening" landing page (ADR 0057) is the second
+   hand-written GA4 event, share_click — Dynatrace levyam.share + GA4, no Meta:
+
+     Dynatrace  levyam.share         channel + language + page slug
+     GA4        share_click          page_slug, channel, lang (not a key event)
+
    Every sender no-ops when its vendor script hasn't loaded (blocked, offline,
    consent tooling), so a missing vendor never breaks a CTA.                  */
 
@@ -62,6 +68,27 @@ window.LevYamTrack = (function () {
     });
   }
 
+  /* One share of a landing page. `channel` is whatsapp | copy | native | qr
+     (js/happening.js). Two vendors, deliberately no Meta event: a share is
+     not a lead. */
+  function shareClick(opts) {
+    var channel = (opts && opts.channel) || 'unknown';
+    var lang    = (opts && opts.lang) || document.documentElement.lang || 'he';
+    var slug    = document.body.getAttribute('data-page-slug') || 'unknown';
+
+    bizEvent('levyam.share', {
+      'event.channel':   channel,
+      'event.lang':      lang,
+      'event.page_slug': slug
+    });
+
+    gaEvent('share_click', {
+      page_slug: slug,
+      channel:   channel,
+      lang:      lang
+    });
+  }
+
   /* Delegated matcher for WhatsApp CTAs. Both consumers call this rather than
      repeating the selector — the homepage does more on the same click (service
      interest, contact intent), so each keeps its own handler body. */
@@ -75,6 +102,7 @@ window.LevYamTrack = (function () {
   return {
     bizEvent:        bizEvent,
     whatsappClick:   whatsappClick,
+    shareClick:      shareClick,
     onWhatsAppClick: onWhatsAppClick
   };
 })();
