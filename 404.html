@@ -23,6 +23,12 @@
         if (path === '/app' || path.indexOf('/app/') === 0) {
           var route = path.replace(/^\/app/, '') || '/'
           window.location.replace('/app/?p=' + encodeURIComponent(route) + window.location.hash)
+        } else if (path.indexOf('/happening/ar/') === 0) {
+          // a "what's happening" item page that is gone (unpublished, or over
+          // for more than 90 days — ADR 0056): the live list, in its language
+          window.location.replace('/happening/ar/')
+        } else if (path.indexOf('/happening/') === 0) {
+          window.location.replace('/happening/')
         } else {
           window.location.replace('/')
         }
@@ -100,6 +106,8 @@
           <li><a href="/">לב ים — דף הבית · ليف يام — الصفحة الرئيسية</a></li>
           <li><a href="/stories/">סיפורים</a></li>
           <li><a href="/stories/ar/">حكايات</a></li>
+          <li><a href="/happening/">יוזמות</a></li>
+          <li><a href="/happening/ar/">مبادرات</a></li>
           <li><a href="https://wa.me/972506669138" target="_blank" rel="noopener">וואטסאפ · واتساب</a></li>
         </ul>
       </nav>

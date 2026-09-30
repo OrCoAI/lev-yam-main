@@ -18,7 +18,7 @@ default") and invariant 6 (visibility flag on public content) meet a real public
 | Source | GA4 Data API + Search Console — the weekly-review analytics snapshot ([ADR 0047](../decisions/0047-analytics-wiring-ga4-and-gsc-only-public-numbers.md)) |
 | Baseline (today) | 0 / 0 / 0 / 0 — the pages do not exist (2026-09-25) |
 | Target | clicks ≥ 10 in the first 21 days; visits, impressions and shares are a first read (reported, no pass line) |
-| Check date | ship + 21 days (date written here at merge) — `weekly-review` lists it when due |
+| Check date | **2026-10-21** (ship + 21 days; PR 2 merged 2026-09-30) — `weekly-review` lists it when due |
 | Verdict owner | owner |
 
 ## Scope
@@ -104,7 +104,7 @@ added; the answers are recorded here and in the two ADRs.
 | 8 | Expired link | **"This one has passed" + the live list**, never a bare 404 while the item is recent. |
 | 9 | Story pairs for big recurring items | **The landing page replaces them.** `story_slug` stays as an optional "read the full story" link on the page. Supersedes 0054 §3's second path as a *requirement*. |
 | 10 | Measuring shares | **Dynatrace and GA4.** A second hand-written GA4 event, `share_click` — a deliberate exception to ADR 0006, recorded in ADR 0057. |
-| 11 | Homepage strip + nav link | **Both in.** |
+| 11 | Homepage strip + nav link | **Both in.** → **Strip out** (owner, 2026-09-29 staging review: initiatives appear only under `/happening/`); the nav link stays. |
 | + | Booking system (owner's addition on Q6) | **A "Path to booking" section in this plan, and hooks in the build:** the CTA is one swappable block; nothing booking-related enters the schema now. Roadmap Phase 4 links here. |
 | — | Delivery | **One PR, Tier A** (owner's choice over a 2a/2b split). |
 
@@ -168,12 +168,12 @@ as the report jobs (ADR 0039 spirit): a scoped token, a workflow that only rebui
 
 **Expired state.** `events.passed` is a second anon-readable view: public items whose last
 occurrence passed within the last 90 days, same public columns. The generator renders them with
-`noindex`, a "האירוע הזה כבר עבר" banner, the next-3 block and the CTA, and leaves them out of
+`noindex`, a "היוזמה הזאת כבר עברה" banner, the next-3 block and the CTA, and leaves them out of
 the sitemap. After 90 days the page is gone and `404.html` routes `/happening/*` to
 `/happening/`. Every generated page also checks the feed on load: an item that passed since the
 last rebuild flips to the passed state at once, and text/gallery edits show without waiting. A slug
 found in neither view (unpublished since the last rebuild) renders an *unavailable* state on load —
-a neutral line ("הפריט אינו זמין כרגע", not the "passed" banner, which would be untrue for a
+a neutral line ("היוזמה אינה זמינה כרגע", not the "passed" banner, which would be untrue for a
 withdrawn item) plus the next-3 block — so an unpublish is honoured within seconds even before the
 rebuild lands.
 
@@ -183,7 +183,9 @@ rebuild lands.
 1. **Hero** — cover photo full-bleed, title, when (next date + time, recurrence line), summary;
    WhatsApp CTA (prefilled) + share row (WhatsApp · copy · share · QR).
 2. **Who it's for / what to bring** — labelled lines, only when filled.
-3. **Full text** (`body_*`), then a "read the full story" link when `story_slug` is set.
+3. **Full text** (`body_*`) — ~~then a "read the full story" link when `story_slug` is set~~
+   (dropped 2026-09-29, ADR 0058: no link between initiatives and stories; the tiles now also
+   carry cost + booking, and "also coming up" became "יוזמות נוספות", last on the page).
 4. **Gallery** — swipeable, the same image set as the form (cover first).
 5. **Also coming up** — the next 3 other live items (rendered at build, refreshed on load).
 6. **Where & how to get here** — Waze "לב ים", Google Maps by coordinates, drive times from
@@ -219,21 +221,50 @@ same before/after record as 58):
   item with `audience_he` filled and `audience_ar` empty; a path under another row's id is
   refused.
 
-**Homepage strip + nav.** `index.html`: a "מה קורה" strip (next 3 items, rendered in the browser
-from the feed — the homepage is not per-item) + a nav entry linking `/happening/`; dictionary keys
-HE + AR in `js/app.js`. Story chrome: the same nav entry in `_template.html` / `_template.ar.html`
+**Homepage nav.** ~~`index.html`: a "מה קורה" strip (next 3 items, rendered in the browser
+from the feed — the homepage is not per-item)~~ (removed 2026-09-29: the homepage carries no
+initiatives, only the nav entry) + a nav entry linking `/happening/`; dictionary keys HE + AR in
+`js/app.js`. Story chrome: the same nav entry in `_template.html` / `_template.ar.html`
 (one generator run stamps every story page).
 
 **Owner setup (before staging sign-off):**
+0. *(done 2026-09-29 in the build session)* 59 applied on **staging** with
+   `supabase db query --linked -f supabase/schema/59_events_landing.sql` followed by
+   `notify pgrst, 'reload schema'` — **and the same for `60_events_cost.sql`** (2026-09-29; it
+   drops `story_slug`, so any staging row that linked a story loses the link by design). **Always
+   `supabase db query` on a tier, never `psql -f`:** `db query` runs the file as one statement
+   through the management API, i.e. one transaction, so 60's drop-CHECK → re-add-CHECK sequence
+   cannot be left half-applied; `psql -f` autocommits per statement (locally use `psql -1 -f`).
+   `db query` does not return `raise notice`, so **before** applying 60 on a tier run
+   `select slug from events.events where visibility = 'public' and (btrim(body_he) = '' or btrim(body_ar) = '')`
+   — those rows are the ones 60 demotes to internal (they published through a story link) — (a new view is invisible to PostgREST until the cache reloads —
+   the first staging deploy failed on `events.passed` 404 for exactly that reason). **Not**
+   `supabase db push`: the staging project's migration history does not record the baseline, so a
+   push would replay all 25 schema files, including the pre-cut-over POS layers the README warns
+   about. Prod (step 4) is applied the same way, by hand, followed by the reload notify.
 1. GitHub → Settings → Developer settings → Fine-grained tokens → *Generate new token*: resource
    owner `OrCoAI`, **only** repository `lev-yam-main`, repository permissions **Actions: Read and
    write**, nothing else, expiry 1 year. Copy it once.
 2. `supabase secrets set --project-ref vhvghcehkcbtygomixmu GITHUB_DISPATCH_TOKEN=<token>`, then
    `REBUILD_WORKFLOW=deploy-staging.yml`, `REBUILD_REF=staging` (three separate commands). Prod:
    `--project-ref teyxtdccsrkdpqnbfcga`, `REBUILD_WORKFLOW=deploy.yml`, `REBUILD_REF=main`.
-3. `supabase functions deploy rebuild-site --no-verify-jwt --use-api --project-ref <ref>`.
-4. Hand-apply `59_events_landing.sql` on prod after the staging round, then
-   `node supabase/tests/audit-grants.mjs --ref teyxtdccsrkdpqnbfcga` → 0 drift.
+   **Staging wired 2026-09-30:** token `lev-yam rebuild-site` (only `lev-yam-main`, Actions read +
+   write) **expires 2027-09-29**; it sits in the owner's keychain as `levyam-rebuild-pat`, and prod's
+   `GITHUB_DISPATCH_TOKEN` is set from there the same way, so the value never passes through a chat
+   or a file. A direct dispatch with it answered 204 and the staging deploy it started went green.
+3. `supabase functions deploy rebuild-site --no-verify-jwt --use-api --project-ref <ref>`, and
+   **redeploy `translate`** the same way (`supabase functions deploy translate --no-verify-jwt --use-api --project-ref <ref>`):
+   this PR adds `audience`, `bring` and `cost` to the fields the function drafts, and a copy
+   deployed before that silently skips them — the button answers 200 and leaves the three
+   Arabic lines empty. Staging redeployed 2026-09-29; prod goes with step 4.
+4. Hand-apply `59_events_landing.sql` **then `60_events_cost.sql`** on prod after the staging round **and before the merge**
+   (the prod build fetches `events.passed` and fails closed without 59; without 60 the public
+   site still builds but **`/app/events` is unusable** — its column list names `cost_he`,
+   `cost_ar`, `booking_required`, so every list read answers 400 — and no audit catches a
+   missing file, only surplus privileges), then
+   `notify pgrst, 'reload schema'`, then `node supabase/tests/audit-grants.mjs --ref teyxtdccsrkdpqnbfcga`
+   → 0 drift, and probe as anon: `/rest/v1/passed` answers 200, `/rest/v1/events?select=notes` is refused.
+   Then the prod `translate` redeploy from step 3 (an anonymous POST still answers 401).
 
 ### Path to booking (strategy — Phase 4, not built here)
 Written at the owner's request on 2026-09-28 so PR 2 leaves the door open. Roadmap Phase 4
@@ -255,7 +286,11 @@ Written at the owner's request on 2026-09-28 so PR 2 leaves the door open. Roadm
 
 ### Changes to earlier decisions
 - 0054 §3's second path (a written story pair for the big recurring items) is no longer a
-  requirement; `story_slug` is an optional link (ADR 0056).
+  requirement; `story_slug` is an optional link (ADR 0056). **Then dropped altogether: an
+  initiative's page stands alone, no link to stories (ADR 0058, 2026-09-29).**
+- Rows 5, 7 and 9 of the PR 2 table are superseded by ADR 0058: a third structured field pair
+  (cost) plus a booking flag; the full site header instead of the minimal one, "יוזמות נוספות"
+  last; no story link.
 - 0054 §4 "live within seconds, no PR" → "live within minutes, no PR" (ADR 0056).
 - Out-of-scope item "per-item URLs in `sitemap.xml`" is **in**: the generator writes them.
 - ADR 0006's "one hand-written GA4 event" gains a second, `share_click` (ADR 0057).
@@ -294,7 +329,10 @@ New file `supabase/schema/58_events_public.sql` (the spine in `40_events.sql` st
 - **`events.feed` rewritten** to the live rule and the public columns only: public ∧ confirmed/
   in_progress ∧ (dated: `event_date >= today` in `Asia/Jerusalem`; recurring: `recur_until` null
   or `>= today`), with a computed `next_date`. Anon **column** grants extended to exactly the new
-  public columns; `notes`, `owner_id`, `source_*`, and the internal `title` stay unreachable.
+  public columns; `notes`, `owner_id` and `source_*` stay unreachable. *(Correction at the PR 2
+  gate, 2026-09-29: the internal `title` has been anon-readable since 40 and both views select
+  it; the form writes the Hebrew title into it and a quote-sourced row can never be public, so
+  nothing beyond the public text is exposed — the sentence, not the grant, was wrong.)*
 - **Storage:** bucket `events-public` (public read); insert/update/delete on `storage.objects`
   gated by `core.has_permission('events.manage')`; image types only, size cap (pattern from
   `50_storage.sql`).
@@ -323,9 +361,9 @@ New file `supabase/schema/58_events_public.sql` (the spine in `40_events.sql` st
   `/happening/item/?e=<slug>` rendered in the browser~~ → **since the PR 2 kickoff: a generated
   static landing page per item**, `/happening/<slug>/` + `/happening/ar/<slug>/`, see "PR 2 — the
   landing pages"; `js/happening.js` hydrates it from `events.feed` on load.
-- **Homepage:** a 3-card strip + nav link; `index.html` + `js/app.js` dictionary keys HE + AR.
+- **Homepage:** ~~a 3-card strip +~~ nav link only (strip removed 2026-09-29); `index.html` + `js/app.js` dictionary keys HE + AR.
 - **Step zero screenshots** at 360 / 390 / 1280 for: the admin form (HE + AR), the list page and a
-  detail page in both languages, the homepage strip.
+  detail page in both languages ~~, the homepage strip~~.
 
 ## Prod apply checklist (PR 1) — from the gate's security review, 2026-09-28
 
@@ -372,11 +410,11 @@ variable in the file, so prod also received the local OTEL_* values (environment
 telemetry section. Set one secret with an explicit `NAME=value`, never with `--env-file`.
 
 ## Rollback
-Unpublish every item (`visibility = 'internal'`) — the hubs, the strip and each item page's
+Unpublish every item (`visibility = 'internal'`) — the hubs and each item page's
 load-time check show the empty/unavailable state within seconds; the generated item HTML itself
 stays on levyam.com until the next successful rebuild lands (the `rebuild-site` trigger, the prod
 nightly, or a manual `workflow_dispatch` of `deploy.yml` if the trigger is what broke). Full
-rollback: revert PR 2 (pages, generator, workflows, nav, strip), then PR 1's UI; the added
+rollback: revert PR 2 (pages, generator, workflows, nav), then PR 1's UI; the added
 columns are nullable and can stay; the bucket is emptied by hand.
 
 ## Checks
@@ -408,11 +446,13 @@ columns are nullable and can stay; the bucket is emptied by hand.
   private/business story stays on the homepage and stories. Recorded in ADR 0054.
 
 ## Open questions
-- *(logged at the gate, 2026-09-28, security review of the form round)* `events.valid_image_paths`
+- ~~*(logged at the gate, 2026-09-28, security review of the form round)* `events.valid_image_paths`
   accepts any `<uuid>/` prefix, so a row written by hand (not via the form) could reference and
   then, on removal, delete another item's object. Not an escalation — the bucket's delete policy is
   bucket-wide for `events.manage` — but pass `id` into the helper (`p like id::text || '/%'`) with
-  the next schema change so two rows can never share an object.
+  the next schema change so two rows can never share an object.~~ **Closed by
+  `59_events_landing.sql` (PR 2): the helper takes the row's `id`; `rls_matrix` asserts a path
+  under another item's id is refused.**
 - *(same review)* `friendlyError`'s fallback shows raw PostgREST text (table/constraint names, no
   data) for unmapped errors, e.g. an RLS refusal. Pre-existing; map the RLS message to
   `errNotWritten` and fall back to a generic bilingual line when the module doc is written.
@@ -429,6 +469,98 @@ columns are nullable and can stay; the bucket is emptied by hand.
    no resident names in captions.
 
 ## Decisions made on the way
+- 2026-09-29 · **PR 2, the owner's localhost review** (before the gate; [ADR 0058](../decisions/0058-initiatives-stand-alone-cost-booking-fields-section-named-yozmot.md)) —
+  the owner walked the built page on localhost and reworked it in short iterations:
+  - **The section is "יוזמות" / "مبادرات"** (nav on every page, hub title, strip, breadcrumbs,
+    404, `llms.txt`); the URL and the code keep `happening`.
+  - **No connection between initiatives and stories:** `story_slug` dropped, the body required
+    for every public item (`60_events_cost.sql`, the `publishable()` story clause removed);
+    the "read the full story" link and the form's field are gone.
+  - **Cost + booking** (`cost_he/ar`, `booking_required`) entered at creation, shown as one
+    tile ("עלות והרשמה") — the same both-or-neither CHECK; `translate` covers the cost text.
+  - **The page:** the full site header + zigzag instead of the minimal header; an action panel
+    (CTA + share row as round icon buttons) beside the fact tiles on desktop, one shape for
+    every box; tiles with the brand's marks (sun / house / logo stamp / heart / palm), "מתי"
+    without the next date (the hero carries it), "איפה" on two lines; the photos as an
+    automatic 3-second crossfade (blur-in, slow zoom; arrows, dots, swipe, keys; pauses on
+    hover, hidden tab, off-screen; no autoplay under reduced motion); "יוזמות נוספות" last,
+    three across on desktop; drive-time boxes, the accessibility line, the about photos and
+    the second about paragraph removed; the about text is the owner's; the sticky CTA carries
+    the WhatsApp icon and tucks away while the panel is on screen; desktop column 1120px.
+  - **The hub:** a month calendar (browser-rendered from the feed, recurring items expanded,
+    nothing before today marked, opens on the first month with something) with the day's
+    items beside it; the owner's standfirst; a uniform responsive card grid (no featured card).
+  - The Arabic header nav overlapped its social icons at 1280px on every page since the seventh
+    nav item: the compact nav size now holds until 1366px for Arabic (`css/styles.css`).
+  - Deferred (owner's call): a passed item still shows its CTA (dateless) under the banner;
+    the hero stays the cover photo, not a slideshow.
+  - **The homepage strip is out** (owner, on the staging round): initiatives appear only under
+    `/happening/`; the homepage keeps the nav entry and loads none of the happening scripts.
+  - 2026-09-30, before the owner's last staging review: the last visitor-facing "events" wording
+    went — the empty-list line, the passed and unavailable banners now say יוזמה / مبادرة, and the
+    item page's "יוזמות נוספות" row has its own empty line ("אין כרגע יוזמות נוספות") instead
+    of the hub's "none upcoming". The hub's `<title>` / description keep "אירועים" / "فعاليات"
+    as search words, and the menu's "מה קורה בלב ים" is the homepage's services section.
+    The `translate` function was redeployed on staging (it predated audience/bring/cost) and
+    rebuild-on-publish was wired there (token expires 2027-09-29).
+  - 2026-09-30, **at scale + the owner's page notes** ([ADR 0059](../decisions/0059-initiatives-at-scale-paged-hub-small-photo-copies-light-list-read.md)):
+    asked what 100 open initiatives would do, then "fix based on your suggestions": the hub pages
+    its cards (12 + "הצג עוד יוזמות"); every upload writes a `-sm.jpg` copy (~800px) that cards,
+    the calendar and the WhatsApp preview use (the full photo was ~0.8 MB, over WhatsApp's
+    ~300 KB, so shares showed no picture), with a fallback for older photos; lists read the list
+    columns only; "יוזמות נוספות" = the nearest one-offs, weekly ones only to fill; a busy day
+    shows "+N". The owner's notes: the phone header came back on scrolling up (built, then
+    reverted on the owner's call — the initiative pages keep the story pages' header exactly);
+    no zigzag and no "יוזמות בלב ים" pill on the landing page; no end date on a recurring item;
+    time ranges held left-to-right; the Waze button opens `waze.com/ul/hsvbc45p5d` (FACTS.md).
+- 2026-09-29 · **PR 2 gate** (simplify → code-review + security-review as subagents):
+  - **An item's text can never fail a deploy:** the template engine substitutes in one pass and
+    checks for stray placeholders on the template only, so `{{…}}` in a title renders literally
+    (both reviews found the old order made a hostile or careless row fail every prod deploy).
+  - **JSON-LD is JSON-escaped:** `<` → `\u003c` in both blocks (covers `</script`, `<!--<script`
+    and `<script`); the breadcrumb block is built by the generator instead of HTML-escaped in the
+    template.
+  - **CI order:** `qrcode` loads only on a render, so `gen-happening --check` runs before `npm ci`.
+  - **A passed item's CTA carries no date** (the next occurrence only) — it keeps the button (Q8)
+    but does not ask to come on a date that is over.
+  - **`misconfigured`** (500) when the token is set but the workflow/ref secrets are malformed —
+    the form says the rebuild failed, not "not set up here".
+  - **Pre-merge order made explicit:** 59 is hand-applied on prod *before* the merge — the prod
+    deploy fetches `events.passed` and fails closed until it exists.
+  - Follow-ups (not this PR): `LevYamTrack.onWhatsAppClick`'s matcher should skip the numberless
+    share link so landing pages can share `js/stories.js`'s handler; lists could select card
+    columns only; merged remote branches predating the `github.ref` guards should be deleted
+    (a raw token holder could dispatch their old workflow files onto staging — noindex, bounded).
+- 2026-09-28 · **PR 2 build** (from the decisions table, no re-asking):
+  - **Nav label:** "מה קורה" / "شو في" — the module's own name (PR 1, seen by the owner), placed
+    after "סיפורים" in every nav (homepage, story chrome, hubs). The owner can rename it in one
+    place per surface (`js/app.js` keys `nav_happening*`, the two story templates). Flagged at
+    the PR: it sits near the older "מה קורה בלב ים" (services) entry.
+  - **One renderer, two runtimes:** `js/happening-render.js` is a dependency-free UMD script —
+    the browser (hubs, landing pages; the strip until 2026-09-29) and `scripts/gen-happening.mjs` (Node,
+    `createRequire`) render a card, a date line, the CTA text and the share text from the same
+    functions, so a page built at deploy and a page refreshed on load can never differ.
+  - **Per-tier feed config is a file, not a build-time substitution:** `js/happening-config.js`
+    holds the local stack in the checkout (ADR 0004 — local never touches prod; the prod anon
+    key is not in the repo, only in the `VITE_*` secrets) and is rewritten into `_site/` from
+    the env by the generator. The hubs and the landing pages read it (the homepage no longer loads it).
+  - **Chrome stamping is shared:** `scripts/lib/chrome.mjs` (extracted from
+    `gen-stories-index.mjs`, one implementation) stamps story chrome and happening chrome; a
+    fourth chrome var `HAPPENING_CURRENT` marks the happening hub's nav entry.
+  - **The fixture may carry absolute image paths** (`/img/gallery/…`) so CI and local
+    screenshots render real photos; the renderer serves an absolute path as-is and prefixes a
+    bucket path. The DB never produces an absolute path (`events_image_paths_valid`).
+  - **JSON-LD date-times carry the Asia/Jerusalem offset** for their date (IST/IDT, computed
+    with `Intl`), recurring items get `eventSchedule`; a passed page has no `Event` JSON-LD
+    (it is `noindex`). Never `offers`.
+  - **The AR CTA/share wording** (`أهلًا، بحب أجي على <الاسم> بتاريخ <التاريخ>`,
+    `الجاي:` for the next occurrence) and the AR landing texts reuse the reviewed phrasing of
+    `/stories/ar/how-to-get-to-jisr-az-zarqa/` and `js/app.js`; **the CTA line still needs the
+    native reader's pass before merge** (decisions table, Q6).
+  - **Found in step zero:** an author `display: grid` beats the UA's `[hidden]` rule — the
+    facts card needed an explicit `[hidden] { display: none }`; and the local functions'
+    origin allow-list has `localhost:5173`, not `127.0.0.1:5173` (a `rebuild_failed` note in
+    dev is that, not the function).
 - 2026-09-28 · **PR 2 kickoff** (11 closed-form questions + the owner's booking addition): a
   generated static landing page per item, rebuilt on publish through a scoped GitHub token; share
   row + sticky bar; two optional fields; `share_click` in GA4; story pairs no longer required;
@@ -462,7 +594,84 @@ columns are nullable and can stay; the bucket is emptied by hand.
   WhatsApp text; the page shows public life, not private events · [ADR 0054](../decisions/0054-whats-happening-is-db-driven-public-life-bilingual-in-the-db.md)
 
 ## Close-out
-*(appended when done — CLAUDE.md "Roadmap item close-out")*
+*PR 1 merged 2026-09-28 (#93, on prod). PR 2 built 2026-09-28, reworked on the owner's reviews
+2026-09-29/30, merged 2026-09-30 (#97). Outcome check: 2026-10-21.*
+
+**What shipped (PR 2, Tier A):**
+- `supabase/schema/59_events_landing.sql`: `audience_he/ar`, `bring_he/ar` (+ CHECK
+  `events_public_optional_bilingual`), `events.feed` with the four columns + anon column grants,
+  `events.passed` (90-day window, anon + authenticated select), `events.valid_image_paths(id,
+  paths)` pinned to the row's id. `rls_matrix.sql` +13 assertions (green locally). Baseline
+  regenerated. **Prod: applied 2026-09-30 through the management API (one transaction), after the
+  staging round and before the merge; `audit-grants --ref teyxtdccsrkdpqnbfcga` → 0 drift before
+  and after.**
+- `supabase/schema/60_events_cost.sql` (the owner's localhost review, ADR 0058): `cost_he/ar`
+  + `booking_required`; the both-or-neither CHECK covers cost; `story_slug` and its CHECK
+  dropped, `events.publishable()` without the story clause (body required), both views
+  recreated. `rls_matrix.sql`: +3 assertions, the story-link case inverted. Baseline
+  regenerated. **Staging 2026-09-29, prod 2026-09-30 — like 59; prod had no initiatives, so the
+  demotion pre-count was empty. Anon probes on prod: `passed` and `feed` with the new columns
+  200, `events?select=notes` 401, `story_slug` 400; schema cache reloaded.**
+- `supabase/functions/rebuild-site`: signed-in + `events.manage` re-checked, dispatches
+  `REBUILD_WORKFLOW` on `REBUILD_REF` with `GITHUB_DISPATCH_TOKEN` (fixed result codes only);
+  `not_configured` without the token. `translate` gains the optional fields and cost. **Deployed
+  on staging (2026-09-29/30) and prod (2026-09-30), `--no-verify-jwt --use-api`; the three
+  secrets set one at a time on both projects; the dispatch token (fine-grained, `lev-yam-main`
+  only, Actions read + write) expires 2027-09-29 and lives in the owner's keychain
+  (`levyam-rebuild-pat`); a publish on staging dispatched its rebuild, green.**
+- ADR 0059 (the owner's last staging round, 2026-09-30): the hub pages its cards (12 + "הצג עוד
+  יוזמות"); every upload writes a `-sm.jpg` copy that cards, the calendar and `og:image` use (the
+  full photo was over WhatsApp's preview limit), with a browser fallback and a build-time check
+  for older photos; lists read list columns only; "יוזמות נוספות" by nearest date; "+N" on busy
+  calendar days; no zigzag / pill / end date on the landing page; time ranges held
+  left-to-right; the Waze button opens the owner's link (FACTS.md). A header that returned on
+  scrolling up was built and reverted — the initiative pages keep the story pages' header.
+- `/app/events`: the two optional lines and the cost pair + booking switch (HE/AR paired,
+  translate covers them, live check for the both-or-neither rule); the story-link field is gone; every save that changes public state, the publish/unpublish toggle
+  and a delete of a public item call `rebuild-site` and show what it answered; the list's link
+  column is the landing page URL.
+- The public surface: `happening/_item.html` + `_item.ar.html` (landing templates),
+  `happening/index.html` + `ar/index.html` (served hub shells, chrome-stamped),
+  `happening/_fixture.json`, `scripts/gen-happening.mjs` (stamp / check / render / fixture),
+  `scripts/lib/chrome.mjs`, `js/happening-render.js`, `js/happening.js`,
+  `js/happening-config.js`, `css/happening.css`; `js/wa-track.js` `shareClick` (ADR 0057);
+  homepage nav entry (`index.html`, `js/app.js`; the strip shipped and was removed on the
+  staging round, 2026-09-29 — the homepage carries no initiatives), nav entry in both story templates
+  (every story page re-stamped); `404.html` routes `/happening/*` to the hub of its language;
+  `llms.txt` section; `sitemap.xml` entries at deploy.
+- Delivery: `assemble-site.sh` copies `happening/`, runs the generator, purges `_*` under
+  `_site/happening`; `deploy.yml` nightly schedule + `github.ref` guards on both jobs + feed env
+  on the assemble step + `/happening/` smoke checks; `deploy-staging.yml` `github.ref` guard;
+  `ci.yml` chrome `--check` + fixture render. `supabase/README.md` documents the three secrets
+  and the token's honest scope; `CLAUDE.md` gains the What's-happening conventions and the
+  second GA4 event; ARCHITECTURE §6c records the build-time coupling.
+
+**Verified locally (gate step zero + /verify):** screenshots at 360/390/1280 of the HE + AR
+landing page (hero, CTA + share row, facts, body, gallery, next-3, getting-here, about, footer,
+sticky bar, QR panel), the passed and unavailable load-time states against the real local feed,
+both hubs, the homepage nav in HE and AR (no strip), the `/app/events` list and form; `rebuild-site`
+answered `not_configured` to the owner, `forbidden` to staff, `origin_not_allowed` to a foreign
+origin; `RLS MATRIX: ALL ASSERTIONS PASSED`; lint / typecheck / tests / both generators' `--check`
+/ the fixture render green.
+
+**Left out / pending:** the native reader's pass on the Arabic wording (shipped without it on
+the owner's call, 2026-09-30 — logged in [modules/events.md](../modules/events.md), with the
+drawer-after-guard robustness bug and the "returning header for both surfaces" idea). Planted
+test initiatives stay on staging and localhost on the owner's call; prod is clean. Still open
+with the owner from 2026-09-29: this plan's apply steps name `supabase db query --linked`, which
+cannot reach the tier databases from the dev machine (the management API is the path used), and
+CLAUDE.md's "Schemas" line still says `supabase db push` for staging, which conflicts with the
+never-push rule above; the app's module title stays "מה קורה" (ADR 0058). Not built, by
+decision: a practical-answers block, a contact block, a village block, booking (Phase 4, "Path
+to booking").
+
+**Alignment:** VISION — P4 (public by default) now reaches the share sheet and the WhatsApp
+preview; the Q4 mandate (ADR 0046) is unchanged. ARCHITECTURE — every invariant re-checked in
+the PR 2 re-check above holds; the one new coupling (build-time read of the platform project)
+is recorded in §6c. Re-checked for ADR 0059 (2026-09-30): no schema, permission or RLS change; the
+small-copy naming rule lives in two places (the renderer and the upload) and is recorded in
+CLAUDE.md; the paged hub keeps the full list in the built HTML (P4, crawlable); nothing reaches
+prod that the grant audit cannot see. **Verdict: aligned.**
 
 ## Outcome check
 *(appended on the check date: metric value vs target, verdict, what it changes)*

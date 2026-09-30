@@ -1,0 +1,805 @@
+/* ═══ "What's happening" — the /happening/ hubs and the landing pages ═══
+   Layered on css/styles.css (tokens, fonts, .container, .btn, .lang-toggle,
+   .site-footer). The hubs also load css/stories.css for .hub-hero,
+   .breadcrumbs and .story-header. Only what this surface adds lives here.
+
+   Design (plan decisions table, Q7): immersive and in the brand — the site
+   header and its orange zigzag, then a full-bleed cover with the title over
+   it (the one place on the site text sits on a photo: a landing page is
+   judged in the first second of a shared link), then a cream "sheet" that
+   carries the content in the story column: a centred action panel, the facts
+   as tiles with the brand's four icons, the text, an automatic crossfade of
+   the photos, the venue blocks, and the standard footer. On phones a sticky
+   bottom bar keeps the CTA and the share reachable; wider screens get the
+   site's floating WhatsApp button. Orange is action only. Both languages are
+   RTL; logical properties throughout. Every class is hp-* (happening).
+   Mobile-first.                                                             */
+
+:root {
+  --hp-column: calc(46rem + 2 * var(--container-gutter)); /* = --story-column, the site's reading box */
+  --hp-sticky-h: 76px;
+  --hp-tile-radius: 20px; /* the action panel and the fact tiles share one shape */
+  --hp-tile-edge: 1px solid color-mix(in srgb, var(--color-line) 70%, transparent);
+}
+
+/* ── Cards (the hubs, "more initiatives") ──────────────────────────────── */
+
+.hp-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-4);
+}
+
+.hp-grid-empty {
+  grid-column: 1 / -1;
+}
+.hp-grid-empty p {
+  margin: 0;
+  padding: var(--space-5) var(--space-4);
+  text-align: center;
+  color: var(--color-ink-soft);
+  background: var(--color-white);
+  border: var(--hp-tile-edge);
+  border-radius: var(--hp-tile-radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.hp-card {
+  display: flex;
+  flex-direction: column;
+  block-size: 100%;
+  background: var(--color-white);
+  border: var(--hp-tile-edge);
+  border-radius: var(--hp-tile-radius);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  color: inherit;
+}
+.hp-card:focus-visible {
+  outline: 3px solid var(--color-orange);
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hp-card { transition: box-shadow 0.2s ease, transform 0.2s ease; }
+  .hp-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+}
+
+.hp-card-media {
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--color-blue) 18%, var(--color-cream));
+}
+.hp-card-media img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+
+.hp-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  flex: 1;
+}
+
+.hp-card-date {
+  order: -1; /* the date leads the card: it is what a visitor scans for */
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--color-orange-deep);
+  font-variant-numeric: tabular-nums;
+}
+
+.hp-card-title {
+  margin: 0;
+  font-size: var(--text-lead);
+  font-weight: 700;
+  color: var(--color-blue-deep);
+  line-height: 1.2;
+}
+
+.hp-card-desc {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--color-ink-soft);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
+/* The hub: one uniform grid of equal cards — as many across as the width
+   takes at 260px each (four inside the 1200px container's gutters), every card the same
+   height, titles and summaries clamped so the rows stay level. */
+.hp-hub .hp-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
+.hp-hub .hp-card-title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.hp-hub { padding-block: var(--space-5) var(--space-7); }
+.container-hp { max-inline-size: 1200px; }
+
+/* ── The outline pill link ("לכל היוזמות", the story link) ──────────────── */
+
+.hp-more-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: 44px;
+  padding: 0.5rem var(--space-4);
+  border: 2px solid var(--color-blue);
+  border-radius: var(--radius-pill);
+  color: var(--color-blue-deep);
+  font-weight: 700;
+}
+.hp-more-link:hover,
+.hp-more-link:focus-visible { background: var(--color-blue); color: var(--color-cream); }
+button.hp-more-link { background: none; font: inherit; font-weight: 700; cursor: pointer; }
+
+/* ── Landing page ──────────────────────────────────────────────────────── */
+
+.hp-page { background: var(--color-cream); }
+
+/* ── Hero: the cover, the title over it. The site header (.story-header,
+   stories.css) sits straight on it — no zigzag on a landing page (owner,
+   2026-09-30). ─────────────────────────────────────────────────────────── */
+
+.hp-hero {
+  position: relative;
+  min-block-size: min(62svh, 600px);
+  display: grid;
+  align-items: end;
+  background: var(--color-ink);
+  color: var(--color-cream);
+  isolation: isolate;
+}
+.hp-hero-img {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  z-index: -2;
+}
+.hp-hero-veil {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(to bottom,
+    rgba(26, 51, 64, 0.08) 0%,
+    rgba(26, 51, 64, 0.22) 40%,
+    rgba(26, 51, 64, 0.72) 75%,
+    rgba(26, 51, 64, 0.92) 100%);
+}
+.hp-hero-body {
+  padding-block: var(--space-7) calc(var(--space-6) + 28px); /* the sheet's rounded top overlaps by 28px */
+  max-inline-size: var(--hp-column);
+}
+.hp-title {
+  margin: 0;
+  color: var(--color-cream); /* styles.css colours every h1 ink; here it sits on the photo */
+  font-size: clamp(2rem, 1.4rem + 3vw, 3.8rem);
+  font-weight: 800;
+  line-height: 1.12;
+  text-wrap: balance;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+}
+.hp-when {
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-lead);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.45;
+}
+/* the date (or pattern) and the hours: pieces that never break inside, a
+   dot between them; a narrow screen wraps between pieces and the dot stays
+   with the piece after it */
+.hp-when-main { display: flex; flex-wrap: wrap; column-gap: 0.5em; row-gap: 2px; }
+.hp-when-part { white-space: nowrap; }
+.hp-when-pattern { white-space: normal; min-inline-size: 0; } /* six or seven weekdays wrap on a phone */
+.hp-when-part + .hp-when-part::before { content: '·'; margin-inline-end: 0.5em; opacity: 0.7; }
+/* a recurring item's next date, quieter, on its own line */
+.hp-when-next {
+  display: block;
+  margin-block-start: 4px;
+  font-size: 0.86em;
+  font-weight: 500;
+  color: rgba(255, 247, 234, 0.86);
+  white-space: nowrap;
+}
+.hp-when::before {
+  content: '';
+  display: block;
+  inline-size: 48px;
+  block-size: 3px;
+  background: var(--color-orange);
+  border-radius: var(--radius-pill);
+  margin-block-end: var(--space-3);
+}
+.hp-summary {
+  margin: var(--space-3) 0 0;
+  font-size: clamp(1.05rem, 1rem + 0.4vw, 1.3rem);
+  line-height: 1.55;
+  color: rgba(255, 247, 234, 0.92);
+  text-wrap: pretty;
+}
+@media (min-width: 800px) {
+  .hp-hero { min-block-size: min(58vh, 540px); } /* the action panel stays within the first screen */
+}
+html[lang='ar'] .hp-title { letter-spacing: 0; line-height: 1.25; }
+html[lang='ar'] .hp-summary { line-height: 1.75; }
+
+/* ── The sheet: everything below the hero ──────────────────────────────── */
+
+.hp-sheet {
+  position: relative;
+  margin-block-start: -28px;
+  background: var(--color-cream);
+  border-start-start-radius: 28px;
+  border-start-end-radius: 28px;
+  padding-block: var(--space-5) var(--space-7);
+}
+@media (min-width: 1024px) { .hp-sheet { padding-block-start: var(--space-6); } }
+.hp-sheet > .container-narrow { --container-narrow: var(--hp-column); }
+
+/* section titles: the homepage's centred title with its orange glow line, one size down */
+.hp-sheet h2, .hp-hub-title {
+  position: relative;
+  inline-size: fit-content;
+  max-inline-size: 100%;
+  margin: 0 0 var(--space-3);
+  padding-block-end: 0.55rem;
+  text-align: start;
+  font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2.1rem);
+  font-weight: 700;
+  line-height: 1.2;
+  text-wrap: balance;
+  color: var(--color-ink);
+}
+/* the hub's grid heading sits centred under the calendar, like the hero title above it */
+.hp-hub-title { margin: 0 auto var(--space-5); text-align: center; }
+.hp-sheet h2::after, .hp-hub-title::after {
+  content: '';
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline: 0;
+  block-size: 2px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(244, 152, 52, 0.55) 15%,
+    var(--color-orange) 50%,
+    rgba(244, 152, 52, 0.55) 85%,
+    transparent 100%);
+  box-shadow: 0 0 14px rgba(244, 152, 52, 0.4);
+}
+.hp-section { margin-block-start: var(--space-6); }
+@media (min-width: 1024px) { .hp-section { margin-block-start: var(--space-7); } }
+.hp-section p, .hp-section li {
+  font-size: clamp(1.0625rem, 1rem + 0.3vw, 1.1875rem);
+  line-height: 1.75;
+}
+html[lang='ar'] .hp-section p, html[lang='ar'] .hp-section li { line-height: 1.9; }
+.hp-section p { margin: 0 0 1em; }
+.hp-section p:last-child { margin-block-end: 0; }
+.hp-body p { max-inline-size: 70ch; }
+.hp-more { margin: var(--space-4) 0 0; text-align: center; }
+.hp-next .hp-more { margin-block-start: var(--space-5); padding-block-start: var(--space-2); }
+/* the action panel + the facts: one row on desktop (see below) */
+.hp-top { display: grid; gap: var(--space-4); }
+
+/* the passed / unavailable notices (data-hp-banner, toggled by js/happening.js) */
+.hp-banner {
+  margin: 0 0 var(--space-5);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-orange) 16%, var(--color-white));
+  border-inline-start: 4px solid var(--color-orange);
+  color: var(--color-ink);
+  font-weight: 600;
+}
+.hp-banner a { color: var(--color-blue-deep); text-decoration: underline; text-underline-offset: 3px; }
+/* an unpublished item: only the notice and "also coming up" remain */
+body[data-hp-state='unavailable'] [data-hp-live] { display: none; }
+
+/* ── The action panel (one swappable <section data-cta>): the CTA, then the
+   share row as a small share sheet — round icon buttons with a caption ──── */
+
+.hp-actions {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: var(--space-4);
+  padding: clamp(1.25rem, 3vw, 2rem) var(--space-4);
+  background: var(--color-white);
+  border: var(--hp-tile-edge);
+  border-radius: var(--hp-tile-radius);
+  box-shadow: var(--shadow-sm);
+  text-align: center;
+  overflow: hidden;
+}
+/* the homepage contact buttons' warm glow, at the top of the panel */
+.hp-actions::before {
+  content: '';
+  position: absolute;
+  inset-block-start: -35%;
+  inset-inline: -15%;
+  block-size: 70%;
+  z-index: -1;
+  background: radial-gradient(ellipse at center,
+    rgba(244, 152, 52, 0.14) 0%,
+    rgba(244, 152, 52, 0.04) 45%,
+    transparent 75%);
+  pointer-events: none;
+}
+@media (max-width: 480px) {
+  .hp-actions { padding-inline: var(--space-3); } /* the four share buttons on one row at 360px */
+}
+.hp-cta { inline-size: min(100%, 420px); min-block-size: 56px; font-size: 1.1rem; gap: 10px; }
+.hp-cta svg { flex-shrink: 0; }
+.hp-share { display: grid; justify-items: center; gap: var(--space-3); inline-size: 100%; }
+.hp-share-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  inline-size: min(100%, 420px);
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-ink-soft);
+}
+.hp-share-label::before, .hp-share-label::after { content: ''; flex: 1; block-size: 1px; background: var(--color-line); }
+.hp-share-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: var(--space-2) clamp(0.5rem, 3vw, 1.25rem);
+  inline-size: 100%;
+}
+.hp-share-btn {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  min-inline-size: 64px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-blue-deep);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.2;
+  cursor: pointer;
+  list-style: none; /* the QR <summary> */
+}
+.hp-share-btn::-webkit-details-marker { display: none; }
+.hp-share-ic {
+  display: grid;
+  place-items: center;
+  inline-size: 52px;
+  block-size: 52px;
+  border-radius: 50%;
+  background: var(--color-cream);
+  border: 1px solid var(--color-line);
+  transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+.hp-share-btn:hover .hp-share-ic,
+.hp-share-btn:focus-visible .hp-share-ic,
+.hp-qr[open] > summary .hp-share-ic {
+  background: var(--color-blue);
+  border-color: var(--color-blue);
+  color: var(--color-cream);
+  transform: translateY(-2px);
+}
+.hp-share-btn:focus-visible { outline: none; }
+.hp-share-btn:focus-visible .hp-share-ic { outline: 3px solid var(--color-orange); outline-offset: 2px; }
+.hp-share-btn.is-done { color: #1e9e5a; }
+.hp-share-btn.is-done .hp-share-ic { background: #1e9e5a; border-color: #1e9e5a; color: #fff; }
+
+.hp-qr { display: contents; } /* the <details> takes no box of its own: summary sits in the row, the panel below it */
+.hp-qr-box {
+  inline-size: 100%;
+  margin-block-start: var(--space-2);
+  padding: var(--space-4);
+  background: var(--color-cream);
+  border: 1px solid var(--color-line);
+  border-radius: var(--hp-tile-radius);
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+}
+.hp-qr-box svg { inline-size: 180px; block-size: 180px; }
+.hp-qr-box p { margin: 0; font-size: 0.85rem; color: var(--color-ink-soft); text-align: center; }
+
+/* ── The facts as tiles, each with a brand mark (the four icons + the logo stamp) ── */
+
+.hp-facts {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-3);
+}
+@media (min-width: 560px) {
+  .hp-facts { grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; } /* equal tiles */
+  .hp-fact-wide { grid-column: 1 / -1; } /* an odd count: the last tile spans the row */
+}
+.hp-fact {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  column-gap: var(--space-3);
+  align-items: center;
+  align-content: center;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-white);
+  border: var(--hp-tile-edge);
+  border-radius: var(--hp-tile-radius);
+  box-shadow: var(--shadow-sm);
+}
+.hp-fact::before {
+  content: '';
+  grid-row: 1 / span 2;
+  inline-size: 48px;
+  block-size: 48px;
+  background: var(--hp-icon) center / contain no-repeat;
+  filter: drop-shadow(0 3px 6px rgba(31, 111, 147, 0.18));
+}
+.hp-fact-when  { --hp-icon: url('/img/icons/sun-orange.png'); }
+.hp-fact-where { --hp-icon: url('/img/icons/house-blue.png'); }
+.hp-fact-who   { --hp-icon: url('/img/icons/heart.png'); }
+.hp-fact-bring { --hp-icon: url('/img/icons/palm-orange.png'); }
+.hp-fact-cost  { --hp-icon: url('/img/logo/logo-mark.png'); } /* the brand's stamp: booking is with us */
+/* an author display beats the UA's [hidden] rule — the built `hidden` (an
+   empty optional line) and js/happening.js's toggles must still win */
+.hp-fact[hidden] { display: none; }
+.hp-fact dt {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--color-orange-deep);
+}
+.hp-fact dd { margin: 0; font-size: 1rem; font-weight: 500; color: var(--color-ink); line-height: 1.5; }
+.hp-fact dd a { color: var(--color-blue-deep); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+.hp-fact-line { display: block; }
+.hp-fact-line[hidden] { display: none; }
+a.hp-fact-line { inline-size: fit-content; }
+
+/* ── The photos: an automatic crossfade (js/happening.js), one framed photo
+   when there is only one. The fade is the page's signature: the incoming
+   photo sharpens out of a soft blur while it slowly zooms; the outgoing one
+   dissolves the same way. Reduced motion: a plain opacity fade, no autoplay. */
+
+.hp-slides {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--hp-tile-radius);
+  overflow: hidden;
+  background: color-mix(in srgb, var(--color-blue) 18%, var(--color-cream));
+  box-shadow: var(--shadow-md);
+  isolation: isolate;
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.hp-slides:focus-visible { outline: 3px solid var(--color-orange); outline-offset: 3px; }
+@media (min-width: 800px) {
+  .hp-slides { aspect-ratio: 16 / 10; }
+}
+.hp-slide {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  z-index: 0;
+  filter: blur(10px);
+  transition: opacity 1.1s ease, filter 1.1s ease;
+  pointer-events: none;
+}
+.hp-slide.is-active { opacity: 1; z-index: 1; filter: blur(0); pointer-events: auto; }
+.hp-slide img { display: block; inline-size: 100%; block-size: 100%; object-fit: cover; -webkit-user-drag: none; }
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes hp-kenburns { from { transform: scale(1); } to { transform: scale(1.08); } }
+  .hp-slide.is-active img { animation: hp-kenburns 7.5s ease-out forwards; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hp-slide { filter: none; transition: opacity 0.4s ease; }
+}
+.hp-slide-arrow {
+  position: absolute;
+  inset-block-start: 50%;
+  z-index: 2;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  inline-size: 44px;
+  block-size: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 247, 234, 0.86);
+  color: var(--color-blue-deep);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.hp-slide-arrow:hover { background: var(--color-cream); color: var(--color-orange-deep); }
+.hp-slide-arrow:focus-visible { outline: 3px solid var(--color-orange); outline-offset: 2px; }
+.hp-slide-arrow[data-slide-step='-1'] { inset-inline-start: 12px; }
+.hp-slide-arrow[data-slide-step='1']  { inset-inline-end: 12px; }
+.hp-slide-dots {
+  position: absolute;
+  inset-block-end: 8px;
+  inset-inline: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+}
+/* a 24px target drawn as a 10px dot */
+.hp-slide-dot {
+  position: relative;
+  inline-size: 24px;
+  block-size: 24px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.hp-slide-dot::before {
+  content: '';
+  position: absolute;
+  inset: 7px;
+  border-radius: 50%;
+  background: rgba(255, 247, 234, 0.6);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  transition: background-color 0.2s ease, inset 0.2s ease;
+}
+.hp-slide-dot.is-active::before { inset: 5px; background: var(--color-orange); }
+.hp-slide-dot:focus-visible { outline: 2px solid var(--color-cream); outline-offset: -2px; border-radius: 50%; }
+.hp-slide-count {
+  position: absolute;
+  inset-block-start: 12px;
+  inset-inline-end: 12px;
+  z-index: 2;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(12, 26, 36, 0.5);
+  color: var(--color-cream);
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  direction: ltr; /* "1 / 3" — the RTL paragraph would show it as 3 / 1 */
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* ── More initiatives (the page's last section): the brand's sun beside the
+   title (the hero kicker's mark), three cards across on desktop ──────────── */
+.hp-next h2 { display: flex; align-items: center; gap: 12px; }
+.hp-mark {
+  flex: none;
+  inline-size: 40px;
+  block-size: 40px;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 6px rgba(31, 111, 147, 0.18));
+}
+@media (min-width: 800px) {
+  .hp-next .hp-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* ── The venue blocks ──────────────────────────────────────────────────── */
+
+.hp-nav-btns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  margin: var(--space-4) 0;
+}
+@media (min-width: 560px) {
+  .hp-nav-btns { grid-template-columns: repeat(2, minmax(0, 240px)); justify-content: center; }
+}
+.hp-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-block-size: 50px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--color-white);
+  border: 2px solid var(--color-blue);
+  color: var(--color-blue-deep);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.hp-nav-btn:hover, .hp-nav-btn:focus-visible { background: var(--color-blue); color: var(--color-cream); }
+
+/* ── Sticky bar (phones); the floating WhatsApp button (wider screens) ─── */
+
+.hp-sticky {
+  position: fixed;
+  inset-block-end: 0;
+  inset-inline: 0;
+  z-index: 60;
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  padding: 10px var(--space-3) calc(10px + env(safe-area-inset-bottom));
+  background: rgba(255, 247, 234, 0.96);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 -4px 20px rgba(26, 51, 64, 0.12);
+  transition: transform 0.25s ease;
+}
+/* tucked away while the action panel itself is on screen (js/happening.js) */
+.hp-sticky.is-off { transform: translateY(110%); }
+@media (prefers-reduced-motion: reduce) { .hp-sticky { transition: none; } }
+.hp-sticky .hp-cta { flex: 1; inline-size: auto; min-block-size: 50px; font-size: 1rem; gap: 8px; }
+.hp-sticky-share {
+  flex: none;
+  display: grid;
+  place-items: center;
+  inline-size: 50px;
+  block-size: 50px;
+  padding: 0;
+  border: 1px solid var(--color-line);
+  border-radius: 50%;
+  background: var(--color-white);
+  color: var(--color-blue-deep);
+  cursor: pointer;
+}
+.hp-sticky-share.is-done { background: #1e9e5a; border-color: #1e9e5a; color: #fff; }
+.hp-page { padding-block-end: var(--hp-sticky-h); }
+.hp-float { display: none; }
+@media (min-width: 800px) {
+  .hp-sticky { display: none; }
+  .hp-page { padding-block-end: 0; }
+  .hp-float { display: flex; }
+}
+
+/* ── Desktop: the page stretches. A 1120px column, the action panel beside
+   the facts, titles and text at the inline start, the photo frame 16:9. ── */
+@media (min-width: 1024px) {
+  .hp-sheet > .container-narrow { --container-narrow: 1120px; }
+  .hp-hero-body { max-inline-size: 1120px; }
+  .hp-top { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--space-4); align-items: stretch; }
+  .hp-slides { aspect-ratio: 16 / 9; }
+}
+
+/* ── The hub's calendar (js/happening.js fills it): the month card and,
+   beside it on desktop, the selected day's items ─────────────────────── */
+
+.hp-cal { margin-block: var(--space-6) var(--space-2); display: grid; gap: var(--space-4); }
+.hp-cal[hidden] { display: none; }
+@media (min-width: 900px) {
+  .hp-cal { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: stretch; }
+  .hp-cal-day { aspect-ratio: auto; block-size: 50px; }
+}
+.hp-cal-month {
+  padding: var(--space-4);
+  background: var(--color-white);
+  border: var(--hp-tile-edge);
+  border-radius: var(--hp-tile-radius);
+  box-shadow: var(--shadow-sm);
+}
+.hp-cal-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-block-end: var(--space-3); }
+.hp-cal-title { margin: 0; font-size: 1.35rem; font-weight: 700; color: var(--color-blue-deep); }
+.hp-cal-nav {
+  display: grid;
+  place-items: center;
+  inline-size: 40px;
+  block-size: 40px;
+  padding: 0;
+  border: 1px solid var(--color-line);
+  border-radius: 50%;
+  background: var(--color-cream);
+  color: var(--color-blue-deep);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.hp-cal-nav:hover:not(:disabled), .hp-cal-nav:focus-visible { background: var(--color-blue); border-color: var(--color-blue); color: var(--color-cream); }
+.hp-cal-nav:focus-visible { outline: 3px solid var(--color-orange); outline-offset: 2px; }
+.hp-cal-nav:disabled { opacity: 0.35; cursor: default; }
+.hp-cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.hp-cal-dow { text-align: center; padding-block: 4px; font-size: 0.78rem; font-weight: 700; color: var(--color-orange-deep); }
+.hp-cal-day {
+  position: relative;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 3px;
+  aspect-ratio: 1;
+  min-block-size: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-ink);
+}
+.hp-cal-day.is-past { color: color-mix(in srgb, var(--color-ink) 30%, transparent); }
+.hp-cal-day.is-today { box-shadow: inset 0 0 0 2px var(--color-orange); }
+button.hp-cal-day {
+  background: var(--color-cream);
+  color: var(--color-blue-deep);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+button.hp-cal-day:hover { background: color-mix(in srgb, var(--color-blue) 14%, var(--color-white)); transform: translateY(-1px); }
+button.hp-cal-day:focus-visible { outline: 3px solid var(--color-orange); outline-offset: 2px; }
+.hp-cal-day.is-selected, button.hp-cal-day.is-selected:hover { background: var(--color-blue); color: var(--color-cream); }
+.hp-cal-num { line-height: 1; }
+.hp-cal-dots { display: flex; align-items: center; gap: 3px; block-size: 6px; }
+.hp-cal-dots i { inline-size: 6px; block-size: 6px; border-radius: 50%; background: var(--color-orange); }
+.is-selected .hp-cal-dots i { background: var(--color-cream); }
+/* a day with more than three: two dots and "+N" */
+.hp-cal-more { font-size: 10px; font-weight: 800; line-height: 1; color: var(--color-orange-deep); direction: ltr; unicode-bidi: isolate; } /* "+4", never "4+" in RTL */
+.is-selected .hp-cal-more { color: var(--color-cream); }
+.hp-cal-panel {
+  min-block-size: 140px;
+  padding: var(--space-4);
+  background: var(--color-white);
+  border: var(--hp-tile-edge);
+  border-radius: var(--hp-tile-radius);
+  box-shadow: var(--shadow-sm);
+}
+.hp-cal-note { margin: 0; padding-block: var(--space-4); text-align: center; color: var(--color-ink-soft); }
+.hp-cal-day-title { margin: 0 0 var(--space-3); font-size: 1.05rem; font-weight: 700; color: var(--color-orange-deep); }
+.hp-cal-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
+.hp-cal-item {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: start;
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  color: inherit;
+  transition: background-color 0.15s ease;
+}
+.hp-cal-item:hover, .hp-cal-item:focus-visible { background: var(--color-cream); }
+.hp-cal-item img { inline-size: 96px; block-size: auto; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--radius-sm); }
+.hp-cal-item-body { display: grid; gap: 2px; min-inline-size: 0; }
+.hp-cal-item-body strong { font-size: 1.05rem; line-height: 1.25; color: var(--color-blue-deep); }
+.hp-cal-item-time { font-size: 0.85rem; font-weight: 700; color: var(--color-orange-deep); font-variant-numeric: tabular-nums; }
+.hp-cal-item-desc {
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: var(--color-ink-soft);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.hp-cal-item-go { margin-block-start: 2px; font-size: 0.88rem; font-weight: 700; color: var(--color-blue-deep); text-decoration: underline; text-underline-offset: 3px; }
+
+/* ── Wide screens: fill the margins with the site's soft corner glows ─── */
+@media (min-width: 1280px) {
+  .hp-sheet {
+    background:
+      radial-gradient(ellipse at 0% 20%,   rgba(244, 152, 52, 0.4) 0%, transparent 70%) top left   / 24vw 560px no-repeat,
+      radial-gradient(ellipse at 100% 20%, rgba(244, 152, 52, 0.4) 0%, transparent 70%) top right  / 24vw 560px no-repeat,
+      radial-gradient(ellipse at 0% 80%,   rgba(44, 146, 191, 0.35) 0%, transparent 70%) bottom left  / 24vw 560px no-repeat,
+      radial-gradient(ellipse at 100% 80%, rgba(44, 146, 191, 0.35) 0%, transparent 70%) bottom right / 24vw 560px no-repeat,
+      var(--color-cream);
+  }
+}
+
+@media print {
+  .story-header, .wave-divider, .hp-sticky, .hp-float, .hp-share, .site-footer,
+  .hp-slide-arrow, .hp-slide-dots, .hp-slide-count { display: none !important; }
+  .hp-hero { min-block-size: auto; }
+}

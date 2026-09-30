@@ -23,6 +23,12 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # The `rebuild-site` Edge Function (ADR 0056) dispatches this workflow with
+    # ref: staging; the token could name any ref, so anything else no-ops here.
+    # Staging has no schedule: it runs from the default branch (main) and would
+    # overwrite whatever branch is mid-verification. `github.ref`, not
+    # `event_name`, so the dispatch passes.
+    if: github.ref == 'refs/heads/staging'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -43,6 +49,9 @@ jobs:
         # Single copy of the invocation, shared with deploy.yml (see there).
         run: bash scripts/audit-grants-ci.sh vhvghcehkcbtygomixmu
 
+      # The same env also feeds scripts/gen-happening.mjs (the /happening/ pages
+      # are rendered from THIS project's feed, never prod's) — build-site.sh
+      # hands it on to assemble-site.sh.
       - name: Build staging site
         env:
           VITE_SUPABASE_URL: https://vhvghcehkcbtygomixmu.supabase.co

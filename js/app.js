@@ -26,6 +26,8 @@ const LevYamI18n = (function () {
       nav_gallery: 'גלריה',
       nav_stories: 'סיפורים',
       nav_stories_href: '/stories/',
+      nav_happening: 'יוזמות',
+      nav_happening_href: '/happening/',
       nav_faq: 'שאלות ותשובות',
       nav_contact: 'צור קשר',
 
@@ -188,6 +190,8 @@ const LevYamI18n = (function () {
       nav_gallery: 'معرض الصور',
       nav_stories: 'حكايات',
       nav_stories_href: '/stories/ar/',
+      nav_happening: 'مبادرات',
+      nav_happening_href: '/happening/ar/',
       nav_faq: 'أسئلة وأجوبة',
       nav_contact: 'تواصلوا معنا',
 

@@ -126,9 +126,42 @@ Then `cp app-src/.env.example app-src/.env.local` (already points at the local s
 - The **service-role key is secret** — only ever used inside Supabase **Edge Functions**
   (`functions/`), never in the client bundle, repo, or `.env` that gets committed.
 
+## The site rebuild (`rebuild-site`)
+
+The public "What's happening" landing pages are static HTML generated at deploy
+from `events.feed` ([ADR 0056](../docs/decisions/0056-whats-happening-item-pages-are-generated-landing-pages-rebuilt-on-publish.md)).
+Publishing, unpublishing or editing a public item in `/app/events` calls the
+`rebuild-site` Edge Function, which re-checks `events.manage` and dispatches the
+tier's deploy workflow through GitHub's API. Three secrets per project, set
+**one at a time** (`--env-file` uploads every variable in the file):
+
+| Secret | Staging | Prod |
+|---|---|---|
+| `GITHUB_DISPATCH_TOKEN` | a fine-grained PAT: resource owner `OrCoAI`, **only** `lev-yam-main`, repository permission **Actions: Read and write**, nothing else, **1-year expiry** — note the date; when it lapses the function answers `dispatch_failed`, the form says so, and the nightly rebuild still runs | the same token (or its own) |
+| `REBUILD_WORKFLOW` | `deploy-staging.yml` | `deploy.yml` |
+| `REBUILD_REF` | `staging` | `main` |
+
+```bash
+supabase secrets set --project-ref <ref> GITHUB_DISPATCH_TOKEN=<token>
+supabase secrets set --project-ref <ref> REBUILD_WORKFLOW=deploy-staging.yml
+supabase secrets set --project-ref <ref> REBUILD_REF=staging
+supabase functions deploy rebuild-site --no-verify-jwt --use-api --project-ref <ref>
+```
+
+Without the token the function answers `not_configured` (the local stack); a token with a
+workflow or ref outside `deploy.yml|deploy-staging.yml` / `main|staging` answers
+`misconfigured` (the form says the rebuild failed). If the first real publish answers
+`dispatch_failed`, GitHub refused the dispatch (403/404): re-check the token's repository
+and expiry, and grant it **Contents: Read** as well — some accounts need it for the
+dispatch endpoint. Honest scope of the token: it can dispatch, re-run, cancel or delete runs of any of this
+repo's `workflow_dispatch` workflows on any ref; it cannot push code, read secrets
+or change settings. The `github.ref` job guards on both deploy workflows and the
+`github-pages` environment's `main`-only branch policy are what keep a dispatch
+from publishing anything but the tier's own branch.
+
 ## Edge Function telemetry (Bluebox / OpenTelemetry)
 
-The three Edge Functions emit OpenTelemetry **traces + sanitized logs** to the Bluebox
+The Edge Functions emit OpenTelemetry **traces + sanitized logs** to the Bluebox
 environment (roadmap **H8**; design in
 [docs/plans/bluebox-observability.md](../docs/plans/bluebox-observability.md), helper in
 `functions/_shared/otel.ts`).

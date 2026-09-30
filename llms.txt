@@ -21,6 +21,12 @@
 - [סיפורים (עברית)](https://levyam.com/stories/): story library, Hebrew
 - [حكايات (العربية)](https://levyam.com/stories/ar/): story library, Arabic
 
+## יוזמות / Initiatives (what's on)
+
+- [יוזמות (עברית)](https://levyam.com/happening/): what is on now — weekend open house,
+  the Sunday community day, workshops, open events; one page per item with dates
+- [مبادرات (العربية)](https://levyam.com/happening/ar/): the same list, Arabic
+
 ## האתר / Site
 
 - [דף הבית](https://levyam.com/): homepage, Hebrew and Arabic

@@ -1,58 +1,45 @@
 <!doctype html>
 <!--
-  SAMPLE PAGE — permanent template smoke-test, NOT production content.
-
-  It is <meta robots="noindex">, so scripts/gen-stories-index.mjs keeps it out
-  of sitemap.xml and the hub. It stays in the repo so the template can be
-  checked (mobile rendering, Rich Results, the language toggle, every design
-  block) at any time without touching a real page. Arabic twin: stories/ar/dugma/.
-
-  Demonstrates: hero, lede, byline, body sections, two figures, video block,
-  FAQ, CTA. Every frame is the same 16:9 box as the text column.
-
-  Every fact below comes from FACTS.md. Nothing invented, no price anywhere.
-  (The video-block demo reuses the homepage hero clip — real story clips should
-  be landscape 16:9 and ≤8MB, per the template.)
+  ═══ HUB SHELL — HEBREW — /happening/ ═══════════════════════════════════════
+  This file IS served (unlike stories/_hub.html): the list between the
+  ITEM_LIST markers is a comment, and js/happening.js fills it from the live
+  feed on load. scripts/gen-happening.mjs also writes a filled copy into
+  _site/happening/index.html at deploy, so the cards are in the HTML a crawler
+  or a link preview sees. The header and footer between the chrome markers are
+  stamped from stories/_template.html (scripts/lib/chrome.mjs, ADR 0049) —
+  edit them there, then `node scripts/gen-happening.mjs --stamp`.
 -->
 <html lang="he" dir="rtl">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#2c92bf">
-  <meta name="robots" content="noindex">
 
-  <title>מה יש במתחם של לב ים | לב ים</title>
-  <meta name="description" content="מה יש במתחם של לב ים בכפר הדייגים בג'סר א-זרקא: קיבולת, מטבח מאובזר, אינטרנט מהיר, טלוויזיה להקרנה, מדשאה ומקלחות.">
+  <title>יוזמות בלב ים | אירועים, בית פתוח, קהילה</title>
+  <meta name="description" content="מה קורה עכשיו בלב ים, כפר הדייגים בג'סר א-זרקא: בית פתוח בסופי שבוע, יום ראשון לקהילה, סדנאות ואירועים פתוחים — התאריכים הקרובים ופרטים לכל אחד.">
 
-  <meta name="levyam:published" content="2026-08-11">
-  <meta name="levyam:updated" content="2026-08-11">
+  <link rel="canonical" href="https://levyam.com/happening/">
+  <link rel="alternate" hreflang="he" href="https://levyam.com/happening/">
+  <link rel="alternate" hreflang="ar" href="https://levyam.com/happening/ar/">
+  <link rel="alternate" hreflang="x-default" href="https://levyam.com/happening/">
 
-  <link rel="canonical" href="https://levyam.com/stories/dugma/">
-
-  <link rel="alternate" hreflang="he" href="https://levyam.com/stories/dugma/">
-  <link rel="alternate" hreflang="ar" href="https://levyam.com/stories/ar/dugma/">
-  <link rel="alternate" hreflang="x-default" href="https://levyam.com/stories/dugma/">
-
-  <meta property="og:title" content="מה יש במתחם של לב ים">
-  <meta property="og:description" content="מה יש במתחם של לב ים בכפר הדייגים בג'סר א-זרקא: קיבולת, מטבח מאובזר, אינטרנט מהיר, טלוויזיה להקרנה, מדשאה ומקלחות.">
-  <meta property="og:image" content="https://levyam.com/img/stories/dugma/card.jpg">
-  <meta property="og:type" content="article">
+  <meta property="og:title" content="יוזמות בלב ים">
+  <meta property="og:description" content="בית פתוח בסופי שבוע, יום ראשון לקהילה, סדנאות ואירועים פתוחים — התאריכים הקרובים בלב ים, כפר הדייגים בג'סר א-זרקא.">
+  <meta property="og:image" content="https://levyam.com/img/logo/logo-full.png">
+  <meta property="og:type" content="website">
   <meta property="og:locale" content="he_IL">
   <meta property="og:locale:alternate" content="ar_IL">
-  <meta property="og:url" content="https://levyam.com/stories/dugma/">
+  <meta property="og:url" content="https://levyam.com/happening/">
 
   <link rel="preload" href="/fonts/Heebo-hebrew.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/fonts/Assistant-hebrew.woff2" as="font" type="font/woff2" crossorigin>
-  <!-- The hero image is the LCP — preload it with the same srcset/sizes. -->
-  <link rel="preload" as="image" fetchpriority="high"
-        imagesrcset="/img/stories/dugma/hero-800.jpg 800w, /img/stories/dugma/hero-1600.jpg 1600w"
-        imagesizes="(min-width: 1600px) min(68vw, 1280px), (min-width: 800px) 736px, 100vw">
 
   <link rel="icon" href="/img/logo/logo-mark.png" type="image/png">
   <link rel="apple-touch-icon" href="/img/logo/logo-mark.png">
 
   <link rel="stylesheet" href="/css/styles.css">
   <link rel="stylesheet" href="/css/stories.css">
+  <link rel="stylesheet" href="/css/happening.css">
 
   <!-- ═══ DYNATRACE RUM TAG ═══ -->
   <script type="text/javascript" src="https://js-cdn.dynatracelabs.com/jstag/14868fa4215/bf37083dis/716e4cb7cadaf3f3_complete.js" crossorigin="anonymous"></script>
@@ -61,10 +48,7 @@
   <noscript><img height="1" width="1" style="display:none"
     src="https://www.facebook.com/tr?id=3961552923978842&ev=PageView&noscript=1"/></noscript>
 
-  <!-- ═══ META PIXEL + GA4 ═══
-       Both bootstraps live in js/vendor-tags.js so the pixel ID and the GA4
-       measurement ID exist in one place instead of once per page. The <noscript>
-       pixel above must stay inline to work at all. -->
+  <!-- ═══ META PIXEL + GA4 ═══ (both bootstraps live in js/vendor-tags.js) -->
   <script src="/js/vendor-tags.js" async></script>
 
   <script type="application/ld+json">
@@ -73,42 +57,16 @@
     "@type": "BreadcrumbList",
     "itemListElement": [
       { "@type": "ListItem", "position": 1, "name": "לב ים", "item": "https://levyam.com/" },
-      { "@type": "ListItem", "position": 2, "name": "סיפורים", "item": "https://levyam.com/stories/" },
-      { "@type": "ListItem", "position": 3, "name": "מה יש במתחם של לב ים", "item": "https://levyam.com/stories/dugma/" }
-    ]
-  }
-  </script>
-
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    "mainEntity": [
-      {
-        "@type": "Question",
-        "name": "כמה אנשים נכנסים למתחם?",
-        "acceptedAnswer": { "@type": "Answer", "text": "המתחם גמיש ומתאים לקבוצות בגדלים שונים, ממפגש אינטימי ועד אירוע גדול. ספרו לנו כמה תהיו ומה אופי האירוע, ונתאים את המקום בשבילכם." }
-      },
-      {
-        "@type": "Question",
-        "name": "אפשר לישון בלב ים?",
-        "acceptedAnswer": { "@type": "Answer", "text": "לא. אין אפשרות לינה במתחם. אפשר לשכור את המקום ליום, לסוף שבוע או לתקופה ארוכה יותר, אבל בלי לינה." }
-      },
-      {
-        "@type": "Question",
-        "name": "יש אינטרנט ואפשרות להקרין מצגת?",
-        "acceptedAnswer": { "@type": "Answer", "text": "כן. במתחם יש אינטרנט מהיר וטלוויזיה גדולה להקרנה. יש גם מטבח מאובזר, כלי מטבח והגשה, מדשאה, מקלחות ושירותים." }
-      }
+      { "@type": "ListItem", "position": 2, "name": "יוזמות", "item": "https://levyam.com/happening/" }
     ]
   }
   </script>
 </head>
 
-<body data-page-slug="dugma">
+<body data-page-slug="happening">
 
-  <a class="skip-link" href="#story-main">דלג לתוכן הראשי</a>
+  <a class="skip-link" href="#hp-main">דלג לתוכן הראשי</a>
 
-  <!-- The header and footer between the chrome markers are stamped from stories/_template*.html by scripts/gen-stories-index.mjs — edit the page template. -->
   <!-- chrome:header -->
   <header class="story-header">
     <div class="hero-topbar">
@@ -122,7 +80,7 @@
           <li><a href="/#why">מי אנחנו</a></li>
           <li><a href="/#gallery">גלריה</a></li>
           <li><a href="/stories/">סיפורים</a></li>
-          <li><a href="/happening/">יוזמות</a></li>
+          <li><a href="/happening/" aria-current="page">יוזמות</a></li>
           <li><a href="/#faq">שאלות ותשובות</a></li>
           <li><a href="/#contact">צור קשר</a></li>
         </ul>
@@ -148,8 +106,8 @@
 
       <!-- Language toggle navigates to the twin URL — one URL per language. -->
       <div class="lang-toggle" role="group" aria-label="שפה / اللغة">
-        <a class="lang-opt is-active" href="/stories/dugma/" hreflang="he" lang="he" aria-current="page">עב</a>
-        <a class="lang-opt" href="/stories/ar/dugma/" hreflang="ar" lang="ar">عر</a>
+        <a class="lang-opt is-active" href="/happening/" hreflang="he" lang="he" aria-current="page">עב</a>
+        <a class="lang-opt" href="/happening/ar/" hreflang="ar" lang="ar">عر</a>
       </div>
 
       <button class="nav-toggle" aria-label="פתיחת תפריט" data-label-open="פתיחת תפריט" data-label-close="סגירת תפריט" aria-expanded="false" aria-controls="mobile-nav">
@@ -169,104 +127,51 @@
         <li><a href="/#why">מי אנחנו</a></li>
         <li><a href="/#gallery">גלריה</a></li>
         <li><a href="/stories/">סיפורים</a></li>
-        <li><a href="/happening/">יוזמות</a></li>
+        <li><a href="/happening/" aria-current="page">יוזמות</a></li>
         <li><a href="/#faq">שאלות ותשובות</a></li>
         <li><a href="/#contact">צור קשר</a></li>
       </ul>
     </nav>
   </header>
   <!-- /chrome:header -->
-  <div class="wave-divider wave-divider--orange" aria-hidden="true"></div>
 
-  <main id="story-main">
-    <article class="story">
-
-      <figure class="container container-narrow story-hero">
-        <img src="/img/stories/dugma/hero-1600.jpg"
-             srcset="/img/stories/dugma/hero-800.jpg 800w, /img/stories/dugma/hero-1600.jpg 1600w"
-             sizes="(min-width: 1600px) min(68vw, 1280px), (min-width: 800px) 736px, 100vw"
-             width="1600" height="900" alt="שקיעה כתומה עם סירת דייגים מתחת לפרגולה בלב ים"
-             fetchpriority="high" decoding="async">
-      </figure>
-
-      <div class="container container-narrow">
-
+  <main id="hp-main">
+    <div class="hub-hero">
+      <div class="container">
         <nav class="breadcrumbs" aria-label="מסלול ניווט">
           <ol>
             <li><a href="/">לב ים</a></li>
-            <li><a href="/stories/">סיפורים</a></li>
-            <li aria-current="page">מה יש במתחם של לב ים</li>
+            <li aria-current="page">יוזמות</li>
           </ol>
         </nav>
 
-        <h1 class="story-title">מה יש במתחם של לב ים</h1>
-
-        <div class="story-lede">
-          <p>במתחם של לב ים יש פינות ישיבה מגוונות, מטבח מאובזר, אינטרנט מהיר, טלוויזיה גדולה להקרנה, מדשאה, מקלחות ושירותים. הוא גמיש ומתאים לקבוצות בגדלים שונים, ואין בו אפשרות לינה.</p>
-        </div>
-
-        <p class="story-byline">
-          מאת <span class="story-byline-name">צוות לב ים</span> ·
-          <time datetime="2026-08-11">11.08.2026</time>
-        </p>
-
-        <h2>המבנה והחלל</h2>
-        <p>לב ים יושב במבנה דייגים עתיק בכפר הדייגים בג'סר א-זרקא. רצועת החוף שלפניו בתולית, והמתחם פונה אל הים. יש פרגולה מול הים ומדשאה. כפר הדייגים הוא פארק לאומי רשמי, ושביל ישראל עובר לאורך הכפר.</p>
-
-        <h2>מה יש בפנים</h2>
-        <p>המטבח מאובזר, וכולל כלי מטבח והגשה. יש אינטרנט מהיר וטלוויזיה גדולה להקרנה, כך שאפשר לקיים יום עבודה או יום אסטרטגיה בלי להביא ציוד. יש מקלחות, שירותים וכלי עבודה. פינות הישיבה מגוונות, ואפשר לפזר קבוצה בין כמה מהן.</p>
-
-        <figure class="story-figure">
-          <img src="/img/gallery/09.jpg" alt="מבט מלמעלה על חלל העבודה המשותף בלב ים" width="1600" height="1200"
-               loading="lazy" decoding="async">
-          <figcaption>חלל העבודה המשותף בלב ים, מול הים.</figcaption>
-        </figure>
-
-        <h2>אוכל</h2>
-        <p>על המטבח אחראים מקומיים מג'סר א-זרקא. הגישה היא מהים לשולחן — אוכל מקומי טרי. אפשר להזמין ארוחה מלאה, פינוקים בין הישיבות, או ארוחת ערב חגיגית.</p>
-
-        <figure class="story-figure">
-          <img src="/img/services/offsite.jpeg" alt="אירוע עסקי קבוצתי תחת הפרגולה של לב ים" width="1600" height="1066"
-               loading="lazy" decoding="async">
-          <figcaption>קבוצה תחת הפרגולה, מול הים.</figcaption>
-        </figure>
-
-        <figure class="story-figure story-video">
-          <video controls preload="none" playsinline
-                 poster="/img/hero/hero-poster.jpg" width="1600" height="900">
-            <source src="/img/hero/hero.mp4" type="video/mp4">
-          </video>
-          <figcaption>שקיעה מול הים בלב ים.</figcaption>
-        </figure>
-
-        <h2>שאלות ותשובות</h2>
-        <div class="story-faq">
-          <details class="faq-item">
-            <summary>כמה אנשים נכנסים למתחם?</summary>
-            <div class="faq-answer"><p>המתחם גמיש ומתאים לקבוצות בגדלים שונים, ממפגש אינטימי ועד אירוע גדול. ספרו לנו כמה תהיו ומה אופי האירוע, ונתאים את המקום בשבילכם.</p></div>
-          </details>
-          <details class="faq-item">
-            <summary>אפשר לישון בלב ים?</summary>
-            <div class="faq-answer"><p>לא. אין אפשרות לינה במתחם. אפשר לשכור את המקום ליום, לסוף שבוע או לתקופה ארוכה יותר, אבל בלי לינה.</p></div>
-          </details>
-          <details class="faq-item">
-            <summary>יש אינטרנט ואפשרות להקרין מצגת?</summary>
-            <div class="faq-answer"><p>כן. במתחם יש אינטרנט מהיר וטלוויזיה גדולה להקרנה. יש גם מטבח מאובזר, כלי מטבח והגשה, מדשאה, מקלחות ושירותים.</p></div>
-          </details>
-        </div>
-
+        <h1 class="section-title">יוזמות</h1>
+        <p class="hub-standfirst">כל היוזמות המתקיימות בלב ים מופיעות פה, תבחרו תאריך בלוח שנה או תלחצו על יוזמה לקבלת כל הפרטים.</p>
       </div>
-    </article>
+    </div>
+    <div class="wave-divider wave-divider--orange" aria-hidden="true"></div>
+
+    <!-- The month, filled by js/happening.js from the live feed (a marked day
+         opens its items). Hidden until the feed answers; the cards below are
+         the list a crawler, a no-JS reader or a failed fetch gets. -->
+    <section class="hp-cal container container-hp" data-happening-calendar aria-label="לוח היוזמות" hidden></section>
+
+    <div class="hp-hub container container-hp">
+      <h2 class="hp-hub-title">כל היוזמות</h2>
+      <ul class="hp-grid" data-happening-list>
+<!--ITEM_LIST-->
+      </ul>
+    </div>
 
     <div class="wave-divider wave-divider--blue" aria-hidden="true"></div>
     <aside class="story-cta">
       <div class="container">
         <img class="footer-logo story-cta-mark" src="/img/logo/logo-mono-nobg.png" alt="" width="40" height="40">
-        <p class="story-cta-text">רוצים לבדוק אם המתחם מתאים לקבוצה שלכם? כתבו לנו כמה אתם ומתי.</p>
+        <p class="story-cta-text">רוצים לדעת מה יהיה בסוף השבוע הקרוב, או לתכנן משהו משלכם? שלחו לנו הודעה.</p>
         <a class="btn btn-primary"
-           href="https://wa.me/972506669138?text=שלום%2C%20אשמח%20לפרטים%20על%20המתחם%20בלב%20ים"
+           href="https://wa.me/972506669138?text=שלום%2C%20אשמח%20לשמוע%20מה%20קורה%20בלב%20ים"
            target="_blank" rel="noopener"
-           data-bizevent-source="stories_dugma">
+           data-bizevent-source="happening_hub">
           דברו איתנו בוואטסאפ
         </a>
       </div>
@@ -314,8 +219,8 @@
   <!-- /chrome:footer -->
 
   <a class="wa-float"
-     href="https://wa.me/972506669138?text=שלום%2C%20אשמח%20לפרטים%20על%20המתחם%20בלב%20ים"
-     data-bizevent-source="stories_float"
+     href="https://wa.me/972506669138?text=שלום%2C%20אשמח%20לשמוע%20מה%20קורה%20בלב%20ים"
+     data-bizevent-source="happening_float"
      target="_blank" rel="noopener"
      aria-label="צור קשר בוואטסאפ">
     <svg viewBox="0 0 32 32" width="32" height="32" aria-hidden="true">
@@ -325,5 +230,8 @@
 
   <script src="/js/wa-track.js" defer></script>
   <script src="/js/stories.js" defer></script>
+  <script src="/js/happening-config.js" defer></script>
+  <script src="/js/happening-render.js" defer></script>
+  <script src="/js/happening.js" defer></script>
 </body>
 </html>

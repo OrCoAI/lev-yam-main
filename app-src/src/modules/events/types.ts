@@ -21,10 +21,20 @@ export interface EventItem {
   body_ar: string
   /** the gallery in display order — [0] is the cover; at most 8 (events_image_paths_valid) */
   image_paths: string[]
-  story_slug: string | null
   /** 0 = Sunday … 6 = Saturday; null = a dated item */
   recur_weekdays: number[] | null
   recur_until: string | null
+  /** the landing page's optional lines (59_events_landing.sql): who it is for, what to
+   *  bring / where to meet. A public row fills each in both languages or in neither. */
+  audience_he: string
+  audience_ar: string
+  bring_he: string
+  bring_ar: string
+  /** the cost line (60_events_cost.sql), optional and bilingual the same way; the flag
+   *  renders as one fixed line per language on the page */
+  cost_he: string
+  cost_ar: string
+  booking_required: boolean
   /** the Arabic is an unconfirmed machine draft — the DB refuses to publish it (ADR 0055) */
   ar_machine_translated: boolean
   /** read-only, computed by events.next_date() — the same live rule as the public feed;

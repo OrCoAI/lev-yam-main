@@ -39,8 +39,10 @@ block of the roadmap, driven by [docs/plans/master-execution-plan.md](docs/plans
   `js/wa-track.js` (`LevYamTrack.whatsappClick`) to Dynatrace `levyam.whatsapp_cta`, Meta Pixel
   `Contact`, and GA4 `whatsapp_click` (with `page_slug` from `<body data-page-slug>`). Everything
   else (service interest, contact intent, FAQ opens, language switch) is homepage-only and goes to
-  **Dynatrace alone**. GA4 is `G-VWL45MKK76`, Enhanced Measurement ON; `whatsapp_click` is the one
-  hand-written GA4 event — adding another is a deliberate decision, not a default
+  **Dynatrace alone**. GA4 is `G-VWL45MKK76`, Enhanced Measurement ON; `whatsapp_click` and
+  `share_click` (a share of a `/happening/` landing page, `LevYamTrack.shareClick` → Dynatrace
+  `levyam.share` + GA4, no Meta — [ADR 0057](docs/decisions/0057-ga4-carries-share-click-for-happening-landing-pages.md))
+  are the two hand-written GA4 events — adding another is a deliberate decision, not a default
   ([ADR 0006](docs/decisions/0006-ga4-carries-whatsapp-click-tier-separation-console-side.md)). **Staging is excluded from GA
   console-side** (hostname filter), never by a hostname guard in the snippet (same ADR).
 - **Contact details** stay consistent everywhere: WhatsApp `972506669138`, email `info@levyam.com`.
@@ -65,6 +67,31 @@ Answer-first content pages, one per query cluster — plan: [docs/plans/content-
 - **Writing a page = the `story-author` skill** (brief → HE + AR pair, gap list, images via
   `scripts/story-images.sh` from the gitignored `media/` intake). No page goes to PR with a
   `[חסר]` marker; the Arabic needs a native reader's sign-off before merge.
+
+### What's happening (`happening/`, served at `/happening/`)
+The public life of the venue, published from `/app/events` ([ADR 0054](docs/decisions/0054-whats-happening-is-db-driven-public-life-bilingual-in-the-db.md),
+[ADR 0056](docs/decisions/0056-whats-happening-item-pages-are-generated-landing-pages-rebuilt-on-publish.md)).
+- **A landing page per item per language is generated at deploy** into `_site/` only, never
+  committed: `scripts/gen-happening.mjs` (run by `assemble-site.sh`) reads `events.feed` +
+  `events.passed` as anon and renders `happening/_item.html` / `_item.ar.html`; the two hub
+  shells `happening/index.html` + `ar/index.html` are committed and served, and `js/happening.js`
+  refreshes everything from the feed on load. A feed fetch failure **fails the build**; CI renders
+  `happening/_fixture.json` instead. Chrome is stamped like story chrome (`--stamp` / `--check`).
+- **Publishing triggers a rebuild:** the `rebuild-site` Edge Function dispatches the tier's deploy
+  workflow with a scoped PAT; prod also rebuilds nightly. Secrets one at a time — never
+  `supabase secrets set --env-file` ([supabase/README.md](supabase/README.md)).
+- **The feed config is per tier:** `js/happening-config.js` in the checkout holds the local stack
+  and is rewritten in `_site/` from `VITE_SUPABASE_*`. `js/happening-render.js` is the one renderer
+  (UMD: browser + the generator) — item text and markup are never built anywhere else.
+- Every venue fact on a landing page comes from `FACTS.md`; no prices; the CTA is one swappable
+  `<section data-cta>` (the plan's "Path to booking").
+- **Visitors see "יוזמות" / "مبادرات"** (nav, hub title, breadcrumbs; the homepage carries only
+  the nav entry, never a strip of items) — the URL, module and
+  code keep `happening`. An item's page stands alone: no link to a story pair, the body is
+  required to publish; cost + booking are structured fields ([ADR 0058](docs/decisions/0058-initiatives-stand-alone-cost-booking-fields-section-named-yozmot.md)).
+  The hub's month calendar is browser-rendered from the feed; the cards are the no-JS list.
+  Every uploaded photo has a `<name>-sm.jpg` copy for cards and link previews — the rule lives in
+  the renderer and the `/app/events` upload and must agree ([ADR 0059](docs/decisions/0059-initiatives-at-scale-paged-hub-small-photo-copies-light-list-read.md)).
 
 ### Platform (`app-src/`, served at `/app`)
 - **Stack:** Vite + React + TypeScript + react-router. Dev needs **Node 22** and the **local Supabase
@@ -261,8 +288,10 @@ is the mandate for Phase 2.
 Push to `main` → `.github/workflows/deploy.yml` builds `app-src` → `/app`, assembles the site from the
 **explicit allowlist in `scripts/assemble-site.sh`** (shared with staging's `build-site.sh`; a new public
 page or asset folder must be added there or it 404s in prod), runs the grant audit and smoke-checks
-`/`, `/app/`, `/pos.html`, `/stories/`, `/stories/ar/`, `/robots.txt`, `/sitemap.xml`, `/llms.txt`,
-`/facts.txt`. `main` is branch-protected: PR + green `ci.yml` required, no direct pushes, admins
+`/`, `/app/`, `/pos.html`, `/stories/`, `/stories/ar/`, `/happening/`, `/happening/ar/`, `/robots.txt`,
+`/sitemap.xml`, `/llms.txt`, `/facts.txt`. `deploy.yml` also runs nightly (the `/happening/` pages are
+rebuilt from the feed) and on a `workflow_dispatch` from the `rebuild-site` function; both deploy
+jobs carry a `github.ref` guard so a dispatch on any other ref no-ops. `main` is branch-protected: PR + green `ci.yml` required, no direct pushes, admins
 included (ARCHITECTURE §6c). Pushing `staging` triggers `deploy-staging.yml` → `staging.levyam.com`
 (Cloudflare Pages, noindex, `lev-yam-staging` Supabase); only `main` and `staging` are long-lived.
 `docs/`, `tests/`, `supabase/` are never deployed. One-time setup: [supabase/README.md](supabase/README.md).

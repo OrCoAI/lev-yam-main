@@ -1,7 +1,9 @@
 // translate — Hebrew → Arabic draft for a "What's happening" item.
 // Lev Yam platform (docs/plans/events-whats-happening.md · ADR 0055).
 //
-// One action: POST { title, summary, body } (Hebrew) → the same keys in Arabic.
+// One action: POST { title, summary, body, audience, bring } (Hebrew) → the
+// same keys in Arabic (the last two are the landing page's optional lines,
+// 59_events_landing.sql).
 // Caller must be signed in and hold 'events.manage' — re-checked here server
 // side via core.has_permission_for(), never trusted from the client. That is
 // also the spend guard: the Google key is billed per character.
@@ -42,10 +44,10 @@ const API_KEY = Deno.env.get('GOOGLE_TRANSLATE_API_KEY')
 const LOCAL = /^http:\/\/(kong|localhost|127\.0\.0\.1)(:\d+)?$/.test(Deno.env.get('SUPABASE_URL') ?? '')
 const FAKE = !API_KEY && LOCAL
 
-const FIELDS = ['title', 'summary', 'body'] as const
+const FIELDS = ['title', 'summary', 'body', 'audience', 'bring', 'cost'] as const
 type Field = (typeof FIELDS)[number]
-// A title + summary + a long body is ~3k characters; the cap bounds what one
-// call can cost.
+// A title + summary + a long body + the three optional lines is ~3k characters;
+// the cap bounds what one call can cost.
 const MAX_CHARS = 8000
 
 // Names Google would otherwise translate word by word ("לב ים" → "heart of the

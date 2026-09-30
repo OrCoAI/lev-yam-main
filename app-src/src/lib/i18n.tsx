@@ -64,7 +64,7 @@ const dict = {
   'launcher.desc.finance': { he: 'תנועות, צפי ודוח כספי', ar: 'حركات، متوقّع وتقرير مالي' },
   'launcher.desc.pos': { he: 'שולחנות, מטבח ודוח יום', ar: 'طاولات، مطبخ وتقرير اليوم' },
   'launcher.desc.quotes': { he: 'הצעות מחיר, חוזים והכנות', ar: 'عروض أسعار، عقود وتحضيرات' },
-  'launcher.desc.events': { he: 'מה קורה בלב ים — פרסום לאתר', ar: 'شو في بليف يام — نشر عالموقع' },
+  'launcher.desc.events': { he: 'יוזמות בלב ים — פרסום לאתר', ar: 'مبادرات ليف يام — نشر عالموقع' },
   'passkey.enabled': { he: '✓ Face ID מופעל', ar: '✓ Face ID مفعّل' },
   'passkey.enabling': { he: 'מפעיל…', ar: 'جارٍ التفعيل…' },
   'passkey.retry': { he: 'נסה שוב — Face ID', ar: 'حاول مجددًا — Face ID' },
