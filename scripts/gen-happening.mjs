@@ -307,7 +307,7 @@ async function renderItem(lang, item, state, others) {
     BODY_HTML: R.paragraphsHtml(R.text(item, 'body', code)),
     GALLERY_HTML: R.galleryHtml(cfg, item, code),
     PATHS_JSON: JSON.stringify(item.image_paths), // js/happening.js rebuilds the photos only when this changes
-    NEXT_HTML: R.listHtml(cfg, others, code, { heading: 'h3' }),
+    NEXT_HTML: R.listHtml(cfg, others, code, { heading: 'h3', more: true }),
     QR_SVG: await QRCode.toString(url, { type: 'svg', margin: 1, errorCorrectionLevel: 'M' }),
     BREADCRUMB_JSONLD: breadcrumbLd(item, code, url),
     JSONLD: state === 'live' ? jsonLd(item, code, url) : '',

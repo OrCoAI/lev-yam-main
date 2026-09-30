@@ -58,7 +58,8 @@
       calNext: 'חודש הבא',
       calEmpty: 'אין יוזמות בחודש הזה.',
       toPage: 'לעמוד היוזמה',
-      empty: 'אין אירועים קרובים כרגע — עקבו אחרינו, בקרוב יהיה.',
+      empty: 'אין יוזמות קרובות כרגע — עקבו אחרינו, בקרוב יהיה.',
+      emptyMore: 'אין כרגע יוזמות נוספות — עקבו אחרינו, בקרוב יהיה.',
       cta: function (title, date) { return 'שלום, אשמח להגיע ל' + title + (date ? ' ב־' + date : ''); },
       base: '/happening/'
     },
@@ -83,7 +84,8 @@
       calNext: 'الشهر الجاي',
       calEmpty: 'ما في مبادرات بهالشهر.',
       toPage: 'لصفحة المبادرة',
-      empty: 'ما في فعاليات قريبة هلق — تابعونا، قريبًا بيصير.',
+      empty: 'ما في مبادرات قريبة هلق — تابعونا، قريبًا بيصير.',
+      emptyMore: 'ما في مبادرات تانية هلق — تابعونا، قريبًا بيصير.',
       cta: function (title, date) { return 'أهلًا، بحب أجي على ' + title + (date ? ' بتاريخ ' + date : ''); },
       base: '/happening/ar/'
     }
@@ -274,10 +276,13 @@
     '</li>';
   }
 
-  /* The <li>s of a list; the empty state when there is nothing live. */
+  /* The <li>s of a list; the empty state when there is nothing live. `more`
+     words it for an item page's "more initiatives" row: "no other ones",
+     since "none upcoming" reads wrong under an upcoming item's own page. */
   function listHtml(cfg, items, lang, opts) {
     opts = opts || {};
-    if (!items.length) return '<li class="hp-grid-empty"><p>' + escapeHtml(labels(lang).empty) + '</p></li>';
+    var l = labels(lang);
+    if (!items.length) return '<li class="hp-grid-empty"><p>' + escapeHtml(opts.more ? l.emptyMore : l.empty) + '</p></li>';
     return items.map(function (item, i) {
       return cardHtml(cfg, item, lang, { heading: opts.heading, eager: opts.eager && i === 0 });
     }).join('\n');

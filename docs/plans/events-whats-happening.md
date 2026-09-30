@@ -168,12 +168,12 @@ as the report jobs (ADR 0039 spirit): a scoped token, a workflow that only rebui
 
 **Expired state.** `events.passed` is a second anon-readable view: public items whose last
 occurrence passed within the last 90 days, same public columns. The generator renders them with
-`noindex`, a "האירוע הזה כבר עבר" banner, the next-3 block and the CTA, and leaves them out of
+`noindex`, a "היוזמה הזאת כבר עברה" banner, the next-3 block and the CTA, and leaves them out of
 the sitemap. After 90 days the page is gone and `404.html` routes `/happening/*` to
 `/happening/`. Every generated page also checks the feed on load: an item that passed since the
 last rebuild flips to the passed state at once, and text/gallery edits show without waiting. A slug
 found in neither view (unpublished since the last rebuild) renders an *unavailable* state on load —
-a neutral line ("הפריט אינו זמין כרגע", not the "passed" banner, which would be untrue for a
+a neutral line ("היוזמה אינה זמינה כרגע", not the "passed" banner, which would be untrue for a
 withdrawn item) plus the next-3 block — so an unpublish is honoured within seconds even before the
 rebuild lands.
 
@@ -496,6 +496,13 @@ columns are nullable and can stay; the bucket is emptied by hand.
     the hero stays the cover photo, not a slideshow.
   - **The homepage strip is out** (owner, on the staging round): initiatives appear only under
     `/happening/`; the homepage keeps the nav entry and loads none of the happening scripts.
+  - 2026-09-30, before the owner's last staging review: the last visitor-facing "events" wording
+    went — the empty-list line, the passed and unavailable banners now say יוזמה / مبادرة, and the
+    item page's "יוזמות נוספות" row has its own empty line ("אין כרגע יוזמות נוספות") instead
+    of the hub's "none upcoming". The hub's `<title>` / description keep "אירועים" / "فعاليات"
+    as search words, and the menu's "מה קורה בלב ים" is the homepage's services section.
+    The `translate` function was redeployed on staging (it predated audience/bring/cost) and
+    rebuild-on-publish was wired there (token expires 2027-09-29).
 - 2026-09-29 · **PR 2 gate** (simplify → code-review + security-review as subagents):
   - **An item's text can never fail a deploy:** the template engine substitutes in one pass and
     checks for stray placeholders on the template only, so `{{…}}` in a title renders literally
