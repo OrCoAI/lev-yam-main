@@ -665,7 +665,9 @@ test initiatives stay on staging and localhost on the owner's call; prod is clea
 2026-09-30 ([ADR 0061](../decisions/0061-staging-schema-applied-by-hand-never-db-push.md)): the
 apply steps name the management API (the CLI's `db query --linked` cannot reach the tier
 databases from the dev machine), and CLAUDE.md's "Schemas" line no longer says
-`supabase db push` for staging; the app's module title stays "מה קורה" (ADR 0058). Not built, by
+`supabase db push` for staging. The app's module title became "יוזמות" / "مبادرات" on 2026-09-30
+([ADR 0060](../decisions/0060-staff-module-named-yozmot-too.md), `61_events_module_label.sql`,
+hand-applied on staging and prod the same day, the label checked on both). Not built, by
 decision: a practical-answers block, a contact block, a village block, booking (Phase 4, "Path
 to booking").
 
