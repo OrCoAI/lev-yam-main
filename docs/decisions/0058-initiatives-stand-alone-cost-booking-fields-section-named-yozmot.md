@@ -1,7 +1,7 @@
 # 0058 — An initiative's page stands alone (no link to a story pair), carries cost + booking as structured fields, and the public section is named "יוזמות" / "مبادرات"
 
 - **Date:** 2026-09-29
-- **Status:** accepted. Amends [0056](0056-whats-happening-item-pages-are-generated-landing-pages-rebuilt-on-publish.md) §7 (the optional "read the full story" link) and the PR 2 decisions table rows 5, 7 and 9 in [plans/events-whats-happening.md](../plans/events-whats-happening.md); 0056 otherwise stands.
+- **Status:** accepted. Amends [0056](0056-whats-happening-item-pages-are-generated-landing-pages-rebuilt-on-publish.md) §7 (the optional "read the full story" link) and the PR 2 decisions table rows 5, 7 and 9 in [plans/events-whats-happening.md](../plans/events-whats-happening.md); 0056 otherwise stands. Amended by ADR 0060: the staff module is named "יוזמות" / "مبادرات" too.
 - **Decided by:** owner, on the first localhost review of the landing page (PR #97, before the gate).
 - **Source:** the owner's review notes, verbatim in the plan's "Decisions made on the way" (2026-09-29).
 

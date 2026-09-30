@@ -18,7 +18,7 @@ default") and invariant 6 (visibility flag on public content) meet a real public
 | Source | GA4 Data API + Search Console — the weekly-review analytics snapshot ([ADR 0047](../decisions/0047-analytics-wiring-ga4-and-gsc-only-public-numbers.md)) |
 | Baseline (today) | 0 / 0 / 0 / 0 — the pages do not exist (2026-09-25) |
 | Target | clicks ≥ 10 in the first 21 days; visits, impressions and shares are a first read (reported, no pass line) |
-| Check date | ship + 21 days (date written here at merge) — `weekly-review` lists it when due |
+| Check date | **2026-10-21** (ship + 21 days; PR 2 merged 2026-09-30) — `weekly-review` lists it when due |
 | Verdict owner | owner |
 
 ## Scope
@@ -594,24 +594,38 @@ columns are nullable and can stay; the bucket is emptied by hand.
   WhatsApp text; the page shows public life, not private events · [ADR 0054](../decisions/0054-whats-happening-is-db-driven-public-life-bilingual-in-the-db.md)
 
 ## Close-out
-*PR 1 merged 2026-09-28 (#93, on prod). PR 2 built 2026-09-28 — this section is written at the
-PR; the merge date and the outcome-check date are filled in at merge.*
+*PR 1 merged 2026-09-28 (#93, on prod). PR 2 built 2026-09-28, reworked on the owner's reviews
+2026-09-29/30, merged 2026-09-30 (#97). Outcome check: 2026-10-21.*
 
 **What shipped (PR 2, Tier A):**
 - `supabase/schema/59_events_landing.sql`: `audience_he/ar`, `bring_he/ar` (+ CHECK
   `events_public_optional_bilingual`), `events.feed` with the four columns + anon column grants,
   `events.passed` (90-day window, anon + authenticated select), `events.valid_image_paths(id,
   paths)` pinned to the row's id. `rls_matrix.sql` +13 assertions (green locally). Baseline
-  regenerated. **Prod: hand-applied after the staging round, then `audit-grants --ref` → 0 drift**
-  (owner setup step 4).
+  regenerated. **Prod: applied 2026-09-30 through the management API (one transaction), after the
+  staging round and before the merge; `audit-grants --ref teyxtdccsrkdpqnbfcga` → 0 drift before
+  and after.**
 - `supabase/schema/60_events_cost.sql` (the owner's localhost review, ADR 0058): `cost_he/ar`
   + `booking_required`; the both-or-neither CHECK covers cost; `story_slug` and its CHECK
   dropped, `events.publishable()` without the story clause (body required), both views
   recreated. `rls_matrix.sql`: +3 assertions, the story-link case inverted. Baseline
-  regenerated. **Staging + prod: hand-applied like 59 (steps 0 and 4).**
+  regenerated. **Staging 2026-09-29, prod 2026-09-30 — like 59; prod had no initiatives, so the
+  demotion pre-count was empty. Anon probes on prod: `passed` and `feed` with the new columns
+  200, `events?select=notes` 401, `story_slug` 400; schema cache reloaded.**
 - `supabase/functions/rebuild-site`: signed-in + `events.manage` re-checked, dispatches
   `REBUILD_WORKFLOW` on `REBUILD_REF` with `GITHUB_DISPATCH_TOKEN` (fixed result codes only);
-  `not_configured` without the token. `translate` gains the two optional fields.
+  `not_configured` without the token. `translate` gains the optional fields and cost. **Deployed
+  on staging (2026-09-29/30) and prod (2026-09-30), `--no-verify-jwt --use-api`; the three
+  secrets set one at a time on both projects; the dispatch token (fine-grained, `lev-yam-main`
+  only, Actions read + write) expires 2027-09-29 and lives in the owner's keychain
+  (`levyam-rebuild-pat`); a publish on staging dispatched its rebuild, green.**
+- ADR 0059 (the owner's last staging round, 2026-09-30): the hub pages its cards (12 + "הצג עוד
+  יוזמות"); every upload writes a `-sm.jpg` copy that cards, the calendar and `og:image` use (the
+  full photo was over WhatsApp's preview limit), with a browser fallback and a build-time check
+  for older photos; lists read list columns only; "יוזמות נוספות" by nearest date; "+N" on busy
+  calendar days; no zigzag / pill / end date on the landing page; time ranges held
+  left-to-right; the Waze button opens the owner's link (FACTS.md). A header that returned on
+  scrolling up was built and reverted — the initiative pages keep the story pages' header.
 - `/app/events`: the two optional lines and the cost pair + booking switch (HE/AR paired,
   translate covers them, live check for the both-or-neither rule); the story-link field is gone; every save that changes public state, the publish/unpublish toggle
   and a delete of a public item call `rebuild-site` and show what it answered; the list's link
@@ -640,16 +654,25 @@ answered `not_configured` to the owner, `forbidden` to staff, `origin_not_allowe
 origin; `RLS MATRIX: ALL ASSERTIONS PASSED`; lint / typecheck / tests / both generators' `--check`
 / the fixture render green.
 
-**Left out / pending:** the owner's setup (PAT + three secrets per project, function deploy,
-hand-apply 59 + 60 on prod) — listed above under "Owner setup"; the native reader's pass on the AR
-CTA line, the section name "مبادرات" and the about paragraph; `og:image` is the cover at its stored size (≤1600px), not a 1200-wide render
-(Supabase image transforms are a paid feature). Not built, by decision: a practical-answers
-block, a contact block, a village block, booking (Phase 4, "Path to booking").
+**Left out / pending:** the native reader's pass on the Arabic wording (shipped without it on
+the owner's call, 2026-09-30 — logged in [modules/events.md](../modules/events.md), with the
+drawer-after-guard robustness bug and the "returning header for both surfaces" idea). Planted
+test initiatives stay on staging and localhost on the owner's call; prod is clean. Still open
+with the owner from 2026-09-29: this plan's apply steps name `supabase db query --linked`, which
+cannot reach the tier databases from the dev machine (the management API is the path used), and
+CLAUDE.md's "Schemas" line still says `supabase db push` for staging, which conflicts with the
+never-push rule above. The app's module title became "יוזמות" / "مبادرات" on 2026-09-30 ([ADR 0060](../decisions/0060-staff-module-named-yozmot-too.md),
+`61_events_module_label.sql`, to hand-apply on staging and prod — the grant audit cannot see it). Not built, by
+decision: a practical-answers block, a contact block, a village block, booking (Phase 4, "Path
+to booking").
 
 **Alignment:** VISION — P4 (public by default) now reaches the share sheet and the WhatsApp
 preview; the Q4 mandate (ADR 0046) is unchanged. ARCHITECTURE — every invariant re-checked in
 the PR 2 re-check above holds; the one new coupling (build-time read of the platform project)
-is recorded in §6c. **Verdict: aligned.**
+is recorded in §6c. Re-checked for ADR 0059 (2026-09-30): no schema, permission or RLS change; the
+small-copy naming rule lives in two places (the renderer and the upload) and is recorded in
+CLAUDE.md; the paged hub keeps the full list in the built HTML (P4, crawlable); nothing reaches
+prod that the grant audit cannot see. **Verdict: aligned.**
 
 ## Outcome check
 *(appended on the check date: metric value vs target, verdict, what it changes)*

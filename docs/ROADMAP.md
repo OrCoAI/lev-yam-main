@@ -524,7 +524,7 @@ proposal — the owner reorders by editing this list.*
       *social-referred WhatsApp clicks*
 - [ ] **7. Google Business Profile loop** — posts, photos, review replies, Q&A; `AggregateRating` on
       site → *GBP calls and direction requests*
-- [ ] **8. Public "What's happening"** — the original Phase 2's public half, minimal: events table +
+- [x] **8. Public "What's happening"** — the original Phase 2's public half, minimal: events table +
       one HE/AR public page reading Supabase anonymously (the first public content table — P4 gets
       tested; prereq H4 done) → *event inquiries*
       **Kicked off 2026-09-25:** [plans/events-whats-happening.md](plans/events-whats-happening.md) —
@@ -545,8 +545,10 @@ proposal — the owner reorders by editing this list.*
       **PR 2 built 2026-09-28**, reworked on the owner's localhost review 2026-09-29 (ADR 0058: "יוזמות",
       no story link, cost + booking, calendar hub, schema 60) (branch `events-landing-pages`): schema 59, `rebuild-site` function,
       generator + templates + hubs + share row + nav (strip out), nightly prod rebuild; verified on
-      localhost, RLS matrix green. **Next:** staging sign-off, the owner's setup (PAT + secrets,
-      function deploy, hand-apply 59 on prod), merge — then the outcome check at ship + 21 days.
+      localhost, RLS matrix green. **Shipped 2026-09-30** ([#97](https://github.com/OrCoAI/lev-yam-main/pull/97)):
+      staging sign-off, schema 59 + 60 applied on prod (0 drift), `translate` + `rebuild-site` on
+      both projects with the rebuild token, ADR 0059 (paged hub, small photo copies for cards and
+      WhatsApp previews). **Outcome check 2026-10-21.** Follow-ups: [modules/events.md](modules/events.md).
 - [ ] **9. Backlink programme** — tourism, food/travel, Arab-society media → *referring domains*
 - [ ] **10. Paid test** — a small Meta/Google campaign against one or two pages → *cost per WhatsApp
       conversation*. **Prerequisite, owner 2026-09-22:** before spending anything, prove the paid
