@@ -803,20 +803,3 @@ button.hp-cal-day:focus-visible { outline: 3px solid var(--color-orange); outlin
   .hp-slide-arrow, .hp-slide-dots, .hp-slide-count { display: none !important; }
   .hp-hero { min-block-size: auto; }
 }
-
-/* ── The site header on phones: sticky, tucked while scrolling down, back
-   on scrolling up (js/happening.js toggles .is-tucked / .is-stuck). It moves
-   by `top`, not a transform, so the fixed drawer inside keeps the viewport
-   as its frame. ─────────────────────────────────────────────────────────── */
-@media (max-width: 960px) {
-  .story-header {
-    position: sticky;
-    inset-block-start: 0;
-    transition: inset-block-start 0.28s ease, box-shadow 0.28s ease;
-  }
-  .story-header.is-stuck { box-shadow: 0 6px 18px rgba(12, 26, 36, 0.22); }
-  .story-header.is-tucked { inset-block-start: calc(-1 * var(--topbar-h) - 24px); box-shadow: none; }
-}
-@media (max-width: 960px) and (prefers-reduced-motion: reduce) {
-  .story-header { transition: none; }
-}
