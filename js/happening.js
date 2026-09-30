@@ -311,7 +311,7 @@
       var mine = items.filter(function (it) { return it.slug === slug; })[0];
       var others = items.filter(function (it) { return it.slug !== slug; }).slice(0, 3);
       var next = $('next');
-      if (next) next.innerHTML = R.listHtml(cfg, others, l, { heading: 'h3' });
+      if (next) next.innerHTML = R.listHtml(cfg, others, l, { heading: 'h3', more: true });
       if (mine) {
         refresh(mine);
         setState('live');
