@@ -1,4 +1,4 @@
-# 0059 — Initiatives at scale: a paged hub, a small copy beside every photo, a light list read, and a header that comes back on phones
+# 0059 — Initiatives at scale: a paged hub, a small copy beside every photo, a light list read; the header stays the story pages' header
 
 - **Date:** 2026-09-30
 - **Status:** accepted. Extends [0056](0056-whats-happening-item-pages-are-generated-landing-pages-rebuilt-on-publish.md) and [0058](0058-initiatives-stand-alone-cost-booking-fields-section-named-yozmot.md); neither changes.
@@ -36,10 +36,13 @@ photo (~0.8 MB) and WhatsApp drops preview images over roughly 300 KB.
    so the built page and the refreshed page agree.
 5. **A calendar day with more than three items** shows two dots and "+N"; its label names
    every item.
-6. **On phones (≤960px) the initiative pages' header is sticky**, tucks away while scrolling
-   down and comes back on the first pixels of scrolling up — moved by its sticky `top`, never
-   a transform, so the fixed drawer inside keeps the viewport as its frame. Story pages and
-   the homepage keep their static header (not asked for; a separate change if wanted).
+6. **The header is the story pages' header, behaviour included.** The owner first asked for the
+   phone menu to come back on scrolling up; it was built for the initiative pages (sticky,
+   tucked while scrolling down), and on seeing that story pages would differ the owner chose
+   consistency: the initiative pages keep the same static header as every story page
+   (2026-09-30). If the menu should ever return on scrolling up, it is one change for both
+   surfaces, not one of them. (Built that way, it must move by the sticky `top`, never a
+   transform — a transform re-anchors the fixed drawer inside the header.)
 7. **The landing page loses the zigzag under the header and the "יוזמות בלב ים" pill**; a
    recurring item's end date is no longer shown to visitors (the calendar and the next date
    already stop there); a time range is held left-to-right (an en dash in an RTL line showed

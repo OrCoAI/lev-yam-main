@@ -509,7 +509,8 @@ columns are nullable and can stay; the bucket is emptied by hand.
     the calendar and the WhatsApp preview use (the full photo was ~0.8 MB, over WhatsApp's
     ~300 KB, so shares showed no picture), with a fallback for older photos; lists read the list
     columns only; "יוזמות נוספות" = the nearest one-offs, weekly ones only to fill; a busy day
-    shows "+N". The owner's notes: the phone header comes back on scrolling up (initiative pages);
+    shows "+N". The owner's notes: the phone header came back on scrolling up (built, then
+    reverted on the owner's call — the initiative pages keep the story pages' header exactly);
     no zigzag and no "יוזמות בלב ים" pill on the landing page; no end date on a recurring item;
     time ranges held left-to-right; the Waze button opens `waze.com/ul/hsvbc45p5d` (FACTS.md).
 - 2026-09-29 · **PR 2 gate** (simplify → code-review + security-review as subagents):

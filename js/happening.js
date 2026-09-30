@@ -46,43 +46,6 @@
     if (img.complete && img.naturalWidth === 0 && img.getAttribute('src')) toFull(img);
   });
 
-  /* ── the header comes back when scrolling up (phones) ──────────────────
-     The site header is not fixed; on a long page on a phone, reaching the
-     menu meant scrolling all the way back. Here (≤960px, the hamburger
-     width) it is sticky and tucks away while scrolling down, and slides back
-     on the first few pixels of scrolling up. It moves by its sticky `top`,
-     never a transform — a transform would re-anchor the fixed drawer inside
-     it. Never tucked with the drawer open, near the top, or holding focus. */
-  (function () {
-    var header = document.querySelector('.story-header');
-    if (!header || !window.matchMedia) return;
-    var phone = window.matchMedia('(max-width: 960px)');
-    /* :focus-visible throws where unsupported (Safari < 15.4) — there, focus never pins it */
-    var focusVisible = (function () {
-      try { document.documentElement.matches(':focus-visible'); return true; } catch (e) { return false; }
-    })();
-    var lastY = window.pageYOffset, queued = false;
-    function update() {
-      queued = false;
-      var y = Math.max(0, window.pageYOffset);
-      var open = document.querySelector('.nav-toggle[aria-expanded="true"]');
-      header.classList.toggle('is-stuck', phone.matches && y > header.offsetHeight);
-      var f = document.activeElement;
-      var keyboard = focusVisible && header.contains(f) && f.matches(':focus-visible');
-      if (!phone.matches || open || y <= header.offsetHeight || keyboard) {
-        header.classList.remove('is-tucked');
-        lastY = y;
-        return;
-      }
-      if (y - lastY > 8) { header.classList.add('is-tucked'); lastY = y; }
-      else if (lastY - y > 4) { header.classList.remove('is-tucked'); lastY = y; }
-    }
-    window.addEventListener('scroll', function () {
-      if (!queued) { queued = true; window.requestAnimationFrame(update); }
-    }, { passive: true });
-    header.addEventListener('focusin', function () { header.classList.remove('is-tucked'); });
-  })();
-
   if (!cfg || !R) return; /* config or renderer missing — the static page stands */
 
   var lang = function () { return document.documentElement.lang === 'ar' ? 'ar' : 'he'; };
