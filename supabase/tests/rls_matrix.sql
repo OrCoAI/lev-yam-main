@@ -538,6 +538,9 @@ select pg_temp.assert_ok('events-only editor: still edits direct events',
   $q$ update events.events set notes = 'ok' where title = 'rls-evt new' $q$);
 reset role;
 rollback to savepoint evt_editor;
+-- 61_events_module_label: the launcher tile says "יוזמות", like the public site
+select pg_temp.assert_rows('61: the events module is labelled "יוזמות"',
+  $q$ select 1 from core.modules where key = 'events' and label = 'יוזמות' $q$, 1);
 
 -- =====================================================================
 --  NO-ROLE authenticated user — catalog is readable, module data is not

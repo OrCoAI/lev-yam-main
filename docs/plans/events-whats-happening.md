@@ -661,7 +661,8 @@ test initiatives stay on staging and localhost on the owner's call; prod is clea
 with the owner from 2026-09-29: this plan's apply steps name `supabase db query --linked`, which
 cannot reach the tier databases from the dev machine (the management API is the path used), and
 CLAUDE.md's "Schemas" line still says `supabase db push` for staging, which conflicts with the
-never-push rule above; the app's module title stays "מה קורה" (ADR 0058). Not built, by
+never-push rule above. The app's module title became "יוזמות" / "مبادرات" on 2026-09-30 ([ADR 0060](../decisions/0060-staff-module-named-yozmot-too.md),
+`61_events_module_label.sql`, to hand-apply on staging and prod — the grant audit cannot see it). Not built, by
 decision: a practical-answers block, a contact block, a village block, booking (Phase 4, "Path
 to booking").
 

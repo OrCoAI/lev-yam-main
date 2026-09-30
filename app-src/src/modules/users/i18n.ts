@@ -11,7 +11,7 @@ const he = {
     pos: 'קופה',
     finance: 'כספים',
     quotes: 'הצעות מחיר',
-    events: 'אירועים',
+    events: 'יוזמות',
   } as Record<string, string>,
 
   title: 'ניהול משתמשים והרשאות',
@@ -119,7 +119,7 @@ const ar: typeof he = {
     pos: 'الكاسا',
     finance: 'المالية',
     quotes: 'عروض الأسعار',
-    events: 'الفعاليات',
+    events: 'مبادرات',
   },
 
   title: 'إدارة المستخدمين والصلاحيات',
