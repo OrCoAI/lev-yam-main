@@ -248,6 +248,10 @@ initiatives, only the nav entry) + a nav entry linking `/happening/`; dictionary
 2. `supabase secrets set --project-ref vhvghcehkcbtygomixmu GITHUB_DISPATCH_TOKEN=<token>`, then
    `REBUILD_WORKFLOW=deploy-staging.yml`, `REBUILD_REF=staging` (three separate commands). Prod:
    `--project-ref teyxtdccsrkdpqnbfcga`, `REBUILD_WORKFLOW=deploy.yml`, `REBUILD_REF=main`.
+   **Staging wired 2026-09-30:** token `lev-yam rebuild-site` (only `lev-yam-main`, Actions read +
+   write) **expires 2027-09-29**; it sits in the owner's keychain as `levyam-rebuild-pat`, and prod's
+   `GITHUB_DISPATCH_TOKEN` is set from there the same way, so the value never passes through a chat
+   or a file. A direct dispatch with it answered 204 and the staging deploy it started went green.
 3. `supabase functions deploy rebuild-site --no-verify-jwt --use-api --project-ref <ref>`, and
    **redeploy `translate`** the same way (`supabase functions deploy translate --no-verify-jwt --use-api --project-ref <ref>`):
    this PR adds `audience`, `bring` and `cost` to the fields the function drafts, and a copy
