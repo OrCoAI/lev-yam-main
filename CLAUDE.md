@@ -90,6 +90,8 @@ The public life of the venue, published from `/app/events` ([ADR 0054](docs/deci
   code keep `happening`. An item's page stands alone: no link to a story pair, the body is
   required to publish; cost + booking are structured fields ([ADR 0058](docs/decisions/0058-initiatives-stand-alone-cost-booking-fields-section-named-yozmot.md)).
   The hub's month calendar is browser-rendered from the feed; the cards are the no-JS list.
+  Every uploaded photo has a `<name>-sm.jpg` copy for cards and link previews — the rule lives in
+  the renderer and the `/app/events` upload and must agree ([ADR 0059](docs/decisions/0059-initiatives-at-scale-paged-hub-small-photo-copies-light-list-read.md)).
 
 ### Platform (`app-src/`, served at `/app`)
 - **Stack:** Vite + React + TypeScript + react-router. Dev needs **Node 22** and the **local Supabase

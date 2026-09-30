@@ -101,18 +101,28 @@ export function imageUrl(path: string): string {
 
 export const MAX_PHOTOS = 8
 
-/** Best-effort: an orphaned photo in a public bucket is untidy, not a leak. */
+/** A photo's small copy, `<name>-sm.jpg` beside it — the public site's cards,
+ *  calendar and link previews use it (js/happening-render.js `thumbPath`, the
+ *  same rule; the two must agree). Never listed in image_paths. */
+export function thumbPath(path: string): string {
+  return path.replace(/\.[a-z0-9]+$/i, '') + '-sm.jpg'
+}
+
+/** Removes photos and their small copies (a copy that never existed is ignored).
+ *  Best-effort: an orphaned photo in a public bucket is untidy, not a leak. */
 export async function removeImages(paths: string[]): Promise<void> {
-  if (paths.length) await supabase.storage.from(BUCKET).remove(paths)
+  if (paths.length) await supabase.storage.from(BUCKET).remove(paths.flatMap((p) => [p, thumbPath(p)]))
 }
 
 // Phone photos arrive at 3–8 MB; the bucket caps at 5 MB and the public page
-// wants ~1600px. Downscale in the browser so the upload always fits.
+// wants ~1600px. Downscale in the browser so the upload always fits. The small
+// copy is ~800px: a card is at most ~400 CSS px wide, and a link preview has
+// to stay well under WhatsApp's ~300 KB or it shows no picture.
 const MAX_EDGE = 1600
+const THUMB_EDGE = 800
 
-async function downscale(file: File): Promise<Blob> {
-  const bitmap = await createImageBitmap(file)
-  const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height))
+async function downscale(bitmap: ImageBitmap, edge: number, quality: number): Promise<Blob> {
+  const scale = Math.min(1, edge / Math.max(bitmap.width, bitmap.height))
   const canvas = document.createElement('canvas')
   canvas.width = Math.round(bitmap.width * scale)
   canvas.height = Math.round(bitmap.height * scale)
@@ -121,24 +131,34 @@ async function downscale(file: File): Promise<Blob> {
   g.fillStyle = '#fff'
   g.fillRect(0, 0, canvas.width, canvas.height)
   g.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
-  bitmap.close()
   return new Promise((resolve, reject) =>
-    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('image'))), 'image/jpeg', 0.85),
+    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('image'))), 'image/jpeg', quality),
   )
 }
 
-/** Uploads under `<item id>/<random>.jpg` — the only shape events_image_paths_valid accepts. */
+/** Uploads under `<item id>/<random>.jpg` — the only shape events_image_paths_valid accepts —
+ *  plus its small copy. The photo is what counts: a failed copy is not a failed upload
+ *  (the public page falls back to the full photo). */
 export async function uploadImage(itemId: string, file: File): Promise<string> {
   const path = `${itemId}/${crypto.randomUUID().slice(0, 8)}.jpg`
+  const bucket = supabase.storage.from(BUCKET)
+  let small: Blob | null = null
   try {
-    const blob = await downscale(file)
-    const { error } = await supabase.storage
-      .from(BUCKET)
-      .upload(path, blob, { contentType: 'image/jpeg', upsert: false })
+    // both sizes drawn, then the decoded photo (~48 MB for 12 MP) freed before the network
+    const bitmap = await createImageBitmap(file)
+    let blob: Blob
+    try {
+      blob = await downscale(bitmap, MAX_EDGE, 0.85)
+      small = await downscale(bitmap, THUMB_EDGE, 0.8).catch(() => null)
+    } finally {
+      bitmap.close()
+    }
+    const { error } = await bucket.upload(path, blob, { contentType: 'image/jpeg', upsert: false })
     if (error) throw error
   } catch {
     // unreadable file, size/type refusal, network — one bilingual message (errImage)
     throw new Error('upload_failed')
   }
+  if (small) await bucket.upload(thumbPath(path), small, { contentType: 'image/jpeg', upsert: false }).catch(() => undefined)
   return path
 }

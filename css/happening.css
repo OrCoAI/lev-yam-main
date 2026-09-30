@@ -142,13 +142,15 @@
 }
 .hp-more-link:hover,
 .hp-more-link:focus-visible { background: var(--color-blue); color: var(--color-cream); }
+button.hp-more-link { background: none; font: inherit; font-weight: 700; cursor: pointer; }
 
 /* ── Landing page ──────────────────────────────────────────────────────── */
 
 .hp-page { background: var(--color-cream); }
 
 /* ── Hero: the cover, the title over it. The site header (.story-header,
-   stories.css) and the zigzag sit above it, as on every story page. ─────── */
+   stories.css) sits straight on it — no zigzag on a landing page (owner,
+   2026-09-30). ─────────────────────────────────────────────────────────── */
 
 .hp-hero {
   position: relative;
@@ -181,24 +183,6 @@
   padding-block: var(--space-7) calc(var(--space-6) + 28px); /* the sheet's rounded top overlaps by 28px */
   max-inline-size: var(--hp-column);
 }
-/* the section name as a small glass pill with the brand's sun */
-.hp-kicker {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 0 var(--space-3);
-  padding: 5px 12px 5px 9px;
-  border-radius: var(--radius-pill);
-  background: rgba(12, 26, 36, 0.38);
-  border: 1px solid rgba(255, 247, 234, 0.18);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  font-size: 0.8125rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: rgba(255, 247, 234, 0.92);
-}
-.hp-kicker img { inline-size: 14px; block-size: 14px; }
 .hp-title {
   margin: 0;
   color: var(--color-cream); /* styles.css colours every h1 ink; here it sits on the photo */
@@ -213,6 +197,23 @@
   font-size: var(--text-lead);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+  line-height: 1.45;
+}
+/* the date (or pattern) and the hours: pieces that never break inside, a
+   dot between them; a narrow screen wraps between pieces and the dot stays
+   with the piece after it */
+.hp-when-main { display: flex; flex-wrap: wrap; column-gap: 0.5em; row-gap: 2px; }
+.hp-when-part { white-space: nowrap; }
+.hp-when-pattern { white-space: normal; min-inline-size: 0; } /* six or seven weekdays wrap on a phone */
+.hp-when-part + .hp-when-part::before { content: '·'; margin-inline-end: 0.5em; opacity: 0.7; }
+/* a recurring item's next date, quieter, on its own line */
+.hp-when-next {
+  display: block;
+  margin-block-start: 4px;
+  font-size: 0.86em;
+  font-weight: 500;
+  color: rgba(255, 247, 234, 0.86);
+  white-space: nowrap;
 }
 .hp-when::before {
   content: '';
@@ -742,9 +743,12 @@ button.hp-cal-day:hover { background: color-mix(in srgb, var(--color-blue) 14%, 
 button.hp-cal-day:focus-visible { outline: 3px solid var(--color-orange); outline-offset: 2px; }
 .hp-cal-day.is-selected, button.hp-cal-day.is-selected:hover { background: var(--color-blue); color: var(--color-cream); }
 .hp-cal-num { line-height: 1; }
-.hp-cal-dots { display: flex; gap: 3px; block-size: 6px; }
+.hp-cal-dots { display: flex; align-items: center; gap: 3px; block-size: 6px; }
 .hp-cal-dots i { inline-size: 6px; block-size: 6px; border-radius: 50%; background: var(--color-orange); }
 .is-selected .hp-cal-dots i { background: var(--color-cream); }
+/* a day with more than three: two dots and "+N" */
+.hp-cal-more { font-size: 10px; font-weight: 800; line-height: 1; color: var(--color-orange-deep); direction: ltr; unicode-bidi: isolate; } /* "+4", never "4+" in RTL */
+.is-selected .hp-cal-more { color: var(--color-cream); }
 .hp-cal-panel {
   min-block-size: 140px;
   padding: var(--space-4);
@@ -798,4 +802,21 @@ button.hp-cal-day:focus-visible { outline: 3px solid var(--color-orange); outlin
   .story-header, .wave-divider, .hp-sticky, .hp-float, .hp-share, .site-footer,
   .hp-slide-arrow, .hp-slide-dots, .hp-slide-count { display: none !important; }
   .hp-hero { min-block-size: auto; }
+}
+
+/* ── The site header on phones: sticky, tucked while scrolling down, back
+   on scrolling up (js/happening.js toggles .is-tucked / .is-stuck). It moves
+   by `top`, not a transform, so the fixed drawer inside keeps the viewport
+   as its frame. ─────────────────────────────────────────────────────────── */
+@media (max-width: 960px) {
+  .story-header {
+    position: sticky;
+    inset-block-start: 0;
+    transition: inset-block-start 0.28s ease, box-shadow 0.28s ease;
+  }
+  .story-header.is-stuck { box-shadow: 0 6px 18px rgba(12, 26, 36, 0.22); }
+  .story-header.is-tucked { inset-block-start: calc(-1 * var(--topbar-h) - 24px); box-shadow: none; }
+}
+@media (max-width: 960px) and (prefers-reduced-motion: reduce) {
+  .story-header { transition: none; }
 }

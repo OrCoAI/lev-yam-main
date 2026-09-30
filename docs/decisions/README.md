@@ -91,3 +91,4 @@ implementation choices stay in their plan files; an ADR is for a decision that c
 - [0056 — A "What's happening" item is a generated static landing page, rebuilt when it is published, and built to be shared](0056-whats-happening-item-pages-are-generated-landing-pages-rebuilt-on-publish.md) — 2026-09-28
 - [0057 — GA4 carries a second hand-written event, `share_click`, for the "What's happening" landing pages](0057-ga4-carries-share-click-for-happening-landing-pages.md) — 2026-09-28
 - [0058 — An initiative's page stands alone (no story link), carries cost + booking as structured fields, and the section is named "יוזמות" / "مبادرات"](0058-initiatives-stand-alone-cost-booking-fields-section-named-yozmot.md) — 2026-09-29
+- [0059 — Initiatives at scale: a paged hub, a small copy beside every photo, a light list read, and a header that comes back on phones](0059-initiatives-at-scale-paged-hub-small-photo-copies-light-list-read.md) — 2026-09-30
