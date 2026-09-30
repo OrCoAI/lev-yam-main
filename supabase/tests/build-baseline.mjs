@@ -3,7 +3,8 @@
 //
 // `supabase/schema/*.sql` stays the human-readable source of truth for the DB
 // (CLAUDE.md). The Supabase CLI, however, applies `supabase/migrations/*.sql`
-// on `supabase db reset` (local) and `supabase db push` (staging). This script
+// on `supabase db reset` (local). Staging and prod are applied file by file by
+// hand and never pushed (ADR 0061 — neither records a migration history). This script
 // bridges the two: it concatenates the schema files — in the documented
 // fresh-install order, which is exactly their filename sort order
 // (00_core → 01_passkeys → 10_pos → 20/21 → 30 → 40 → 42→45 → 46→48 → 50) —
@@ -16,9 +17,10 @@
 // from schema/ silently: edit a schema file, regenerate, commit both.
 //
 // The baseline applies the pre-cut-over POS layers (10_pos, 42) followed by the
-// cut-over (43) in order — correct for a FRESH local/staging DB (it lands on the
-// cut-over end state). It is NEVER replayed on prod (README §First-time-setup):
-// prod only ever receives new, post-baseline migrations.
+// cut-over (43) in order — correct for a FRESH local DB (it lands on the
+// cut-over end state). It is NEVER replayed on staging or prod (README
+// §Applying a schema change, ADR 0061): they only ever receive new or changed
+// schema files, applied by hand.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';

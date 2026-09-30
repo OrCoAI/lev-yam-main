@@ -8,8 +8,9 @@ session should start by reading this file and end by updating it.
 **local Supabase stack** (`supabase start && supabase db reset`, then `cd app-src && npm run dev`;
 static pages via `python3 -m http.server 8080`) — and, for prod-like checks, the **staging tier**
 (`lev-yam-staging` / staging.levyam.com) — before pushing. `main` still deploys straight to prod.
-DB changes go through `supabase/schema/*.sql` (source of truth) plus the generated baseline the
-migration pipeline applies (`supabase/tests/build-baseline.mjs`; see
+DB changes go through `supabase/schema/*.sql` (source of truth) plus the generated baseline that
+local `supabase db reset` applies — staging and prod are applied by hand, never pushed
+([ADR 0061](decisions/0061-staging-schema-applied-by-hand-never-db-push.md); `supabase/tests/build-baseline.mjs`; see
 [plans/platform-staging-environment.md](plans/platform-staging-environment.md)). `pos.html` and the
 marketing site stay untouched until their replacement earns cut-over on real service days.
 
@@ -164,7 +165,7 @@ bilingual is ever a retrofit.*
             TRUNCATE is not governed by RLS, so any signed-in staff account could have wiped
             the billing history. Plus 15 anon-callable functions and 2 passkey objects. All
             closed on both tiers; both now report 0 drift
-      - [ ] **Put prod on the migration pipeline** — deferred with the prerequisites named
+      - [ ] **Put prod (and staging — same state, ADR 0061) on the migration pipeline** — deferred with the prerequisites named
             (2026-08-12), because the obvious move is destructive: prod has never been linked,
             so its migration ledger is empty and `supabase db push` would **replay the entire
             baseline**, which re-creates the anon-writable POS surface the 2026-07-14 cut-over
@@ -295,6 +296,9 @@ finance money integrity → doc rewrites.
       was ticked — the tracker contradicted itself.)* **Scope note:** this is done for local and
       staging. **Prod is still not on the pipeline** — that half is its own open item under
       Phase 1's prod-hardening block, with the `db push` replay hazard and prerequisites named.
+      *(Corrected 2026-09-30, [ADR 0061](decisions/0061-staging-schema-applied-by-hand-never-db-push.md):
+      done for **local** only — staging, like prod, has no migration history and is applied by
+      hand; the open pipeline item covers both tiers.)*
 - [x] **H3** Permission governance: last-admin lockout guard + `core.audit_log` on
       role/permission changes *(done 2026-07-15, bundled with H5 + users-scoped H7 —
       plan: [plans/users-hardening.md](plans/users-hardening.md); landed **ahead of**
