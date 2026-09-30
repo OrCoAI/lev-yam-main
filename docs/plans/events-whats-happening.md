@@ -503,6 +503,15 @@ columns are nullable and can stay; the bucket is emptied by hand.
     as search words, and the menu's "מה קורה בלב ים" is the homepage's services section.
     The `translate` function was redeployed on staging (it predated audience/bring/cost) and
     rebuild-on-publish was wired there (token expires 2027-09-29).
+  - 2026-09-30, **at scale + the owner's page notes** ([ADR 0059](../decisions/0059-initiatives-at-scale-paged-hub-small-photo-copies-light-list-read.md)):
+    asked what 100 open initiatives would do, then "fix based on your suggestions": the hub pages
+    its cards (12 + "הצג עוד יוזמות"); every upload writes a `-sm.jpg` copy (~800px) that cards,
+    the calendar and the WhatsApp preview use (the full photo was ~0.8 MB, over WhatsApp's
+    ~300 KB, so shares showed no picture), with a fallback for older photos; lists read the list
+    columns only; "יוזמות נוספות" = the nearest one-offs, weekly ones only to fill; a busy day
+    shows "+N". The owner's notes: the phone header comes back on scrolling up (initiative pages);
+    no zigzag and no "יוזמות בלב ים" pill on the landing page; no end date on a recurring item;
+    time ranges held left-to-right; the Waze button opens `waze.com/ul/hsvbc45p5d` (FACTS.md).
 - 2026-09-29 · **PR 2 gate** (simplify → code-review + security-review as subagents):
   - **An item's text can never fail a deploy:** the template engine substitutes in one pass and
     checks for stray placeholders on the template only, so `{{…}}` in a title renders literally

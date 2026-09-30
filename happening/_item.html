@@ -151,7 +151,6 @@
     </nav>
   </header>
   <!-- /chrome:header -->
-  <div class="wave-divider wave-divider--orange" aria-hidden="true"></div>
 
   <main id="hp-main">
 
@@ -160,9 +159,8 @@
       <img class="hp-hero-img" src="{{COVER}}" alt="" fetchpriority="high" decoding="async" data-hp="cover">
       <div class="hp-hero-veil" aria-hidden="true"></div>
       <div class="hp-hero-body container">
-        <p class="hp-kicker"><img src="/img/icons/sun-orange.png" alt="" width="14" height="14">יוזמות בלב ים</p>
         <h1 id="hp-title" class="hp-title" data-hp="title">{{TITLE}}</h1>
-        <p class="hp-when"><time datetime="{{DATE_ISO}}" data-hp="when">{{WHEN}}</time></p>
+        <p class="hp-when" data-hp="when">{{{WHEN_HTML}}}</p>
         <p class="hp-summary" data-hp="summary">{{SUMMARY}}</p>
       </div>
     </section>
@@ -261,9 +259,9 @@
           <h2 id="hp-here-title">איפה זה ואיך מגיעים</h2>
           <p>לב ים נמצא בכפר הדייגים בג'סר א-זרקא, על חוף הכרמל. מגיעים ברכב מכביש 4; בירידה בכפר לכיוון הים מגיעים לכפר הדייגים, ויש חניה מסודרת בכניסה.</p>
           <div class="hp-nav-btns">
-            <a class="hp-nav-btn" href="https://www.waze.com/ul?ll=32.536803%2C34.902106&navigate=yes" target="_blank" rel="noopener">
+            <a class="hp-nav-btn" href="https://waze.com/ul/hsvbc45p5d" target="_blank" rel="noopener">
               <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
-              וויז: "לב ים"
+              Waze
             </a>
             <a class="hp-nav-btn" href="https://maps.app.goo.gl/fFtCZYwK1KEcmFud6" target="_blank" rel="noopener">
               <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>

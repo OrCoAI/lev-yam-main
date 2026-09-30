@@ -18,7 +18,8 @@
    slug, title_he/ar, summary_he/ar, body_he/ar, audience_he/ar, bring_he/ar,
    cost_he/ar, booking_required, image_paths (ordered, [0] = cover),
    event_date, starts_at, ends_at, recur_weekdays (0 = Sunday), recur_until,
-   next_date (feed) or last_date (passed).                                   */
+   next_date (feed) or last_date (passed). The build may add small_copy:
+   false — it checked, and the cover has no -sm.jpg copy (coverThumb).      */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
   else root.LevYamHappeningRender = factory();
@@ -30,8 +31,14 @@
   /* An item without photos still needs a hero and a card image. */
   var FALLBACK_COVER = '/img/hero/hero-poster.jpg';
   /* events.feed as every reader takes it: soonest first, an item without a
-     start time before the timed ones of the same day. */
-  var FEED_QUERY = 'select=*&order=next_date.asc,starts_at.asc.nullsfirst';
+     start time before the timed ones of the same day. FEED_QUERY is the whole
+     row (the build, and a landing page's own item); LIST_QUERY is what a card,
+     the calendar and "more initiatives" read — no long texts, so a hub with a
+     hundred items stays a small download. */
+  var FEED_ORDER = 'order=next_date.asc,starts_at.asc.nullsfirst,slug.asc'; /* slug: a fixed order for ties, build and browser alike */
+  var FEED_QUERY = 'select=*&' + FEED_ORDER;
+  var LIST_QUERY = 'select=slug,title_he,title_ar,summary_he,summary_ar,image_paths,' +
+    'event_date,starts_at,ends_at,recur_weekdays,recur_until,next_date&' + FEED_ORDER;
 
   /* Per-language strings. Both are RTL; Arabic is the site's Levantine
      register (js/app.js). The CTA and share wording are the owner's
@@ -43,7 +50,6 @@
       every: 'כל',
       and: ' ו',
       next: 'הבא',
-      until: 'עד',
       brand: 'לב ים',
       hubName: 'יוזמות',
       photos: 'תמונות',
@@ -60,6 +66,8 @@
       toPage: 'לעמוד היוזמה',
       empty: 'אין יוזמות קרובות כרגע — עקבו אחרינו, בקרוב יהיה.',
       emptyMore: 'אין כרגע יוזמות נוספות — עקבו אחרינו, בקרוב יהיה.',
+      showMore: 'הצג עוד יוזמות',
+      dayCount: function (n) { return n + ' יוזמות'; },
       cta: function (title, date) { return 'שלום, אשמח להגיע ל' + title + (date ? ' ב־' + date : ''); },
       base: '/happening/'
     },
@@ -69,7 +77,6 @@
       every: 'كل',
       and: ' و',
       next: 'الجاي',
-      until: 'لحد',
       brand: 'ليف يام',
       hubName: 'مبادرات',
       photos: 'صور',
@@ -86,6 +93,8 @@
       toPage: 'لصفحة المبادرة',
       empty: 'ما في مبادرات قريبة هلق — تابعونا، قريبًا بيصير.',
       emptyMore: 'ما في مبادرات تانية هلق — تابعونا، قريبًا بيصير.',
+      showMore: 'شوفوا مبادرات كمان',
+      dayCount: function (n) { return n === 2 ? 'مبادرتين' : n <= 10 ? n + ' مبادرات' : n + ' مبادرة'; }, /* dual; plural 3–10; singular from 11 */
       cta: function (title, date) { return 'أهلًا، بحب أجي على ' + title + (date ? ' بتاريخ ' + date : ''); },
       base: '/happening/ar/'
     }
@@ -125,14 +134,36 @@
   /* A gallery path is `<uuid>/<name>.jpg` inside the public bucket
      (events_image_paths_valid). An absolute path (/img/…, the build fixture)
      is served as-is. */
+  function isSitePath(path) { return /^(https?:)?\//.test(path); }
   function imageUrl(cfg, path) {
-    if (/^(https?:)?\//.test(path)) return path;
-    return origin(cfg) + BUCKET_PATH + path;
+    return isSitePath(path) ? path : origin(cfg) + BUCKET_PATH + path;
   }
 
   function cover(cfg, item) {
     var paths = item.image_paths || [];
     return paths.length ? imageUrl(cfg, paths[0]) : FALLBACK_COVER;
+  }
+
+  /* Every uploaded photo has a small copy beside it, `<name>-sm.jpg`, ~800px
+     (the upload in app-src/src/modules/events/api.ts writes both): the one a
+     card, the calendar and a link preview use. A site path (the fixture, the
+     fallback cover) has no copy and is used as it is. Photos uploaded before
+     the copies existed have none — a card's <img> carries data-full, and
+     js/happening.js swaps to it when the small one fails to load. */
+  function thumbPath(path) {
+    return isSitePath(path) ? path : path.replace(/\.[a-z0-9]+$/i, '') + '-sm.jpg';
+  }
+  function coverThumb(cfg, item) {
+    var paths = item.image_paths || [];
+    if (!paths.length) return FALLBACK_COVER;
+    /* the build checked and found no copy (scripts/gen-happening.mjs sets
+       small_copy: false): the page as built names the full photo directly */
+    return imageUrl(cfg, item.small_copy === false ? paths[0] : thumbPath(paths[0]));
+  }
+  /* src + data-full for a small image; data-full only when it differs. */
+  function thumbAttrs(cfg, item) {
+    var small = coverThumb(cfg, item), full = cover(cfg, item);
+    return 'src="' + escapeHtml(small) + '"' + (small !== full ? ' data-full="' + escapeHtml(full) + '"' : '');
   }
 
   /* ISO date → DD.MM.YYYY / DD.MM; locale-independent so build and browser agree. */
@@ -158,9 +189,13 @@
   }
 
   function hhmm(t) { return t ? String(t).slice(0, 5) : ''; }
+  /* "09:00–11:00", held left-to-right: in an RTL line the en dash (a bidi
+     neutral) would split the range and show it as "11:00–09:00". The
+     isolate marks (LRI … PDI) are invisible and work in plain text too — a
+     tile's textContent, an aria-label. */
   function hours(item) {
     var a = hhmm(item.starts_at), b = hhmm(item.ends_at);
-    return a && b ? a + '–' + b : a || b || '';
+    return a && b ? '\u2066' + a + '–' + b + '\u2069' : a || b || '';
   }
 
   /* "שישי ושבת" / "الجمعة والسبت" — the last two joined with "and". */
@@ -177,35 +212,35 @@
      own date (a passed item keeps its date). */
   function keyDate(item) { return item.next_date || item.event_date || ''; }
 
-  /* The pieces of a landing page's "when": the pattern or the date first,
-     then the hours, a recurring item's next occurrence (when asked for) and
-     its end date. */
-  function whenParts(item, lang, withNext) {
-    var l = labels(lang);
-    var parts = [];
-    if (isRecurring(item)) {
-      parts.push(l.every + ' ' + joinDays(item.recur_weekdays, lang));
-      if (hours(item)) parts.push(hours(item));
-      if (withNext && item.next_date) parts.push(l.next + ': ' + dayShort(item.next_date, lang));
-      if (item.recur_until) parts.push(l.until + ' ' + displayDate(item.recur_until));
-    } else {
-      var d = keyDate(item);
-      parts.push(d ? l.dayWord + weekdayName(d, lang) + ', ' + displayDate(d) : '');
-      if (hours(item)) parts.push(hours(item));
-    }
-    return parts;
-  }
-
-  /* The hero's full "when" line. */
-  function whenText(item, lang) {
-    return whenParts(item, lang, true).filter(Boolean).join(' · ');
-  }
-
-  /* The "when" tile, two lines: the pattern or the date, then the rest — no
-     next date, the hero carries it. */
+  /* A landing page's "when", two lines: the pattern or the date, then the
+     hours. The "when" tile shows them as they are; the hero wraps them in
+     markup and adds a recurring item's next date (whenHeroHtml). A recurring
+     item's end date is not shown (owner, 2026-09-30) — the calendar and the
+     next date already stop where it stops. */
   function whenLines(item, lang) {
-    var parts = whenParts(item, lang, false);
-    return [parts[0], parts.slice(1).join(' · ')];
+    var l = labels(lang);
+    if (isRecurring(item)) return [l.every + ' ' + joinDays(item.recur_weekdays, lang), hours(item)];
+    var d = keyDate(item);
+    return [d ? l.dayWord + weekdayName(d, lang) + ', ' + displayDate(d) : '', hours(item)];
+  }
+
+  /* The hero's "when", as markup: the date (or pattern) and the hours on one
+     line, each piece unbreakable so a narrow screen wraps between them, never
+     inside a date; a recurring item's next date on a line of its own. */
+  function whenHeroHtml(item, lang) {
+    var l = labels(lang);
+    var date = !isRecurring(item) && keyDate(item);
+    var main = whenLines(item, lang).filter(Boolean).map(function (p, i) {
+      var piece = escapeHtml(p);
+      if (i === 0 && date) piece = '<time datetime="' + escapeHtml(date) + '">' + piece + '</time>';
+      /* a long weekday pattern ("every Sun, Mon, … and Sat") may wrap; a date and the hours never */
+      return '<span class="hp-when-part' + (i === 0 && isRecurring(item) ? ' hp-when-pattern' : '') + '">' + piece + '</span>';
+    }).join('');
+    var next = isRecurring(item) && item.next_date
+      ? '<span class="hp-when-next">' + escapeHtml(l.next) + ': <time datetime="' + escapeHtml(item.next_date) + '">' +
+        escapeHtml(dayShort(item.next_date, lang)) + '</time></span>'
+      : '';
+    return '<span class="hp-when-main">' + main + '</span>' + next;
   }
 
   /* The cost tile's fixed second line (60_events_cost: booking_required). */
@@ -265,7 +300,7 @@
     var h = opts.heading || 'h2';
     return '<li>' +
       '<a class="hp-card" href="' + escapeHtml(pageUrl(item, lang)) + '">' +
-        '<div class="hp-card-media"><img src="' + escapeHtml(cover(cfg, item)) + '" alt="" width="1200" height="900" decoding="async"' +
+        '<div class="hp-card-media"><img ' + thumbAttrs(cfg, item) + ' alt="" width="800" height="600" decoding="async"' +
           (opts.eager ? ' fetchpriority="high"' : ' loading="lazy"') + '></div>' +
         '<div class="hp-card-body">' +
           '<' + h + ' class="hp-card-title">' + escapeHtml(text(item, 'title', lang)) + '</' + h + '>' +
@@ -286,6 +321,24 @@
     return items.map(function (item, i) {
       return cardHtml(cfg, item, lang, { heading: opts.heading, eager: opts.eager && i === 0 });
     }).join('\n');
+  }
+
+  /* The item page's "more initiatives": the one-off initiatives nearest in
+     date to this one, then weekly ones only to fill the row — ordered by
+     next date, a weekly item is always days away and would otherwise take the
+     same three places on every page. Shown soonest first. A pure function of
+     the feed, so the page built at deploy and the page refreshed on load pick
+     the same three. */
+  function dayNum(iso) { var m = ymd(iso); return m ? Date.UTC(+m[1], +m[2] - 1, +m[3]) / 864e5 : 0; }
+  function byDate(a, b) { var x = keyDate(a), y = keyDate(b); return x < y ? -1 : x > y ? 1 : 0; }
+  function moreItems(items, current, n) {
+    var ref = dayNum(current.next_date || current.last_date || current.event_date);
+    var gap = function (it) { return Math.abs(dayNum(keyDate(it)) - ref); };
+    var near = function (a, b) { return gap(a) - gap(b) || byDate(a, b); };
+    var others = items.filter(function (it) { return it.slug !== current.slug; });
+    var picked = others.filter(function (it) { return !isRecurring(it); }).sort(near).slice(0, n);
+    if (picked.length < n) picked = picked.concat(others.filter(isRecurring).sort(near).slice(0, n - picked.length));
+    return picked.sort(byDate);
   }
 
   /* Body text → paragraphs (blank-line or newline separated), escaped. */
@@ -381,14 +434,19 @@
     for (var b = weekdayOf(monthStart(year, month)); b > 0; b--) cells += '<span class="hp-cal-day is-blank" aria-hidden="true"></span>';
     for (var n = 1; n <= daysIn; n++) {
       var iso = year + '-' + pad2(month + 1) + '-' + pad2(n);
-      var mine = (index[iso] || []).slice(0, 3); /* at most three dots, three names */
+      var mine = index[iso] || [];
       var cls = 'hp-cal-day' + (iso === today ? ' is-today' : '') + (iso < today ? ' is-past' : '') + (iso === selected ? ' is-selected' : '');
       if (mine.length) {
+        /* up to three dots; a busier day shows two and "+N" for the rest.
+           The label names every item — the dots are only a hint. */
         var names = mine.map(function (it) { return text(it, 'title', lang); }).join(', ');
+        var count = mine.length > 1 ? l.dayCount(mine.length) + ': ' : '';
+        var marks = mine.length > 3
+          ? '<i></i><i></i><b class="hp-cal-more">+' + (mine.length - 2) + '</b>'
+          : mine.map(function () { return '<i></i>'; }).join('');
         cells += '<button type="button" class="' + cls + '" data-cal-day="' + iso + '" aria-pressed="' + (iso === selected) + '" aria-label="' +
-          escapeHtml(l.dayWord + weekdayName(iso, lang) + ' ' + displayDate(iso) + ': ' + names) + '">' +
-          '<span class="hp-cal-num">' + n + '</span><span class="hp-cal-dots">' +
-          mine.map(function () { return '<i></i>'; }).join('') + '</span></button>';
+          escapeHtml(l.dayWord + weekdayName(iso, lang) + ' ' + displayDate(iso) + ', ' + count + names) + '">' +
+          '<span class="hp-cal-num">' + n + '</span><span class="hp-cal-dots" aria-hidden="true">' + marks + '</span></button>';
       } else {
         cells += '<span class="' + cls + '"><span class="hp-cal-num">' + n + '</span></span>';
       }
@@ -411,7 +469,7 @@
     return '<h3 class="hp-cal-day-title">' + escapeHtml(l.dayWord + weekdayName(iso, lang) + ', ' + displayDate(iso)) + '</h3>' +
       '<ul class="hp-cal-list">' + items.map(function (item) {
         return '<li><a class="hp-cal-item" href="' + escapeHtml(pageUrl(item, lang)) + '">' +
-          '<img src="' + escapeHtml(cover(cfg, item)) + '" alt="" width="120" height="90" loading="lazy" decoding="async">' +
+          '<img ' + thumbAttrs(cfg, item) + ' alt="" width="120" height="90" loading="lazy" decoding="async">' +
           '<span class="hp-cal-item-body">' +
             '<strong>' + escapeHtml(text(item, 'title', lang)) + '</strong>' +
             (hours(item) ? '<span class="hp-cal-item-time">' + escapeHtml(hours(item)) + '</span>' : '') +
@@ -425,18 +483,21 @@
     PHONE: PHONE,
     FALLBACK_COVER: FALLBACK_COVER,
     FEED_QUERY: FEED_QUERY,
+    LIST_QUERY: LIST_QUERY,
     viewRequest: viewRequest,
     labels: labels,
     escapeHtml: escapeHtml,
     text: text,
     imageUrl: imageUrl,
     cover: cover,
+    thumbPath: thumbPath,
+    coverThumb: coverThumb,
     displayDate: displayDate,
     weekdayName: weekdayName,
     hours: hours,
     isRecurring: isRecurring,
     keyDate: keyDate,
-    whenText: whenText,
+    whenHeroHtml: whenHeroHtml,
     whenLines: whenLines,
     whenShort: whenShort,
     bookingText: bookingText,
@@ -453,6 +514,7 @@
     shareWaHref: shareWaHref,
     cardHtml: cardHtml,
     listHtml: listHtml,
+    moreItems: moreItems,
     paragraphsHtml: paragraphsHtml,
     galleryHtml: galleryHtml
   };

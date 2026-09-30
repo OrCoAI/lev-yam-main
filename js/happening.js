@@ -27,6 +27,62 @@
 (function () {
   var cfg = window.LEVYAM_FEED;
   var R = window.LevYamHappeningRender;
+
+  /* ── a small photo that fails falls back to the full one ───────────────
+     Cards and the calendar show a photo's small copy (-sm.jpg); photos
+     uploaded before the copies existed have none. `error` does not bubble,
+     so this listens in the capture phase — and an image that already failed
+     before this script ran is caught by the sweep right after. An image
+     rendered later always reports through the listener (a load error is a
+     queued task, never synchronous), so there is nothing to sweep then. */
+  function toFull(img) {
+    var full = img.getAttribute('data-full');
+    if (full && img.getAttribute('src') !== full) { img.removeAttribute('data-full'); img.src = full; }
+  }
+  document.addEventListener('error', function (e) {
+    if (e.target && e.target.tagName === 'IMG') toFull(e.target);
+  }, true);
+  document.querySelectorAll('img[data-full]').forEach(function (img) {
+    if (img.complete && img.naturalWidth === 0 && img.getAttribute('src')) toFull(img);
+  });
+
+  /* ── the header comes back when scrolling up (phones) ──────────────────
+     The site header is not fixed; on a long page on a phone, reaching the
+     menu meant scrolling all the way back. Here (≤960px, the hamburger
+     width) it is sticky and tucks away while scrolling down, and slides back
+     on the first few pixels of scrolling up. It moves by its sticky `top`,
+     never a transform — a transform would re-anchor the fixed drawer inside
+     it. Never tucked with the drawer open, near the top, or holding focus. */
+  (function () {
+    var header = document.querySelector('.story-header');
+    if (!header || !window.matchMedia) return;
+    var phone = window.matchMedia('(max-width: 960px)');
+    /* :focus-visible throws where unsupported (Safari < 15.4) — there, focus never pins it */
+    var focusVisible = (function () {
+      try { document.documentElement.matches(':focus-visible'); return true; } catch (e) { return false; }
+    })();
+    var lastY = window.pageYOffset, queued = false;
+    function update() {
+      queued = false;
+      var y = Math.max(0, window.pageYOffset);
+      var open = document.querySelector('.nav-toggle[aria-expanded="true"]');
+      header.classList.toggle('is-stuck', phone.matches && y > header.offsetHeight);
+      var f = document.activeElement;
+      var keyboard = focusVisible && header.contains(f) && f.matches(':focus-visible');
+      if (!phone.matches || open || y <= header.offsetHeight || keyboard) {
+        header.classList.remove('is-tucked');
+        lastY = y;
+        return;
+      }
+      if (y - lastY > 8) { header.classList.add('is-tucked'); lastY = y; }
+      else if (lastY - y > 4) { header.classList.remove('is-tucked'); lastY = y; }
+    }
+    window.addEventListener('scroll', function () {
+      if (!queued) { queued = true; window.requestAnimationFrame(update); }
+    }, { passive: true });
+    header.addEventListener('focusin', function () { header.classList.remove('is-tucked'); });
+  })();
+
   if (!cfg || !R) return; /* config or renderer missing — the static page stands */
 
   var lang = function () { return document.documentElement.lang === 'ar' ? 'ar' : 'he'; };
@@ -40,18 +96,49 @@
       return res.json();
     });
   }
-  var liveItems = null; /* fetched once per page */
+  var liveItems = null; /* fetched once per page — the list columns only (R.LIST_QUERY) */
   function live() {
-    if (!liveItems) liveItems = view('feed', R.FEED_QUERY);
+    if (!liveItems) liveItems = view('feed', R.LIST_QUERY);
     return liveItems;
   }
 
-  /* ── the hubs' list ────────────────────────────────────────────────── */
+  /* ── the hubs' list: twelve cards, then a button for twelve more ─────
+     The built page lists every item (without JavaScript it is the whole
+     list); refreshed, the list opens on the first PAGE and grows on request,
+     so a hundred items is not a hundred photos on a phone. The first card a
+     press reveals takes the focus. */
+  var PAGE = 12;
+  function paginate(ul) {
+    var old = ul.nextElementSibling;
+    if (old && old.hasAttribute('data-hp-more')) old.remove();
+    var cards = ul.querySelectorAll(':scope > li');
+    if (cards.length <= PAGE) return;
+    for (var i = PAGE; i < cards.length; i++) cards[i].hidden = true;
+    var wrap = document.createElement('p');
+    wrap.className = 'hp-more';
+    wrap.setAttribute('data-hp-more', '');
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'hp-more-link';
+    btn.textContent = R.labels(lang()).showMore;
+    wrap.appendChild(btn);
+    ul.parentNode.insertBefore(wrap, ul.nextSibling);
+    btn.addEventListener('click', function () {
+      var rest = ul.querySelectorAll(':scope > li[hidden]');
+      for (var k = 0; k < rest.length && k < PAGE; k++) rest[k].hidden = false;
+      var first = rest[0] && rest[0].querySelector('a');
+      if (rest.length <= PAGE) wrap.remove();
+      if (first) first.focus();
+    });
+  }
   var lists = document.querySelectorAll('[data-happening-list]');
   if (lists.length) {
     live().then(function (items) {
       var l = lang();
-      lists.forEach(function (ul) { ul.innerHTML = R.listHtml(cfg, items, l, { heading: 'h2', eager: true }); });
+      lists.forEach(function (ul) {
+        ul.innerHTML = R.listHtml(cfg, items, l, { heading: 'h2', eager: true });
+        paginate(ul);
+      });
     }).catch(function () { /* the built list stands */ });
   }
 
@@ -145,7 +232,7 @@
     function refresh(item) {
       setText('title', R.text(item, 'title', l));
       setText('summary', R.text(item, 'summary', l));
-      $$('when').forEach(function (t) { t.textContent = R.whenText(item, l); t.setAttribute('datetime', R.keyDate(item)); });
+      $$('when').forEach(function (t) { t.innerHTML = R.whenHeroHtml(item, l); });
       $$('when-tile').forEach(function (t) {
         var lines = R.whenLines(item, l), spans = t.querySelectorAll('[data-hp-line]');
         t.setAttribute('datetime', R.keyDate(item));
@@ -307,19 +394,25 @@
       }, { threshold: 0.35 }).observe(panel);
     }
 
-    live().then(function (items) {
-      var mine = items.filter(function (it) { return it.slug === slug; })[0];
-      var others = items.filter(function (it) { return it.slug !== slug; }).slice(0, 3);
+    /* the list (light) and this page's own row (whole) in parallel; a row
+       not in the feed is looked up among the recently passed */
+    function showMore(items, current) {
       var next = $('next');
-      if (next) next.innerHTML = R.listHtml(cfg, others, l, { heading: 'h3', more: true });
+      if (!next) return;
+      next.innerHTML = R.listHtml(cfg, R.moreItems(items, current, 3), l, { heading: 'h3', more: true });
+    }
+    var bySlug = 'select=*&slug=eq.' + encodeURIComponent(slug);
+    Promise.all([live(), view('feed', bySlug)]).then(function (res) {
+      var items = res[0], mine = res[1][0];
       if (mine) {
         refresh(mine);
         setState('live');
+        showMore(items, mine);
         return;
       }
-      return view('passed', 'select=*&slug=eq.' + encodeURIComponent(slug)).then(function (rows) {
-        if (rows[0]) { refresh(rows[0]); setState('passed'); }
-        else setState('unavailable'); /* unpublished since the last rebuild — never "passed", which would be untrue */
+      return view('passed', bySlug).then(function (rows) {
+        if (rows[0]) { refresh(rows[0]); setState('passed'); showMore(items, rows[0]); }
+        else { setState('unavailable'); showMore(items, { slug: slug }); } /* unpublished since the last rebuild — never "passed", which would be untrue */
       });
     }).catch(function () { /* the page as built stands */ });
 
