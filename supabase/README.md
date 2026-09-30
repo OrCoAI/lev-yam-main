@@ -13,6 +13,46 @@ Backend for the Lev Yam platform (`/app`), the survey, and the POS. One Supabase
 Module schemas added later (`crm`, `events`, `inventory`, …) follow the same pattern: their
 own schema, RLS policies that call `core.has_permission('<module>.<action>')`.
 
+## Applying a schema change
+
+`schema/*.sql` is the source of truth; the tiers get it three different ways
+([ADR 0061](../docs/decisions/0061-staging-schema-applied-by-hand-never-db-push.md)):
+
+- **Local:** `node supabase/tests/build-baseline.mjs --write`, then `supabase db reset`.
+- **Staging, then prod — by hand, never `supabase db push`.** Neither project records a migration
+  history (`supabase_migrations.schema_migrations` does not exist there), so a push would replay the
+  whole baseline — including `10_pos.sql`, which on a live database recreates the retired
+  anon-writable POS surface (see "First-time setup" below). Apply only the new or changed files, in
+  order, each as one management-API call (one transaction — a file that drops and re-adds a CHECK can
+  never be left half-applied). **Never re-run `10_pos.sql` or `42_pos_platform.sql` on a live tier,
+  even after an edit** (a POS change goes in a new file), and check a changed file that seeds
+  `core.role_permissions` first — its `on conflict do nothing` re-grants rows removed in the app.
+
+  Run it in **bash** (`bash`, then paste) — interactive zsh does not treat `#` as a comment
+  unless `setopt interactivecomments`. The token comes from the keychain (the CLI's login token,
+  macOS) or `read -rs TOKEN`, so it is never typed into the shell or committed. `REF` is
+  `vhvghcehkcbtygomixmu` (staging) or `teyxtdccsrkdpqnbfcga` (prod). The chain stops at the first
+  failure; a successful apply prints `[]`, and the audit should end with `0 drift`.
+
+  ```bash
+  TOKEN=$(security find-generic-password -s "Supabase CLI" -w)
+  REF=vhvghcehkcbtygomixmu
+  q() { curl -sS --fail-with-body -X POST "https://api.supabase.com/v1/projects/$REF/database/query" \
+          -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" --data-binary "$1"; local rc=$?; echo; return $rc; }
+  q "$(jq -Rs '{query: .}' supabase/schema/NN_name.sql)" &&
+  q '{"query": "notify pgrst, '"'"'reload schema'"'"'"}' &&
+  SUPABASE_ACCESS_TOKEN=$TOKEN node supabase/tests/audit-grants.mjs --ref $REF
+  ```
+
+  Staging before the staging round; prod after the staging sign-off, with the owner's go-ahead —
+  before the merge whenever the new code depends on the change (otherwise at the merge). The API
+  does not return `raise notice` output — run any pre-check a file's header asks for as its own
+  query first. **The grant audit sees surplus privileges only** — not a data change on an existing
+  row (a label, a seed), an RLS policy, a column grant, or a file that never ran — so probe each
+  such change with its own `select` (e.g. `pg_policies`, `information_schema.column_privileges`,
+  the row itself). On staging the deploy's audit is advisory; the manual run above is the check.
+  Never `psql -f` against a tier — it autocommits statement by statement (locally, `psql -1 -f`).
+
 ## Local development (Docker stack)
 
 Daily dev runs against a **local** Supabase stack — not production. (Full initiative:
@@ -44,8 +84,9 @@ Then `cp app-src/.env.example app-src/.env.local` (already points at the local s
   `migrations/20260728120000_baseline.sql`, which is those files concatenated in fresh-install
   order. **After editing any `schema/*.sql`, regenerate the baseline:**
   `node supabase/tests/build-baseline.mjs --write` (CI fails otherwise — the `--check` runs in
-  `ci.yml` + `deploy.yml`). New post-baseline changes will land as their own timestamped
-  migration files under `migrations/`.
+  `ci.yml` + `deploy.yml`). Changes after the baseline are new or edited `schema/*.sql` files,
+  applied by hand on staging and prod ("Applying a schema change" above); `migrations/` holds
+  only the baseline.
 - Edge functions: `supabase functions serve` (uses the local service-role key — local-only,
   never committed).
 

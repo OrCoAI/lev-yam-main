@@ -228,20 +228,24 @@ initiatives, only the nav entry) + a nav entry linking `/happening/`; dictionary
 (one generator run stamps every story page).
 
 **Owner setup (before staging sign-off):**
-0. *(done 2026-09-29 in the build session)* 59 applied on **staging** with
-   `supabase db query --linked -f supabase/schema/59_events_landing.sql` followed by
+0. *(done 2026-09-29 in the build session)* 59 applied on **staging** through the management
+   API (`POST /v1/projects/<ref>/database/query` with the file as the query — the commands are in
+   [supabase/README.md](../../supabase/README.md) "Applying a schema change") followed by
    `notify pgrst, 'reload schema'` — **and the same for `60_events_cost.sql`** (2026-09-29; it
-   drops `story_slug`, so any staging row that linked a story loses the link by design). **Always
-   `supabase db query` on a tier, never `psql -f`:** `db query` runs the file as one statement
-   through the management API, i.e. one transaction, so 60's drop-CHECK → re-add-CHECK sequence
-   cannot be left half-applied; `psql -f` autocommits per statement (locally use `psql -1 -f`).
-   `db query` does not return `raise notice`, so **before** applying 60 on a tier run
+   drops `story_slug`, so any staging row that linked a story loses the link by design). *(The
+   CLI's `supabase db query --linked` is not used: from the dev machine it opens a direct database
+   connection, which fails — `LegacyDbConfigConnectTempRoleError`.)* **Always one
+   management-API call per file, never `psql -f`:** the call runs the file as one transaction, so
+   60's drop-CHECK → re-add-CHECK sequence cannot be left half-applied; `psql -f` autocommits per
+   statement (locally use `psql -1 -f`). The API does not return `raise notice`, so **before**
+   applying 60 on a tier run
    `select slug from events.events where visibility = 'public' and (btrim(body_he) = '' or btrim(body_ar) = '')`
    — those rows are the ones 60 demotes to internal (they published through a story link) — (a new view is invisible to PostgREST until the cache reloads —
    the first staging deploy failed on `events.passed` 404 for exactly that reason). **Not**
-   `supabase db push`: the staging project's migration history does not record the baseline, so a
-   push would replay all 25 schema files, including the pre-cut-over POS layers the README warns
-   about. Prod (step 4) is applied the same way, by hand, followed by the reload notify.
+   `supabase db push`: the staging project has no migration history at all, so a push would
+   replay the whole baseline (every schema file), including the pre-cut-over POS layers the README warns
+   about ([ADR 0061](../decisions/0061-staging-schema-applied-by-hand-never-db-push.md)). Prod
+   (step 4) is applied the same way, by hand, followed by the reload notify.
 1. GitHub → Settings → Developer settings → Fine-grained tokens → *Generate new token*: resource
    owner `OrCoAI`, **only** repository `lev-yam-main`, repository permissions **Actions: Read and
    write**, nothing else, expiry 1 year. Copy it once.
@@ -657,12 +661,13 @@ origin; `RLS MATRIX: ALL ASSERTIONS PASSED`; lint / typecheck / tests / both gen
 **Left out / pending:** the native reader's pass on the Arabic wording (shipped without it on
 the owner's call, 2026-09-30 — logged in [modules/events.md](../modules/events.md), with the
 drawer-after-guard robustness bug and the "returning header for both surfaces" idea). Planted
-test initiatives stay on staging and localhost on the owner's call; prod is clean. Still open
-with the owner from 2026-09-29: this plan's apply steps name `supabase db query --linked`, which
-cannot reach the tier databases from the dev machine (the management API is the path used), and
-CLAUDE.md's "Schemas" line still says `supabase db push` for staging, which conflicts with the
-never-push rule above. The app's module title became "יוזמות" / "مبادرات" on 2026-09-30 ([ADR 0060](../decisions/0060-staff-module-named-yozmot-too.md),
-`61_events_module_label.sql`, to hand-apply on staging and prod — the grant audit cannot see it). Not built, by
+test initiatives stay on staging and localhost on the owner's call; prod is clean. Resolved
+2026-09-30 ([ADR 0061](../decisions/0061-staging-schema-applied-by-hand-never-db-push.md)): the
+apply steps name the management API (the CLI's `db query --linked` cannot reach the tier
+databases from the dev machine), and CLAUDE.md's "Schemas" line no longer says
+`supabase db push` for staging. The app's module title became "יוזמות" / "مبادرات" on 2026-09-30
+([ADR 0060](../decisions/0060-staff-module-named-yozmot-too.md), `61_events_module_label.sql`,
+hand-applied on staging and prod the same day, the label checked on both). Not built, by
 decision: a practical-answers block, a contact block, a village block, booking (Phase 4, "Path
 to booking").
 

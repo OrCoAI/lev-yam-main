@@ -36,9 +36,9 @@ touching schema, permissions, or the events/finance spine graduates to a `docs/p
 ## Done
 
 - 2026-09-30 — The staff module is "יוזמות" / "مبادرات" (ADR 0060): launcher tile via
-  `61_events_module_label.sql` (to hand-apply on staging and on prod, then check
-  `select label from core.modules where key = 'events'` → `יוזמות`), page heading and the
-  Users & Permissions name via the module dictionaries.
+  `61_events_module_label.sql` (hand-applied on staging and prod 2026-09-30;
+  `select label from core.modules where key = 'events'` → `יוזמות` on both), page heading and
+  the Users & Permissions name via the module dictionaries (PR #98).
 
 - 2026-09-30 — PR #97: landing pages, calendar hub, cost + booking, paged hub, small photo
   copies for cards and WhatsApp previews, "יוזמות נוספות" by nearest date (ADRs 0056–0059).

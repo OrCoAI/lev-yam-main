@@ -1,7 +1,7 @@
 # 0004 — lev-yam-staging is a deliberate, permanent second Supabase project; dev and the verify gate never run against prod
 
 - **Date:** 2026-07-28
-- **Status:** accepted
+- **Status:** accepted — amended by ADR 0061: staging is not on the migration pipeline after all; like prod it has no migration history and is applied by hand, file by file (the baseline + CI drift check serve local `supabase db reset`)
 - **Decided by:** owner + Claude Code (kickoff / close-out)
 - **Source:** `docs/plans/platform-staging-environment.md` (locked scope + close-out); `docs/ARCHITECTURE.md` §5 "Known consolidation debt" note; `docs/ROADMAP.md` "Staging environment" entry
 

@@ -117,9 +117,15 @@ The public life of the venue, published from `/app/events` ([ADR 0054](docs/deci
   guard. **Never** commit a service-role/secret key anywhere; service-role lives only in Edge Functions.
 - **Schemas:** `supabase/schema/*.sql` is the source of truth (`00_core.sql` identity & permissions).
   After a change: `node supabase/tests/build-baseline.mjs --write` (CI drift check), then
-  `supabase db reset` (local) / `supabase db push` (staging). **Prod is not on the migration pipeline:**
-  apply by hand and rely on the grant audit that runs every deploy — never assume committed schema =
-  live state ([ADR 0005](docs/decisions/0005-prod-schema-verified-by-live-grant-audit.md)). Full workflow:
+  `supabase db reset` (local). **Staging and prod are not on the migration pipeline:** apply each new
+  or changed file by hand through the management API (one call per file = one transaction; never
+  re-run `10_pos.sql` / `42_pos_platform.sql` on a live tier), then `notify pgrst, 'reload schema'`,
+  then the grant audit (`audit-grants.mjs --ref`; it also runs every deploy) — staging first, prod
+  only after the staging sign-off with the owner's go-ahead — never assume committed schema = live
+  state ([ADR 0005](docs/decisions/0005-prod-schema-verified-by-live-grant-audit.md)). **Never
+  `supabase db push` to either tier** while neither records a migration history: a push would replay
+  the whole baseline, pre-cut-over POS layers included
+  ([ADR 0061](docs/decisions/0061-staging-schema-applied-by-hand-never-db-push.md)). Full workflow:
   [supabase/README.md](supabase/README.md).
 - **Platform telemetry** (edge functions → Bluebox; marketing → Dynatrace): span attributes are an
   allow-list, never PII or error text; telemetry is additive, never load-bearing

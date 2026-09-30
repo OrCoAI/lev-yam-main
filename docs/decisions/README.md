@@ -36,7 +36,7 @@ implementation choices stay in their plan files; an ADR is for a decision that c
 - [0001 — Bilingual (HE + Levantine Arabic) and mobile-first are platform requirements from Phase 1 on](0001-bilingual-and-mobile-first-platform-requirements.md) — 2026-07-09
 - [0002 — Supabase PITR (paid tier) deferred until 20 signed contracts](0002-pitr-deferred-until-20-signed-contracts.md) — 2026-07-10
 - [0003 — Docs-only diffs run the pre-commit gate inline (diff-class scaling)](0003-docs-only-diffs-run-gate-inline.md) — 2026-07-11
-- [0004 — lev-yam-staging is a deliberate, permanent second Supabase project; dev and the verify gate never run against prod](0004-staging-is-a-permanent-second-supabase-project.md) — 2026-07-28
+- [0004 — lev-yam-staging is a deliberate, permanent second Supabase project; dev and the verify gate never run against prod](0004-staging-is-a-permanent-second-supabase-project.md) — 2026-07-28 *(amended — see status)*
 - [0005 — Prod schema state is verified by a live grant audit on every deploy, never assumed; prod joins the migration pipeline only behind named prerequisites](0005-prod-schema-verified-by-live-grant-audit.md) — 2026-08-05
 - [0006 — GA4 carries the hand-written whatsapp_click event; tier separation for GA is console-side, not code-side](0006-ga4-carries-whatsapp-click-tier-separation-console-side.md) — 2026-08-11
 - [0007 — A story page ships only when its Arabic twin exists (invariant 5 over a Hebrew-first content plan)](0007-story-page-ships-only-with-arabic-twin.md) — 2026-08-11
@@ -93,3 +93,4 @@ implementation choices stay in their plan files; an ADR is for a decision that c
 - [0058 — An initiative's page stands alone (no story link), carries cost + booking as structured fields, and the section is named "יוזמות" / "مبادرات"](0058-initiatives-stand-alone-cost-booking-fields-section-named-yozmot.md) — 2026-09-29 *(amended — see status)*
 - [0059 — Initiatives at scale: a paged hub, a small copy beside every photo, a light list read; the header stays the story pages' header](0059-initiatives-at-scale-paged-hub-small-photo-copies-light-list-read.md) — 2026-09-30
 - [0060 — The staff module is named "יוזמות" / "مبادرات" too](0060-staff-module-named-yozmot-too.md) — 2026-09-30
+- [0061 — Staging's schema is applied by hand like prod's; `supabase db push` is never run against either tier while neither records a migration history](0061-staging-schema-applied-by-hand-never-db-push.md) — 2026-09-30
