@@ -93,4 +93,4 @@ implementation choices stay in their plan files; an ADR is for a decision that c
 - [0058 — An initiative's page stands alone (no story link), carries cost + booking as structured fields, and the section is named "יוזמות" / "مبادرات"](0058-initiatives-stand-alone-cost-booking-fields-section-named-yozmot.md) — 2026-09-29 *(amended — see status)*
 - [0059 — Initiatives at scale: a paged hub, a small copy beside every photo, a light list read; the header stays the story pages' header](0059-initiatives-at-scale-paged-hub-small-photo-copies-light-list-read.md) — 2026-09-30
 - [0060 — The staff module is named "יוזמות" / "مبادرات" too](0060-staff-module-named-yozmot-too.md) — 2026-09-30
-- [0061 — Staging's schema is applied by hand like prod's; `supabase db push` is never run against either tier while neither records a migration history](0061-staging-schema-applied-by-hand-never-db-push.md) — 2026-09-30
+- [0061 — Staging's schema is applied by hand like prod's; `supabase db push` is never run against either tier while neither records a migration history](0061-staging-schema-applied-by-hand-never-db-push.md) — 2026-09-30 *(amended — see status)*

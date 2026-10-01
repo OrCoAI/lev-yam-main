@@ -599,7 +599,10 @@ columns are nullable and can stay; the bucket is emptied by hand.
 
 ## Close-out
 *PR 1 merged 2026-09-28 (#93, on prod). PR 2 built 2026-09-28, reworked on the owner's reviews
-2026-09-29/30, merged 2026-09-30 (#97). Outcome check: 2026-10-21.*
+2026-09-29/30, merged 2026-09-30 (#97). Follow-ups merged 2026-09-30: #98 (the staff module is
+"יוזמות" too — `61_events_module_label.sql`, hand-applied on staging and prod; ADR 0060) and #99
+(staging is applied by hand like prod, never `supabase db push` — ADR 0061; the push is denied in
+`.claude/settings.json` since 2026-10-01). Outcome check: 2026-10-21.*
 
 **What shipped (PR 2, Tier A):**
 - `supabase/schema/59_events_landing.sql`: `audience_he/ar`, `bring_he/ar` (+ CHECK
