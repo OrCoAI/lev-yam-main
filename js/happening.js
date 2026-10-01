@@ -46,6 +46,37 @@
     if (img.complete && img.naturalWidth === 0 && img.getAttribute('src')) toFull(img);
   });
 
+  /* ── a landing page's header drawer: the story chrome's hamburger
+     (js/stories.js's copy, minus the WhatsApp matcher that would
+     double-count here). Before the feed guard, so the menu works even when
+     the config or the renderer failed to load; the hubs load js/stories.js,
+     which wires their drawer. */
+  var slug = document.body.getAttribute('data-happening-slug'); /* a landing page */
+  (function () {
+    if (!slug) return;
+    var toggle = document.querySelector('.nav-toggle');
+    var nav = document.getElementById('mobile-nav');
+    if (!toggle || !nav) return;
+    function relabel() {
+      var open = toggle.getAttribute('aria-expanded') === 'true';
+      var label = toggle.getAttribute(open ? 'data-label-close' : 'data-label-open');
+      if (label) toggle.setAttribute('aria-label', label);
+    }
+    function close() { toggle.setAttribute('aria-expanded', 'false'); nav.hidden = true; relabel(); }
+    toggle.addEventListener('click', function () {
+      if (toggle.getAttribute('aria-expanded') === 'true') { close(); return; }
+      toggle.setAttribute('aria-expanded', 'true');
+      nav.hidden = false;
+      relabel();
+    });
+    var btnClose = nav.querySelector('.mobile-nav-close');
+    if (btnClose) btnClose.addEventListener('click', function () { close(); toggle.focus(); });
+    nav.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', close); });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') { close(); toggle.focus(); }
+    });
+  })();
+
   if (!cfg || !R) return; /* config or renderer missing — the static page stands */
 
   var lang = function () { return document.documentElement.lang === 'ar' ? 'ar' : 'he'; };
@@ -163,7 +194,6 @@
   }
 
   /* ── a landing page ────────────────────────────────────────────────── */
-  var slug = document.body.getAttribute('data-happening-slug');
   if (slug) {
     var l = lang();
     var absolute = location.origin + location.pathname;
@@ -320,32 +350,6 @@
       slidesStop = function () { stop(); document.removeEventListener('visibilitychange', onVisibility); if (io) io.disconnect(); };
     }
     initSlides();
-
-    /* ── the header drawer: the story chrome's hamburger (js/stories.js's
-       copy, minus the WhatsApp matcher that would double-count here) ──── */
-    (function () {
-      var toggle = document.querySelector('.nav-toggle');
-      var nav = document.getElementById('mobile-nav');
-      if (!toggle || !nav) return;
-      function relabel() {
-        var open = toggle.getAttribute('aria-expanded') === 'true';
-        var label = toggle.getAttribute(open ? 'data-label-close' : 'data-label-open');
-        if (label) toggle.setAttribute('aria-label', label);
-      }
-      function close() { toggle.setAttribute('aria-expanded', 'false'); nav.hidden = true; relabel(); }
-      toggle.addEventListener('click', function () {
-        if (toggle.getAttribute('aria-expanded') === 'true') { close(); return; }
-        toggle.setAttribute('aria-expanded', 'true');
-        nav.hidden = false;
-        relabel();
-      });
-      var btnClose = nav.querySelector('.mobile-nav-close');
-      if (btnClose) btnClose.addEventListener('click', function () { close(); toggle.focus(); });
-      nav.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', close); });
-      document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') { close(); toggle.focus(); }
-      });
-    })();
 
     /* the sticky bar only once the action panel has scrolled away — two
        identical buttons on one screen read as a mistake */
