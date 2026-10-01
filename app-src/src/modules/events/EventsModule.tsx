@@ -9,7 +9,7 @@ import { shortDate } from '../finance/format'
 import { jerusalemDate } from '../pos/logic'
 import { PASSED_PAGE_DAYS, deleteItem, landingPath, listItems, rebuildNote, updateItem } from './api'
 import EventForm from './EventForm'
-import { hhmm } from './format'
+import { timeRange } from './format'
 import { friendlyError, useET, type EventsDict } from './i18n'
 import type { EventItem } from './types'
 import './events.css'
@@ -27,7 +27,7 @@ const STATE_ORDER: Record<State, number> = { live: 0, draft: 1, ended: 2 }
 const STATE_KEY = { live: 'stateLive', draft: 'stateDraft', ended: 'stateEnded' } as const
 
 function whenText(et: EventsDict, item: EventItem): string {
-  const hours = [hhmm(item.starts_at), hhmm(item.ends_at)].filter(Boolean).join('–')
+  const hours = timeRange(item.starts_at, item.ends_at)
   if (!item.recur_weekdays?.length) {
     return [shortDate(item.event_date), hours].filter(Boolean).join(' · ')
   }

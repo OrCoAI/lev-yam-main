@@ -52,8 +52,10 @@ destination. Everything else is the module's own UI.
   alphabet (core 00, pos 10, finance 20, quotes 30, …).
 - [ ] **Idempotent throughout** — `create … if not exists`, `create or replace`,
   `drop policy if exists` before `create policy`, seeds with `on conflict do nothing`.
-  The file is re-run in the Supabase SQL editor after every change; nothing may reset
-  live state (e.g. quotes' number sequence survives re-runs via `if not exists`).
+  A changed file is re-applied on staging and prod by hand ([supabase/README.md](../supabase/README.md)
+  "Applying a schema change"); nothing may reset live state (e.g. quotes' number sequence survives
+  re-runs via `if not exists`). Seeds are the exception to watch: `on conflict do nothing`
+  re-inserts a `core.role_permissions` row the owner removed in the app.
 - [ ] **Invariants live here as triggers**, with **HE+AR** user-facing `raise exception`
   messages (they surface in the UI — same bilingual invariant as everything user-facing,
   ARCHITECTURE.md §2 invariant 5). UI enforcement is convenience only.
@@ -86,7 +88,9 @@ destination. Everything else is the module's own UI.
 - [ ] **Seeds at the bottom of the same file:** a `core.modules` row (key, label, icon,
   sort), `core.permissions` rows (`<module>.<action>` + Hebrew label), and
   `core.role_permissions` grants per role.
-- [ ] Apply: run the file in the SQL editor, then add the schema under
+- [ ] Apply: locally `supabase db reset`; on staging, then prod, by hand through the management API
+  ([supabase/README.md](../supabase/README.md) "Applying a schema change" — never `supabase db push`),
+  then add the schema under
   **Supabase → Settings → API → Exposed schemas**. Verify from outside: an anon REST call
   should return `42501` (denied) — not `PGRST106` (not exposed).
 - [ ] **Extend + run the RLS suite:** add the new tables' can/can't assertions to

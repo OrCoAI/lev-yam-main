@@ -12,17 +12,14 @@ touching schema, permissions, or the events/finance spine graduates to a `docs/p
 
 ## Open bugs
 
-- A landing page's phone menu is wired after the feed-config guard in `js/happening.js`: if
-  `happening-config.js` or `happening-render.js` fails to load, the hamburger does nothing on
-  that page (the hubs are unaffected — they load `js/stories.js`). Pre-existing; found by the
-  2026-09-30 gate. Fix: run the drawer block before the `if (!cfg || !R) return;` guard.
-
-- The staff list (`/app/events`) prints a time range reversed in RTL ("18:30–17:00") — the
-  en-dash bidi issue fixed on the public pages by `hours()` in `js/happening-render.js`
-  (LRI/PDI). Seen 2026-09-30.
+_(none)_
 
 ## Open feature ideas
 
+- One shared drawer script (e.g. `js/nav-drawer.js`) for story pages, the hubs and landing
+  pages: `js/happening.js` carries a copy of `js/stories.js`'s drawer (minus the WhatsApp
+  matcher), gated on `data-happening-slug`. Needs the assemble allowlist (Tier A) and the
+  templates' script tags. Raised by the 2026-10-01 simplify pass.
 - A header that comes back on scrolling up (phones) — built for the initiative pages on
   2026-09-30 and reverted on the owner's call for consistency with story pages (ADR 0059 §6).
   If wanted, one change for story pages and initiative pages together.
@@ -35,10 +32,15 @@ touching schema, permissions, or the events/finance spine graduates to a `docs/p
 
 ## Done
 
+- 2026-10-01 — A landing page's phone menu is wired before the feed-config guard in
+  `js/happening.js` (works when the config or renderer fails to load; hubs keep
+  `js/stories.js`'s drawer); the staff list holds a time range left-to-right (LRI/PDI), like
+  `hours()` in the renderer. Both found 2026-09-30.
+
 - 2026-09-30 — The staff module is "יוזמות" / "مبادرات" (ADR 0060): launcher tile via
-  `61_events_module_label.sql` (to hand-apply on staging and on prod, then check
-  `select label from core.modules where key = 'events'` → `יוזמות`), page heading and the
-  Users & Permissions name via the module dictionaries.
+  `61_events_module_label.sql` (hand-applied on staging and prod 2026-09-30;
+  `select label from core.modules where key = 'events'` → `יוזמות` on both), page heading and
+  the Users & Permissions name via the module dictionaries (PR #98).
 
 - 2026-09-30 — PR #97: landing pages, calendar hub, cost + booking, paged hub, small photo
   copies for cards and WhatsApp previews, "יוזמות נוספות" by nearest date (ADRs 0056–0059).

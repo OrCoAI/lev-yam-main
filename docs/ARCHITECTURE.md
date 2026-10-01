@@ -153,8 +153,9 @@ Scale here means two different things, and the architecture answers both:
   Supabase project to be merged eventually (POS tables moved from `public` into their own
   `pos` schema at cut-over, 2026-07-14). End state: one *production* project,
   schema-per-module throughout. Note: `lev-yam-staging` is a **deliberate, permanent second
-  project** (2026-07-28) — a prod mirror for pre-deploy testing, kept schema-synced via the
-  migration pipeline — and is distinct from this survey-merge debt.
+  project** (2026-07-28) — a prod mirror for pre-deploy testing, kept schema-synced by hand,
+  file by file, exactly like prod (corrected 2026-09-30, [ADR 0061](decisions/0061-staging-schema-applied-by-hand-never-db-push.md):
+  it has no migration history) — and is distinct from this survey-merge debt.
 
 ## 6. Flexibility — the architecture of the dream
 
