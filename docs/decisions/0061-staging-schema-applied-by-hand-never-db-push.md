@@ -1,7 +1,7 @@
 # 0061 — Staging's schema is applied by hand like prod's; `supabase db push` is never run against either tier while neither records a migration history
 
 - **Date:** 2026-09-30
-- **Status:** accepted. Amends [0004](0004-staging-is-a-permanent-second-supabase-project.md), which said staging is "kept schema-synced via the migration pipeline"; applies [0005](0005-prod-schema-verified-by-live-grant-audit.md)'s rule (by hand + the live grant audit) to staging, and corrects CLAUDE.md's "Schemas" line, which said `supabase db push` for staging. 0005's route onto the pipeline (a schema diff, `supabase migration repair --status applied`, connectivity from CI) stays open for both tiers.
+- **Status:** accepted. Amends [0004](0004-staging-is-a-permanent-second-supabase-project.md), which said staging is "kept schema-synced via the migration pipeline"; applies [0005](0005-prod-schema-verified-by-live-grant-audit.md)'s rule (by hand + the live grant audit) to staging, and corrects CLAUDE.md's "Schemas" line, which said `supabase db push` for staging. 0005's route onto the pipeline (a schema diff, `supabase migration repair --status applied`, connectivity from CI) stays open for both tiers. Amended 2026-10-01 (owner): `supabase db push` moved from `ask` to `deny` in `.claude/settings.json` (point 2).
 - **Decided by:** owner, 2026-09-30 (chose "change CLAUDE.md" over putting staging on the migration pipeline).
 - **Source:** the "What's happening" plan's staging apply step (2026-09-29) and the owner's question about the conflict it left with CLAUDE.md.
 
@@ -28,7 +28,8 @@ The CLI cannot reach the tier databases from the dev machine either (`db query -
    history.** The only way out is ADR 0005's prerequisite path — prove the tier matches the
    baseline, stamp the baseline applied with `supabase migration repair --status applied` (without
    executing it), and reach the database from CI — recorded in its own ADR before any push. It
-   stays in `.claude/settings.json`'s `ask` list as a guardrail against habit.
+   is on `.claude/settings.json`'s `deny` list (moved from `ask` on 2026-10-01) — a guardrail
+   against habit, not a security boundary (ADR 0022); that later ADR lifts it.
 3. **`10_pos.sql` and `42_pos_platform.sql` are never re-run on a live tier**, even after an edit —
    they are the pre-cut-over POS layers; a POS change goes in a new file. A changed file that seeds
    `core.role_permissions` (`on conflict do nothing`) re-grants rows the owner removed in the app:
