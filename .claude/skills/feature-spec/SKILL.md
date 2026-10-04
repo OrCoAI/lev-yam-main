@@ -24,10 +24,14 @@ steps are dropped — this repo's context lives in `docs/`.
 
 ## 1. Load context first
 
-Run `product-context` (VISION, invariants, current roadmap block, FACTS rules, newest ADRs).
-If the initiative is not in the current roadmap block, stop and say which block it belongs
-to; the roadmap decides order, the request does not (ADR 0021: Phase 2 waits for the
-quarterly review).
+Run `product-context` (VISION, invariants, current roadmap block, FACTS rules, newest ADRs). If
+`session-start` opened this session, steps 1, 2, 4 and the five newest ADRs are done; still run
+step 3 for the block the initiative belongs to, the topic-matched ADRs of step 5, and step 6 —
+the touched module's log in full. If the initiative is not in the current roadmap block (the
+roadmap's **Blocks** rule), stop and say which block it belongs to; the roadmap decides order,
+the request does not — the item is added or flagged there first (step 4; CLAUDE.md kickoff
+step 2), never specced around it; whole-quarter priorities are set at the quarterly review
+(`quarterly-review` agenda step 5; the cadence is ADR 0021).
 
 ## 2. Alignment questions — closed, one at a time (AskUserQuestion)
 

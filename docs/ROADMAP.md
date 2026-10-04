@@ -2,7 +2,7 @@
 
 The path from today's platform to the [vision](VISION.md). Ordered by **value and
 dependency** (steady pace, no external deadline). Tick tasks as they complete; each work
-session should start by reading this file and end by updating it.
+session should start by reading this file (the `session-start` skill) and end by updating it.
 
 **How we work:** one phase = one or more feature branches off `main`; verify against the
 **local Supabase stack** (`supabase start && supabase db reset`, then `cd app-src && npm run dev`;
@@ -13,6 +13,15 @@ local `supabase db reset` applies — staging and prod are applied by hand, neve
 ([ADR 0061](decisions/0061-staging-schema-applied-by-hand-never-db-push.md); `supabase/tests/build-baseline.mjs`; see
 [plans/platform-staging-environment.md](plans/platform-staging-environment.md)). `pos.html` and the
 marketing site stay untouched until their replacement earns cut-over on real service days.
+**Blocks:** the *current block* is the first `## ` section with an unticked **top-level** item
+whose heading carries none of ✅ (closed), the word *deferred*, or *parallel track*; indented
+sub-items never make a block current; a block opened at a quarterly review links its mandate in
+its lead paragraph (none linked → none to cite). Unticked lines left in a closed block are parked
+or blocked, except a list the block labels *ordinary items* (indented under that label), which
+stays actionable. A *parallel track* is a lane, not a block — one of its unticked lines counts as
+current work only when the line itself carries no fold (→), no *optional* or *out of* marker, and
+no date beyond the quarter. The skills cite this rule by name (**Blocks**) and never restate it
+([ADR 0062](decisions/0062-instruction-files-state-rules-never-state-sessions-open-with-session-start.md)).
 
 ---
 
@@ -485,6 +494,11 @@ block produces (work order G7).*
   - [ ] **`quarterly-review/evidence-pack.md` names ADR 0041 as the live deferral** — now ADR 0045;
         the pack finds deferrals by Status-line grep so the 2027-01 run still works, but the template
         text is stale. `.claude/` → Tier A, its own PR (bundle with the close-out-ritual edit above)
+  - [ ] **Two workflow prompts still assert present state** — `monthly-triage.yml` ("an empty list is
+        the expected result until the first Phase 2 initiative ships"; two have) and `quarterly-prep.yml`'s
+        header comment ("first quarterly review is the gate into Phase 2"). Found 2026-10-04
+        ([ADR 0062](decisions/0062-instruction-files-state-rules-never-state-sessions-open-with-session-start.md));
+        `.github/workflows/` → Tier A with staging verification, its own PR before the 2026-11-01 run
 
 ## Phase 2 — 2026-Q4 mandate: the marketing quarter (first quarterly review, 2026-09-22)
 
