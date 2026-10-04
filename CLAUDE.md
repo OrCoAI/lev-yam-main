@@ -23,10 +23,10 @@ The quotes manager already migrated (`/app/quotes`); its old local app is archiv
 **never copy customer data or the owner's signature into this public repo.**
 
 **Where this is going:** [docs/VISION.md](docs/VISION.md) (direction), [docs/ROADMAP.md](docs/ROADMAP.md)
-(the single task tracker — read it at session start, update it at session end),
+(the single task tracker — opened by `session-start`, updated at session end),
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (security model, RBAC, the invariants that never break),
-[docs/decisions/](docs/decisions/) (why each rule exists). Current work: the **Operating system**
-block of the roadmap, driven by [docs/plans/master-execution-plan.md](docs/plans/master-execution-plan.md).
+[docs/decisions/](docs/decisions/) (why each rule exists). Current work: the roadmap's **current
+block** — the roadmap's **Blocks** rule defines it and says where its mandate is linked.
 
 ## Conventions & gotchas
 
@@ -157,8 +157,7 @@ Dependabot needs no declaration: `check-tier.mjs` resolves its PRs to C from the
 ([ADR 0039](docs/decisions/0039-dependabot-auto-merge-scope.md)); **npm majors** are merged by
 the owner, and its **GitHub-Actions bumps touch workflows**, so the path floor is A and the owner
 writes that line by hand (the `edited` event re-runs the check). Detector/dashboard YAML has no path rule yet — declare B when
-adding, C when tuning (work order Part 4). **Calibration:** two weeks after tiers land, the owner
-watches Tier-B PRs closely.
+adding, C when tuning (work order Part 4).
 
 **Agent permissions** ([ADR 0022](docs/decisions/0022-agent-permissions-allowlist.md)): the committed
 `.claude/settings.json` is the policy. Honest scope: `allow` removes prompts for routine local work;
@@ -257,8 +256,9 @@ Outcome metric table — plans closed out before 2026-09-21 predate the rule and
 
 The rhythm that makes a company of one work at speed ([ADR 0021](docs/decisions/0021-operating-cadence-quarterly-gate.md)).
 Three of the four are automated into a GitHub issue; the owner's time goes only where judgment is
-needed. **The automation is built but not yet live** — it needs the `CLAUDE_CODE_OAUTH_TOKEN` secret
-(master plan blocker B2); until then each job exits clean at its key guard and produces no issue.
+needed. **Live since 2026-09-21** on the owner's subscription token
+([ADR 0042](docs/decisions/0042-agent-workflows-run-on-the-subscription-token.md)); a job that finds no
+`CLAUDE_CODE_OAUTH_TOKEN` exits clean at its key guard and produces no issue.
 
 | When | What | Who |
 |---|---|---|
@@ -272,12 +272,18 @@ does — not a new idea, not a competitor, not an interesting piece of tech. Ide
 `docs/ideas.md` via `idea-capture` and wait for the monthly batch. Interrupting for anything but
 invalidation is how a one-person roadmap becomes a list of half-built things.
 
-**The first quarterly review is the gate into Roadmap Phase 2** (ADR 0021) and doubles as the
-shakedown cruise for this machinery — decision log, tiers, outcome metrics, cadence. Its output
-is the mandate for Phase 2.
+**Each quarterly review writes the next quarter's priorities into the roadmap — the mandate**
+(`quarterly-review` agenda step 5, Converge; the cadence is ADR 0021). The first one (2026-09-22,
+[ADR 0046](docs/decisions/0046-q4-2026-mandate-marketing-quarter.md)) was the gate into Roadmap
+Phase 2 and the shakedown cruise for this machinery — decision log, tiers, outcome metrics, cadence.
 
 ### Session hygiene (context-rot defence)
 
+- **Open with `session-start`.** Instruction files — this one, the skills, eval expectations,
+  workflow prompts — carry rules and pointers, never claims about present repo state ("today the
+  block is X", "not yet live"); state is read from the roadmap and the ADR status lines each
+  session ([ADR 0062](docs/decisions/0062-instruction-files-state-rules-never-state-sessions-open-with-session-start.md)).
+  The skill derives the board that way and ends in one closed question.
 - **One approved spec per session.** Never two initiatives in one context — the second inherits
   the first's assumptions silently, which is how a bugfix acquires a schema change.
 - **Review and test passes run as subagents** for any diff with a runtime surface, with their own
@@ -338,7 +344,9 @@ established, both load-bearing:
   every run in ~120 ms with `is_error: true` and no error text. Don't reintroduce them.
 - **The report agents hold no write to any public surface** ([ADR 0048](docs/decisions/0048-report-agents-hold-no-write-and-actions-are-sha-pinned.md)).
   They write `report.md`; a fixed step after them runs `scripts/report-guard.py`, then labels,
-  de-duplicates (`jq --arg`, never a search string built from agent text) and publishes. Say
+  de-duplicates (`jq --arg`, never a search string built from agent text) and publishes — a rerun
+  that produces the same title comments on the existing issue instead of opening a new one, so
+  read an issue's comments before calling a run missed. Say
   plainly what the deny list does **not** do: `$VAR` expands in any *allowed* command's
   arguments, `gh --jq` is gojq with `$ENV`, and `head`/`tail`/`cut`/`sort` read
   `/proc/self/environ` — so a bash-capable agent reads its own environment whatever is denied.
@@ -386,8 +394,8 @@ line, so a bare `Bash(git log *)` splits into three tokens and the rule silently
   `docs/modules/`).
 - **`.claude/skills/` and `.claude/settings.json` are versioned with the repo** (the gate depends on
   `verify`; the settings file is the committed permission policy). Skills: engineering — `verify`,
-  `production-query`, `bluebox-*`; product — `product-context`, `feature-spec`, `idea-capture`,
-  `weekly-review`, `feedback-triage`, `quarterly-review`; content — `story-author`; monthly
+  `production-query`, `bluebox-*`; product — `session-start`, `product-context`, `feature-spec`,
+  `idea-capture`, `weekly-review`, `feedback-triage`, `quarterly-review`; content — `story-author`; monthly
   `obs-best-practices`. Each ships a
   3-case `EVALS.md`, run at the quarterly ceremony audit. `.claude/settings.local.json` and other
   agent state stay untracked. Also ignored: `.DS_Store`, `node_modules/`, `app-src/dist/`, `.env*`, raw source media.

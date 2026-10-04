@@ -6,8 +6,9 @@ description: >
   trajectory, ideas deferred upward, deferred decisions due), enforce the agenda — vision audit,
   architecture audit, deferred decisions, the one sanctioned divergent brainstorm LAST, converge — and write the outputs back (ADRs,
   VISION/ARCHITECTURE amendments, next-quarter priorities in ROADMAP.md). The human does the
-  judgment; the skill does collation and agenda. The FIRST quarterly review is the gate into
-  Roadmap Phase 2 (ADR 0021). Triggers: "quarterly review", "vision audit", "architecture
+  judgment; the skill does collation and agenda. Each review's output is the next quarter's
+  mandate in ROADMAP.md (agenda step 5 below; the first, 2026-09-22, opened Phase 2 — ADR 0021, ADR 0046).
+  Triggers: "quarterly review", "vision audit", "architecture
   audit", "evidence pack", "Q-review", "quarter planning".
 metadata:
   version: '0.1.0'
@@ -48,8 +49,8 @@ Two halves, never mixed:
 5. **Converge** — the owner picks. Outputs, written the same day:
    - ADRs for every amendment and every explicit no-change (`docs/decisions/`).
    - `docs/VISION.md` / `docs/ARCHITECTURE.md` edits where amended.
-   - **Next-quarter priorities into `docs/ROADMAP.md`** — this is the mandate; for the first
-     review it is the Phase 2 mandate.
+   - **Next-quarter priorities into `docs/ROADMAP.md`** — this is the mandate (the first
+     review's was the Phase 2 mandate, ADR 0046).
    - A dated `## Close-out` on the review's own plan/issue with the alignment verdict.
 
 ## Rules

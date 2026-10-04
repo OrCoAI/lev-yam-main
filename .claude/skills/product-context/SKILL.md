@@ -26,9 +26,11 @@ violated. This skill is the read step. It writes nothing.
    everything user-facing; visibility flags on public content; live tools keep working until
    parity; `docs/ROADMAP.md` is the single tracker) and §6 (everything is a module, initiatives
    are data, shared spines).
-3. `docs/ROADMAP.md` — find the **current block**: the first section whose checklist still has
-   open items. Today that is *Operating system — gate into Phase 2*; **Phase 2 does not start
-   before the first quarterly review** (ADR 0021). Note which phase the topic at hand belongs to.
+3. `docs/ROADMAP.md` — find the **current block** by the file's own **Blocks** rule (in its
+   "How we work" paragraph): apply it, don't restate it; it also says where a block's mandate
+   is linked. Derive the block from the file every time, never from a sentence in a skill
+   (ADR 0062 — the dated sentence that used to sit here outlived the block it named). Note
+   which phase the topic at hand belongs to.
 4. `FACTS.md` — the rules only: it is the sole fact source for public content; anything else
    is `[חסר: …]` / `[مفقود: …]`; **no prices anywhere in the repo, ever**; no customer data.
 5. `docs/decisions/README.md` — the index; open the **five newest ADRs** and any ADR whose
