@@ -49,7 +49,7 @@ implementation choices stay in their plan files; an ADR is for a decision that c
 - [0014 — The owner is exempt from the finance module-row guards, with every such edit recorded in finance.audit_log](0014-owner-exempt-from-finance-guards-with-audit-log.md) — 2026-08-12
 - [0015 — Risk tiers A/B/C replace uniform triple sign-off](0015-risk-tiers-abc.md) — 2026-08-13 *(amended — see status)*
 - [0016 — Extract dated decisions into an ADR log; slim CLAUDE.md](0016-decision-log-extraction.md) — 2026-08-13
-- [0017 — Product-side skill set joins the engineering skills](0017-product-skill-set.md) — 2026-08-13
+- [0017 — Product-side skill set joins the engineering skills](0017-product-skill-set.md) — 2026-08-13 *(amended — see status)*
 - [0018 — Automation layer: @claude action and scheduled review issues](0018-automation-layer.md) — 2026-08-13
 - [0019 — Outcome metrics close the validation loop](0019-outcome-metrics-validation-loop.md) — 2026-08-13
 - [0020 — Mechanical rails: branch protection, money-math tests, lint](0020-mechanical-rails.md) — 2026-08-13 *(amended — see status)*
@@ -94,3 +94,4 @@ implementation choices stay in their plan files; an ADR is for a decision that c
 - [0059 — Initiatives at scale: a paged hub, a small copy beside every photo, a light list read; the header stays the story pages' header](0059-initiatives-at-scale-paged-hub-small-photo-copies-light-list-read.md) — 2026-09-30
 - [0060 — The staff module is named "יוזמות" / "مبادرات" too](0060-staff-module-named-yozmot-too.md) — 2026-09-30
 - [0061 — Staging's schema is applied by hand like prod's; `supabase db push` is never run against either tier while neither records a migration history](0061-staging-schema-applied-by-hand-never-db-push.md) — 2026-09-30 *(amended — see status)*
+- [0062 — Instruction files state rules, never present repo state; sessions open with `session-start`, which derives the board](0062-instruction-files-state-rules-never-state-sessions-open-with-session-start.md) — 2026-10-04

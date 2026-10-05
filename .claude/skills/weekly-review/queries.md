@@ -25,7 +25,7 @@ gh pr list --state open --json number,title,createdAt,isDraft --jq '.[] | select
 ```
 dtctl query 'fetch events, from:now()-7d | filter event.kind == "DAVIS_PROBLEM" | summarize count(), by:{event.status, event.name}' --context <home> --plain -o json
 ```
-Until the home exists: print `n/a — observability home pending (ADR 0038)`.
+Until the home exists: print `n/a — observability home pending (ADR 0038, re-deferred by ADR 0045)`.
 
 ## 4. Bluebox Routine findings
 ```

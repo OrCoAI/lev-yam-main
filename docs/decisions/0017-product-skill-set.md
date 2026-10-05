@@ -1,7 +1,7 @@
 # 0017 — Product-side skill set joins the engineering skills
 
 - **Date:** 2026-08-13
-- **Status:** accepted
+- **Status:** accepted — amended by ADR 0062: `session-start` joins the product set as the skill that opens a session (the brain load, the open-items board, one closed question)
 - **Decided by:** owner (strategy session with Claude Code)
 - **Source:** `docs/plans/master-execution-plan.md` Part 1 #3; `docs/plans/lev-yam-gap-analysis-work-order.md` G3
 
