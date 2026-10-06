@@ -1,6 +1,7 @@
 import { Composition, Folder } from "remotion";
 import { ar } from "./copy/ar";
 import { he } from "./copy/he";
+import { PLACEHOLDER_REVIEWS, loadReviews } from "./data";
 import { WeekendReel } from "./levyam/WeekendReel";
 import { weekendReelSchema } from "./levyam/schema";
 import { Gull, LightLeak } from "./levyam/sunset-dream/layers";
@@ -22,11 +23,22 @@ export const RemotionRoot: React.FC = () => {
         fps={30}
         width={1080}
         height={1920}
+        defaultProps={{ reviews: PLACEHOLDER_REVIEWS }}
+        calculateMetadata={loadReviews}
       />
       <Folder name="Scenes">
         <Composition id="Hook" component={HookScene} durationInFrames={90} fps={30} width={1080} height={1920} />
         <Composition id="Rating" component={RatingScene} durationInFrames={90} fps={30} width={1080} height={1920} />
-        <Composition id="Reviews" component={CarouselScene} durationInFrames={280} fps={30} width={1080} height={1920} />
+        <Composition
+          id="Reviews"
+          component={CarouselScene}
+          durationInFrames={280}
+          fps={30}
+          width={1080}
+          height={1920}
+          defaultProps={{ reviews: PLACEHOLDER_REVIEWS }}
+          calculateMetadata={loadReviews}
+        />
         <Composition id="SocialProof" component={StackScene} durationInFrames={85} fps={30} width={1080} height={1920} />
         <Composition id="CTA" component={CtaScene} durationInFrames={55} fps={30} width={1080} height={1920} />
       </Folder>

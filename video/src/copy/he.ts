@@ -1,8 +1,8 @@
 import type { WeekendReelProps } from "../levyam/schema";
 
 // Source: levyam.com/happening/weekend/ (read 2026-10-05) and the site repo's FACTS.md.
-// Hours are the owner's (2026-10-05): the live page still shows 10:00–17:00 in its header
-// and 10:00–16:00 in its text.
+// Hours: FACTS.md "שעות סופי השבוע" (seasonal, dated 2026-10-06). The live page showed
+// 10:00–17:00 / 10:00–16:00 on 2026-10-05 — the owner updates the /app/events item.
 export const he: WeekendReelProps = {
   lang: "he",
   hook: "title",

@@ -63,6 +63,9 @@ media/*
 # video/scripts/sync-assets.mjs regenerates from img/ (the site's media is never committed twice).
 video/out/
 video/public/site/
+# Review texts and reviewer labels for the testimonial reel (owner, 2026-10-06): read at render
+# time by video/src/data.ts; the repo holds only [חסר] placeholders.
+video/public/private/
 
 # Logs
 *.log

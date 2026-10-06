@@ -1,7 +1,7 @@
 import { TransitionSeries, springTiming } from "@remotion/transitions";
 import { slide } from "@remotion/transitions/slide";
 import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
-import { REVIEWS } from "../data";
+import type { ReviewProps } from "../data";
 import { C, clamp } from "../theme";
 import { ReviewSlide } from "./ReviewSlide";
 
@@ -43,27 +43,27 @@ const Dots: React.FC = () => {
   );
 };
 
-export const CarouselScene: React.FC = () => {
+export const CarouselScene: React.FC<ReviewProps> = ({ reviews }) => {
   const { fps } = useVideoConfig();
   return (
     <AbsoluteFill style={{ background: C.bg }}>
       <TransitionSeries>
         <TransitionSeries.Sequence name="Review 1" durationInFrames={105} premountFor={fps}>
-          <ReviewSlide name={REVIEWS[0].name} text={REVIEWS[0].text} graphic="bars" frameColor={C.orange} />
+          <ReviewSlide {...reviews[0]} graphic="bars" frameColor={C.orange} />
         </TransitionSeries.Sequence>
         <TransitionSeries.Transition
           presentation={slide({ direction: "from-right" })}
           timing={springTiming({ config: { damping: 200 }, durationInFrames: SLIDE_FRAMES })}
         />
         <TransitionSeries.Sequence name="Review 2" durationInFrames={105} premountFor={fps}>
-          <ReviewSlide name={REVIEWS[1].name} text={REVIEWS[1].text} graphic="heart" frameColor={C.blue} />
+          <ReviewSlide {...reviews[1]} graphic="heart" frameColor={C.blue} />
         </TransitionSeries.Sequence>
         <TransitionSeries.Transition
           presentation={slide({ direction: "from-right" })}
           timing={springTiming({ config: { damping: 200 }, durationInFrames: SLIDE_FRAMES })}
         />
         <TransitionSeries.Sequence name="Review 3" durationInFrames={100} premountFor={fps}>
-          <ReviewSlide name={REVIEWS[2].name} text={REVIEWS[2].text} graphic="house" frameColor={C.orange} />
+          <ReviewSlide {...reviews[2]} graphic="house" frameColor={C.orange} />
         </TransitionSeries.Sequence>
       </TransitionSeries>
       <Dots />

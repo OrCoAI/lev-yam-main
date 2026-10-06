@@ -160,29 +160,17 @@ left behind beyond gitignored renders on the owner's machine.
 
 ## Open questions
 
-- **Non-blocking — `VIDEO_GUIDELINES_PAT`:** create the fine-grained PAT so the weekly PR gets
-  its CI run automatically, or live with close-and-reopen. Owner, before the second scheduled run.
-- **Non-blocking — the testimonial reel's review texts:** the public Google reviews stay in
-  `video/src/data.ts` with neutral names; if the owner prefers the texts out of the repo too, they
-  move to a gitignored `video/private/` and the composition reads placeholders. Owner, at Gate 2
-  of the first testimonial brief.
-- **Blocking for the first posted weekend reel, not for this PR — the hours on screen:** the
-  weekend reel's copy (`video/src/copy/he.ts`, `ar.ts`) shows Friday 10:00–15:00 and Saturday
-  10:00 to sunset on the owner's word (2026-10-05); `FACTS.md` carries the days only and the live
-  `/happening/weekend/` page shows other hours. Guidelines §1.2 says facts come from `FACTS.md` or
-  the live page. Owner: put the hours into `FACTS.md` and the `/app/events` weekend item (and
-  cite the line in the brief), or amend §1.2 to admit a dated owner statement. Until then the
-  reel is not posted.
 - **Non-blocking — Remotion patch bumps auto-merge:** Remotion ships its whole release stream
   as `4.0.N` patches, so `dependabot-auto-merge.yml` (ADR 0039: npm minor/patch) will merge every
   Remotion release on green — and green for `video/` is lint + tsc, no render. Either accept
   (the weekly research PR reports each release; the next `npm run review` catches a render
-  break) or carve `/video` out of auto-merge (`fetch-metadata` exposes `directory`). Owner, at
-  the first dependabot `/video` PR.
-- **Non-blocking — license headcount watch:** the free Remotion license holds at ≤ 3 people
-  (owner, 2026-10-06); the guidelines carry the clause and the weekly job re-reads the terms. If
-  the count that applies changes, the Company License (creators: per seat per month) is a cost
-  line before the next posted reel.
+  break), make green mean "it renders" (one still in `ci.yml` when `video/` changes), or carve
+  `/video` out of auto-merge (`fetch-metadata` exposes `directory`). Owner, at the first
+  dependabot `/video` PR.
+- **Blocking for the first posted weekend reel — the live page's hours:** `FACTS.md` now carries
+  the seasonal weekend hours (2026-10-06); the `/app/events` weekend item (→ `/happening/weekend/`)
+  still shows other hours and must be edited by the owner to match before the reel is posted
+  (the Arabic cost field there also says "حر" — "ببلاش" is the fix).
 
 ## Decisions made on the way
 
@@ -190,6 +178,18 @@ left behind beyond gitignored renders on the owner's machine.
   agent instruction file (leash, Tier A) and the weekly research job is a separate worker that
   opens a PR the owner merges; video is mandate item 15; no audio in v1; Meta only; the official
   Remotion skills stay per machine → [ADR 0064](../decisions/0064-video-is-made-with-remotion-in-the-repo-guidelines-are-the-leash-refreshed-weekly-by-pr.md).
+- 2026-10-06 · **Weekend hours on screen:** Friday 10:00–15:00, Saturday 10:00 to sunset, as a
+  dated seasonal fact in `FACTS.md` ("שעות סופי השבוע"); guidelines §1.2 now says a seasonal fact
+  is cited with its date, re-confirmed at Gate 1, and a reel is not posted once its season has
+  changed. The copy files cite the line.
+- 2026-10-06 · **`VIDEO_GUIDELINES_PAT`:** the owner creates the fine-grained PAT (this repo only,
+  Contents + Pull requests read/write) and stores it as the repo secret before the first scheduled
+  run; the publish job already prefers it over `GITHUB_TOKEN` → ADR 0064 consequences.
+- 2026-10-06 · **Testimonial review texts leave the public repo:** `video/public/private/reviews.json`
+  (gitignored) is read by `loadReviews` (`calculateMetadata`) in Studio and at render; the repo
+  holds `[חסר]` placeholders; guidelines §1.1 amended → ADR 0064 consequences.
+- 2026-10-06 · **License headcount:** a company of one — no watch needed now; the clause stays in
+  the guidelines and the weekly job re-reads the terms, which is enough.
 
 ## Publish log
 

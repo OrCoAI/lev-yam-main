@@ -1,7 +1,8 @@
 import type { WeekendReelProps } from "../levyam/schema";
 
-// Source: levyam.com/happening/ar/weekend/ (read 2026-10-05). Lines marked [ar-draft] are not
-// verbatim from the site and need a native Levantine reader before the final render.
+// Source: levyam.com/happening/ar/weekend/ (read 2026-10-05); hours: FACTS.md "שעות סופי השבוע"
+// (seasonal, dated 2026-10-06). Lines marked [ar-draft] are not verbatim from the site and need a
+// native Levantine reader before the final render.
 // The live page's cost field says "حر" (free as in liberty) — "ببلاش" here is the fix.
 export const ar: WeekendReelProps = {
   lang: "ar",

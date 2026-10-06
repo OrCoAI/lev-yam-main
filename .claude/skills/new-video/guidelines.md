@@ -18,10 +18,15 @@ edits it.*
 
 1. **The repo is public.** No customer or reviewer names (a Google review appears with a neutral
    label such as "אורחת"), no staff or resident names, no phone numbers beyond the venue's
-   WhatsApp, never the owner's signature. Real names, if ever wanted on screen, are swapped in at
-   render time and never committed.
+   WhatsApp, never the owner's signature. **Review texts are not committed either** (owner,
+   2026-10-06): they live in the gitignored `video/public/private/reviews.json`, read at render
+   time by `video/src/data.ts`; the repo holds `[חסר]` placeholders (Studio shows them, a render
+   without the file fails). Real names, if ever wanted
+   on screen, go the same way and are never committed.
 2. **Facts come from `FACTS.md`** or the live `/happening/` page the reel promotes, read that day
-   and cited in the brief. A missing fact is `[חסר: …]` / `[مفقود: …]` in the brief, never a
+   and cited in the brief. A seasonal fact (opening hours) is cited with the date `FACTS.md`
+   gives it; the owner re-confirms it in Gate 1 and the reel is not posted once its season has
+   changed. A missing fact is `[חסר: …]` / `[مفقود: …]` in the brief, never a
    guess — and never an invented URL, date, phone number or review. **No prices anywhere**:
    cost appears only as "free" / "ببلاش" or "by WhatsApp".
 3. **Hebrew and Levantine Arabic, both, before anything is posted** (ARCHITECTURE invariant 5).

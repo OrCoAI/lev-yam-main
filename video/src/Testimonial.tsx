@@ -7,10 +7,12 @@ import { HookScene } from "./scenes/HookScene";
 import { RatingScene } from "./scenes/RatingScene";
 import { StackScene } from "./scenes/StackScene";
 import { SafeZone } from "./levyam/SafeZone";
+import type { ReviewProps } from "./data";
 
 // Scene changes are brand band sweeps (overlays — they don't shorten the timeline):
 // 90 + 90 + 280 + 85 + 55 = 600 frames = 20s @ 30fps.
-export const Testimonial: React.FC = () => {
+// `reviews` arrive from the composition's `calculateMetadata` (`loadReviews` in data.ts).
+export const Testimonial: React.FC<ReviewProps> = ({ reviews }) => {
   const { fps } = useVideoConfig();
   return (
     <AbsoluteFill>
@@ -28,7 +30,7 @@ export const Testimonial: React.FC = () => {
           <BandSweep />
         </TransitionSeries.Overlay>
         <TransitionSeries.Sequence name="Reviews" durationInFrames={280} premountFor={fps}>
-          <CarouselScene />
+          <CarouselScene reviews={reviews} />
         </TransitionSeries.Sequence>
         <TransitionSeries.Overlay durationInFrames={22} premountFor={fps}>
           <BandSweep />

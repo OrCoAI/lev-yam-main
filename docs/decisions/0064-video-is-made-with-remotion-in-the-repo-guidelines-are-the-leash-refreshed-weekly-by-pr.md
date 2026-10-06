@@ -55,9 +55,16 @@ write and may not read the web, because they read public issue text
 - A third npm project in the repo: `npm ci` + lint + tsc in CI on every run (~1–2 min), a
   `/video` dependabot entry with all `remotion` / `@remotion/*` packages grouped, since Remotion
   requires one exact version across them.
-- The weekly PR is the owner's Monday read. Opened with `GITHUB_TOKEN` it starts no CI run; the
-  owner either closes-and-reopens it or stores a fine-grained `VIDEO_GUIDELINES_PAT` (this repo
-  only, contents + pull requests write) to make it automatic.
+- The weekly PR is the owner's Monday read. Opened with `GITHUB_TOKEN` it starts no CI run, so
+  the owner stores a fine-grained `VIDEO_GUIDELINES_PAT` (this repo only, contents + pull
+  requests write; decided 2026-10-06) and the publish job opens the PR with it; without the
+  secret it falls back to `GITHUB_TOKEN` and the owner closes-and-reopens.
+- Review texts for the testimonial reel are not committed (owner, 2026-10-06): the composition
+  reads the gitignored `video/public/private/reviews.json` through `calculateMetadata`; Studio
+  shows `[חסר]` placeholders without it and a render fails. The texts are public Google reviews,
+  so the copies that reached `staging`'s history (never force-pushed) are not a secret; the
+  `video-pipeline` branch was rewritten to one commit before merge, so neither PR #109's commit
+  list nor `main` carries them.
 - The two existing reels were laid out on the looser 150 / 170 px zone; the guidelines say
   269 / 672 px (Meta). They stay as built for this week's renders and are re-laid out as the
   first follow-up — the reviewer checklist will flag them until then.

@@ -19,6 +19,10 @@ npm run lint           # eslint + tsc (what CI runs)
 - `public/site/` — **generated** from `../img` by `scripts/sync-assets.mjs` (gitignored).
   `public/brand/`, `public/photos/` — committed derivatives that exist nowhere else.
 - `briefs/` — one prompt per reel, written by the `new-video` skill with the owner.
+- `public/private/reviews.json` — **gitignored, the owner's copy only:** the testimonial reel's
+  three review texts, `{ "reviews": [{ "name": "אורחת", "text": "…" }, …] }`; `src/data.ts`
+  reads it in Studio and at render time. Without it Studio shows `[חסר]` placeholders and any
+  render fails; with it, the file wins over `--props` / Studio-edited `reviews`.
 - `out/` — renders and review stills (gitignored).
 
 A reel starts as a brief (`/new-video`), gets built in Studio, is reviewed as stills (Gate 2), and
