@@ -28,6 +28,10 @@ scaling.
 
 Never point any of this at staging or prod — local only, per CLAUDE.md.
 
+- **`video/` diffs:** no server. `cd video && npm run review -- <id> [<id> …]` renders review
+  stills to `video/out/review/<id>/*.png` (one bundle, one browser); read the PNGs against
+  `.claude/skills/new-video/review.md`. The screenshot harness below is not used.
+
 ## 2. Screenshot / click through
 
 `scripts/verify/screenshot.mjs` — Node 22, zero npm deps (raw Chrome DevTools Protocol over

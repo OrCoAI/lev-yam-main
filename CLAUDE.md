@@ -18,6 +18,7 @@ deploy together to **levyam.com** via **GitHub Pages**:
 | Survey | `survey-june.html` | Community survey | none | Supabase |
 | POS | `pos.html` → `/app/pos` | Internal POS (cut over 2026-07-15; redirect only) | none | Supabase |
 | **Platform** | `/app` → `app-src/` | Internal staff platform (login + modules) | Vite + React + TS | Supabase |
+| Video | `video/` (never deployed) | Reels for Instagram/Facebook, HE + AR | Remotion (Node 22) | none |
 
 The quotes manager already migrated (`/app/quotes`); its old local app is archived read-only —
 **never copy customer data or the owner's signature into this public repo.**
@@ -93,6 +94,15 @@ The public life of the venue, published from `/app/events` ([ADR 0054](docs/deci
   Every uploaded photo has a `<name>-sm.jpg` copy for cards and link previews — the rule lives in
   the renderer and the `/app/events` upload and must agree ([ADR 0059](docs/decisions/0059-initiatives-at-scale-paged-hub-small-photo-copies-light-list-read.md)).
 
+### Video (`video/`, never deployed)
+Reels for Instagram/Facebook are made with **Remotion** in `video/` — Node 22, beside `app-src/`,
+not on the assemble allowlist, linted and type-checked by `ci.yml` when it changes
+([ADR 0064](docs/decisions/0064-video-is-made-with-remotion-in-the-repo-guidelines-are-the-leash-refreshed-weekly-by-pr.md)).
+**The one rule file is [`.claude/skills/new-video/guidelines.md`](.claude/skills/new-video/guidelines.md)**
+(leash, Tier A; the weekly `video-guidelines-refresh.yml` PR proposes amendments, the owner merges).
+A reel starts with the `new-video` skill — interview → `video/briefs/<slug>.md` → the owner's three
+gates. Dev: `cd video && npm ci && npm run dev` (Studio); `npm run lint` before pushing.
+
 ### Platform (`app-src/`, served at `/app`)
 - **Stack:** Vite + React + TypeScript + react-router. Dev needs **Node 22** and the **local Supabase
   stack** (Colima): `supabase start && supabase db reset`, then `cd app-src && npm run dev`
@@ -149,7 +159,7 @@ inline whatever its tier), and kickoff alignment follows initiative-vs-bugfix, n
 | Tier | What (the script is authoritative; this is the summary) | Human checkpoints |
 |---|---|---|
 | **A** | `supabase/`, `.github/workflows/`, `scripts/*.sh`, analytics/RUM wiring (`js/vendor-tags.js`, `js/wa-track.js`), the platform `lib/`+`shell/` and the finance/pos/quotes/users modules (named UI-only files excepted), and **the leash** — `.claude/`, `CLAUDE.md`, `AGENTS.md`, `.gitignore`, the tier script and the verify harness ([ADR 0036](docs/decisions/0036-agent-instruction-files-are-the-leash.md)) | localhost UI confirmation + staging sign-off where the diff has a deployed surface; otherwise the owner reviews the PR before merge |
-| **B** | Everything unlisted: module UI files named as exceptions, `index.html`/`js/`/`css/`, `FACTS.md`, `llms.txt`, build scripts, templates, human edits to `package.json` | full gate; Claude's screenshots stay step zero; the human look happens **once, on staging** |
+| **B** | Everything unlisted: module UI files named as exceptions, `index.html`/`js/`/`css/`, `FACTS.md`, `llms.txt`, build scripts, templates, human edits to `package.json`, `video/` (the project, its briefs and committed assets) | full gate; Claude's screenshots stay step zero; the human look happens **once, on staging** |
 | **C** | `docs/`, README, tests under `app-src/`, module i18n dictionaries, `img/`+`fonts/`, generated files, `/stories/` content pages (twin rule via the generator), dependabot npm bumps | none — full gate + CI + staging deploy still run; **merge on green**; the merge is reported in the weekly review |
 
 Dependabot needs no declaration: `check-tier.mjs` resolves its PRs to C from the PR author.
@@ -306,11 +316,11 @@ rebuilt from the feed) and on a `workflow_dispatch` from the `rebuild-site` func
 jobs carry a `github.ref` guard so a dispatch on any other ref no-ops. `main` is branch-protected: PR + green `ci.yml` required, no direct pushes, admins
 included (ARCHITECTURE §6c). Pushing `staging` triggers `deploy-staging.yml` → `staging.levyam.com`
 (Cloudflare Pages, noindex, `lev-yam-staging` Supabase); only `main` and `staging` are long-lived.
-`docs/`, `tests/`, `supabase/` are never deployed. One-time setup: [supabase/README.md](supabase/README.md).
+`docs/`, `tests/`, `supabase/`, `video/` are never deployed. One-time setup: [supabase/README.md](supabase/README.md).
 
 ## Automations (the night shift)
 
-Five triggers run without a human ([ADR 0039](docs/decisions/0039-dependabot-auto-merge-scope.md),
+Six triggers run without a human ([ADR 0039](docs/decisions/0039-dependabot-auto-merge-scope.md),
 work order G4). All of them go through the same rails as a human PR — none is a shortcut past the gate.
 
 | Workflow | Fires | Produces |
@@ -320,6 +330,7 @@ work order G4). All of them go through the same rails as a human PR — none is 
 | `monthly-triage.yml` | 1st of the month | `report.md` → issue `Monthly roadmap review YYYY-MM` — feedback digest + parking-lot batch + obs-best-practices audit |
 | `quarterly-prep.yml` | 1st of Jan/Apr/Jul/Oct | `report.md` → issue `Quarterly review YYYY-Qn` — evidence pack + agenda checklist. **The review session itself is never run unattended** |
 | `dependabot-auto-merge.yml` | dependabot PRs | the Tier line, and auto-merge for npm minor/patch |
+| `video-guidelines-refresh.yml` | Mon 05:00 UTC | a PR amending `.claude/skills/new-video/guidelines.md` from Remotion releases, the official skills, the license page and Meta specs — Tier A, the owner merges; a research job on a read-only token and a separate publish job with no agent ([ADR 0064](docs/decisions/0064-video-is-made-with-remotion-in-the-repo-guidelines-are-the-leash-refreshed-weekly-by-pr.md)) |
 
 The three report jobs share one reusable worker, `agent-report.yml` (`workflow_call` only) —
 schedule, prompt and tool scope are all that differ. Each caller has `workflow_dispatch`; that
@@ -357,8 +368,8 @@ established, both load-bearing:
   `/dev/null` for the agent step, since an allowed command with a redirect reaches them whatever
   `Write` is scoped to. The guard, which withholds the whole report if a secret's value appears in
   it, is a loud detector on top of that, not a boundary. **Every third-party action is
-  SHA-pinned** with the version in a trailing comment (7 actions across the 7 workflow files that
-  use one); dependabot keeps them current.
+  SHA-pinned** with the version in a trailing comment, in every workflow file that uses one;
+  dependabot keeps them current.
 - **`claude.yml` denies `git push` outright.** It genuinely needs Edit/Write/build, and an agent
   that can write a file and run a build can run code — inherent, not pluggable. What it must
   never reach is a deploy: `deploy-staging.yml` fires on *any* push to `staging`, and
@@ -395,7 +406,7 @@ line, so a bare `Bash(git log *)` splits into three tokens and the rule silently
 - **`.claude/skills/` and `.claude/settings.json` are versioned with the repo** (the gate depends on
   `verify`; the settings file is the committed permission policy). Skills: engineering — `verify`,
   `production-query`, `bluebox-*`; product — `session-start`, `product-context`, `feature-spec`,
-  `idea-capture`, `weekly-review`, `feedback-triage`, `quarterly-review`; content — `story-author`; monthly
+  `idea-capture`, `weekly-review`, `feedback-triage`, `quarterly-review`; content — `story-author`, `new-video`; monthly
   `obs-best-practices`. Each ships a
   3-case `EVALS.md`, run at the quarterly ceremony audit. `.claude/settings.local.json` and other
   agent state stay untracked. Also ignored: `.DS_Store`, `node_modules/`, `app-src/dist/`, `.env*`, raw source media.
