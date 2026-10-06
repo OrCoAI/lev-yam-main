@@ -104,7 +104,8 @@ with the rules kept current.
   mandate item 6's social pipeline are separate.
 - **Cloud rendering / Player / SaaS** — local renders only; Lambda and the Player are a later
   decision with a license implication.
-- **Re-layout of the two existing reels to the Meta safe zone** — the first follow-up, not this PR
+- **A render smoke in `ci.yml`** (one still when `video/` changes) — the follow-up Tier-A PR right after this one (decided 2026-10-06).
+- **Re-layout of the two existing reels to the Meta safe zone** — the second follow-up, not this PR
   (their renders of 2026-10-06 must stay reproducible for the owner's first posts).
 - **Vendoring the official Remotion skills into the repo** — stays per machine (owner, 2026-10-06).
 
@@ -160,13 +161,6 @@ left behind beyond gitignored renders on the owner's machine.
 
 ## Open questions
 
-- **Non-blocking — Remotion patch bumps auto-merge:** Remotion ships its whole release stream
-  as `4.0.N` patches, so `dependabot-auto-merge.yml` (ADR 0039: npm minor/patch) will merge every
-  Remotion release on green — and green for `video/` is lint + tsc, no render. Either accept
-  (the weekly research PR reports each release; the next `npm run review` catches a render
-  break), make green mean "it renders" (one still in `ci.yml` when `video/` changes), or carve
-  `/video` out of auto-merge (`fetch-metadata` exposes `directory`). Owner, at the first
-  dependabot `/video` PR.
 - **Blocking for the first posted weekend reel — the live page's hours:** `FACTS.md` now carries
   the seasonal weekend hours (2026-10-06); the `/app/events` weekend item (→ `/happening/weekend/`)
   still shows other hours and must be edited by the owner to match before the reel is posted
@@ -190,6 +184,12 @@ left behind beyond gitignored renders on the owner's machine.
   holds `[חסר]` placeholders; guidelines §1.1 amended → ADR 0064 consequences.
 - 2026-10-06 · **License headcount:** a company of one — no watch needed now; the clause stays in
   the guidelines and the weekly job re-reads the terms, which is enough.
+
+- 2026-10-06 · **Remotion patch bumps keep auto-merging, and CI green must mean "it renders":**
+  a follow-up Tier-A PR after #109 adds one still render to `ci.yml` when `video/` changes (one
+  composition, one frame; Chrome Headless Shell downloaded in that run only). Carving `/video` out
+  of auto-merge was rejected — a manual merge per Remotion release is the wrong trade for a company
+  of one.
 
 ## Publish log
 
