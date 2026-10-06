@@ -3,7 +3,7 @@
 *Written {{DATE}} with the `new-video` skill · type: {{TYPE}} · status: draft → approved (Gate 1
 {{GATE1_DATE}}) → built → reviewed (Gate 2) → rendered → posted*
 
-> This file is the complete prompt. A build session reads **`.claude/skills/new-video/guidelines.md`
+> This file is the complete prompt. A build session reads **`video/GUIDELINES.md`
 > first**, then follows this brief shot by shot. Nothing on screen that is not written here.
 
 ## Spec

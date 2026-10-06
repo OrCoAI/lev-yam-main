@@ -11,7 +11,7 @@ own frames re-reads its intent, not the picture. The reviewer edits nothing.
   `--frames` for any shot boundary the brief names). `--guide` writes a `<frame>-guide.png` beside
   each plain still with the safe-zone overlay drawn: judge check 1 on the guide still, everything
   else on the plain one.
-- `.claude/skills/new-video/guidelines.md` §3–§7.
+- `video/GUIDELINES.md` §3–§7.
 
 ## Prompt
 

@@ -30,8 +30,11 @@ write and may not read the web, because they read public issue text
 2. **`video/public/site/` is generated from `img/`, never committed.** The reels use the site's
    own photos, icons and hero clip; `npm run assets` copies them from `img/` by a map in code.
    Only derivatives that exist nowhere else (recoloured brand icons, one photo) are committed.
-3. **The video guidelines are an agent instruction file:** `.claude/skills/new-video/guidelines.md`,
-   in the leash class (ADR 0036, Tier A). Every change to it is a PR a human reads — including the
+3. **The video guidelines are an agent instruction file:** `video/GUIDELINES.md`, in the leash
+   class (ADR 0036, Tier A — named in `scripts/check-tier.mjs`). *Amended 2026-10-06:* the file
+   first lived at `.claude/skills/new-video/guidelines.md`; the first acceptance run with a
+   transcript showed the agent's Edit denied there, because Claude Code treats `.claude/` as a
+   protected path no non-interactive agent may write under, so it moved beside the project. Every change to it is a PR a human reads — including the
    weekly job's. The file carries dated sources and a changelog; its "rules of the house" section
    (names, facts, languages, license, never deployed) is the owner's and no job edits it.
 4. **The `new-video` skill builds the brief with the owner**, question by question, and writes it

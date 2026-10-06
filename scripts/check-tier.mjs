@@ -31,7 +31,7 @@ const RANK = { A: 3, B: 2, C: 1 }
 
 const RULES = [
   // ── 1. the leash ─────────────────────────────────────────────────────────────
-  ['A', /^(\.claude\/|\.mcp\.json$|\.gitignore$|AGENTS\.md$|(.*\/)?CLAUDE\.md$)/],   // instructions, permissions, publication allowlist
+  ['A', /^(\.claude\/|\.mcp\.json$|\.gitignore$|AGENTS\.md$|(.*\/)?CLAUDE\.md$|video\/GUIDELINES\.md$)/],   // instructions, permissions, publication allowlist; the video guidelines (ADR 0064)
   ['A', /^(scripts\/check-tier\.mjs$|scripts\/verify\/|\.github\/pull_request_template\.md$)/], // the gate's own tooling
   ['A', /^(\.node-version$|app-src\/(\.oxlintrc\.json|vitest\.config\.ts)$)/],   // what decides whether lint/test can fail (Step 3)
   // ── 2. exceptions inside A directories ─────────────────────────────────────
