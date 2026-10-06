@@ -530,6 +530,8 @@ proposal — the owner reorders by editing this list.*
       plan; item 11 pulled forward; "number one" = GSC top-3 share + manual AI-citation check**
       **→ amended 2026-09-24 ([ADR 0053](decisions/0053-story-pages-are-narrative-essays-village-facts-sourced-in-facts.md)): story pages are narrative
       essays; village facts enter `FACTS.md` first** **Pairs 2–4 LIVE 2026-09-24 (PRs #87, #91, #89, #90) — 4 of 16.**
+      **Pair 5 `strategy-offsite-by-the-sea` LIVE 2026-10-06 — 5 of 16; → amended 2026-10-06
+      ([ADR 0063](decisions/0063-every-story-page-tells-a-village-story-no-other-page-tells.md)): no village story is told twice.**
       *(bug found 2026-09-23: desktop header nav overlaps the social icons at 961–1300px, site-wide,
       HE + AR — own Tier B PR; measurements in the plan's follow-ups)*
 - [ ] **3. Local SEO cluster** — near Caesarea / Hadera / Jisr, directions, "things to do",
