@@ -9,7 +9,7 @@ lets a non-interactive agent write to. Section 1 is the owner's — no job edits
 | | |
 |---|---|
 | **Remotion** | pinned in `video/package.json` (`npx remotion versions`); every `remotion` / `@remotion/*` package at that one exact version |
-| **Skills** | official Remotion Agent Skills `4.0.532` (`remotion-dev/skills`, installed per machine at `~/.agents/skills/remotion-*`, `remotion-markup` folder hash `e671b318`) |
+| **Skills** | official Remotion Agent Skills — upstream `remotion-dev/skills` main at `4.0.533` (read 2026-10-06); installed per machine at `~/.agents/skills/remotion-*` still `4.0.532` (`remotion-markup` folder hash `e671b318`): `npx skills update` reported "up to date" on 2026-10-06, re-check next week |
 | **Platforms** | Meta only this quarter: Reels, Stories, feed 4:5 (owner, 2026-10-06) |
 | **Audio** | none in v1 (owner, 2026-10-06) |
 | **License** | Remotion free license — organisations of up to 3 people, client work included (owner's count 2026-10-06: ≤ 3); re-read weekly |
@@ -264,9 +264,12 @@ related product.
 - Meta Ads Guide — Reels / Stories safe zone 14 / 35 / 6 % *(official)*; Meta Business Help Center
   — 40 % with a disclaimer *(official)*; Facebook for Business, "Capture Attention with Updated
   Features for Video Ads" — the 47 % / 74 % figures *(official, self-reported Nielsen finding)*.
-- Remotion Agent Skills `remotion-dev/skills` 4.0.532 — markup, timing, transitions, fonts,
-  interactivity, rendering rules *(official)*; `remotion.dev/docs/license` — free for ≤ 3 people
-  *(official; re-check before any purchase)*.
+- Remotion Agent Skills `remotion-dev/skills` 4.0.533 (bumped from 4.0.532, checked 2026-10-06 —
+  raw.githubusercontent.com/remotion-dev/skills/main/skills/{remotion-best-practices,remotion-markup}/SKILL.md)
+  — markup, timing, transitions, fonts, interactivity, rendering rules *(official)*;
+  `remotion.dev/docs/license` — free for ≤ 3 people *(official; re-check before any purchase;
+  re-verified 2026-10-06 against `raw.githubusercontent.com/remotion-dev/remotion/main/LICENSE.md`,
+  unchanged)*.
 - Sabrina Ramonov, "5 INSANE Claude Code + Video Prompts" (2026-03-21) — prompt skeleton, the
   testimonial pattern *(practitioner; her 150 / 170 px zone and "generate a plausible URL" are
   rejected above)*.
@@ -286,6 +289,27 @@ related product.
 ## Changelog
 
 *Newest first; the weekly job adds its entry at the top.*
+
+### 2026-10-06 — weekly refresh
+- **Skills version bump — `remotion-dev/skills` 4.0.532 → 4.0.533.** Both
+  `remotion-best-practices/SKILL.md` and `remotion-markup/SKILL.md` frontmatter now read
+  `4.0.533` (matching the Remotion version already pinned in `video/package.json`, so no
+  header/pin mismatch). No rule-affecting content change found in either skill — markup, timing,
+  transitions, fonts and interactivity guidance read the same as before; the header's
+  `remotion-markup` folder hash is now stale and needs a local refresh. Why: the weekly refresh
+  compares the header's Skills line against upstream. Run locally: `npx skills update
+  remotion-best-practices remotion-captions remotion-create remotion-docs remotion-interactivity
+  remotion-maps remotion-markup remotion-multimedia remotion-render remotion-saas remotion-studio
+  remotion-upgrade --yes` (guidelines §11), then update the header's hash by hand. Source:
+  https://raw.githubusercontent.com/remotion-dev/skills/main/skills/remotion-best-practices/SKILL.md
+  and .../remotion-markup/SKILL.md, read 2026-10-06.
+- Checked and unchanged (no edit needed): Remotion releases
+  (https://github.com/remotion-dev/remotion/releases.atom, 2026-10-06) — `4.0.533` is still the
+  newest release, matching the pin; the free-license clause
+  (https://raw.githubusercontent.com/remotion-dev/remotion/main/LICENSE.md, 2026-10-06) — "a
+  for-profit organization with up to 3 employees" unchanged; Meta's Reels/Stories safe-zone
+  percentages (14 % / 35 % / 6 %) and the 47 % / 74 % first-seconds stat, both confirmed against
+  `facebook.com/business` search results, 2026-10-06 — unchanged from §3/§2.
 
 ### 2026-10-06 — kickoff
 - First version, distilled from the owner's research document, the installed Remotion Agent
