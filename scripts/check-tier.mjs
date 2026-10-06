@@ -59,8 +59,10 @@ const RULES = [
   ['C', /^\.github\/dependabot\.yml$/],
   // ── everything else (index.html, js/, css/, FACTS.md, llms.txt, robots.txt, templates, scripts/*.mjs) is B ──
 ]
-/** Dependabot's npm bumps are C; a human editing package.json (build scripts, hooks, new deps) is B. */
-const DEPENDABOT_PATHS = /^app-src\/package(-lock)?\.json$/
+/** Dependabot's npm bumps are C for the two npm projects dependabot.yml names (app-src/, and video/ —
+ *  never deployed, ADR 0064); a human editing package.json (build scripts, hooks, new deps) is B.
+ *  Deliberately a list, not a glob: a new npm directory is added here and in dependabot.yml together. */
+const DEPENDABOT_PATHS = /^(app-src|video)\/package(-lock)?\.json$/
 
 const tierFor = (path, dependabot) =>
   (dependabot && DEPENDABOT_PATHS.test(path)) ? 'C' : (RULES.find(([, re]) => re.test(path))?.[0] ?? 'B')

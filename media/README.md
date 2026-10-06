@@ -21,6 +21,10 @@ these files go into a public repo and onto the site. HEIC originals are converte
 macOS `sips` first. It refuses a source under 1600×900 (the hero is the page's largest
 image; upscaling ships blur). This table is the one place the sizes live.
 
+Video clips and photos for reels use the same intake (`video/`, guidelines §8): originals here,
+never committed; a reel references the site's own `img/` files (synced into `video/public/site/`)
+or a small derivative placed under `video/public/`.
+
 Suggested habit: subfolders by subject (`media/team-days/`, `media/kitchen/`, `media/beach/`)
 so a pick takes seconds. Keep only photos Lev Yam has the right to publish, with the consent
 of anyone recognisable.

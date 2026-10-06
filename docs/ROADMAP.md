@@ -530,6 +530,8 @@ proposal — the owner reorders by editing this list.*
       plan; item 11 pulled forward; "number one" = GSC top-3 share + manual AI-citation check**
       **→ amended 2026-09-24 ([ADR 0053](decisions/0053-story-pages-are-narrative-essays-village-facts-sourced-in-facts.md)): story pages are narrative
       essays; village facts enter `FACTS.md` first** **Pairs 2–4 LIVE 2026-09-24 (PRs #87, #91, #89, #90) — 4 of 16.**
+      **Pair 5 `strategy-offsite-by-the-sea` LIVE 2026-10-06 — 5 of 16; → amended 2026-10-06
+      ([ADR 0063](decisions/0063-every-story-page-tells-a-village-story-no-other-page-tells.md)): no village story is told twice.**
       *(bug found 2026-09-23: desktop header nav overlaps the social icons at 961–1300px, site-wide,
       HE + AR — own Tier B PR; measurements in the plan's follow-ups)*
 - [ ] **3. Local SEO cluster** — near Caesarea / Hadera / Jisr, directions, "things to do",
@@ -590,6 +592,13 @@ proposal — the owner reorders by editing this list.*
       commands are closed too, since a bash-capable agent reads its own environment whatever is
       denied. Every third-party action SHA-pinned (7 actions, 7 of the 10 workflow files). Raised by item 1's security review →
       *no credential reachable from agent-authored text*
+- [ ] **15. Video pipeline (Remotion)** — reels built from a `new-video` brief inside the repo
+      (`video/`, never deployed), the guidelines an agent instruction file (leash, Tier A) refreshed
+      weekly by a research job that opens a PR the owner merges → *reels published from a brief per
+      week; social-referred sessions and `whatsapp_click`*. **Owner's addition 2026-10-06, its own line
+      rather than item 6. Kicked off 2026-10-06:** [plans/video-pipeline.md](plans/video-pipeline.md),
+      [ADR 0064](decisions/0064-video-is-made-with-remotion-in-the-repo-guidelines-are-the-leash-refreshed-weekly-by-pr.md);
+      Meta only, no audio in v1, HE + AR per reel; check date 2026-11-10
 - **Out this quarter:** English stories (`/stories/en/`) — reserved, not built.
 
 ## Phase 2 — What's happening: bookings & events *(internal half deferred by the Q4 mandate)*
