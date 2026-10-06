@@ -4,6 +4,10 @@
 Run by `agent-report.yml` between the agent and the publish step. Exit 0 and write
 `title.txt` + `body.md` = safe to publish; exit 1 = withhold and fail the job.
 
+`--scan-only <file>` runs the secret check alone on another job's hand-off file and nothing
+else (`video-guidelines-refresh.yml` vets its proposed patch with it, ADR 0064): exit 1 on a
+hit. One scanner, so a hardening here reaches every job that publishes agent text.
+
 Parsing lives here rather than in the shell so a title carrying quotes or backticks
 cannot escape into a command line.
 
@@ -35,6 +39,43 @@ WATCHED = ('SCAN_OAUTH', 'SCAN_GH', 'SCAN_GOOGLE')
 MIN_LEN = 12  # below this a "secret" is too short to match without false positives
 
 
+def find_hits(text: str) -> list:
+    """Names of watched secrets whose value appears in `text`, plain or with whitespace
+    removed (a token pasted into markdown may pick up a line break)."""
+    hits = []
+    joined = ''.join(text.split())
+    for name in WATCHED:
+        value = os.environ.get(name, '')
+        if len(value) < MIN_LEN:
+            continue
+        if value in text:
+            hits.append(name)
+        elif value in joined:
+            hits.append(f'{name} (split across lines)')
+    return hits
+
+
+def scan_only(path: str) -> int:
+    try:
+        with open(path, encoding='utf-8', errors='replace') as fh:
+            text = fh.read()
+    except OSError as exc:
+        print(f'report-guard: cannot read {path}: {exc.strerror}')
+        return 1
+    # A unified diff prefixes every line with `+`/`-`/space, so a value wrapped across two
+    # added lines would join as `…+…`; scan the file as given and with those prefixes stripped.
+    stripped = '\n'.join(line[1:] if line[:1] in '+- ' else line for line in text.splitlines())
+    hits = sorted(set(find_hits(text)) | set(find_hits(stripped)))
+    if hits:
+        print(f'report-guard: REFUSING — {path} contains the value of: ' + ', '.join(hits))
+        print('This is not a formatting problem. Treat it as a compromised run: rotate the '
+              'named secret, then read the run log and the agent transcript to find what '
+              'instructed it. Nothing was published.')
+        return 1
+    print(f'report-guard: {path} clean')
+    return 0
+
+
 def main() -> int:
     try:
         # utf-8-sig: a BOM on line 1 would otherwise fail the `# Title` check and
@@ -45,18 +86,7 @@ def main() -> int:
         print(f'report-guard: cannot read {REPORT}: {exc.strerror}')
         return 1
 
-    hits = []
-    for name in WATCHED:
-        value = os.environ.get(name, '')
-        if len(value) < MIN_LEN:
-            continue
-        if value in report:
-            hits.append(name)
-        # A token pasted into markdown may pick up a line break; check the joined form
-        # too rather than let simple wrapping defeat the match.
-        elif value in ''.join(report.split()):
-            hits.append(f'{name} (split across lines)')
-
+    hits = find_hits(report)
     if hits:
         print('report-guard: REFUSING TO PUBLISH — the report contains the value of: '
               + ', '.join(hits))
@@ -98,4 +128,6 @@ def main() -> int:
 
 
 if __name__ == '__main__':
+    if len(sys.argv) == 3 and sys.argv[1] == '--scan-only':
+        sys.exit(scan_only(sys.argv[2]))
     sys.exit(main())

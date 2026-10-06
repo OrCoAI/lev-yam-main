@@ -18,6 +18,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # 2, as tier.yml: on a pull_request HEAD^1 is the PR base, which is all the video
+          # change check below needs. No history beyond that.
+          fetch-depth: 2
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -76,3 +80,36 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: npm run build
+
+      # video/ (ADR 0064) is never deployed, but a broken Remotion project must fail the branch
+      # here — in this required job, since a separate job would need a branch-protection edit
+      # to count — not the next person's `npm run dev`. Lint + tsc only (a render would download
+      # Chrome Headless Shell for no deploy), and only when video/ or this file changed: the
+      # install is ~400 MB and nothing else can break the project. A pull_request compares
+      # against the PR base (HEAD^1 of the merge commit); a push against the previous tip, and
+      # when that commit is not in the shallow clone (a new branch, a multi-commit push) the
+      # answer is "changed" — when in doubt, run.
+      - name: Did video/ change?
+        id: video
+        shell: bash
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          base=HEAD^1
+          [ "$EVENT" = push ] && base="$BEFORE"
+          if git cat-file -e "$base^{commit}" 2>/dev/null && git diff --quiet "$base" HEAD -- video/ .github/workflows/ci.yml; then
+            echo 'changed=false' >> "$GITHUB_OUTPUT"; echo 'video/ unchanged — install and lint skipped.'
+          else
+            echo 'changed=true' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install video dependencies
+        if: steps.video.outputs.changed == 'true'
+        working-directory: video
+        run: npm ci
+
+      - name: Lint + typecheck video
+        if: steps.video.outputs.changed == 'true'
+        working-directory: video
+        run: npm run lint
