@@ -9,7 +9,7 @@ lets a non-interactive agent write to. Section 1 is the owner's — no job edits
 | | |
 |---|---|
 | **Remotion** | pinned in `video/package.json` (`npx remotion versions`); every `remotion` / `@remotion/*` package at that one exact version |
-| **Skills** | official Remotion Agent Skills `4.0.533` (`remotion-dev/skills`, installed per machine at `~/.agents/skills/remotion-*`; folder hash stale since the bump — re-run the §11 update command to refresh it) |
+| **Skills** | official Remotion Agent Skills — upstream `remotion-dev/skills` main at `4.0.533` (read 2026-10-06); installed per machine at `~/.agents/skills/remotion-*` still `4.0.532` (`remotion-markup` folder hash `e671b318`): `npx skills update` reported "up to date" on 2026-10-06, re-check next week |
 | **Platforms** | Meta only this quarter: Reels, Stories, feed 4:5 (owner, 2026-10-06) |
 | **Audio** | none in v1 (owner, 2026-10-06) |
 | **License** | Remotion free license — organisations of up to 3 people, client work included (owner's count 2026-10-06: ≤ 3); re-read weekly |
