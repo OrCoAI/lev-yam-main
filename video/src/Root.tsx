@@ -1,8 +1,10 @@
 import { Composition, Folder } from "remotion";
-import { ar } from "./copy/ar";
-import { he } from "./copy/he";
+import { ar, moments as momentsAr } from "./copy/ar";
+import { he, moments as momentsHe } from "./copy/he";
 import { PLACEHOLDER_REVIEWS, loadReviews } from "./data";
 import { WeekendReel } from "./levyam/WeekendReel";
+import { MOMENTS_FRAMES, Moments } from "./levyam/moments/Moments";
+import { momentsSchema } from "./levyam/moments/schema";
 import { weekendReelSchema } from "./levyam/schema";
 import { Gull, LightLeak } from "./levyam/sunset-dream/layers";
 import { SunsetDream } from "./levyam/sunset-dream/SunsetDream";
@@ -91,6 +93,68 @@ export const RemotionRoot: React.FC = () => {
           width={1080}
           height={1920}
         />
+        <Folder name="MomentsBySea">
+          <Composition
+            id="moments-by-the-sea-he-footage"
+            component={Moments}
+            schema={momentsSchema}
+            durationInFrames={MOMENTS_FRAMES}
+            fps={30}
+            width={1080}
+            height={1920}
+            defaultProps={{ ...momentsHe, hook: "footage" as const }}
+          />
+          <Composition
+            id="moments-by-the-sea-he-name"
+            component={Moments}
+            schema={momentsSchema}
+            durationInFrames={MOMENTS_FRAMES}
+            fps={30}
+            width={1080}
+            height={1920}
+            defaultProps={{ ...momentsHe, hook: "name" as const }}
+          />
+          <Composition
+            id="moments-by-the-sea-he-place"
+            component={Moments}
+            schema={momentsSchema}
+            durationInFrames={MOMENTS_FRAMES}
+            fps={30}
+            width={1080}
+            height={1920}
+            defaultProps={{ ...momentsHe, hook: "place" as const }}
+          />
+          <Composition
+            id="moments-by-the-sea-ar-footage"
+            component={Moments}
+            schema={momentsSchema}
+            durationInFrames={MOMENTS_FRAMES}
+            fps={30}
+            width={1080}
+            height={1920}
+            defaultProps={{ ...momentsAr, hook: "footage" as const }}
+          />
+          <Composition
+            id="moments-by-the-sea-ar-name"
+            component={Moments}
+            schema={momentsSchema}
+            durationInFrames={MOMENTS_FRAMES}
+            fps={30}
+            width={1080}
+            height={1920}
+            defaultProps={{ ...momentsAr, hook: "name" as const }}
+          />
+          <Composition
+            id="moments-by-the-sea-ar-place"
+            component={Moments}
+            schema={momentsSchema}
+            durationInFrames={MOMENTS_FRAMES}
+            fps={30}
+            width={1080}
+            height={1920}
+            defaultProps={{ ...momentsAr, hook: "place" as const }}
+          />
+        </Folder>
         <Folder name="SunsetDream-parts">
           <Composition
             id="SunsetDream-Gull"

@@ -1,4 +1,5 @@
 import type { WeekendReelProps } from "../levyam/schema";
+import type { MomentsProps } from "../levyam/moments/schema";
 
 // Source: levyam.com/happening/weekend/ (read 2026-10-05) and the site repo's FACTS.md.
 // Hours: FACTS.md "שעות סופי השבוע" (seasonal, dated 2026-10-06). The live page showed
@@ -22,4 +23,17 @@ export const he: WeekendReelProps = {
     line: "כל הפרטים באתר",
     url: "levyam.com/happening/weekend",
   },
+};
+
+// moments-by-the-sea — video/briefs/moments-by-the-sea.md (Gate 1 2026-10-06). FACTS.md § זהות
+// (name), § מיקום והגעה (village), § המתחם (internet, pergola facing the sea), § מטבח (sea-to-table).
+// The hook is set per composition in Root.tsx, not here.
+export const moments: Omit<MomentsProps, "hook"> = {
+  lang: "he",
+  name: "לב\u00A0ים",
+  village: "כפר הדייגים",
+  area: "ג'סר א-זרקא",
+  work: "לעבוד מול הים",
+  food: "אוכל מקומי, מהים לשולחן",
+  sunset: "ובערב, שקיעה מול הים",
 };

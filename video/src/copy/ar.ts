@@ -1,4 +1,5 @@
 import type { WeekendReelProps } from "../levyam/schema";
+import type { MomentsProps } from "../levyam/moments/schema";
 
 // Source: levyam.com/happening/ar/weekend/ (read 2026-10-05); hours: FACTS.md "שעות סופי השבוע"
 // (seasonal, dated 2026-10-06). Lines marked [ar-draft] are not verbatim from the site and need a
@@ -23,4 +24,17 @@ export const ar: WeekendReelProps = {
     line: "كل التفاصيل عالموقع", // [ar-draft]
     url: "levyam.com/happening/ar/weekend",
   },
+};
+
+// moments-by-the-sea — video/briefs/moments-by-the-sea.md. Every line [ar-draft] until a native
+// Levantine reader signs it off; name and place as in FACTS.md and the weekend copy above.
+// The hook is set per composition in Root.tsx, not here.
+export const moments: Omit<MomentsProps, "hook"> = {
+  lang: "ar",
+  name: "ليف\u00A0يام",
+  village: "قرية الصيادين",
+  area: "جسر الزرقاء",
+  work: "نشتغل قبال البحر", // [ar-draft]
+  food: "أكل محلي، من\u00A0البحر للسفرة", // [ar-draft] "من البحر" kept on one line
+  sunset: "وبالمسا، غروب قبال البحر", // [ar-draft]
 };
