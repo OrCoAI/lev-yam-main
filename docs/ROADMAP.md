@@ -592,13 +592,16 @@ proposal — the owner reorders by editing this list.*
       commands are closed too, since a bash-capable agent reads its own environment whatever is
       denied. Every third-party action SHA-pinned (7 actions, 7 of the 10 workflow files). Raised by item 1's security review →
       *no credential reachable from agent-authored text*
-- [ ] **15. Video pipeline (Remotion)** — reels built from a `new-video` brief inside the repo
+- [x] **15. Video pipeline (Remotion)** — reels built from a `new-video` brief inside the repo
       (`video/`, never deployed), the guidelines an agent instruction file (leash, Tier A) refreshed
       weekly by a research job that opens a PR the owner merges → *reels published from a brief per
       week; social-referred sessions and `whatsapp_click`*. **Owner's addition 2026-10-06, its own line
       rather than item 6. Kicked off 2026-10-06:** [plans/video-pipeline.md](plans/video-pipeline.md),
       [ADR 0064](decisions/0064-video-is-made-with-remotion-in-the-repo-guidelines-are-the-leash-refreshed-weekly-by-pr.md);
-      Meta only, no audio in v1, HE + AR per reel; check date 2026-11-10
+      Meta only, no audio in v1, HE + AR per reel; check date 2026-11-10. **Built 2026-10-06**
+      (PR #109, close-out in the plan). Follow-ups: a render smoke in `ci.yml` when `video/` changes
+      (Tier A); the two existing reels re-laid out to the Meta zone; Arabic reader pass on the weekend
+      copy; the `/app/events` weekend item set to the FACTS hours before the first post
 - **Out this quarter:** English stories (`/stories/en/`) — reserved, not built.
 
 ## Phase 2 — What's happening: bookings & events *(internal half deferred by the Q4 mandate)*
