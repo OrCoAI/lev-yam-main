@@ -178,9 +178,10 @@ jobs:
             --allowedTools "Read,Glob,Edit,WebSearch,WebFetch(domain:github.com),WebFetch(domain:raw.githubusercontent.com),WebFetch(domain:www.remotion.dev),WebFetch(domain:remotion.dev),WebFetch(domain:www.facebook.com),WebFetch(domain:business.facebook.com),WebFetch(domain:developers.facebook.com)"
             --disallowedTools "Bash,Grep,Write,NotebookEdit,Read(//proc/**),Read(//etc/**),Read(//dev/**),Read(~/.claude/**),Read(~/.config/**),Read(.git/**),Edit(.git/**),Read(~/.gitconfig),Edit(~/.gitconfig),Edit(~/.config/**),Edit(.github/**),Edit(.claude/settings.json),Edit(scripts/**)"
         env:
-          # Best-effort second layer from the action: secrets scrubbed from any subprocess env.
-          # Moot while Bash is denied; kept so a future tool grant does not silently reopen it.
-          CLAUDE_CODE_SUBPROCESS_ENV_SCRUB: '1'
+          # Not set: CLAUDE_CODE_SUBPROCESS_ENV_SCRUB. It needs bubblewrap, which the Ubuntu runner
+          # lacks, and the Claude Code install itself fails without it (acceptance run
+          # 37465705189, 2026-10-06). The layer is moot anyway: the agent holds no shell tool, so
+          # there is no subprocess env to scrub — the denies above are the boundary.
           # No GH_TOKEN: the agent needs no GitHub API at all. The runner's file commands are a
           # write surface for anything with a shell — GITHUB_STEP_SUMMARY renders on a public
           # run page, GITHUB_ENV / PATH / OUTPUT feed later steps.
