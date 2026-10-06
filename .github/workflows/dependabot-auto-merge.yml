@@ -5,7 +5,7 @@ name: dependabot auto-merge
 #
 # NOTE what this does NOT do: it does not stamp a tier. `scripts/check-tier.mjs`
 # already resolves a dependabot PR's declaration to C on its own (it reads
-# `pull_request.user.login` and maps app-src/package{,-lock}.json to C), so the
+# `pull_request.user.login` and maps app-src/ and video/ package{,-lock}.json to C), so the
 # `tier` check is green without help. The floor is still derived from the changed
 # paths, so a dependabot PR that somehow touched `.github/workflows/` would map
 # to A and fail — the leash (ADR 0036) holds regardless of what runs here.
