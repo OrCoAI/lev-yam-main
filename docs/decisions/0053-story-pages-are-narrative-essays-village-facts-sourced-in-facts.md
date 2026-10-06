@@ -1,7 +1,7 @@
 # 0053 — Story pages are narrative essays; researched village facts enter FACTS.md with sources first
 
 - **Date:** 2026-09-24
-- **Status:** accepted — amends the content standard in [plans/stories-authoring-tool.md](../plans/stories-authoring-tool.md)
+- **Status:** accepted — amends the content standard in [plans/stories-authoring-tool.md](../plans/stories-authoring-tool.md); amended by [ADR 0063](0063-every-story-page-tells-a-village-story-no-other-page-tells.md) — a page's village story is new to the site
   (scope item 1: answer-first, 250–500 words) and the `story-author` skill; extends `FACTS.md`'s
   sourced-public-facts pattern (fishing seasons) to the village's history, nature and culture.
 - **Decided by:** owner (session of pairs 2–4, before their PRs)

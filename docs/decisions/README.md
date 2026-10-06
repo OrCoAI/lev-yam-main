@@ -85,7 +85,7 @@ implementation choices stay in their plan files; an ADR is for a decision that c
 - [0050 — Story pages carry no links in the body text](0050-story-pages-carry-no-body-links.md) — 2026-09-23
 - [0051 — A story video may autoplay muted once it scrolls into view](0051-story-video-may-autoplay-muted-when-in-view.md) — 2026-09-23
 - [0052 — Stories: four pairs a week for the first month, then the owner sets the pace](0052-stories-four-pairs-a-week-for-the-first-month.md) — 2026-09-23
-- [0053 — Story pages are narrative essays; researched village facts enter FACTS.md with sources first](0053-story-pages-are-narrative-essays-village-facts-sourced-in-facts.md) — 2026-09-24
+- [0053 — Story pages are narrative essays; researched village facts enter FACTS.md with sources first](0053-story-pages-are-narrative-essays-village-facts-sourced-in-facts.md) — 2026-09-24 *(amended — see status)*
 - [0054 — "What's happening" shows the venue's public life, is published from /app, and refuses a public row without Arabic](0054-whats-happening-is-db-driven-public-life-bilingual-in-the-db.md) — 2026-09-25
 - [0055 — A "What's happening" item's Arabic may be machine-drafted (Google) but is never published unreviewed](0055-whats-happening-arabic-may-be-machine-drafted-but-never-published-unreviewed.md) — 2026-09-28
 - [0056 — A "What's happening" item is a generated static landing page, rebuilt when it is published, and built to be shared](0056-whats-happening-item-pages-are-generated-landing-pages-rebuilt-on-publish.md) — 2026-09-28
@@ -95,3 +95,4 @@ implementation choices stay in their plan files; an ADR is for a decision that c
 - [0060 — The staff module is named "יוזמות" / "مبادرات" too](0060-staff-module-named-yozmot-too.md) — 2026-09-30
 - [0061 — Staging's schema is applied by hand like prod's; `supabase db push` is never run against either tier while neither records a migration history](0061-staging-schema-applied-by-hand-never-db-push.md) — 2026-09-30 *(amended — see status)*
 - [0062 — Instruction files state rules, never present repo state; sessions open with `session-start`, which derives the board](0062-instruction-files-state-rules-never-state-sessions-open-with-session-start.md) — 2026-10-04
+- [0063 — Every story page tells a village story no other page tells](0063-every-story-page-tells-a-village-story-no-other-page-tells.md) — 2026-10-05

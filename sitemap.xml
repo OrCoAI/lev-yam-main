@@ -8,17 +8,24 @@
   </url>
   <url>
     <loc>https://levyam.com/stories/</loc>
-    <lastmod>2026-09-24</lastmod>
+    <lastmod>2026-10-05</lastmod>
     <xhtml:link rel="alternate" hreflang="he" href="https://levyam.com/stories/"/>
     <xhtml:link rel="alternate" hreflang="ar" href="https://levyam.com/stories/ar/"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://levyam.com/stories/"/>
   </url>
   <url>
     <loc>https://levyam.com/stories/ar/</loc>
-    <lastmod>2026-09-24</lastmod>
+    <lastmod>2026-10-05</lastmod>
     <xhtml:link rel="alternate" hreflang="he" href="https://levyam.com/stories/"/>
     <xhtml:link rel="alternate" hreflang="ar" href="https://levyam.com/stories/ar/"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://levyam.com/stories/"/>
+  </url>
+  <url>
+    <loc>https://levyam.com/stories/strategy-offsite-by-the-sea/</loc>
+    <lastmod>2026-10-05</lastmod>
+    <xhtml:link rel="alternate" hreflang="he" href="https://levyam.com/stories/strategy-offsite-by-the-sea/"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://levyam.com/stories/ar/strategy-offsite-by-the-sea/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://levyam.com/stories/strategy-offsite-by-the-sea/"/>
   </url>
   <url>
     <loc>https://levyam.com/stories/company-event-near-caesarea/</loc>
@@ -47,6 +54,13 @@
     <xhtml:link rel="alternate" hreflang="he" href="https://levyam.com/stories/team-day-by-the-sea/"/>
     <xhtml:link rel="alternate" hreflang="ar" href="https://levyam.com/stories/ar/team-day-by-the-sea/"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://levyam.com/stories/team-day-by-the-sea/"/>
+  </url>
+  <url>
+    <loc>https://levyam.com/stories/ar/strategy-offsite-by-the-sea/</loc>
+    <lastmod>2026-10-05</lastmod>
+    <xhtml:link rel="alternate" hreflang="he" href="https://levyam.com/stories/strategy-offsite-by-the-sea/"/>
+    <xhtml:link rel="alternate" hreflang="ar" href="https://levyam.com/stories/ar/strategy-offsite-by-the-sea/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://levyam.com/stories/strategy-offsite-by-the-sea/"/>
   </url>
   <url>
     <loc>https://levyam.com/stories/ar/company-event-near-caesarea/</loc>

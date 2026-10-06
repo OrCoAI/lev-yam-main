@@ -193,7 +193,7 @@ it or which gap must be answered first (those are ordered last).
 | 2 | 1 | מקום לאירוע חברה ליד קיסריה / חדרה | `company-event-near-caesarea` | answered 2026-09-23 (owner): ~10 min from Caesarea, ~15 min from Hadera by car — into `FACTS.md` with the page |
 | 3 | 1 | איך מגיעים לכפר הדייגים ג'סר א-זרקא | `how-to-get-to-jisr-az-zarqa` | ✓ (car only; transit unverified) |
 | 4 | 1 | אירוע פרטי על חוף הים | `private-event-on-the-beach` | ✓ |
-| 5 | 2 | יום אסטרטגיה מחוץ למשרד ליד הים | `strategy-offsite-by-the-sea` | ✓ |
+| 5 | 2 | יום אסטרטגיה מחוץ למשרד ליד הים | `strategy-offsite-by-the-sea` | ✓ — **live 2026-10-06** (story: Tel Tanninim, the fish ponds, the reef — ADR 0063) |
 | 6 | 2 | מקום לסדנה או ריטריט ליד הים | `workshop-retreat-venue-by-the-sea` | ✓ (no lodging — say so) |
 | 7 | 2 | איפה אוכלים בג'סר א-זרקא | `where-to-eat-in-jisr-az-zarqa` | ✓ weekends + kitchen; not a restaurant — the page says what it is |
 | 8 | 2 | סוף שבוע בכפר הדייגים ג'סר א-זרקא | `weekend-at-the-fishing-village` | gap: what a typical weekend's content events are |
@@ -310,6 +310,11 @@ rendering from `_template*.html`, or delete it; not a third path.
   base **without** `--delete-branch`, retarget the next PR to `main`, then delete), [#89](https://github.com/OrCoAI/lev-yam-main/pull/89)
   (directions), [#90](https://github.com/OrCoAI/lev-yam-main/pull/90) (private event). **4 of 16 pairs live.**
   Next: pairs 5–8 (week 2 of the backlog).
+- 2026-10-06 — **pair 5 `strategy-offsite-by-the-sea` merged** after staging review. The first draft
+  retold the unfinished aqueduct (already on the company page); the owner asked for a new story and made
+  it the rule — [ADR 0063](../decisions/0063-every-story-page-tells-a-village-story-no-other-page-tells.md):
+  no village story is told twice. §הכפר's unused facts are nearly spent, so later pairs need a research
+  round into `FACTS.md` first. **5 of 16 pairs live**; next: pairs 6–8.
 
 ## Close-out
 *(appended when done — CLAUDE.md "Roadmap item close-out")*
