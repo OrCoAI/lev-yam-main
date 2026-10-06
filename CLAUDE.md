@@ -98,7 +98,7 @@ The public life of the venue, published from `/app/events` ([ADR 0054](docs/deci
 Reels for Instagram/Facebook are made with **Remotion** in `video/` — Node 22, beside `app-src/`,
 not on the assemble allowlist, linted and type-checked by `ci.yml` when it changes
 ([ADR 0064](docs/decisions/0064-video-is-made-with-remotion-in-the-repo-guidelines-are-the-leash-refreshed-weekly-by-pr.md)).
-**The one rule file is [`.claude/skills/new-video/guidelines.md`](.claude/skills/new-video/guidelines.md)**
+**The one rule file is [`video/GUIDELINES.md`](video/GUIDELINES.md)**
 (leash, Tier A; the weekly `video-guidelines-refresh.yml` PR proposes amendments, the owner merges).
 A reel starts with the `new-video` skill — interview → `video/briefs/<slug>.md` → the owner's three
 gates. Dev: `cd video && npm ci && npm run dev` (Studio); `npm run lint` before pushing.
@@ -158,8 +158,8 @@ inline whatever its tier), and kickoff alignment follows initiative-vs-bugfix, n
 
 | Tier | What (the script is authoritative; this is the summary) | Human checkpoints |
 |---|---|---|
-| **A** | `supabase/`, `.github/workflows/`, `scripts/*.sh`, analytics/RUM wiring (`js/vendor-tags.js`, `js/wa-track.js`), the platform `lib/`+`shell/` and the finance/pos/quotes/users modules (named UI-only files excepted), and **the leash** — `.claude/`, `CLAUDE.md`, `AGENTS.md`, `.gitignore`, the tier script and the verify harness ([ADR 0036](docs/decisions/0036-agent-instruction-files-are-the-leash.md)) | localhost UI confirmation + staging sign-off where the diff has a deployed surface; otherwise the owner reviews the PR before merge |
-| **B** | Everything unlisted: module UI files named as exceptions, `index.html`/`js/`/`css/`, `FACTS.md`, `llms.txt`, build scripts, templates, human edits to `package.json`, `video/` (the project, its briefs and committed assets) | full gate; Claude's screenshots stay step zero; the human look happens **once, on staging** |
+| **A** | `supabase/`, `.github/workflows/`, `scripts/*.sh`, analytics/RUM wiring (`js/vendor-tags.js`, `js/wa-track.js`), the platform `lib/`+`shell/` and the finance/pos/quotes/users modules (named UI-only files excepted), and **the leash** — `.claude/`, `CLAUDE.md`, `AGENTS.md`, `.gitignore`, `video/GUIDELINES.md`, the tier script and the verify harness ([ADR 0036](docs/decisions/0036-agent-instruction-files-are-the-leash.md)) | localhost UI confirmation + staging sign-off where the diff has a deployed surface; otherwise the owner reviews the PR before merge |
+| **B** | Everything unlisted: module UI files named as exceptions, `index.html`/`js/`/`css/`, `FACTS.md`, `llms.txt`, build scripts, templates, human edits to `package.json`, `video/` (the project, its briefs and committed assets; not `GUIDELINES.md`) | full gate; Claude's screenshots stay step zero; the human look happens **once, on staging** |
 | **C** | `docs/`, README, tests under `app-src/`, module i18n dictionaries, `img/`+`fonts/`, generated files, `/stories/` content pages (twin rule via the generator), dependabot npm bumps | none — full gate + CI + staging deploy still run; **merge on green**; the merge is reported in the weekly review |
 
 Dependabot needs no declaration: `check-tier.mjs` resolves its PRs to C from the PR author.
@@ -330,7 +330,7 @@ work order G4). All of them go through the same rails as a human PR — none is 
 | `monthly-triage.yml` | 1st of the month | `report.md` → issue `Monthly roadmap review YYYY-MM` — feedback digest + parking-lot batch + obs-best-practices audit |
 | `quarterly-prep.yml` | 1st of Jan/Apr/Jul/Oct | `report.md` → issue `Quarterly review YYYY-Qn` — evidence pack + agenda checklist. **The review session itself is never run unattended** |
 | `dependabot-auto-merge.yml` | dependabot PRs | the Tier line, and auto-merge for npm minor/patch |
-| `video-guidelines-refresh.yml` | Mon 05:00 UTC | a PR amending `.claude/skills/new-video/guidelines.md` from Remotion releases, the official skills, the license page and Meta specs — Tier A, the owner merges; a research job on a read-only token and a separate publish job with no agent ([ADR 0064](docs/decisions/0064-video-is-made-with-remotion-in-the-repo-guidelines-are-the-leash-refreshed-weekly-by-pr.md)) |
+| `video-guidelines-refresh.yml` | Mon 05:00 UTC | a PR amending `video/GUIDELINES.md` from Remotion releases, the official skills, the license page and Meta specs — Tier A, the owner merges; a research job on a read-only token and a separate publish job with no agent ([ADR 0064](docs/decisions/0064-video-is-made-with-remotion-in-the-repo-guidelines-are-the-leash-refreshed-weekly-by-pr.md)) |
 
 The three report jobs share one reusable worker, `agent-report.yml` (`workflow_call` only) —
 schedule, prompt and tool scope are all that differ. Each caller has `workflow_dispatch`; that

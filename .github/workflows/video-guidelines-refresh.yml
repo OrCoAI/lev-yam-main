@@ -1,6 +1,6 @@
 name: video guidelines refresh
 
-# Mandate item 15 (ADR 0064): keep `.claude/skills/new-video/guidelines.md` current with
+# Mandate item 15 (ADR 0064): keep `video/GUIDELINES.md` current with
 # Remotion releases, the official remotion-dev/skills rules, the license terms and Meta's
 # platform specs — as a PULL REQUEST the owner reads, never as a merge (the file is the
 # leash, ADR 0036, Tier A). Why this is its own worker and not agent-report.yml: that one
@@ -66,7 +66,9 @@ concurrency:
   group: video-guidelines-refresh
 
 env:
-  GUIDELINES: .claude/skills/new-video/guidelines.md
+  # Outside .claude/ on purpose: Claude Code treats .claude/ as a protected path and never lets a
+  # non-interactive agent write under it (acceptance run 37467856649 proved the Edit denied).
+  GUIDELINES: video/GUIDELINES.md
 
 jobs:
   research:
@@ -121,7 +123,7 @@ jobs:
           # Pins the action's GitHub API calls to THIS job's token: contents: read.
           github_token: ${{ secrets.GITHUB_TOKEN }}
           prompt: |
-            You maintain `.claude/skills/new-video/guidelines.md` — the one rule file for the
+            You maintain `video/GUIDELINES.md` — the one rule file for the
             videos this repository makes with Remotion. Your job this week: find what changed
             since the file's last refresh (the newest dated entry under "Changelog"; entries
             are newest first) and propose the amendments as edits to THAT FILE ONLY. A later

@@ -58,7 +58,7 @@ with the rules kept current.
      fact traces to `FACTS.md` or the live `/happening/` page it was read from.
    - The Meta safe-zone tokens and a Studio-only `<SafeZone>` guide join the kit (the two
      existing reels keep their 2026-10-05 layout — see out of scope).
-2. **Guidelines** — `.claude/skills/new-video/guidelines.md`, the one rule file for video:
+2. **Guidelines** — `video/GUIDELINES.md` (moved out of `.claude/` on 2026-10-06, see ADR 0064), the one rule file for video:
    distilled from the owner's research document and the installed official Remotion Agent Skills
    (`remotion-dev/skills` 4.0.532, per machine), plus the repo's own rules (facts, names, HE + AR,
    Arabic review, never deployed, license). Sections: rules of the house · formats and platforms
@@ -81,7 +81,7 @@ with the rules kept current.
 4. **Weekly research PR** — `.github/workflows/video-guidelines-refresh.yml`, Mondays 05:00 UTC
    and on `workflow_dispatch` (the acceptance test): a research job on a read-only token reads
    Remotion releases, the official skills, the license page and a few web searches and edits
-   `guidelines.md` alone; a fixed step hands its patch (secret-scanned by `report-guard.py
+   `video/GUIDELINES.md` alone; a fixed step hands its patch (secret-scanned by `report-guard.py
    --scan-only`) to a publish job with no agent, which opens the Tier-A PR
    `video-guidelines/<ISO week>`. The owner merges; nothing auto-merges. The mechanism and its
    threat model are the workflow's header and ADR 0064 §5. A PR opened with `GITHUB_TOKEN` gets

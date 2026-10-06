@@ -3,7 +3,7 @@
 Short videos for Instagram / Facebook, made with [Remotion](https://www.remotion.dev). **Never
 deployed** — nothing here reaches levyam.com; CI only lints and type-checks it. Plan:
 [docs/plans/video-pipeline.md](../docs/plans/video-pipeline.md); decision: ADR 0064; **the rules:
-[.claude/skills/new-video/guidelines.md](../.claude/skills/new-video/guidelines.md)**.
+[GUIDELINES.md](GUIDELINES.md)** (Tier A — the leash; the weekly job proposes amendments by PR).
 
 ```
 npm ci                 # Node 22 (.node-version); first render also downloads Chrome headless shell

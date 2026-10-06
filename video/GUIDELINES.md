@@ -1,9 +1,10 @@
 # Video guidelines — Lev Yam reels with Remotion
 
 *The one rule file for every video this repo makes. Read in full before a brief, a build or a
-review. Changing it is a Tier-A PR (the leash, ADR 0036); the weekly `video-guidelines-refresh`
-job proposes amendments as a PR the owner merges (ADR 0064). Section 1 is the owner's — no job
-edits it.*
+review. Changing it is a Tier-A PR (the leash, ADR 0036 — `scripts/check-tier.mjs` names this
+file); the weekly `video-guidelines-refresh` job proposes amendments as a PR the owner merges
+(ADR 0064). It lives here, not under `.claude/`, because `.claude/` is a path Claude Code never
+lets a non-interactive agent write to. Section 1 is the owner's — no job edits it.*
 
 | | |
 |---|---|
@@ -291,3 +292,5 @@ related product.
   Skills 4.0.532 and the repo's rules (FACTS, names, HE + AR, ADR 0055, never deployed).
 - Decisions recorded: Meta only, no audio, free license at ≤ 3 people, skills per machine
   (ADR 0064).
+- Moved from `.claude/skills/new-video/guidelines.md` to `video/GUIDELINES.md` the same day:
+  `.claude/` is a protected path the weekly job's agent cannot write under (ADR 0064, amended).
