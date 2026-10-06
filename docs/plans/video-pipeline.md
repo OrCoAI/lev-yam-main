@@ -159,6 +159,11 @@ left behind beyond gitignored renders on the owner's machine.
 4. A "no change" run exits clean; a change run opens exactly one PR with the Tier line; a re-run
    the same week updates it.
 
+How to read it: the action logs only its first and last message, so the per-call transcript is
+kept 5 days as the run's `agent-transcript` artifact (guard-scanned before upload); a manual run
+has `self_test` on by default, which makes the agent attempt the out-of-domain fetch and the
+`//proc/self/environ` read and report both — the scheduled run never does.
+
 ## Open questions
 
 - **Blocking for the first posted weekend reel — the live page's hours:** `FACTS.md` now carries
@@ -198,7 +203,57 @@ when read)*
 
 ## Close-out
 
-*(appended when done — CLAUDE.md "Roadmap item close-out")*
+**Closed 2026-10-06** — built and merged (PR #109 squashed to `6220d06`; same-day follow-ups
+#114, #115, #116, #117). The Outcome check (2026-11-10) decides whether it *worked*.
+
+**What shipped.** Scope items 1–5 in full: `video/` (the Remotion project, Meta safe-zone tokens
+and Studio guide, review stills script, site media regenerated from `img/`), the guidelines as
+the one rule file (`video/GUIDELINES.md`), the `new-video` skill (brief template, reviewer prompt, evals), the weekly
+research job that opens a proposal PR, and the harness edits (CLAUDE.md Video block, CI lint +
+tsc on `video/` changes, dependabot `/video` group, tier paths, `.gitignore`).
+
+**Acceptance of the weekly job — all four proofs read on 2026-10-06, over four dispatches.**
+Run 37467856649 (self-test on; transcript in its `agent-transcript` artifact): the WebFetch of
+`example.com` **denied**, the Read of `//proc/self/environ` **denied** ("directory denied by your
+permission settings"), the registered tool roster exactly Read, Glob, Edit, WebSearch and the seven
+`WebFetch(domain:…)` entries — proofs 1–3. Run 37466353928: a "no change" run exits clean, publish
+skipped — proof 4a. Run 37469414827 (plain): the agent found the skills bump to 4.0.533, the vet
+step passed the patch (§1 unchanged, guard clean) and the branch `video-guidelines/2026-W41` was
+pushed; `gh pr create` failed because the default token may not create pull requests in this repo
+("GitHub Actions is not permitted to create or approve pull requests") — the PR was opened by hand
+from that branch, and the owner's `VIDEO_GUIDELINES_PAT` (already decided) makes the job open it
+itself from the next run; the alternative is the repo setting "Allow GitHub Actions to create and
+approve pull requests". Proof 4b (one PR per change run, a re-run updates it) is therefore pending
+the PAT, not the design.
+
+**Schema / permission changes.** None — no tables, no keys, no live tool.
+
+**Decided on the way** (all above, in "Decisions made on the way" → ADR 0064): Remotion in the
+repo, never deployed; guidelines are the leash, refreshed by PR; no audio; Meta only; skills per
+machine; weekend hours as a dated seasonal fact in `FACTS.md`; the testimonial review texts leave
+the repo (gitignored `video/public/private/reviews.json`, a render without it fails); the owner
+stores `VIDEO_GUIDELINES_PAT`; Remotion patches keep auto-merging and CI green must come to mean
+"it renders"; license headcount — a company of one, no watch.
+
+**Found on the way, fixed the same day — four acceptance runs.** (1) The research job's
+`CLAUDE_CODE_SUBPROCESS_ENV_SCRUB` flag needs bubblewrap and broke the Claude Code install on the
+runner (PR #114 removed it — the agent has no shell, the denies are the boundary). (2)
+`dependabot-auto-merge.yml` tested the ecosystem as `npm` while fetch-metadata reports
+`npm_and_yarn`, so no npm bump had ever auto-merged (PR #115). (3) The action logs only its first
+and last message, so the denials could not be read: the transcript is now kept as a guard-scanned
+artifact and a manual run carries a self-test canary (PR #116). (4) The transcript then showed the
+agent's `Edit` of the guidelines refused: `.claude/` is a protected path Claude Code never lets a
+non-interactive agent write under, so the guidelines moved to `video/GUIDELINES.md`, still the
+leash by name in `check-tier.mjs` (PR #117, ADR 0064 amended).
+
+**Left out / follow-ups** (on the roadmap line): a render smoke in `ci.yml` when `video/` changes
+(Tier A, next PR); the two existing reels re-laid out to the Meta zone; the native reader's pass on
+`copy/ar.ts`; the owner edits the `/app/events` weekend item to the FACTS hours (blocks the first
+post); the PAT secret.
+
+**Alignment.** VISION: principle 4, the venue's life shown openly — unchanged. ARCHITECTURE:
+invariants 1, 2, 4, 6, 7 untouched; invariant 5 (both languages) carried into the guidelines as
+§1.3; the leash rule (ADR 0036) extended to the guidelines file. No drift found.
 
 ## Outcome check
 
