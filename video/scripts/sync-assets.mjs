@@ -20,6 +20,7 @@ const MAP = {
   "village-aerial.jpg": "gallery/01.jpg", // 708×387 — a card, never full-frame
   "family-house.jpg": "gallery/13.jpg",
   "weekend-table.jpg": "services/weekend.jpg",
+  "work-window.jpg": "gallery/12.jpg", // moments-by-the-sea hook (1205×1600)
   "logo.png": "logo/logo-mono-nobg.png",
   "icons/palm-orange.png": "icons/palm-orange.png",
   "icons/heart.png": "icons/heart.png",
