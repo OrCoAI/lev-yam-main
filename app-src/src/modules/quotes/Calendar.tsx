@@ -8,16 +8,17 @@ import { isConfirmed } from './types'
  *  the prep checklist; unconfirmed ones are colored by quote status (the quote
  *  document page arrives in a later step — until then chips aren't links). */
 export default function Calendar({
+  today,
   quotes,
   contractsByQuoteId,
   onOpenChecklist,
 }: {
+  today: Date
   quotes: QuoteRow[]
   contractsByQuoteId: Record<string, ContractRow>
   onOpenChecklist: (q: QuoteRow) => void
 }) {
   const qt = useQT()
-  const today = new Date()
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth())
   const [confirmedOnly, setConfirmedOnly] = useState(false)
