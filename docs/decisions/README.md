@@ -99,3 +99,4 @@ implementation choices stay in their plan files; an ADR is for a decision that c
 - [0064 — Video is made with Remotion inside the repo; its guidelines are an agent instruction file, refreshed weekly by a research job that opens a PR the owner merges](0064-video-is-made-with-remotion-in-the-repo-guidelines-are-the-leash-refreshed-weekly-by-pr.md) — 2026-10-06
 - [0065 — The roadmap keeps history as one line per item; the Q4 mandate's eleven open lines are merged into five](0065-roadmap-consolidated-q4-mandate-merged-to-five-lines.md) — 2026-10-07
 - [0066 — The Q4 mandate gains items 16–18 and is put in the owner's order: content & media first, the paid test last](0066-q4-mandate-order-content-media-first-items-16-to-18.md) — 2026-10-07
+- [0067 — The Q4 mandate is renumbered to match its order; old numbers stay readable through a mapping](0067-q4-mandate-renumbered-to-the-order.md) — 2026-10-07
