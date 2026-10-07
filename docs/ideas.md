@@ -18,3 +18,7 @@ Format: `- YYYY-MM-DD — one line [#tags]`
 ## 2026-10
 
 - 2026-10-07 — Platform modules as MCP: agents work on platform data through RLS-scoped access (was Q4 mandate item 12, parked by ADR 0065) [#platform]
+- 2026-10-07 — Lead → booking loop: record the lead's source (page / channel) on every quote in `/app/quotes`, WhatsApp Business labels as a light CRM, a Google-review request after each event; metric becomes cost per booked event (Tier A, quotes schema) [#marketing] *(ADR 0066)*
+- 2026-10-07 — December-season push: paid test + business-event content live by mid-November (companies book year-end events 4–8 weeks ahead); create Meta retargeting audiences from the Pixel now [#marketing] *(ADR 0066)*
+- 2026-10-07 — Past clients + partners: consent-safe re-engagement of past corporate clients, referrals with event producers, Israeli venue directories (double as backlinks for item 9) [#marketing] *(ADR 0066)*
+- 2026-10-07 — Named offers: packages without prices (team day half / full, private celebration, workshop day) on site, GBP and social; FACTS entries first [#marketing] *(ADR 0066)*

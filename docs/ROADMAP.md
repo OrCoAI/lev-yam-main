@@ -82,64 +82,85 @@ close-out and the decision log; this file keeps the link, not the story
 ## Phase 2 — 2026-Q4 mandate: the marketing quarter (first quarterly review, 2026-09-22)
 
 *The mandate and the owner's words behind it: [ADR 0046](decisions/0046-q4-2026-mandate-marketing-quarter.md);
-eleven open lines merged into five on 2026-10-07 ([ADR 0065](decisions/0065-roadmap-consolidated-q4-mandate-merged-to-five-lines.md)) —
-numbers are kept so older references still resolve. Positioning for every piece: **"Focus on private
-and business events — we want a lot of focus on the venue and what it gives to people."** Each line is
-its own initiative through `feature-spec` with an Outcome metric and a check date (ADR 0019); one spec
-per session. The owner reorders by editing this list.*
+merged on 2026-10-07 ([ADR 0065](decisions/0065-roadmap-consolidated-q4-mandate-merged-to-five-lines.md)),
+then extended with items 16–18 and **put in the owner's order** the same day
+([ADR 0066](decisions/0066-q4-mandate-order-content-media-first-items-16-to-18.md)). Numbers are IDs,
+not ranks — the list below *is* the order. Positioning for every piece: **"Focus on private and business
+events — we want a lot of focus on the venue and what it gives to people."** Each line is its own
+initiative through `feature-spec` with an Outcome metric and a check date (ADR 0019); one spec per
+session. Items 18, 17 and 7 start without item 16 and gain GBP / Instagram / Facebook when it lands.*
 
-- [x] **1. Analytics wiring** — GA4 key event + Data API + Search Console feeding the weekly headline
-      *(shipped 2026-09-22, PR #73)* — [plans/marketing-analytics-wiring.md](plans/marketing-analytics-wiring.md);
-      Ahrefs/Semrush parked as a spend decision ([ADR 0047](decisions/0047-analytics-wiring-ga4-and-gsc-only-public-numbers.md)).
-      **Outcome check due 2026-10-19**
-- [ ] **2. Story pages at cadence** — HE + AR pairs via the `story-author` tool; narrative essays, one
-      village story each, facts into `FACTS.md` first ([ADR 0053](decisions/0053-story-pages-are-narrative-essays-village-facts-sourced-in-facts.md),
+- [ ] **1st — 18. Content & media optimization** *(owner, 2026-10-07)* — everything published on every
+      channel is accurate, current and keeps getting new material:
+      (a) one source of truth per kind — facts `FACTS.md`, photos a Google Drive folder the owner fills
+      from the phone → `media/` → optimized, video `video/` + the hero, live activity `/app/events`;
+      (b) a one-time inventory of what is live on every channel, with a fix list;
+      (c) freshness rules (owner sets the numbers) — zero fact mismatches, new GBP photos weekly, gallery
+      monthly, story facts re-checked every 90 days, hero video quarterly, nothing expired visible;
+      (d) the photo/video pipeline — weekly sort, pick, optimize per channel, owner approves; guests'
+      faces only with consent, never names;
+      (e) the weekly routine — an automated cross-channel check plus the owner's ~20–30 min list with
+      drafts ready, and a monthly deeper audit
+      → *channels in sync with `FACTS.md`; days since the last photo / video / post per channel; photos
+      added per week*. Site + Drive first; GBP and social join with item 16
+- [ ] **2nd — 17. Weekly marketing report** *(owner, 2026-10-07)* — its own weekly issue **and** an
+      email to the owner: traffic, `whatsapp_click` per page, the AI-citation log, outcome checks due,
+      item 18's freshness numbers, and **social publishing** *(was 6, then under 15)*: a reel a week and
+      a post per story, tracked against the cadence. The engineering weekly drops its Analytics headline
+      and links here. Social / GBP numbers reach the agent as a file from a fixed pre-agent step, never as
+      a credential (ADR 0047/0048 pattern); the email needs its own scoped send credential — Tier A,
+      security review. → *reports delivered weekly; the social cadence met*
+- [ ] **3rd — 3. Search & AI visibility** *(items 3 + 4 merged)* — the same facts everywhere (site,
+      GBP, socials), `facts.txt` / `llms.txt` expansion, internal links between stories, the local
+      queries the story backlog does not cover → *local-pack impressions, direction requests, AI-answer
+      citations* (the manual citation check of ADR 0052 until a paid source is decided)
+- [ ] **4th — 2. Story pages** — **the pair cadence runs in parallel with everything above until
+      2026-10-24** (16 pairs, by hand — [ADR 0052](decisions/0052-stories-four-pairs-a-week-for-the-first-month.md));
+      position 4 is its next phase: CTA sharpening and the pace after 24 Oct. Narrative essays, one village
+      story each, facts into `FACTS.md` first ([ADR 0053](decisions/0053-story-pages-are-narrative-essays-village-facts-sourced-in-facts.md),
       [0063](decisions/0063-every-story-page-tells-a-village-story-no-other-page-tells.md)) → *organic sessions
       and `whatsapp_click` by `page_slug`*. [plans/stories-authoring-tool.md](plans/stories-authoring-tool.md);
-      target 16 pairs by 2026-10-24 ([ADR 0052](decisions/0052-stories-four-pairs-a-week-for-the-first-month.md)),
-      **5 of 16 live**; check date 2026-10-25. Open `FACTS.md` gap: Nimer's fishing calendar (needs Nimer)
-  - [ ] **CTA sharpening** *(was item 5)* — per-page prefilled WhatsApp messages, click-to-call,
-        sticky CTA on stories → *click-through rate per page*
-  - [ ] **Content automation** *(was item 11, pulled forward by ADR 0052)* — `@claude` drafts a pair
-        from a brief issue, gated on the owner's tone + facts review; HEIC conversion on intake → *pages per week*
+      **5 of 16 live**; check date 2026-10-25. Open `FACTS.md` gaps: a typical weekend's events, the
+      Israel Trail segment, Nimer's fishing calendar (backlog topics 8, 14, 15)
+  - [ ] **CTA sharpening** *(was item 5)* — the sticky WhatsApp bar on stories (reuse יוזמות' `.hp-sticky`),
+        each page's prefilled message checked → *click-through rate per page*
+  - [ ] **Content automation** *(was item 11)* — `@claude` drafts a pair from a brief issue; on hold
+        while pairs are written by hand (owner, 2026-10-07)
   - [ ] Bug: desktop header nav overlaps the social icons at 961–1300px, site-wide, HE + AR — Tier B,
         needs a design call (measurements in the plan's follow-ups)
   - [ ] Script the extra-figure and video-montage steps (`story-images.sh --as`, `scripts/story-video.sh`) — Tier A
-- [ ] **3. Search & AI visibility** *(items 3 + 4 merged)* — the local SEO cluster (near Caesarea /
-      Hadera / Jisr, directions, "things to do", fish-restaurant intents) and the AEO layer
-      (`facts.txt` / `llms.txt` expansion, `FAQPage` JSON-LD, answer-first blocks) on the same pages →
-      *local-pack impressions, direction requests, AI-answer citations* (the manual citation check of
-      ADR 0052 until a paid source is decided)
-- 4\. → folded into item 3
-- 5\. → folded into item 2
-- 6\. → folded into item 15
-- [ ] **7. Google Business Profile loop** — posts, photos, review replies, Q&A; `AggregateRating` on
-      site → *GBP calls and direction requests*
-- [x] **8. Public "What's happening" / יוזמות** — DB-driven public life, generated landing page per
-      item, rebuilt on publish *(shipped 2026-09-30, PRs #93 + #97)* —
-      [plans/events-whats-happening.md](plans/events-whats-happening.md), ADRs 0054–0059.
-      **Outcome check due 2026-10-21.** Follow-ups: [modules/events.md](modules/events.md)
-- [ ] **9. Backlink programme** — tourism, food/travel, Arab-society media → *referring domains*
-- [ ] **10. Paid test** — a small Meta/Google campaign against one or two pages → *cost per WhatsApp
+- [ ] **5th — 7. Google Business Profile loop** — posts, photos, review replies, Q&A; `AggregateRating`
+      on site; the owner's weekly part lives in item 18's list; by hand until item 16 lands →
+      *GBP calls and direction requests*
+- [ ] **6th — 9. Backlink programme** — tourism, food/travel, Arab-society media; the owner's outreach,
+      Claude drafts → *referring domains*
+- [ ] **7th — 16. Connect social + GBP to Claude** *(owner, 2026-10-07)* — read + draft, the owner
+      publishes; the owner authorizes the connector in claude.ai (Windsor.ai the candidate — coverage
+      checked at kickoff); connectors live in the owner's sessions only, never in the automated agents;
+      **UTM on every owned link** (GBP website button, Instagram / Facebook bios, shares) so those visits
+      stop landing as "direct" → *GBP / social numbers readable every week*
+- [ ] **8th — 10. Paid test** — a small Meta/Google campaign against one or two pages → *cost per WhatsApp
       conversation*. **Prerequisite (owner, 2026-09-22):** prove the paid path end to end before
       spending — UTM on every ad URL, the campaign landing in GA4 as `Paid Social` / `Paid Search`,
       Meta Pixel `Contact` firing, `whatsapp_click` attributable by `page_slug` *and* source. (A
       campaign that stopped inside the 2026-09-22 window showed up as a drop nothing could cost.)
-- 11\. → folded into item 2
-- 12\. → parking lot ([ideas.md](ideas.md), 2026-10-07) — not marketing work
-- 13\. → parking lot ([ideas.md](ideas.md), 2026-10-07) — not marketing work
-- [x] **14. Take the public write off the report agents** *(2026-09-22,
-      [ADR 0048](decisions/0048-report-agents-hold-no-write-and-actions-are-sha-pinned.md))*
-- [x] **15. Video pipeline (Remotion)** — reels from a `new-video` brief in `video/`, guidelines refreshed
-      weekly by PR *(built 2026-10-06, PR #109)* — [plans/video-pipeline.md](plans/video-pipeline.md),
-      [ADR 0064](decisions/0064-video-is-made-with-remotion-in-the-repo-guidelines-are-the-leash-refreshed-weekly-by-pr.md);
-      check date 2026-11-10
-  - [ ] **Social publishing** *(was item 6)* — every story yields IG/FB posts, reels from the pipeline
-        on a weekly rhythm; Meta Pixel `Contact` already fires → *social-referred `whatsapp_click`*
-  - [ ] A render smoke in `ci.yml` when `video/` changes — Tier A
-  - [ ] Re-lay out the two existing reels to the Meta safe zone
-  - [ ] Arabic native-reader pass on the weekend copy; owner sets the `/app/events` weekend item to
-        the FACTS hours (blocks the first post); the `VIDEO_GUIDELINES_PAT` secret
+- **Done this quarter:**
+  - [x] **1. Analytics wiring** *(shipped 2026-09-22, PR #73)* — [plans/marketing-analytics-wiring.md](plans/marketing-analytics-wiring.md);
+        Ahrefs/Semrush parked as a spend decision ([ADR 0047](decisions/0047-analytics-wiring-ga4-and-gsc-only-public-numbers.md)).
+        **Outcome check due 2026-10-19**
+  - [x] **8. Public "What's happening" / יוזמות** *(shipped 2026-09-30, PRs #93 + #97)* —
+        [plans/events-whats-happening.md](plans/events-whats-happening.md), ADRs 0054–0059.
+        **Outcome check due 2026-10-21.** Follow-ups: [modules/events.md](modules/events.md)
+  - [x] **14. Take the public write off the report agents** *(2026-09-22,
+        [ADR 0048](decisions/0048-report-agents-hold-no-write-and-actions-are-sha-pinned.md))*
+  - [x] **15. Video pipeline (Remotion)** *(built 2026-10-06, PR #109)* — [plans/video-pipeline.md](plans/video-pipeline.md),
+        [ADR 0064](decisions/0064-video-is-made-with-remotion-in-the-repo-guidelines-are-the-leash-refreshed-weekly-by-pr.md);
+        check date 2026-11-10 (4 reels posted — tracked in item 17)
+    - [ ] A render smoke in `ci.yml` when `video/` changes — Tier A
+    - [ ] Re-lay out the two existing reels to the Meta safe zone
+    - [ ] Arabic native-reader pass on the weekend copy; owner sets the `/app/events` weekend item to
+          the FACTS hours (blocks the first post); the `VIDEO_GUIDELINES_PAT` secret
+- **Folded:** 4 → 3 · 5, 11 → 2 · 6 → 17 · 12, 13 → [ideas.md](ideas.md) (ADR 0065, 0066).
 - **Out this quarter:** English stories (`/stories/en/`) — reserved in the URL structure, not built.
 
 ## Parked until a trigger *(deferred)*
