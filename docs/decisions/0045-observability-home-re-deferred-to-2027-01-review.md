@@ -1,7 +1,7 @@
 # 0045 — The observability home is re-deferred to the 2027-01-01 quarterly review; the dated re-check list for that review
 
 - **Date:** 2026-09-22
-- **Status:** deferred — 2027-01-01 quarterly review — re-defers the open half of [0038](0038-new-dedicated-dynatrace-environment.md), carried in by [0041](0041-observability-home-deferred-to-first-quarterly-review.md)
+- **Status:** deferred — 2027-01-01 quarterly review — re-defers the open half of [0038](0038-new-dedicated-dynatrace-environment.md), carried in by [0041](0041-observability-home-deferred-to-first-quarterly-review.md); re-check list extended by [0065](0065-roadmap-consolidated-q4-mandate-merged-to-five-lines.md)
 - **Decided by:** owner (first quarterly review, agenda item 3, [issue #62](https://github.com/OrCoAI/lev-yam-main/issues/62))
 - **Source:** issue #62 §8; owner's verdicts in session
 
@@ -48,6 +48,12 @@ The next review's evidence pack must carry these, and the agenda decides each:
    register + login re-test on staging) or defer again. *Owner: "Defer with a date."*
 3. **`CLAUDE_CODE_OAUTH_TOKEN`** regeneration ([ADR 0042](0042-agent-workflows-run-on-the-subscription-token.md)).
 4. **Break-glass account** — email confirmation verified, or still unknown (roadmap item).
+5. **`GOOGLE_SA_KEY`** rotation, in the same session as item 3; delete the unused
+   `ANTHROPIC_API_KEY` secret there too. *(added 2026-10-07, [0065](0065-roadmap-consolidated-q4-mandate-merged-to-five-lines.md))*
+6. **The dead Dynatrace RUM tag** on the marketing site (404 since 2026-09-09) — follows item 1's
+   verdict. *(added 2026-10-07, 0065)*
+7. **Skill evals** — the first real run of every `.claude/skills/*/EVALS.md`, done before the review
+   and its results in the evidence pack. *(added 2026-10-07, 0065)*
 
 ## Consequences
 
