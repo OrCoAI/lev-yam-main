@@ -58,7 +58,7 @@ with the rules kept current.
      fact traces to `FACTS.md` or the live `/happening/` page it was read from.
    - The Meta safe-zone tokens and a Studio-only `<SafeZone>` guide join the kit (the two
      existing reels keep their 2026-10-05 layout — see out of scope).
-2. **Guidelines** — `.claude/skills/new-video/guidelines.md`, the one rule file for video:
+2. **Guidelines** — `video/GUIDELINES.md` (moved out of `.claude/` on 2026-10-06, see ADR 0064), the one rule file for video:
    distilled from the owner's research document and the installed official Remotion Agent Skills
    (`remotion-dev/skills` 4.0.532, per machine), plus the repo's own rules (facts, names, HE + AR,
    Arabic review, never deployed, license). Sections: rules of the house · formats and platforms
@@ -81,7 +81,7 @@ with the rules kept current.
 4. **Weekly research PR** — `.github/workflows/video-guidelines-refresh.yml`, Mondays 05:00 UTC
    and on `workflow_dispatch` (the acceptance test): a research job on a read-only token reads
    Remotion releases, the official skills, the license page and a few web searches and edits
-   `guidelines.md` alone; a fixed step hands its patch (secret-scanned by `report-guard.py
+   `video/GUIDELINES.md` alone; a fixed step hands its patch (secret-scanned by `report-guard.py
    --scan-only`) to a publish job with no agent, which opens the Tier-A PR
    `video-guidelines/<ISO week>`. The owner merges; nothing auto-merges. The mechanism and its
    threat model are the workflow's header and ADR 0064 §5. A PR opened with `GITHUB_TOKEN` gets
@@ -104,7 +104,8 @@ with the rules kept current.
   mandate item 6's social pipeline are separate.
 - **Cloud rendering / Player / SaaS** — local renders only; Lambda and the Player are a later
   decision with a license implication.
-- **Re-layout of the two existing reels to the Meta safe zone** — the first follow-up, not this PR
+- **A render smoke in `ci.yml`** (one still when `video/` changes) — the follow-up Tier-A PR right after this one (decided 2026-10-06).
+- **Re-layout of the two existing reels to the Meta safe zone** — the second follow-up, not this PR
   (their renders of 2026-10-06 must stay reproducible for the owner's first posts).
 - **Vendoring the official Remotion skills into the repo** — stays per machine (owner, 2026-10-06).
 
@@ -158,15 +159,13 @@ left behind beyond gitignored renders on the owner's machine.
 4. A "no change" run exits clean; a change run opens exactly one PR with the Tier line; a re-run
    the same week updates it.
 
+How to read it: the action logs only its first and last message, so the per-call transcript is
+kept 5 days as the run's `agent-transcript` artifact (guard-scanned before upload); a manual run
+has `self_test` on by default, which makes the agent attempt the out-of-domain fetch and the
+`//proc/self/environ` read and report both — the scheduled run never does.
+
 ## Open questions
 
-- **Non-blocking — Remotion patch bumps auto-merge:** Remotion ships its whole release stream
-  as `4.0.N` patches, so `dependabot-auto-merge.yml` (ADR 0039: npm minor/patch) will merge every
-  Remotion release on green — and green for `video/` is lint + tsc, no render. Either accept
-  (the weekly research PR reports each release; the next `npm run review` catches a render
-  break), make green mean "it renders" (one still in `ci.yml` when `video/` changes), or carve
-  `/video` out of auto-merge (`fetch-metadata` exposes `directory`). Owner, at the first
-  dependabot `/video` PR.
 - **Blocking for the first posted weekend reel — the live page's hours:** `FACTS.md` now carries
   the seasonal weekend hours (2026-10-06); the `/app/events` weekend item (→ `/happening/weekend/`)
   still shows other hours and must be edited by the owner to match before the reel is posted
@@ -191,6 +190,12 @@ left behind beyond gitignored renders on the owner's machine.
 - 2026-10-06 · **License headcount:** a company of one — no watch needed now; the clause stays in
   the guidelines and the weekly job re-reads the terms, which is enough.
 
+- 2026-10-06 · **Remotion patch bumps keep auto-merging, and CI green must mean "it renders":**
+  a follow-up Tier-A PR after #109 adds one still render to `ci.yml` when `video/` changes (one
+  composition, one frame; Chrome Headless Shell downloaded in that run only). Carving `/video` out
+  of auto-merge was rejected — a manual merge per Remotion release is the wrong trade for a company
+  of one.
+
 ## Publish log
 
 *(one line per posted reel: date · brief slug · language · hook variant · platform · hook rate
@@ -198,7 +203,57 @@ when read)*
 
 ## Close-out
 
-*(appended when done — CLAUDE.md "Roadmap item close-out")*
+**Closed 2026-10-06** — built and merged (PR #109 squashed to `6220d06`; same-day follow-ups
+#114, #115, #116, #117). The Outcome check (2026-11-10) decides whether it *worked*.
+
+**What shipped.** Scope items 1–5 in full: `video/` (the Remotion project, Meta safe-zone tokens
+and Studio guide, review stills script, site media regenerated from `img/`), the guidelines as
+the one rule file (`video/GUIDELINES.md`), the `new-video` skill (brief template, reviewer prompt, evals), the weekly
+research job that opens a proposal PR, and the harness edits (CLAUDE.md Video block, CI lint +
+tsc on `video/` changes, dependabot `/video` group, tier paths, `.gitignore`).
+
+**Acceptance of the weekly job — all four proofs read on 2026-10-06, over four dispatches.**
+Run 37467856649 (self-test on; transcript in its `agent-transcript` artifact): the WebFetch of
+`example.com` **denied**, the Read of `//proc/self/environ` **denied** ("directory denied by your
+permission settings"), the registered tool roster exactly Read, Glob, Edit, WebSearch and the seven
+`WebFetch(domain:…)` entries — proofs 1–3. Run 37466353928: a "no change" run exits clean, publish
+skipped — proof 4a. Run 37469414827 (plain): the agent found the skills bump to 4.0.533, the vet
+step passed the patch (§1 unchanged, guard clean) and the branch `video-guidelines/2026-W41` was
+pushed; `gh pr create` failed because the default token may not create pull requests in this repo
+("GitHub Actions is not permitted to create or approve pull requests") — the PR was opened by hand
+from that branch, and the owner's `VIDEO_GUIDELINES_PAT` (already decided) makes the job open it
+itself from the next run; the alternative is the repo setting "Allow GitHub Actions to create and
+approve pull requests". Proof 4b (one PR per change run, a re-run updates it) is therefore pending
+the PAT, not the design.
+
+**Schema / permission changes.** None — no tables, no keys, no live tool.
+
+**Decided on the way** (all above, in "Decisions made on the way" → ADR 0064): Remotion in the
+repo, never deployed; guidelines are the leash, refreshed by PR; no audio; Meta only; skills per
+machine; weekend hours as a dated seasonal fact in `FACTS.md`; the testimonial review texts leave
+the repo (gitignored `video/public/private/reviews.json`, a render without it fails); the owner
+stores `VIDEO_GUIDELINES_PAT`; Remotion patches keep auto-merging and CI green must come to mean
+"it renders"; license headcount — a company of one, no watch.
+
+**Found on the way, fixed the same day — four acceptance runs.** (1) The research job's
+`CLAUDE_CODE_SUBPROCESS_ENV_SCRUB` flag needs bubblewrap and broke the Claude Code install on the
+runner (PR #114 removed it — the agent has no shell, the denies are the boundary). (2)
+`dependabot-auto-merge.yml` tested the ecosystem as `npm` while fetch-metadata reports
+`npm_and_yarn`, so no npm bump had ever auto-merged (PR #115). (3) The action logs only its first
+and last message, so the denials could not be read: the transcript is now kept as a guard-scanned
+artifact and a manual run carries a self-test canary (PR #116). (4) The transcript then showed the
+agent's `Edit` of the guidelines refused: `.claude/` is a protected path Claude Code never lets a
+non-interactive agent write under, so the guidelines moved to `video/GUIDELINES.md`, still the
+leash by name in `check-tier.mjs` (PR #117, ADR 0064 amended).
+
+**Left out / follow-ups** (on the roadmap line): a render smoke in `ci.yml` when `video/` changes
+(Tier A, next PR); the two existing reels re-laid out to the Meta zone; the native reader's pass on
+`copy/ar.ts`; the owner edits the `/app/events` weekend item to the FACTS hours (blocks the first
+post); the PAT secret.
+
+**Alignment.** VISION: principle 4, the venue's life shown openly — unchanged. ARCHITECTURE:
+invariants 1, 2, 4, 6, 7 untouched; invariant 5 (both languages) carried into the guidelines as
+§1.3; the leash rule (ADR 0036) extended to the guidelines file. No drift found.
 
 ## Outcome check
 

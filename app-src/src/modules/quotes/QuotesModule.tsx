@@ -14,10 +14,11 @@ import {
 } from './api'
 import Calendar from './Calendar'
 import ChecklistModal from './ChecklistModal'
-import { eventDayChip, formatDate, ILS, todayDbDate } from './format'
+import { dbDate, eventDayChip, formatDate, ILS } from './format'
 import { useQT } from './i18n'
 import NewQuoteModal from './NewQuoteModal'
 import SettingsModal from './SettingsModal'
+import { useToday } from './useToday'
 import type { ChecklistItem, ContractRow, QuoteRow, QuoteStatus } from './types'
 import { isConfirmed, isWaitingPayment } from './types'
 import './quotes.css'
@@ -255,6 +256,7 @@ export default function QuotesModule() {
   const [showNew, setShowNew] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [checklistQuoteId, setChecklistQuoteId] = useState<string | null>(null)
+  const today = useToday()
 
   const load = useCallback(() => {
     loadAll()
@@ -357,7 +359,7 @@ export default function QuotesModule() {
       ? [...filterStatuses.map((s) => ({ key: s as StatusFilter, label: qt.status[s] })), { key: 'waiting_payment', label: qt.waitingPayment }]
       : []
 
-  const todayChip = `${qt.dayPrefix} ${qt.dow[new Date().getDay()]} · ${formatDate(todayDbDate())}`
+  const todayChip = `${qt.dayPrefix} ${qt.dow[today.getDay()]} · ${formatDate(dbDate(today))}`
 
   const checklistQuote = checklistQuoteId ? allQuotes.find((q) => q.id === checklistQuoteId) : null
 
@@ -454,7 +456,7 @@ export default function QuotesModule() {
       )}
 
       {showCal && (
-        <Calendar quotes={activeQuotes} contractsByQuoteId={contractsByQuoteId} onOpenChecklist={(q) => setChecklistQuoteId(q.id)} />
+        <Calendar today={today} quotes={activeQuotes} contractsByQuoteId={contractsByQuoteId} onOpenChecklist={(q) => setChecklistQuoteId(q.id)} />
       )}
 
       {filtered.length === 0 ? (

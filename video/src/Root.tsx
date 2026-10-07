@@ -1,9 +1,14 @@
 import { Composition, Folder } from "remotion";
-import { ar } from "./copy/ar";
-import { he } from "./copy/he";
+import { ar, moments as momentsAr, teamDay as teamDayAr } from "./copy/ar";
+import { he, moments as momentsHe, teamDay as teamDayHe } from "./copy/he";
 import { PLACEHOLDER_REVIEWS, loadReviews } from "./data";
 import { WeekendReel } from "./levyam/WeekendReel";
+import { MOMENTS_FRAMES, Moments } from "./levyam/moments/Moments";
+import { momentsSchema } from "./levyam/moments/schema";
 import { weekendReelSchema } from "./levyam/schema";
+import { loadQuotes } from "./levyam/team-day/quotes";
+import { teamDaySchema } from "./levyam/team-day/schema";
+import { TEAM_DAY_FRAMES, TeamDay } from "./levyam/team-day/TeamDay";
 import { Gull, LightLeak } from "./levyam/sunset-dream/layers";
 import { SunsetDream } from "./levyam/sunset-dream/SunsetDream";
 import { CarouselScene } from "./scenes/CarouselScene";
@@ -91,6 +96,114 @@ export const RemotionRoot: React.FC = () => {
           width={1080}
           height={1920}
         />
+        <Folder name="MomentsBySea">
+          <Composition
+            id="moments-by-the-sea-he-footage"
+            component={Moments}
+            schema={momentsSchema}
+            durationInFrames={MOMENTS_FRAMES}
+            fps={30}
+            width={1080}
+            height={1920}
+            defaultProps={{ ...momentsHe, hook: "footage" as const }}
+          />
+          <Composition
+            id="moments-by-the-sea-he-name"
+            component={Moments}
+            schema={momentsSchema}
+            durationInFrames={MOMENTS_FRAMES}
+            fps={30}
+            width={1080}
+            height={1920}
+            defaultProps={{ ...momentsHe, hook: "name" as const }}
+          />
+          <Composition
+            id="moments-by-the-sea-he-place"
+            component={Moments}
+            schema={momentsSchema}
+            durationInFrames={MOMENTS_FRAMES}
+            fps={30}
+            width={1080}
+            height={1920}
+            defaultProps={{ ...momentsHe, hook: "place" as const }}
+          />
+          <Composition
+            id="moments-by-the-sea-ar-footage"
+            component={Moments}
+            schema={momentsSchema}
+            durationInFrames={MOMENTS_FRAMES}
+            fps={30}
+            width={1080}
+            height={1920}
+            defaultProps={{ ...momentsAr, hook: "footage" as const }}
+          />
+          <Composition
+            id="moments-by-the-sea-ar-name"
+            component={Moments}
+            schema={momentsSchema}
+            durationInFrames={MOMENTS_FRAMES}
+            fps={30}
+            width={1080}
+            height={1920}
+            defaultProps={{ ...momentsAr, hook: "name" as const }}
+          />
+          <Composition
+            id="moments-by-the-sea-ar-place"
+            component={Moments}
+            schema={momentsSchema}
+            durationInFrames={MOMENTS_FRAMES}
+            fps={30}
+            width={1080}
+            height={1920}
+            defaultProps={{ ...momentsAr, hook: "place" as const }}
+          />
+        </Folder>
+        <Folder name="TeamDayGuests">
+          <Composition
+            id="team-day-guests-he-footage"
+            component={TeamDay}
+            schema={teamDaySchema}
+            durationInFrames={TEAM_DAY_FRAMES}
+            fps={30}
+            width={1080}
+            height={1920}
+            defaultProps={{ ...teamDayHe, hook: "footage" as const }}
+            calculateMetadata={loadQuotes}
+          />
+          <Composition
+            id="team-day-guests-he-question"
+            component={TeamDay}
+            schema={teamDaySchema}
+            durationInFrames={TEAM_DAY_FRAMES}
+            fps={30}
+            width={1080}
+            height={1920}
+            defaultProps={{ ...teamDayHe, hook: "question" as const }}
+            calculateMetadata={loadQuotes}
+          />
+          <Composition
+            id="team-day-guests-ar-footage"
+            component={TeamDay}
+            schema={teamDaySchema}
+            durationInFrames={TEAM_DAY_FRAMES}
+            fps={30}
+            width={1080}
+            height={1920}
+            defaultProps={{ ...teamDayAr, hook: "footage" as const }}
+            calculateMetadata={loadQuotes}
+          />
+          <Composition
+            id="team-day-guests-ar-question"
+            component={TeamDay}
+            schema={teamDaySchema}
+            durationInFrames={TEAM_DAY_FRAMES}
+            fps={30}
+            width={1080}
+            height={1920}
+            defaultProps={{ ...teamDayAr, hook: "question" as const }}
+            calculateMetadata={loadQuotes}
+          />
+        </Folder>
         <Folder name="SunsetDream-parts">
           <Composition
             id="SunsetDream-Gull"

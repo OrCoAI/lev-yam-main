@@ -22,6 +22,8 @@ it for fixes; everything now happens in this module.
 
 ## Done
 
+- 2026-10-07 — `new Date()` was read during render in `Calendar.tsx` and `QuotesModule.tsx`'s day chip; oxlint 1.86's `react/purity` flagged both, taking the total to 26 and failing dependabot PR #111 against the cap of 24. Now one `useToday()` hook (read outside render; re-read just after midnight and when the tab becomes visible again) feeds the header chip and the calendar's today highlight (a prop). Total back to 24 under both 1.85 and 1.86. Not changed: the calendar's shown month does not follow a month rollover, and row chips / the waiting-payment split still read the live clock inside `format.ts` / `types.ts` helpers (both pre-existing).
+
 - 2026-09-09 — `Toggle` in QuotePage.tsx was declared inside render (a new component identity per keystroke remounted the three toggles and dropped keyboard focus); hoisted to module scope. Found by the Step 3 lint pass.
 
 - **2026-07-13 — follow-up: fixed the actual root cause of "confirmed" never matching

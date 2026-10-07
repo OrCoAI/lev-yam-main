@@ -47,9 +47,12 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
+      # fetch-metadata reports the ecosystem as `npm_and_yarn` (its v3 output; checked in run
+      # 37465862086, 2026-10-06), not `npm` — the old `== 'npm'` test skipped every npm bump
+      # silently and the Tier-C promise never fired. Both spellings are accepted.
       - name: Enable auto-merge for npm minor and patch bumps
         if: >-
-          steps.meta.outputs.package-ecosystem == 'npm' &&
+          contains(fromJSON('["npm", "npm_and_yarn"]'), steps.meta.outputs.package-ecosystem) &&
           steps.meta.outputs.update-type != 'version-update:semver-major'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

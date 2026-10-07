@@ -1,3 +1,4 @@
+import { Video } from "@remotion/media";
 import { Fragment } from "react";
 import {
   AbsoluteFill,
@@ -9,7 +10,8 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { C, ENTER, TEXT, clamp } from "./theme";
+import { C, ENTER, KEN_BURNS_MAX, TEXT, ZONE, ZONE_INSET, clamp, headline, type Type } from "./theme";
+import { SWEEP } from "./transitions/timing";
 
 // Entry progress for something that starts at local frame `start`; lands on exactly 1 at
 // start + ENTER — spring() itself keeps creeping toward 1, which would stir the held last frames.
@@ -78,12 +80,23 @@ type KenBurnsProps = {
   readonly duration: number;
   // object-position of the cover crop, and the transform-origin the zoom closes in on.
   readonly crop: string;
-  readonly focus: string;
+  readonly focus?: string; // defaults to crop
+  // End scale, capped at KEN_BURNS_MAX. A soft or upscaled photo takes less.
+  readonly to?: number;
+  // A pan: object-position moves from `crop` to `cropTo` (both "x% y%") over `duration`.
+  readonly cropTo?: string;
 };
 
-// Slow push-in toward the subject; capped at 1.08 (brief: ≤1.10).
-export const KenBurns: React.FC<KenBurnsProps> = ({ src, duration, crop, focus }) => {
+const percents = (pos: string) => pos.split(" ").map((p) => parseFloat(p));
+
+// Slow push-in toward the subject (or a slow pan across it).
+export const KenBurns: React.FC<KenBurnsProps> = ({ src, duration, crop, focus = crop, to = 1.08, cropTo }) => {
   const frame = useCurrentFrame();
+  const position = cropTo
+    ? percents(crop)
+        .map((from, i) => `${interpolate(frame, [0, duration], [from, percents(cropTo)[i]], { ...clamp, easing: SWEEP })}%`)
+        .join(" ")
+    : crop;
   return (
     <AbsoluteFill style={{ overflow: "hidden" }}>
       <Img
@@ -92,13 +105,43 @@ export const KenBurns: React.FC<KenBurnsProps> = ({ src, duration, crop, focus }
           width: "100%",
           height: "100%",
           objectFit: "cover",
-          objectPosition: crop,
+          objectPosition: position,
           transformOrigin: focus,
-          scale: interpolate(frame, [0, duration], [1, 1.08], {
+          scale: interpolate(frame, [0, duration], [1, Math.min(to, KEN_BURNS_MAX)], {
             ...clamp,
             easing: Easing.bezier(0.33, 0, 0.67, 1),
           }),
         }}
+      />
+    </AbsoluteFill>
+  );
+};
+
+type ClipProps = {
+  readonly name: string;
+  readonly src: string;
+  // The clip's own aspect (width / height), e.g. 4 / 3 for a landscape phone clip.
+  readonly aspect: number;
+  // Horizontal crop, 0 (left edge) – 100 (right edge): the cover box is as tall as the frame and
+  // wider than it, shifted by this much. <Video> draws to a canvas, so object-position does nothing.
+  readonly x: number;
+  readonly playbackRate?: number;
+};
+
+// A muted clip filling the frame, cropped sideways (guidelines §8: muted in v1, premounted).
+export const Clip: React.FC<ClipProps> = ({ name, src, aspect, x, playbackRate = 1 }) => {
+  const { width, height, fps } = useVideoConfig();
+  const w = Math.max(width, height * aspect);
+  return (
+    <AbsoluteFill style={{ overflow: "hidden" }}>
+      <Video
+        name={name}
+        src={staticFile(src)}
+        muted
+        objectFit="cover"
+        playbackRate={playbackRate}
+        premountFor={fps}
+        style={{ position: "absolute", top: 0, height, width: w, left: -(w - width) * (x / 100) }}
       />
     </AbsoluteFill>
   );
@@ -156,22 +199,111 @@ type TextBlockProps = {
   readonly children: React.ReactNode;
 };
 
-// Text column inside the safe zone, start-aligned (right in RTL), pinned to the top or bottom.
-export const TextBlock: React.FC<TextBlockProps> = ({ anchor, gap = 22, children }) => (
+type Padding = Pick<React.CSSProperties, "paddingTop" | "paddingBottom" | "paddingLeft" | "paddingRight" | "paddingInlineStart" | "paddingInlineEnd">;
+
+// Start-aligned text column (right in RTL), pinned to the top or bottom of its padded box.
+const Column: React.FC<TextBlockProps & { readonly padding: Padding }> = ({ anchor, gap = 22, padding, children }) => (
   <AbsoluteFill
     style={{
       justifyContent: anchor === "bottom" ? "flex-end" : "flex-start",
       alignItems: "flex-start",
-      paddingTop: TEXT.top,
-      paddingBottom: TEXT.bottom,
-      paddingInlineStart: TEXT.start,
-      paddingInlineEnd: TEXT.end,
+      ...padding,
       gap,
     }}
   >
     {children}
   </AbsoluteFill>
 );
+
+// Text column inside the 2026-10-05 safe zone (TEXT) — the two shipped reels.
+export const TextBlock: React.FC<TextBlockProps> = (props) => (
+  <Column
+    {...props}
+    padding={{
+      paddingTop: TEXT.top,
+      paddingBottom: TEXT.bottom,
+      paddingInlineStart: TEXT.start,
+      paddingInlineEnd: TEXT.end,
+    }}
+  />
+);
+
+// Text column inside Meta's text zone (ZONE, guidelines §3 — x 120–853, y 288–1248 on 1080×1920),
+// ZONE_INSET in from its edges. Physical left/right padding: the zone is asymmetric (the rail is
+// on the right) whatever the text direction. New work uses this, not TextBlock.
+export const ZoneBlock: React.FC<TextBlockProps> = (props) => {
+  const { width, height } = useVideoConfig();
+  return (
+    <Column
+      {...props}
+      padding={{
+        paddingTop: height * ZONE.y0 + ZONE_INSET,
+        paddingBottom: height * (1 - ZONE.y1) + ZONE_INSET,
+        paddingLeft: width * ZONE.x0 + ZONE_INSET,
+        paddingRight: width * (1 - ZONE.x1) + ZONE_INSET,
+      }}
+    />
+  );
+};
+
+// Footage (a photo or a clip) under a bottom scrim, the beat's text at the bottom of the text zone.
+// The scrim reaches well past ZONE's bottom edge (y 1248 ≈ 65% down).
+export const MediaBeat: React.FC<{ readonly media: React.ReactNode; readonly children: React.ReactNode }> = ({
+  media,
+  children,
+}) => (
+  <AbsoluteFill>
+    {media}
+    <Scrim side="bottom" reach={85} />
+    <ZoneBlock anchor="bottom">{children}</ZoneBlock>
+  </AbsoluteFill>
+);
+
+type SignOffProps = {
+  readonly t: Type;
+  readonly title: string;
+  // Raises the centred group by this many px (to keep its last line inside ZONE).
+  readonly lift?: number;
+  // Wraps a long title so every line stays inside ZONE, lines centred. Opt-in: the shipped reels'
+  // end cards render as they were.
+  readonly fitZone?: boolean;
+  // Frames between the title's words (a longer title takes less, to settle in time).
+  readonly stagger?: number;
+  readonly children?: React.ReactNode;
+};
+
+// The widest line centred on the frame that stays inside ZONE (the zone is off-centre: the rail).
+const zoneFit = (width: number) => 2 * Math.min(width / 2 - width * ZONE.x0, width * ZONE.x1 - width / 2) - 2 * ZONE_INSET;
+
+// The end card's shared top: cream (the heart the heartZoom cut dives into — the logo is blue +
+// orange), the logo, the title; the reel's own lines follow as children. The logo settles by local
+// frame 20, a one-word title by 24 (each further word + `stagger`, default 10).
+
+export const SignOff: React.FC<SignOffProps> = ({ t, title, lift = 0, fitZone = false, stagger = 10, children }) => {
+  const logo = useEnter(4);
+  const { width } = useVideoConfig();
+  return (
+    <AbsoluteFill
+      style={{ backgroundColor: C.cream, justifyContent: "center", alignItems: "center", paddingBottom: lift * 2 }}
+    >
+      <Img
+        src={staticFile("site/logo.png")}
+        style={{ width: 420, height: 420, opacity: logo, scale: interpolate(logo, [0, 1], [0.92, 1], clamp) }}
+      />
+      <Words
+        text={title}
+        start={8}
+        stagger={stagger}
+        style={{
+          ...headline(t, C.ink, false),
+          marginTop: 36,
+          ...(fitZone && { maxWidth: zoneFit(width), justifyContent: "center" }),
+        }}
+      />
+      {children}
+    </AbsoluteFill>
+  );
+};
 
 // Orange chip with ink text (contrast 5.9:1); pops in at `start`.
 export const Pill: React.FC<{ readonly start: number; readonly children: React.ReactNode }> = ({

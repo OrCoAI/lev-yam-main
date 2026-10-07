@@ -15,7 +15,7 @@ metadata:
 # New video
 
 Turns an owner's idea into a brief that is a complete, self-contained prompt, and then into a
-reviewed composition. The rules are [guidelines.md](guidelines.md) — read it in full first, every
+reviewed composition. The rules are [video/GUIDELINES.md](../../../video/GUIDELINES.md) — read it in full first, every
 time; this skill adds procedure only. Plan: `docs/plans/video-pipeline.md`; decision: ADR 0064.
 
 **The skill never:** renders the final MP4 unasked, commits, pushes, posts, invents a fact, types
@@ -30,7 +30,7 @@ a price, or puts a reviewer's or staff member's name on screen.
 
 ## 1. Read, don't recall
 
-`guidelines.md` (all sections), `FACTS.md`, the `/happening/` page the reel is about (if any,
+`video/GUIDELINES.md` (all sections), `FACTS.md`, the `/happening/` page the reel is about (if any,
 read today — `happening/` shells or the live `levyam.com/happening/<slug>/`), every existing
 `video/briefs/*.md` (to refuse a near-duplicate and reuse a proven shot list), `video/src/Root.tsx`
 (what compositions and variants exist), `video/src/copy/*.ts` (the copy conventions), and
@@ -62,7 +62,7 @@ Ask only what the idea left open; propose the guideline's default as the first o
 8. **Out of scope for this reel** — what a reader might assume is in (sound, English, a second
    CTA, a price) and is not.
 
-Anything that would change a rule in `guidelines.md` is raised, not coded around — the conflict
+Anything that would change a rule in `video/GUIDELINES.md` is raised, not coded around — the conflict
 rule in `CLAUDE.md`.
 
 ## 3. Write the brief, then Gate 1

@@ -11,8 +11,8 @@ static pages via `python3 -m http.server 8080`) — and, for prod-like checks, t
 DB changes go through `supabase/schema/*.sql` (source of truth) plus the generated baseline that
 local `supabase db reset` applies — staging and prod are applied by hand, never pushed
 ([ADR 0061](decisions/0061-staging-schema-applied-by-hand-never-db-push.md); `supabase/tests/build-baseline.mjs`; see
-[plans/platform-staging-environment.md](plans/platform-staging-environment.md)). `pos.html` and the
-marketing site stay untouched until their replacement earns cut-over on real service days.
+[plans/platform-staging-environment.md](plans/platform-staging-environment.md)). A live tool is
+replaced only after its successor earns cut-over on real service days (as POS did, 2026-07-15).
 **Blocks:** the *current block* is the first `## ` section with an unticked **top-level** item
 whose heading carries none of ✅ (closed), the word *deferred*, or *parallel track*; indented
 sub-items never make a block current; a block opened at a quarterly review links its mandate in
@@ -23,591 +23,196 @@ current work only when the line itself carries no fold (→), no *optional* or *
 no date beyond the quarter. The skills cite this rule by name (**Blocks**) and never restate it
 ([ADR 0062](decisions/0062-instruction-files-state-rules-never-state-sessions-open-with-session-start.md)).
 
+**History is one line per item.** The detail of everything shipped lives in its plan file's
+close-out and the decision log; this file keeps the link, not the story
+([ADR 0065](decisions/0065-roadmap-consolidated-q4-mandate-merged-to-five-lines.md)).
+
 ---
 
-## Phase 0 — Platform foundation ✅ (done, live)
+## Shipped — Phase 0 to the Operating-system block ✅ (2026-07 → 2026-09-22)
 
-- [x] `/app` shell: Vite + React + TS, react-router (`basename /app`), CI deploy to Pages
-- [x] Supabase auth + passkeys (`01_passkeys.sql`, `passkey-verify` edge function)
-- [x] RBAC: role → module → action, RLS via `core.has_permission()` (`00_core.sql`)
-- [x] Users admin module (roles: owner / manager / staff / viewer)
-- [x] Finance module: entries + report (`20_finance.sql`)
-
-## Phase 1 — First migrations: quotes manager, then POS (+ bilingual core)
-
-*The quotes manager goes first: it's the smallest complete tool — the cheapest way to prove
-the module pattern — and it's used by one person, so a migration hiccup costs nothing (the
-POS is live on real service days). Its migration produces the documented module template
-that POS and every later module follow. The i18n layer lands at the very start so nothing
-bilingual is ever a retrofit.*
-
-- [x] **Foundation:** platform i18n layer (HE + Levantine Arabic, RTL-aware) in the app
-      shell — dictionaries, language switcher, translated shell/login/launcher; every module
-      from here on ships in both languages *(live 2026-07-08; follow-ups: bilingual module
-      labels in `core.modules`, Arabic webfont — system-font fallback for now)*
-- [x] **Quotes manager joins the platform** — migrate the local quotes & contracts app
-      (`~/lev-yam-quotes`: Python API + React dashboard + `quotes-tracker.json` as source of
-      truth) into a quotes module at `/app/quotes`.
-      **Never copy that app into this repo** — it holds customer PII, signed contracts, and
-      the owner's signature, and everything here deploys publicly to GitHub Pages; it stays a
-      separate local app until this migration. **Full migration plan:
-      [plans/quotes-module.md](plans/quotes-module.md)** — schema `30_quotes.sql`, dashboard
-      → module UI, documents rendered from DB, one-time data import, parity cut-over
-      *(done 2026-07-09: module live at `/app/quotes`; data imported — 12 quotes,
-      3 contracts with full document content parsed from the saved HTML files, checklist
-      template, signed-contract PDF/HTML snapshots in the private `quotes-docs` bucket;
-      `~/lev-yam-quotes` archived to a private GitHub repo, read-only from now on)*
-- [x] **Foundation:** extract a documented module template from the quotes migration
-      ("how to add a module": schema + RLS, `core.modules` row, permissions, folder, route,
-      launcher tile) — this is what makes the flexibility dream cheap later
-      *(written 2026-07-09: [MODULE-TEMPLATE.md](MODULE-TEMPLATE.md) — the checklist the
-      POS migration follows; update it whenever a migration teaches something new)*
-- [x] **Foundation: cross-module spines (events, money, preparation)** — design + owner
-      decisions (gross amounts, POS day-summaries, deposit due signing+N days, tentative
-      quotes on calendar): [plans/cross-module-foundation.md](plans/cross-module-foundation.md).
-      Landed **before** the POS port so POS integrates on day one:
-  - [x] `21_finance_spine.sql`: provenance (`source_module`/`source_ref`/`event_id`) +
-        derived-row immutability on `finance.entries`; `finance.expected` (deposits,
-        balances due); `finance.record_payment()`; `finance.event_pnl()`
-        *(applied to prod 2026-07-09)*
-  - [x] `40_events.sql`: `events` schema — canonical events + tasks, calendar/feed/
-        conflicts views, RLS + permission seeds (module row seeded **disabled** until the
-        Phase 2 UI); quotes → events projection trigger, backfill, expectations-on-sign,
-        income-on-paid *(applied + backfilled 2026-07-09: 2 confirmed + 1 tentative event
-        projected; full sent→signed→paid lifecycle verified on prod, 13/13 assertions)*
-  - [x] Finance UI pass: provenance badges, derived-only categories (`events`, `pos`,
-        `pos_food`, `pos_labor`) blocked for manual entry, "expected" tab *(done
-        2026-07-10; one-writer-per-category is now also DB-enforced in `entries_guard`;
-        verified end-to-end in the preview harness at phone width)*
-  - [x] **Partial payments** on `finance.expected` *(done 2026-08-12, plan
-        [phase1-closeout.md](plans/phase1-closeout.md) §B)* — `record_payment()` closed an
-        expectation at **any** amount, so ₪1 against a ₪5,000 deposit marked it paid and the
-        remaining ₪4,999 left the plan entirely (out of the open list, the open-expected
-        total, and reconciliation's overdue check). Now: `paid_amount` column, remainder
-        arithmetic, overpay only with a stated reason stamped into the entry's note
-        (softened from a flat refusal — owner decision 2026-08-26, staging review),
-        one `expected:<id>:pN` entry per payment (the posting
-        unique index forbids reusing one ref), `quotes.settle_on_paid` settles only the
-        remainder, reconciliation reports what is still owed, and the UI shows
-        "paid X of Y · remaining Z" instead of the old are-you-sure confirm
-  - [x] **Reversal path** — *rewritten rather than ticked as specified.* The original entry
-        said payments on hand-created expectations are "immutable with no corrector"; that
-        stopped being true with PR C (2026-08-03), whose owner override reaches
-        `source='finance'` rows through `correction_target()`'s fallback and is already
-        exposed in `EntriesTab`. What was genuinely missing — the *plan* side never
-        re-opening after a correction — is closed by §B's owner bypass: the owner can reset
-        `status`/`paid_amount` directly and `finance.audit_log` records it, so no separate
-        reversal function was needed. **Still open, logged:** correction rows carry
-        `payment_method = null` by design, so a reversed cash payment leaves the `by_payment`
-        cash column overstated while the totals stay right
-  - [ ] **Server-side provenance resolution** — deferred with a concrete trigger rather than
-        an open-ended one (2026-08-12). The `source_ref` grammar is parsed client-side in
-        `modules/finance/provenance.ts`; finance is still its only consumer, through a single
-        shared helper, so the cost of moving it has not yet been paid back. **Do it when the
-        first surface OUTSIDE finance needs entry→quote/POS links** — the Phase 2 events
-        module or a dashboard — or when a fifth in-module consumer appears. Shape: a
-        `security_invoker` `finance.entries_resolved` view next to the posting functions that
-        own the formats, which also retires `useQuoteMap`'s extra round trip and the dev
-        mock's third copy of the grammar
-  - [x] Finance UX pass (kickoff 2026-07-12, Or's brief; **done 2026-07-13, PR #6**) —
-        [plans/finance-ux-pass.md](plans/finance-ux-pass.md): report tab drill-down
-        (expandable breakdown rows → underlying entries), date-preset chips + kind
-        filters, source links on module-posted rows (`/pos?report=<date>` deep link,
-        quotes → quote page); folds in two tracked follow-ups: **HE/AR retrofit** of
-        the finance module chrome (predates the i18n layer) and EntriesTab form →
-        child component (keystrokes re-render the entries table)
-  - [x] **Finance books integrity** (kickoff 2026-07-31, Or's brief; delivered 2026-08-03,
-        verified on staging + review pass 2026-08-05) —
-        [plans/finance-books-integrity.md](plans/finance-books-integrity.md): four PRs,
-        A → B → C → D.
-        - [x] **PR A** categories as data *(done 2026-08-03, commit 5f66a26; gate
-              fully run — /simplify 18 fixes incl. a supersession hazard,
-              /security-review clean, /code-review high 5 findings all fixed)* — owner-editable `finance.categories`
-              (`54_finance_categories.sql`) replacing the thrice-declared `CHECK` + the
-              client mirror; constrains `finance.expected.category` (free text today);
-              seeds the missing real categories (rent, utilities, insurance, taxes,
-              payment fees, event costs, donations);
-              `owned_by_module` becomes the single source of the derived-only rule;
-              new owner-only `finance.categories` permission
-        - [x] **PR B** reconciliation — `finance.reconciliation()` over four checks
-              (POS day never posted · POS recompute mismatch · overdue expectations ·
-              pinned days, added by PR C), live-computed with a one-click fix per item;
-              launcher badges on the finance **and** POS tiles, in-module banner, dedicated
-              tab. Directly targets the failure the parity trial found by hand (first week
-              of July never posted). Set-based after a measured 718ms → ~4ms rewrite
-        - [x] **PR C** owner override — owner-only correction entries against any row
-              incl. module-derived (`56_finance_override.sql`, new `finance.override` perm);
-              §7.4 immutability preserved: the override is additive, never an edit. The POS day
-              **pin** ships as a *separate explicit* action, not as an implicit companion to a
-              correction — measured during the build: an additive correction already survives
-              the auto re-post untouched, while a pin freezes the whole day and would silently
-              swallow every cost entered afterwards (deviation recorded in the plan). Pinned
-              days are reported by reconciliation as `pinned`, escalating from `low` to
-              `medium` once money starts piling up behind the freeze
-        - [x] **PR D** transfers — `finance.transfers` as its own table (cash↔bank),
-              deliberately outside every income/expense total; dedicated TransfersTab
-              (decided in PR D), no new permission, asserted to leave the P&L untouched
-        - Out of scope (kickoff): signed-quote-vs-booked check, partial payments (stays
-          an open item above), tips in the books, sub-categories
-        - [x] **Staging verification + review pass** *(2026-08-05, plan §11)* — four bugs Or
-              found on staging (silent `±` button, stale reconciliation, the POS tile badged
-              with finance's problems, table buttons breaking the row layout) and five
-              `/code-review high` findings, the last of which was a real half-rule: archiving
-              a category blocked new **entries** but not new **expectations**, closed by a new
-              `finance.expected_guard()`. `rls_matrix` green locally *and* against the staging
-              database
-- [x] **PROD privilege escalation closed** *(2026-08-05, found by the gate while verifying the
-      finance branch — [modules/users.md](modules/users.md))* — `core.admin_assign_role()` was
-      executable by `authenticated` on prod and staging though `00_core.sql` revokes it, so any
-      signed-up user could grant themselves **owner** (`core` is an exposed schema and
-      `disable_signup` is `false`). Fixed on both tiers, probe-verified; grant audit across all
-      62 declared revokes now reports 0 drift on both. **Root cause is process:** prod is not on
-      the migration pipeline and each PR only hand-applied the *new* objects it added, so a
-      `grant`/`revoke`/`alter` added later against an existing object never ran there
-      - [x] **A live grant audit exists and runs every deploy** *(2026-08-12,
-            [phase1-closeout.md](plans/phase1-closeout.md) §D)* — `supabase/tests/audit-grants.mjs`
-            replays every CREATE/GRANT/REVOKE/DROP/ALTER-SET-SCHEMA from `schema/*.sql` **in
-            order** and compares the result against the live catalog. Wired into `deploy.yml`
-            (gating) and `deploy-staging.yml` (advisory). **This is the item the entry below
-            used to point at as already existing — it did not.** On its first real run it found
-            a live hole: `authenticated` held **TRUNCATE** on all four `pos.pos_*` tables, and
-            TRUNCATE is not governed by RLS, so any signed-in staff account could have wiped
-            the billing history. Plus 15 anon-callable functions and 2 passkey objects. All
-            closed on both tiers; both now report 0 drift
-      - [ ] **Put prod (and staging — same state, ADR 0061) on the migration pipeline** — deferred with the prerequisites named
-            (2026-08-12), because the obvious move is destructive: prod has never been linked,
-            so its migration ledger is empty and `supabase db push` would **replay the entire
-            baseline**, which re-creates the anon-writable POS surface the 2026-07-14 cut-over
-            closed ([10_pos.sql:250-263](../supabase/schema/10_pos.sql)) and re-seeds POS
-            permissions over live rows. Required first, in order: (1) a real schema diff
-            proving prod matches the baseline, (2) `supabase migration repair --status applied`
-            to stamp it **without executing it**, (3) connectivity from CI — the dev box cannot
-            reach the DB pooler. Until then §D's audit is the check that actually runs
-      - [x] ~~Make `rls_matrix` runnable against prod~~ — **dropped 2026-08-12, the premise was
-            wrong.** The entry claimed the suite borrows `supabase/seed.sql`'s actors; `seed.sql`
-            contains **zero** `aaaaaaaa-…` UUIDs and the suite has always seeded its own five
-            (`rls_matrix.sql:203-223`), so the stated fix was a no-op. The real blocker is that
-            the suite *deliberately* deletes real `users.manage` grants and every
-            `core.user_roles` row to stage global guard states — it is destructive **by design**
-            and belongs on local/staging only. Prod is verified by §D's audit instead
-      - [x] **A second `users.manage` holder on prod** *(2026-08-12)* — a dedicated break-glass
-            account was invited and granted `owner`; the guard now counts 2 unbanned holders.
-            (The address is deliberately not written down here: this repo is public, and
-            naming the highest-privilege account hands over the login target for free.)
-            **Note:** it is not a working break-glass until its email is confirmed — prod runs
-            `mailer_autoconfirm` OFF, so an unconfirmed account cannot sign in at all
-      - [x] **Set `disable_signup = true`** *(2026-08-12)* — applied to prod and staging and
-            probe-verified live (`422 signup_disabled`), with a control proving the password
-            grant still reaches GoTrue. `config.toml` given local parity. Behaviourally inert:
-            nothing calls `signUp`, and invites go through the service-role Admin API. The
-            audit now asserts this setting on every run, so it cannot silently revert
-- [x] **The topbar overflows below ~370px** *(fixed 2026-08-12,
-      [phase1-closeout.md](plans/phase1-closeout.md) §C)* — **the diagnosis above was wrong**
-      and is kept here as the record: `.user-email` was *already* `display:none` at ≤640px
-      (since 2026-07-01, before the bug was logged), so the proposed fix would have saved
-      nothing. The real 268px was sign-out 78 · passkey 58 · language 54 · role chip 54 · gaps.
-      Fixed by collapsing sign-out to the house `.btn-icon-label` pattern and hiding the role
-      chip at phone width — but the *actual* bug was structural: `.topbar-right` had no
-      `flex-wrap`, so a nowrap flex item's minimum size is its whole row and it could never
-      shrink. It now wraps, which means the next control added cannot re-open this.
-      **Root cause of the five-week miss:** `screenshot.mjs` shot 390px only, and 390 is
-      exactly the width it fit at. 360 is now in the default set, and every shot reports
-      horizontal overflow automatically
-- [x] POS: map `pos.html` features → module design under `app-src/src/modules/pos/`
-      (against the spines: `pos.close_day()` posts to finance; bills carry optional `event_id`)
-      — **full migration plan: [plans/pos-module.md](plans/pos-module.md)** (kickoff
-      2026-07-09: finance UI pass first; scope = parity-ready + deployed alongside
-      `pos.html`; reuses the live `public.pos_*` tables)
-- [x] Port billing: bills, items, combos, tips/discounts, payments, reopen/voids
-      *(done 2026-07-10, PR #4 — `42_pos_platform.sql` applied to prod, `pos` schema
-      exposed; anon pos.html path probe-verified unchanged)*
-- [x] Port kitchen pipeline (chef mode: qty → sent → done → served)
-- [x] Port day report (chef ops view / manager P&L) + expenses + date presets
-      (+ new: close-day button posting the business day into finance)
-- [x] Wire `pos.*` permissions per role (order/kitchen/analytics/costs/reports/manage;
-      legacy create_bill/refund retired)
-- [x] Parity trial: run `/app/pos` alongside `pos.html` on real service days
-      *(confirmed clean 2026-07-14: full shifts matched `pos_day_report` to the shekel;
-      one gap found — first week of July not posted to finance — backfilled separately,
-      not a POS-code issue)*
-- [x] Cut over: `pos.html` redirects to `/app/pos` (+ drop anon policies, harden
-      `created_by` from JWT, `pos` schema move + server-recompute validation +
-      `pos.range_report`) — **done 2026-07-15, full plan + close-out:
-      [plans/pos-cutover-hardening.md](plans/pos-cutover-hardening.md)** (full
-      menu-as-data admin UI deferred beyond this initiative)
-
-## POS operations v2 — post-cut-over hardening (kickoff 2026-07-20)
-
-*Owner-directed batch of six operational capabilities on the live POS, sequenced into five
-PRs. Not a numbered phase — hardening of the Phase 1 POS that feeds Phase 4 (QR menu sourced
-from POS items) and Phase 5 (inventory ↔ menu, shifts ↔ labor). Umbrella plan + locked scope
-decisions: [plans/pos-operations-v2.md](plans/pos-operations-v2.md).*
-
-- [x] **PR A** — Kitchen in/out visibility (floor + table view: cooking / ready / served)
-      *(done 2026-07-21, PR #26 merged + deployed; prod bundle probe-verified HE+AR.
-      Shared `kitchenCounts()` helper + `KitchenChips`; status sits inline beside the
-      table/item title per owner direction, not on its own row)*
-- [x] **PR B** — Summary tab redesign (week/month presets, accordions) + expenses upgrade
-      (who/when, receipt flag, paid date, full-period list) *(done 2026-07-21, PR #27
-      merged + deployed; `46_pos_expenses_tracking.sql` on prod, `rls_matrix` green.
-      Also added manager-only inline **edit** of an expense's name+amount and a delete
-      confirm — stronger when the expense is paid. Gate closed a PUBLIC-execute default
-      on the three new RPCs — revoked from `public, anon`)*
-- [x] **PR C** — Split/partial payments (partial-while-open, balance-due) + checkout item-delete
-      *(done 2026-07-22, PR #28 merged + deployed; `47_pos_payments.sql` on prod. Money now
-      flows through `pos_payments`; cash/card DERIVED from payments; every discount attributed;
-      fired-item removal → manager + structured reason. Backward-compat fallback kept the
-      deployed 2-arg client closing tables during the transition)*
-- [x] **PR D** — Menu-as-data (owner-editable items/prices/categories); retires the
-      `pos.menu_price()` literal mirror. **Expanded 2026-07-28** into a full initiative that
-      also retires open house (forward-only, history kept), makes meals first-class with
-      components, and folds in three kitchen/floor fixes (realtime reliability, per-unit
-      "done", floor grid). Plan: [plans/pos-menu-kitchen.md](plans/pos-menu-kitchen.md)
-      *(done 2026-07-30 — shipped as PR1 `9c0eb7b` + PR2 `9a85450`, both on prod (levyam.com)
-      and staging; DB `49/51/52/53` applied to prod + staging via the management-API. PR2
-      added per-item options (choice/count/add) with server-side price validation, notes on
-      lines, the single "ההזמנה" order status list, saved kitchen filter presets, closed-tables
-      on the floor, and the owner/manager menu admin UI (`pos.menu`). Full gate green;
-      owner-verified on local + staging. Follow-ups below.)*
-- [x] **PR E** — Day lifecycle: open → booked, drift detection, explicit re-post/override
-      *(done 2026-07-22, PR #29 merged + deployed; `48_pos_day_lifecycle.sql` on prod. Manual
-      first post, then auto re-post on any change to a booked day; report badge (✓ booked / ⟳
-      updated). Included the finance-spine negative-reversal fix (20/21). **Hotfix same day
-      (4aab7dd):** `post_day` was wiping legacy-day revenue on re-post — every pre-split-payments
-      bill has money only on `pos_bills`, so it now reads revenue from both sources; added
-      `pos_bills` auto-repost triggers; reconciled two stale food-cost days. Full gate green)*
-
-## Phase 1.5 — Platform hardening (2026-07-10 audit)
-
-*Follow-ups from the full-project best-practices audit — details, sizing, and owner
-questions: [plans/platform-hardening.md](plans/platform-hardening.md). The audit's #1
-item — the anon `pos_*` surface — is the POS cut-over task above, not repeated here.*
-
-**Closing out both phases (kickoff 2026-08-12):** the remaining open items in Phase 1 *and*
-Phase 1.5 are being finished as one batch — plan:
-[plans/phase1-closeout.md](plans/phase1-closeout.md). Its kickoff audit found **four roadmap
-entries that were factually wrong** (the topbar diagnosis, H6's prescribed fix, the
-`rls_matrix`-on-prod blocker, and a prod audit script that does not exist) plus a destructive
-`supabase db push` trap; the corrections and the owner's decisions are recorded there and
-written back into the entries below as each ships. Sequence: ops → topbar → prod audit →
-finance money integrity → doc rewrites.
-
-- [x] **H1** RLS regression suite (`supabase/tests/rls_matrix.sql`: per-role can/can't
-      matrix) + `PERM` ↔ `core.permissions` drift check in `ci.yml` AND `deploy.yml`
-      *(done 2026-07-16 — PR #11 of [plans/users-permissions-suite.md](plans/users-permissions-suite.md);
-      caught real drift on its first prod run: viewer role held zero permissions)*
-- [x] **H2** Schema migration pipeline — **absorbed by the Staging environment initiative**
-      (2026-07-28): `supabase/schema/*.sql` stays the readable source of truth, a generated
-      baseline migration is what local and staging actually apply, and the drift check runs in
-      both `ci.yml` and `deploy.yml`. See
-      [plans/platform-staging-environment.md](plans/platform-staging-environment.md).
-      *(Checkbox corrected 2026-08-12: it was left unticked while the entry that absorbed it
-      was ticked — the tracker contradicted itself.)* **Scope note:** this is done for local and
-      staging. **Prod is still not on the pipeline** — that half is its own open item under
-      Phase 1's prod-hardening block, with the `db push` replay hazard and prerequisites named.
-      *(Corrected 2026-09-30, [ADR 0061](decisions/0061-staging-schema-applied-by-hand-never-db-push.md):
-      done for **local** only — staging, like prod, has no migration history and is applied by
-      hand; the open pipeline item covers both tiers.)*
-- [x] **H3** Permission governance: last-admin lockout guard + `core.audit_log` on
-      role/permission changes *(done 2026-07-15, bundled with H5 + users-scoped H7 —
-      plan: [plans/users-hardening.md](plans/users-hardening.md); landed **ahead of**
-      H1/H2/H4 in the table below, owner-acknowledged deviation. Not bundled with H6
-      after all — H6 stays separate, still open. Guard widened during code review to
-      also cover `core.permissions` updates/deletes and `role_permissions` updates, not
-      just the originally-scoped delete paths; a real pre-existing gap was found and
-      fixed along the way — the only account in prod held `manager`, not `owner`, so
-      nobody actually held `users.manage` until this landed*)
-- [x] **H4** RLS initplan sweep: wrap `core.has_permission()` / `auth.uid()` in policies
-      as `(select …)`; add the pattern to MODULE-TEMPLATE.md — gates Phase 2's
-      public feed *(done 2026-07-16 — PR #11 of
-      [plans/users-permissions-suite.md](plans/users-permissions-suite.md), applied to prod)*
-- [x] **H5** Invite flow (`admin-invite` edge function + users-module action) +
-      self-service password reset on the login screen *(done 2026-07-15, plan:
-      [plans/users-hardening.md](plans/users-hardening.md); gates Phase 3's member role,
-      still to come)*
-- [x] **H5b** User lifecycle: delete & deactivate/reactivate users (owner-only
-      `users.delete` permission, `admin-user-ops` edge function, last-admin-guard
-      cascade-hole fix) — *(done 2026-07-16, PR #24 merged + deployed; plan +
-      close-out: [plans/users-delete-deactivate.md](plans/users-delete-deactivate.md);
-      also closed a live PUBLIC-execute privilege-escalation in `core` found by
-      the gate)*
-- [x] **H6** `finance.expected` module-row guard *(done 2026-08-12,
-      [phase1-closeout.md](plans/phase1-closeout.md) §B)* — module-sourced expectations are now
-      status-only for `finance.manage` holders; amount / due_date / reason / note / event_id /
-      `fulfilled_by` / `paid_amount` are refused, closing a path that silently broke the pairing
-      with a signed quote (and, via `fulfilled_by`, let a manager point an expectation at an
-      arbitrary entry). `record_payment()`'s bypass is closed too.
-      **The prescribed fix could not be used as written:** calling
-      `finance.assert_category_writable()` there would have **rejected the quotes module's own
-      primary money path**, because the `events` category is `owned_by_module='quotes'` and every
-      quotes deposit posts under it. Resolved with the owner-vs-poster predicate
-      (`finance.assert_category_writer()`), which asks "is this poster the module that owns the
-      category?" rather than "may a human write here?", and deliberately does not consult
-      `active` (archiving must never strand already-planned money).
-      **Owner decision 2026-08-12:** the owner is exempt from both guards — quotes can get a
-      deposit wrong and the owner must be able to correct it — with every such edit recorded in
-      the new `finance.audit_log` (readable at `finance.view`, trigger-written, no client write
-      policy). That also subsumed the separately-planned expectation re-open path.
-- [x] **H8** Platform observability — Bluebox/OTel tracing on the three Supabase edge
-      functions (`admin-invite`, `admin-user-ops`, `passkey-verify`), the only server-side
-      code the platform owns. Traces + **sanitized** log export: span attributes are an
-      allow-list enforced in the wrapper, error *class*/code only, never message text, per
-      architecture invariant 3. *(done 2026-08-12 — PRs #44 + #45, live on staging AND prod,
-      spans verified in Bluebox; plan + close-out:
-      [plans/bluebox-observability.md](plans/bluebox-observability.md). Added
-      `ARCHITECTURE.md` §6b Observability. Also closed a pre-existing prototype-pollution
-      hole in `passkey-verify`'s origin gate, a staging/prod `verify_jwt` drift, and the
-      missing `staging.levyam.com` origin that left the staging tier unable to exercise
-      these functions at all.)*
-- [x] **H7** Hygiene batch — nine small repo/UX/ops items; **8 of 9 done** (3 with
-      H3/H5 on 2026-07-15, 5 more on 2026-07-16 via PR #11 of
-      [plans/users-permissions-suite.md](plans/users-permissions-suite.md): storage
-      posture into `supabase/schema/50_storage.sql`, shell error boundary, dependabot,
-      `passkey-verify` error detail, `quotes.next_quote_number()` gated via
-      `core.require()`). **PITR stays parked** by the 20-signed-contracts rule —
-      the one open item, tracked in the plan.
-- [x] **Mobile-UX foundation pass** (owner-directed 2026-07-11, not from the audit):
-      progressive-disclosure rows (summary → tap → full detail + actions) shell-wide,
-      ≥44px touch targets, ≥16px inputs (iOS zoom), launcher tile descriptions, users
-      tab → role-chip cards, class-keyed mobile CSS (unblocks the HE/AR retrofits).
-      POS deliberately untouched (parity trial). Plan:
-      [plans/platform-mobile-ux.md](plans/platform-mobile-ux.md)
-      *(done 2026-07-12: PR #5 merged + deployed, smoke-checked; new bundle
-      probe-verified on prod — rowline CSS + bilingual strings served; close-out +
-      alignment verdict in the plan)*
-- [x] **Users & permissions suite** (kickoff 2026-07-15 — plan + close-out:
-      [plans/users-permissions-suite.md](plans/users-permissions-suite.md)): bundled
-      H1 + H4 + the non-PITR H7 remainder with the users-module feature backlog —
-      role badge, login activity, permission-matrix explicit Save (atomic
-      `core.apply_role_permissions` RPC), phone accordion, by-user effective lens,
-      custom roles (+ cascade-aware last-admin guard on `core.roles` — real lockout
-      hole found and closed), view-as permission preview (intersection semantics).
-      *(done 2026-07-16: PRs #11/#12/#13 gated + prod-applied, awaiting merge; out of
-      scope by owner decision: H2, H6, per-user overrides, true impersonation)*
-- [x] **Users module — UX pass + admin capabilities** (kickoff 2026-07-20, owner-directed —
-      plan + close-out: [plans/users-ux-admin-caps.md](plans/users-ux-admin-caps.md)):
-      cleaner/denser users list with small buttons; per-user **accordion** consolidating all
-      per-user data + actions (by-user effective lens moved out of the matrix tab);
-      **owner-only admin password set/override** (direct-set or send reset link — new
-      `users.password` perm + `admin-user-ops` actions); **bilingual role rename** (adds HE/AR
-      labels to `core.roles`, **dropped the legacy `label` column** — paid off the tracked
-      bilingual-role-label debt). Per-user permission overrides considered and **dropped** —
-      stays role-based. *(done 2026-07-20: full gate run; schema + `users.password` applied to
-      prod + `admin-user-ops` redeployed, `rls_matrix` green, awaiting merge. Newly-tracked
-      follow-up: unify `core.modules`/`core.permissions` labels onto the same bilingual DB
-      shape.)*
-
-- [x] **Staging environment** (kickoff + delivered 2026-07-28, owner-directed — plan +
-      close-out: [plans/platform-staging-environment.md](plans/platform-staging-environment.md)):
-      three tiers now live — local Colima/Docker Supabase stack (daily dev) + cloud
-      `lev-yam-staging` project + **`staging.levyam.com`** (Cloudflare Pages, noindex) — so dev
-      and the `/verify` gate no longer run against production. Synthetic seed only (no prod data).
-      **Absorbed H2** (versioned migration pipeline). Resolved the "one project / no staging"
-      wording in ARCHITECTURE/ROADMAP/CLAUDE.md. Free-tier cap turned out moot (survey + b2b
-      already inactive). Fixed a fresh-install last-admin-guard lockout along the way. **Deferred
-      follow-ups:** deploy Supabase edge functions to staging (from a normal machine), and a
-      GitHub Action for auto-deploy on `staging` push (currently manual `wrangler pages deploy`).
-
-## Operating system — gate into Phase 2 (kickoff 2026-09-09) ✅ closed 2026-09-22 (reduced closure)
-
-*Not a product phase: installs the Company-of-One operating system (risk tiers, decision log,
-product skills, automations, permissions, cadence) and **reinstates observability coverage
-(H9 + H9.5)** — owner decision 2026-09-09, [ADR 0035](decisions/0035-h9-reinstated-operating-system-block.md),
-superseding the 2026-08-26 removal. Spine: [plans/master-execution-plan.md](plans/master-execution-plan.md)
-(12 steps, each its own PR; the running checklist lives at the top of that file). Companions:
-[company-of-one-operating-system.md](company-of-one-operating-system.md),
-[plans/lev-yam-gap-analysis-work-order.md](plans/lev-yam-gap-analysis-work-order.md) (G1–G8),
-[plans/observability-best-practices-adoption.md](plans/observability-best-practices-adoption.md) (H9.5),
-[plans/observability-coverage.md](plans/observability-coverage.md) (H9, active again).
-**Phase 2 does not start before the first quarterly review**, which runs on the evidence this
-block produces (work order G7).*
-
-- [x] **Step 0 — M0** environment access + capability confirmation *(done 2026-09-14 — verdict changed the
-      plan: the sprint tenant is deactivated and the marketing RUM tag is dead on prod; Bluebox's env grants
-      no scopes. Owner decision: a **new dedicated Dynatrace environment** — [ADR 0038](decisions/0038-new-dedicated-dynatrace-environment.md).
-      Steps 4/7/8/10 and parts of 9/11 are parked; **the home itself is now a deferred decision for the first quarterly review** — ADR 0041)*
-- [x] **Step 1** — branch protection on `main` *(applied 2026-09-09 via API: PR + `build` check required,
-      admins included)* + decision log `docs/decisions/` (35 ADRs) + CLAUDE.md slim + `AGENTS.md`
-      *(done 2026-09-09, PR #50)*
-- [x] **Step 2** — risk tiers A/B/C (CLAUDE.md + `scripts/check-tier.mjs` as the `tier` required check) +
-      committed `.claude/settings.json` allowlist *(done 2026-09-09, PR #51; leash class = Tier A, ADR 0036)*
-- [x] **Step 3** — vitest on the pure money math (`pos/logic.ts`, `finance/format.ts`, `finance/provenance.ts`)
-      + oxlint (warnings ratcheted) in `ci.yml` and `deploy.yml` *(done 2026-09-21, PR #52; targets and linter
-      corrected at kickoff — ADR 0037)*
-- [ ] **Step 4 — BLOCKED** — H9 Phase 1 + H9.5-B: synthetic monitors, hardened detectors, count/freshness SLOs,
-      Bluebox Routine *(**parked** — re-deferred 2026-09-22 to the 2027-01-01 review, [ADR 0045](decisions/0045-observability-home-re-deferred-to-2027-01-review.md))*
-- [x] **Step 5** — product skills (product-context, feature-spec, idea-capture + `docs/ideas.md`,
-      weekly-review, feedback-triage, quarterly-review) with 3-case evals; obs-best-practices installed
-      *(done 2026-09-21, PR #54 — pulled ahead of the blocked Step 4)*
-- [x] **Step 6** — automations: `@claude` action, weekly / monthly / quarterly-prep crons (one shared
-      `agent-report.yml` worker), dependabot → Tier C auto-merge
-      ([ADR 0039](decisions/0039-dependabot-auto-merge-scope.md)); running on the owner's subscription
-      token ([ADR 0042](decisions/0042-agent-workflows-run-on-the-subscription-token.md)).
-      **G4 acceptance met 2026-09-21/22:** `@claude` on issue #67 → branch → PR #68 merged on green;
-      quarterly-prep → #65; monthly-triage → #66; weekly-review → #70. Three tuning rounds on the way
-      (PR #59 `id-token: write`, PR #61 flag set, PR #69 allowlist ↔ skill mismatch + caps) — each found
-      by a live run, none by review.
-- [ ] **Step 7 — PARKED** — H9 Phase 2 + H9.5-D: `/app` RUM (New RUM frontend), masking, staging exclusion, §6b rewrite *(parked — re-deferred to 2027-01-01, ADR 0045)*
-- [ ] **Step 8 — PARKED** — H9.5-C: OpenPipeline masking in both environments; invariant 3 gains its second layer *(parked — re-deferred to 2027-01-01, ADR 0045)*
-- [ ] **Step 9 — PARTIAL, two items unblocked** — H9 Phase 3. **Unblocked and pending (no Dynatrace
-      needed): `deno check` in `ci.yml`, and the rate limit on `login/options`** — a pre-auth
-      amplification vector; pure edge-function + CI work. Parked on the deferred observability-home
-      decision: reconciliation-as-monitor's alert, the log-attribute fix, traceparent/CORS RUM
-      linking *(re-deferred to 2027-01-01, ADR 0045)*
-- [ ] **Step 10 — PARKED except a docs carve-out** — H9 Phase 4 slot: SRG guardian + SDLC event
-      from `deploy.yml`, dashboards-as-code, H9.5-A/E/F *(parked — re-deferred to 2027-01-01,
-      ADR 0045)*. Unblocked: H9.5-F query-hygiene rules and H9.5-A's deployment-marker note
-      correction — both docs-only, minutes
-- [ ] **Step 11 — G5 template half shipped, rest PARTIAL** — G5's template half shipped 2026-09-21
-      (outcome metric + instrumentation in MODULE-TEMPLATE §0, Outcome check in the close-out ritual,
-      shipped-but-unvalidated in the monthly triage), ahead of H9 P5 and carrying P5's telemetry
-      bullet — [ADR 0040](decisions/0040-g5-ships-ahead-of-h9-phase-5.md) amends ADR 0019's
-      sequencing and is **flagged for owner confirmation**. G5's acceptance ("the next initiative
-      ships with a named outcome metric") opens with the first Phase 2 initiative. Of H9 P5:
-      the telemetry bullet is delivered; the mandatory production-context step and the CLAUDE.md
-      standing rule are **unblocked and pending**; only the Dynatrace MCP entry waits on the B1 decision
-- [x] **Step 12 — done 2026-09-22** — Operating cadence, queue-jumper rule and session hygiene in
-      CLAUDE.md (2026-09-21); the master plan's `## Close-out` written at the first quarterly review;
-      G7's acceptance met by the review itself (owner judgment, run live on issue #62)
-- [x] **Closure — reduced, 2026-09-22** by the first quarterly review ([issue #62](https://github.com/OrCoAI/lev-yam-main/issues/62),
-      [ADR 0044](decisions/0044-adr-0040-confirmed-and-part-4-reduced-closure.md)): Tier-C change
-      flows to prod untouched *(docs #53/#63/#68, dependabot #56 — **still not shown for a code
-      change**; the weekly review watches for the first)*; three crons fired *(#65, #66, #70)* and
-      `@claude` produced a merged PR *(#67 → #68)*. The observability criteria and every PARKED step
-      above sit under [ADR 0045](decisions/0045-observability-home-re-deferred-to-2027-01-review.md)
-      (re-check 2027-01-01), not counted here. Phase 2 opens with the mandate below
-- Follow-ups discovered at the review (ordinary items, no block):
-  - [ ] **Close-out ritual: add "update `docs/modules/<module>.md`"** — the stale users.md line
-        below happened because phase1-closeout §D shipped a module item under a plan file and the
-        ritual never says to touch the module log. CLAUDE.md edit → Tier A, its own PR
-  - [ ] **Step 9's unblocked half** — `deno check` over `supabase/functions/` in `ci.yml`; rate limit
-        on passkey `login/options` (pre-auth amplification vector). Tier A, no Dynatrace needed
-  - [ ] **Docs carve-outs from Steps 10/11** — H9.5-F query-hygiene rules, H9.5-A's deployment-marker
-        note correction, the mandatory production-context step + CLAUDE.md standing rule
-  - [ ] **Run the skill evals** (`.claude/skills/*/EVALS.md`, 3 cases each) — due at this ceremony,
-        not run; first real run before the 2027-01-01 review
-  - [ ] **Verify the break-glass account can sign in** (email confirmed) — unverified since the
-        2026-08-12 invite; owner action, then tick here
-  - [ ] **`@simplewebauthn/server` `^10.0.0` → 14.0.2** — Deno-imported, invisible to dependabot;
-        deferred with a date to the 2027-01-01 review (ADR 0045 re-check list)
-  - [ ] Delete the unused `ANTHROPIC_API_KEY` repo secret (expires 2027-01-31 anyway)
-  - [ ] **`quarterly-review/evidence-pack.md` names ADR 0041 as the live deferral** — now ADR 0045;
-        the pack finds deferrals by Status-line grep so the 2027-01 run still works, but the template
-        text is stale. `.claude/` → Tier A, its own PR (bundle with the close-out-ritual edit above)
-  - [ ] **Two workflow prompts still assert present state** — `monthly-triage.yml` ("an empty list is
-        the expected result until the first Phase 2 initiative ships"; two have) and `quarterly-prep.yml`'s
-        header comment ("first quarterly review is the gate into Phase 2"). Found 2026-10-04
-        ([ADR 0062](decisions/0062-instruction-files-state-rules-never-state-sessions-open-with-session-start.md));
-        `.github/workflows/` → Tier A with staging verification, its own PR before the 2026-11-01 run
+- [x] **Phase 0 — platform foundation:** `/app` shell, Supabase auth + passkeys, RBAC via
+      `core.has_permission()`, users admin, finance entries + report
+- [x] **i18n layer** (HE + Levantine Arabic, RTL) in the app shell *(2026-07-08)*
+- [x] **Quotes manager joins the platform** *(2026-07-09)* — [plans/quotes-module.md](plans/quotes-module.md);
+      the old local app is archived read-only and never copied here
+- [x] **Module template** — [MODULE-TEMPLATE.md](MODULE-TEMPLATE.md) *(2026-07-09, kept current)*
+- [x] **Cross-module spines** (events, money, preparation) *(2026-07-09/10)* —
+      [plans/cross-module-foundation.md](plans/cross-module-foundation.md)
+- [x] **Finance UX pass** *(2026-07-13, PR #6)* — [plans/finance-ux-pass.md](plans/finance-ux-pass.md)
+- [x] **Finance books integrity** — categories as data, reconciliation, owner override, transfers
+      *(2026-08-03/05)* — [plans/finance-books-integrity.md](plans/finance-books-integrity.md)
+- [x] **POS migration + cut-over** — billing, kitchen, day report, permissions, parity trial,
+      `pos.html` → `/app/pos` *(2026-07-15)* — [plans/pos-module.md](plans/pos-module.md),
+      [plans/pos-cutover-hardening.md](plans/pos-cutover-hardening.md)
+- [x] **POS operations v2** — kitchen visibility, summary + expenses, split payments, menu-as-data
+      + options + menu admin, day lifecycle *(2026-07-21 → 07-30)* —
+      [plans/pos-operations-v2.md](plans/pos-operations-v2.md), [plans/pos-menu-kitchen.md](plans/pos-menu-kitchen.md)
+- [x] **Platform hardening H1–H8** — RLS matrix, local migration pipeline, permission governance,
+      initplan sweep, invites, user lifecycle, `finance.expected` guard, Bluebox tracing, hygiene
+      batch — [plans/platform-hardening.md](plans/platform-hardening.md),
+      [plans/bluebox-observability.md](plans/bluebox-observability.md)
+- [x] **Users suite + UX pass** *(2026-07-16, 07-20)* — [plans/users-permissions-suite.md](plans/users-permissions-suite.md),
+      [plans/users-ux-admin-caps.md](plans/users-ux-admin-caps.md)
+- [x] **Mobile-UX foundation** *(2026-07-12)* — [plans/platform-mobile-ux.md](plans/platform-mobile-ux.md)
+- [x] **Staging environment** — local stack + `lev-yam-staging` + staging.levyam.com *(2026-07-28)* —
+      [plans/platform-staging-environment.md](plans/platform-staging-environment.md)
+- [x] **Prod privilege escalation closed + live grant audit on every deploy** *(2026-08-05/12)* —
+      [plans/phase1-closeout.md](plans/phase1-closeout.md); partial payments, topbar overflow,
+      `disable_signup`, break-glass account invited
+- [x] **Operating system** — branch protection, decision log, risk tiers, tests + lint, product
+      skills, automations on the subscription token, cadence *(closed reduced 2026-09-22,
+      [ADR 0044](decisions/0044-adr-0040-confirmed-and-part-4-reduced-closure.md))* —
+      [plans/master-execution-plan.md](plans/master-execution-plan.md)
+- [x] **Marketing site Phase 0** — `/stories/` section, sitemap + hub generator, `robots.txt`,
+      `llms.txt`, `/facts.txt`, `EventVenue` JSON-LD, GA4 `whatsapp_click` —
+      [plans/content-engine-phase0.md](plans/content-engine-phase0.md)
+- Follow-ups — **ordinary items**, grouped by the PR they ship in:
+  - [ ] **Instruction-file hygiene** (one Tier-A PR; it touches `.github/workflows/`, so staging
+        verification applies) — **before the 2026-11-01 monthly run:**
+        (a) the close-out ritual in CLAUDE.md also says "update `docs/modules/<module>.md`";
+        (b) `quarterly-review/evidence-pack.md` names ADR 0041 as the live deferral — now 0045;
+        (c) `monthly-triage.yml` and `quarterly-prep.yml` still assert present state (ADR 0062);
+        (d) the production-context step + its CLAUDE.md standing rule (H9 P5, needs no Dynatrace)
+  - [ ] **Edge functions in CI** (one Tier-A PR) — `deno check` over `supabase/functions/` in
+        `ci.yml`; a rate limit on passkey `login/options` (pre-auth amplification vector)
+  - [ ] **Observability docs carve-outs** (one docs-only PR) — H9.5-F query-hygiene rules; H9.5-A's
+        deployment-marker note correction
 
 ## Phase 2 — 2026-Q4 mandate: the marketing quarter (first quarterly review, 2026-09-22)
 
-*The mandate and the owner's words behind it: [ADR 0046](decisions/0046-q4-2026-mandate-marketing-quarter.md).
+*The mandate and the owner's words behind it: [ADR 0046](decisions/0046-q4-2026-mandate-marketing-quarter.md);
+merged on 2026-10-07 ([ADR 0065](decisions/0065-roadmap-consolidated-q4-mandate-merged-to-five-lines.md)),
+extended and **put in the owner's order** the same day
+([ADR 0066](decisions/0066-q4-mandate-order-content-media-first-items-16-to-18.md)), then **renumbered
+to match the order** ([ADR 0067](decisions/0067-q4-mandate-renumbered-to-the-order.md)) — the number *is*
+the rank; *(was N)* is the number used in documents dated before the renumbering (mapping below).
 Positioning for every piece: **"Focus on private and business events — we want a lot of focus on the
-venue and what it gives to people."** Each line is its own initiative through `feature-spec` with an
-Outcome metric and a check date (ADR 0019); one spec per session. The order is the review's
-proposal — the owner reorders by editing this list.*
+venue and what it gives to people."** Each line is its own
+initiative through `feature-spec` with an Outcome metric and a check date (ADR 0019); one spec per
+session. Items 1, 2 and 5 start without item 7 and gain GBP / Instagram / Facebook when it lands.*
 
-- [x] **1. Analytics wiring** — GA4 `whatsapp_click` as a key event + GA4 Data API + Search Console
-      feeding the `weekly-review` analytics headline through a workflow-side snapshot the agent only
-      reads → *every other outcome becomes measurable*. **Kicked off 2026-09-22:**
-      [plans/marketing-analytics-wiring.md](plans/marketing-analytics-wiring.md), check date 2026-10-19.
-      Ahrefs/Semrush parked as a spend decision ([ADR 0047](decisions/0047-analytics-wiring-ga4-and-gsc-only-public-numbers.md)).
-      **Shipped 2026-09-22 (PR #73); close-out in the plan. Outcome check due 2026-10-19**, counted
-      from the first scheduled run after the merge.
-- [ ] **2. Story pages at cadence + the authoring tool** — a story pair (HE + AR) from a brief with
-      chrome, twin, hub and sitemap handled; `FACTS.md` gaps filled as pages need them → *organic
-      sessions and `whatsapp_click` by `page_slug`*. **Kicked off 2026-09-22:**
-      [plans/stories-authoring-tool.md](plans/stories-authoring-tool.md) — `story-author` skill,
-      gitignored `media/` photo intake, chrome stamping in the generator, four cornerstone pairs;
-      check date 2026-10-25. **Tool + template merged to main 2026-09-23 (PRs
-      [#79](https://github.com/OrCoAI/lev-yam-main/pull/79), [#80](https://github.com/OrCoAI/lev-yam-main/pull/80));
-      the four pairs follow, one PR each, via `story-author` — first: team day by the sea**
-      **Pair 1 `team-day-by-the-sea` LIVE 2026-09-23 (PR #83); follow-up: script the extra-figure and
-      video-montage steps — `story-images.sh --as`, `scripts/story-video.sh`, Tier A.**
-      **→ amended 2026-09-23 ([ADR 0052](decisions/0052-stories-four-pairs-a-week-for-the-first-month.md)):
-      4 pairs a week for four weeks = 16 by 2026-10-24, then the owner sets the pace; backlog in the
-      plan; item 11 pulled forward; "number one" = GSC top-3 share + manual AI-citation check**
-      **→ amended 2026-09-24 ([ADR 0053](decisions/0053-story-pages-are-narrative-essays-village-facts-sourced-in-facts.md)): story pages are narrative
-      essays; village facts enter `FACTS.md` first** **Pairs 2–4 LIVE 2026-09-24 (PRs #87, #91, #89, #90) — 4 of 16.**
-      **Pair 5 `strategy-offsite-by-the-sea` LIVE 2026-10-06 — 5 of 16; → amended 2026-10-06
-      ([ADR 0063](decisions/0063-every-story-page-tells-a-village-story-no-other-page-tells.md)): no village story is told twice.**
-      *(bug found 2026-09-23: desktop header nav overlaps the social icons at 961–1300px, site-wide,
-      HE + AR — own Tier B PR; measurements in the plan's follow-ups)*
-- [ ] **3. Local SEO cluster** — near Caesarea / Hadera / Jisr, directions, "things to do",
-      fish-restaurant intents → *local-pack impressions, direction requests*
-- [ ] **4. AEO layer** — `facts.txt` / `llms.txt` expansion, `FAQPage` + `Event` JSON-LD, answer-first
-      blocks; measured with Ahrefs Brand Radar → *citations and mentions in AI answers*
-- [ ] **5. CTA sharpening** — per-page prefilled WhatsApp messages, click-to-call, sticky CTA on
-      stories → *click-through rate per page*
-- [ ] **6. Social pipeline** — every story yields IG/FB posts; Meta Pixel `Contact` already fires →
-      *social-referred WhatsApp clicks*
-- [ ] **7. Google Business Profile loop** — posts, photos, review replies, Q&A; `AggregateRating` on
-      site → *GBP calls and direction requests*
-- [x] **8. Public "What's happening"** — the original Phase 2's public half, minimal: events table +
-      one HE/AR public page reading Supabase anonymously (the first public content table — P4 gets
-      tested; prereq H4 done) → *event inquiries*
-      **Kicked off 2026-09-25:** [plans/events-whats-happening.md](plans/events-whats-happening.md) —
-      scope widened by the owner ([ADR 0054](decisions/0054-whats-happening-is-db-driven-public-life-bilingual-in-the-db.md)):
-      live public life only (weekends, community, initiatives), dated + recurring items, `/app/events`
-      form **and** static pages for the big recurring ones, a detail page per item with prefilled
-      WhatsApp + `Event` JSON-LD, nav (+ a homepage strip, removed 2026-09-29); Arabic enforced by a DB CHECK. Two Tier-A
-      PRs (data + admin, then public surface); outcome = `whatsapp_click` + visits on `/happening/*`,
-      check at ship + 21 days
-      **PR 1 merged + on prod 2026-09-28** ([#93](https://github.com/OrCoAI/lev-yam-main/pull/93)): schema 58,
-      `/app/events` ("מה קורה") with gallery + translate button ([ADR 0055](decisions/0055-whats-happening-arabic-may-be-machine-drafted-but-never-published-unreviewed.md)),
-      `translate` function; prod hand-applied and audited.
-      **PR 2 kicked off 2026-09-28** ([ADR 0056](decisions/0056-whats-happening-item-pages-are-generated-landing-pages-rebuilt-on-publish.md),
-      [ADR 0057](decisions/0057-ga4-carries-share-click-for-happening-landing-pages.md)): a generated static
-      landing page per item, rebuilt on publish through a scoped GitHub token; share row + sticky bar;
-      two optional fields (`59_events_landing.sql`); `share_click` in GA4; the landing page replaces
-      the story pair; a written "Path to booking" for Phase 4. One Tier-A PR.
-      **PR 2 built 2026-09-28**, reworked on the owner's localhost review 2026-09-29 (ADR 0058: "יוזמות",
-      no story link, cost + booking, calendar hub, schema 60) (branch `events-landing-pages`): schema 59, `rebuild-site` function,
-      generator + templates + hubs + share row + nav (strip out), nightly prod rebuild; verified on
-      localhost, RLS matrix green. **Shipped 2026-09-30** ([#97](https://github.com/OrCoAI/lev-yam-main/pull/97)):
-      staging sign-off, schema 59 + 60 applied on prod (0 drift), `translate` + `rebuild-site` on
-      both projects with the rebuild token, ADR 0059 (paged hub, small photo copies for cards and
-      WhatsApp previews). **Outcome check 2026-10-21.** Follow-ups: [modules/events.md](modules/events.md).
-- [ ] **9. Backlink programme** — tourism, food/travel, Arab-society media → *referring domains*
-- [ ] **10. Paid test** — a small Meta/Google campaign against one or two pages → *cost per WhatsApp
-      conversation*. **Prerequisite, owner 2026-09-22:** before spending anything, prove the paid
-      path is connected end to end — UTM tagging on every ad URL, the campaign landing in GA4 as
-      `Paid Social` / `Paid Search` (not `Unassigned`), Meta Pixel `Contact` firing, and
-      `whatsapp_click` attributable to the campaign by `page_slug` *and* source. Evidence this is
-      not theoretical: a Paid Social campaign ran and stopped inside the trailing window on
-      2026-09-22 (43 sessions → 0, ~66% of the week-over-week drop) and nothing in the system
-      linked the spend to the clicks it bought — the weekly report could show the fall but not
-      the cost per conversation, which is exactly this item's metric.
-- [ ] **11. Content automation** — `@claude` drafts story twins from a brief issue, gated on the
-      owner's tone + facts review → *pages per week*
-- [ ] **12. Platform modules as MCP** — agents work on platform data through RLS-scoped access
-      (owner's addition) → *owner hours per data task*
-- [ ] **13. Harness smalls** — shared `build-app.sh`, CI double-run dedupe, decision graph
-      (from `docs/ideas.md`) → *CI minutes; context-load time*
-- [x] **14. Take the public write off the report agents** — *done 2026-09-22,
-      [ADR 0048](decisions/0048-report-agents-hold-no-write-and-actions-are-sha-pinned.md).* The
-      agent writes `report.md` and a deterministic step publishes it, withholding the whole report
-      if a secret's value appears in it; the `gh` write family, `.git/` and the runner's file
-      commands are closed too, since a bash-capable agent reads its own environment whatever is
-      denied. Every third-party action SHA-pinned (7 actions, 7 of the 10 workflow files). Raised by item 1's security review →
-      *no credential reachable from agent-authored text*
-- [ ] **15. Video pipeline (Remotion)** — reels built from a `new-video` brief inside the repo
-      (`video/`, never deployed), the guidelines an agent instruction file (leash, Tier A) refreshed
-      weekly by a research job that opens a PR the owner merges → *reels published from a brief per
-      week; social-referred sessions and `whatsapp_click`*. **Owner's addition 2026-10-06, its own line
-      rather than item 6. Kicked off 2026-10-06:** [plans/video-pipeline.md](plans/video-pipeline.md),
-      [ADR 0064](decisions/0064-video-is-made-with-remotion-in-the-repo-guidelines-are-the-leash-refreshed-weekly-by-pr.md);
-      Meta only, no audio in v1, HE + AR per reel; check date 2026-11-10
-- **Out this quarter:** English stories (`/stories/en/`) — reserved, not built.
+- [ ] **1. Content & media optimization** *(was 18; owner, 2026-10-07)* — everything published on every
+      channel is accurate, current and keeps getting new material:
+      (a) one source of truth per kind — facts `FACTS.md`, photos a Google Drive folder the owner fills
+      from the phone → `media/` → optimized, video `video/` + the hero, live activity `/app/events`;
+      (b) a one-time inventory of what is live on every channel, with a fix list;
+      (c) freshness rules (owner sets the numbers) — zero fact mismatches, new GBP photos weekly, gallery
+      monthly, story facts re-checked every 90 days, hero video quarterly, nothing expired visible;
+      (d) the photo/video pipeline — weekly sort, pick, optimize per channel, owner approves; guests'
+      faces only with consent, never names;
+      (e) the weekly routine — an automated cross-channel check plus the owner's ~20–30 min list with
+      drafts ready, and a monthly deeper audit
+      → *channels in sync with `FACTS.md`; days since the last photo / video / post per channel; photos
+      added per week*. Site + Drive first; GBP and social join with item 7
+- [ ] **2. Weekly marketing report** *(was 17; owner, 2026-10-07)* — its own weekly issue **and** an
+      email to the owner: traffic, `whatsapp_click` per page, the AI-citation log, outcome checks due,
+      item 1's freshness numbers, and **social publishing** *(was 6, then under 15)*: a reel a week and
+      a post per story, tracked against the cadence. The engineering weekly drops its Analytics headline
+      and links here. Social / GBP numbers reach the agent as a file from a fixed pre-agent step, never as
+      a credential (ADR 0047/0048 pattern); the email needs its own scoped send credential — Tier A,
+      security review. → *reports delivered weekly; the social cadence met*
+- [ ] **3. Search & AI visibility** *(was 3 + 4)* — the same facts everywhere (site,
+      GBP, socials), `facts.txt` / `llms.txt` expansion, internal links between stories, the local
+      queries the story backlog does not cover → *local-pack impressions, direction requests, AI-answer
+      citations* (the manual citation check of ADR 0052 until a paid source is decided)
+- [ ] **4. Story pages** *(was 2)* — **the pair cadence runs in parallel with everything above until
+      2026-10-24** (16 pairs, by hand — [ADR 0052](decisions/0052-stories-four-pairs-a-week-for-the-first-month.md));
+      position 4 is its next phase: CTA sharpening and the pace after 24 Oct. Narrative essays, one village
+      story each, facts into `FACTS.md` first ([ADR 0053](decisions/0053-story-pages-are-narrative-essays-village-facts-sourced-in-facts.md),
+      [0063](decisions/0063-every-story-page-tells-a-village-story-no-other-page-tells.md)) → *organic sessions
+      and `whatsapp_click` by `page_slug`*. [plans/stories-authoring-tool.md](plans/stories-authoring-tool.md);
+      **5 of 16 live**; check date 2026-10-25. Open `FACTS.md` gaps: a typical weekend's events, the
+      Israel Trail segment, Nimer's fishing calendar (backlog topics 8, 14, 15)
+  - [ ] **CTA sharpening** *(was 5)* — the sticky WhatsApp bar on stories (reuse יוזמות' `.hp-sticky`),
+        each page's prefilled message checked → *click-through rate per page*
+  - [ ] **Content automation** *(was 11)* — `@claude` drafts a pair from a brief issue; on hold
+        while pairs are written by hand (owner, 2026-10-07)
+  - [ ] Bug: desktop header nav overlaps the social icons at 961–1300px, site-wide, HE + AR — Tier B,
+        needs a design call (measurements in the plan's follow-ups)
+  - [ ] Script the extra-figure and video-montage steps (`story-images.sh --as`, `scripts/story-video.sh`) — Tier A
+- [ ] **5. Google Business Profile loop** *(was 7)* — posts, photos, review replies, Q&A; `AggregateRating`
+      on site; the owner's weekly part lives in item 1's list; by hand until item 7 lands →
+      *GBP calls and direction requests*
+- [ ] **6. Backlink programme** *(was 9)* — tourism, food/travel, Arab-society media; the owner's outreach,
+      Claude drafts → *referring domains*
+- [ ] **7. Connect social + GBP to Claude** *(was 16; owner, 2026-10-07)* — read + draft, the owner
+      publishes; the owner authorizes the connector in claude.ai (Windsor.ai the candidate — coverage
+      checked at kickoff); connectors live in the owner's sessions only, never in the automated agents;
+      **UTM on every owned link** (GBP website button, Instagram / Facebook bios, shares) so those visits
+      stop landing as "direct" → *GBP / social numbers readable every week*
+- [ ] **8. Paid test** *(was 10)* — a small Meta/Google campaign against one or two pages → *cost per WhatsApp
+      conversation*. **Prerequisite (owner, 2026-09-22):** prove the paid path end to end before
+      spending — UTM on every ad URL, the campaign landing in GA4 as `Paid Social` / `Paid Search`,
+      Meta Pixel `Contact` firing, `whatsapp_click` attributable by `page_slug` *and* source. (A
+      campaign that stopped inside the 2026-09-22 window showed up as a drop nothing could cost.)
+- **Done this quarter:**
+  - [x] **Analytics wiring** *(was 1; shipped 2026-09-22, PR #73)* — [plans/marketing-analytics-wiring.md](plans/marketing-analytics-wiring.md);
+        Ahrefs/Semrush parked as a spend decision ([ADR 0047](decisions/0047-analytics-wiring-ga4-and-gsc-only-public-numbers.md)).
+        **Outcome check due 2026-10-19**
+  - [x] **Public "What's happening" / יוזמות** *(was 8; shipped 2026-09-30, PRs #93 + #97)* —
+        [plans/events-whats-happening.md](plans/events-whats-happening.md), ADRs 0054–0059.
+        **Outcome check due 2026-10-21.** Follow-ups: [modules/events.md](modules/events.md)
+  - [x] **Take the public write off the report agents** *(was 14; 2026-09-22,
+        [ADR 0048](decisions/0048-report-agents-hold-no-write-and-actions-are-sha-pinned.md))*
+  - [x] **Video pipeline (Remotion)** *(was 15; built 2026-10-06, PR #109)* — [plans/video-pipeline.md](plans/video-pipeline.md),
+        [ADR 0064](decisions/0064-video-is-made-with-remotion-in-the-repo-guidelines-are-the-leash-refreshed-weekly-by-pr.md);
+        check date 2026-11-10 (4 reels posted — tracked in item 2)
+    - [ ] A render smoke in `ci.yml` when `video/` changes — Tier A
+    - [ ] Re-lay out the two existing reels to the Meta safe zone
+    - [ ] Arabic native-reader pass on the weekend copy; owner sets the `/app/events` weekend item to
+          the FACTS hours (blocks the first post); the `VIDEO_GUIDELINES_PAT` secret
+- **Old → new numbers** (references dated before 2026-10-07 use the old ones): 18 → 1 · 17 → 2 ·
+  3, 4 → 3 · 2, 5, 11 → 4 · 7 → 5 · 9 → 6 · 16 → 7 · 10 → 8 · 6 → 2 · 12, 13 → [ideas.md](ideas.md) ·
+  done: 1 analytics, 8 What's happening, 14 report agents, 15 video pipeline (ADR 0065–0067).
+- **Out this quarter:** English stories (`/stories/en/`) — reserved in the URL structure, not built.
+
+## Parked until a trigger *(deferred)*
+
+*Each line names what un-parks it. None is current work.*
+
+- [ ] **Put prod and staging on the migration pipeline** — trigger: the three prerequisites, in order:
+      (1) a real schema diff proving the tier matches the baseline, (2) `supabase migration repair
+      --status applied` to stamp it without executing, (3) DB connectivity from CI. Never `db push`
+      before then ([ADR 0005](decisions/0005-prod-schema-verified-by-live-grant-audit.md),
+      [ADR 0061](decisions/0061-staging-schema-applied-by-hand-never-db-push.md)); the grant audit is
+      the check that runs meanwhile
+- [ ] **Server-side provenance resolution** — trigger: the first surface *outside* finance needs
+      entry → quote/POS links, or a fifth in-module consumer. Shape: a `security_invoker`
+      `finance.entries_resolved` view ([plans/phase1-closeout.md](plans/phase1-closeout.md))
+- [ ] **PITR (Supabase paid tier)** — trigger: 20 signed contracts ([ADR 0002](decisions/0002-pitr-deferred-until-20-signed-contracts.md))
+- [ ] **Make `js/app.js` metadata translation opt-in** — trigger: a second page loads `app.js`
+      (it overwrites `document.title` + four meta tags through hardcoded selectors; it is why
+      `/stories/` has `js/stories.js`)
+- [ ] *(Optional)* **Self-hosted Arabic webfont** — trigger: the system stack looks wrong next to
+      Hebrew now that whole pages are Arabic (a deliberate design today, not a bug)
+- Module-level open items stay in their logs: [finance](modules/finance.md) (the reversed-cash
+  `by_payment` column), [users](modules/users.md) (bilingual `core.modules` / `core.permissions`
+  labels), [events](modules/events.md), [pos](modules/pos.md), [quotes](modules/quotes.md)
+
+## The 2027-01-01 quarterly review — deferred decisions
+
+*The authoritative list is [ADR 0045's re-check list](decisions/0045-observability-home-re-deferred-to-2027-01-review.md#the-2027-01-01-re-check-list)
+(extended by ADR 0065); `quarterly-prep` finds it by the ADR's Status line. Summarised here so
+nothing deferred is invisible:*
+
+- **The observability home** — and everything parked on it: Operating-system Steps 4, 7, 8; the
+  Dynatrace halves of 9, 10, 11 (reconciliation-as-monitor alert, log-attribute fix, traceparent
+  linking, SRG + SDLC events, dashboards-as-code, the Dynatrace MCP entry); the **dead Dynatrace RUM
+  tag** on the marketing site (404 since 2026-09-09 — [ADR 0038](decisions/0038-new-dedicated-dynatrace-environment.md))
+- **`@simplewebauthn/server`** `^10.0.0` → latest — bump with a passkey re-test on staging, or defer again
+- **Credentials, one session:** regenerate `CLAUDE_CODE_OAUTH_TOKEN`, rotate `GOOGLE_SA_KEY`, delete
+  the unused `ANTHROPIC_API_KEY` secret (expires 2027-01-31 anyway)
+- **Break-glass account** — confirm it can sign in (email confirmed); owner action, any time before
+- **Skill evals** — the first real run of every `.claude/skills/*/EVALS.md`, done before the review
 
 ## Phase 2 — What's happening: bookings & events *(internal half deferred by the Q4 mandate)*
 
 *Replaces WhatsApp-thread reservation tracking. The shared calendar itself is the `events`
 spine landed in Phase 1 ([plans/cross-module-foundation.md](plans/cross-module-foundation.md))
-— this phase builds the bookings module **on** it and takes it public, because the feed is
-public by default. **2026-09-22:** the public "What's happening" item moved up into the Q4
-mandate (its item 8); the rest waits for the 2027-01-01 review ([ADR 0046](decisions/0046-q4-2026-mandate-marketing-quarter.md)).*
+— this phase builds the bookings module **on** it. **2026-09-22:** the public "What's happening"
+half moved up into the Q4 mandate (its item 8 before the renumbering; shipped 2026-09-30); the rest waits for the
+2027-01-01 review ([ADR 0046](decisions/0046-q4-2026-mandate-marketing-quarter.md)).*
 
 - [ ] `41_bookings.sql`: reservations table (RLS, permission keys) feeding the `events`
       spine; spine events already carry the **visibility flag — `public` by default,
@@ -620,9 +225,6 @@ mandate (its item 8); the rest waits for the 2027-01-01 review ([ADR 0046](decis
       quotes prep checklists (jsonb) into `events.tasks`, then retire the column
 - [ ] "Happening" feed v1 on the launcher: today's reservations + upcoming events —
       the first taste of *see what's happening*
-- [ ] **Public "What's happening" on levyam.com** (HE/AR): the village and visitors see
-      published events on the marketing site, read straight from Supabase
-      *(prereq: the H4 initplan sweep — Phase 1.5)*
 
 ## Phase 3 — Community creation (the heart of the dream)
 
@@ -673,53 +275,6 @@ is bilingual HE/AR like the marketing site.*
 - [ ] **Open the membership door:** public request → approve flow on levyam.com — membership
       grows beyond team invitations (revisits the Phase 3 invite-only decision)
 - [ ] Social-impact storytelling: real numbers from the platform feeding the marketing site
-
----
-
-## Marketing site — organic reach (parallel track, 2026-08)
-
-*Not a platform module: this track lives entirely in the static site (`index.html`,
-`stories/`, `robots.txt`, `sitemap.xml`) and the deploy workflow. It runs alongside the
-platform phases and shares nothing but the repo and the deploy pipeline. The content
-strategy driving it is private and lives outside the repo.*
-
-- [x] **Phase 0 — stories section & SEO foundation**
-      ([plans/content-engine-phase0.md](plans/content-engine-phase0.md)): `/stories/`
-      template + bilingual hub, build-time sitemap + hub generator, `robots.txt`,
-      `llms.txt`, `FACTS.md`→`/facts.txt`, homepage `EventVenue` JSON-LD, GA4
-      `whatsapp_click` with `page_slug`
-- [ ] First real story pages (HE + AR twins, one query cluster each) — written in
-      dedicated sessions, each gated on Or's tone + facts review before commit
-      *(→ Q4 mandate item 2)*
-- [ ] Fill the `[חסר]` markers in `FACTS.md` — seasonality (Nimer's fishing calendar,
-      needs Nimer), plus whatever the first content sessions surface as missing
-      *(→ Q4 mandate item 2, as pages need them)*
-- [x] Mark `whatsapp_click` as a key event in the GA4 UI (console-side, not repo) *(done 2026-09-22)*
-      *(→ Q4 mandate item 1, [plans/marketing-analytics-wiring.md](plans/marketing-analytics-wiring.md) scope (a))*
-- [ ] **Regenerate `CLAUDE_CODE_OAUTH_TOKEN` at the 2027-01-01 quarterly review** — the agent workflows run
-      on the owner's subscription token ([ADR 0042](decisions/0042-agent-workflows-run-on-the-subscription-token.md));
-      it is long-lived but not permanent, and an expired token fails **loudly** (auth error), not with the silent
-      clean exit a *missing* one produces. `claude setup-token` → `gh secret set`. The unused `ANTHROPIC_API_KEY`
-      secret (expires 2027-01-31) can be deleted from the repo. **Same session: rotate `GOOGLE_SA_KEY`**
-      (the analytics service-account key, [ADR 0047](decisions/0047-analytics-wiring-ga4-and-gsc-only-public-numbers.md))
-- [ ] **Dynatrace RUM on the marketing site is dead** (tag returns 404 since the sprint tenant was
-      deactivated, found 2026-09-09): replace the tag with the new environment's once it exists
-      (Tier A, `index.html` + `stories/_template.html`) — [ADR 0038](decisions/0038-new-dedicated-dynatrace-environment.md).
-      **Re-deferred 2026-09-22 to the 2027-01-01 review** ([ADR 0045](decisions/0045-observability-home-re-deferred-to-2027-01-review.md));
-      the first quarterly review confirmed that staying dead is acceptable for the marketing quarter. Meanwhile the
-      conversion funnel is measured by GA4 + Meta; what is lost is the homepage-only interaction
-      signal, which went to Dynatrace alone
-- [ ] *(Optional)* **Self-hosted Arabic webfont.** Arabic copy renders in a system stack —
-      `css/styles.css` switches `html[lang="ar"]` to `SF Arabic`/`Geeza Pro`/`Noto Sans Arabic`
-      deliberately, and the Heebo/Assistant `unicode-range`s exclude Arabic. That is a working
-      design decision, not a bug; revisit only if the system stack looks wrong next to Hebrew
-      pages now that whole pages are Arabic
-- [ ] **Make `js/app.js` metadata translation opt-in.** `applyTranslations` writes
-      `document.title` and four meta tags through hardcoded selectors, so it would erase any
-      page's own SEO metadata — the one part of its i18n layer that isn't `data-i18n*`-driven.
-      Harmless today (only `index.html` loads it), but it's why `/stories/` needed `js/stories.js`
-- [ ] English (`/stories/en/<slug>/`) — reserved in the URL structure, not built *(explicitly out
-      of the Q4 mandate, 2026-09-22)*
 
 ---
 

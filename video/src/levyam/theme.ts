@@ -21,8 +21,8 @@ const { fontFamily: notoSansArabic } = loadNotoSansArabic("normal", {
 });
 
 export const TYPE = {
-  he: { display: assistant, body: heebo, headline: 100, text: 50, small: 40, headLeading: 1.12, textLeading: 1.3 },
-  ar: { display: notoSansArabic, body: notoSansArabic, headline: 88, text: 46, small: 40, headLeading: 1.4, textLeading: 1.55 },
+  he: { display: assistant, body: heebo, hero: 170, headline: 100, text: 50, small: 40, headLeading: 1.12, textLeading: 1.3 },
+  ar: { display: notoSansArabic, body: notoSansArabic, hero: 160, headline: 88, text: 46, small: 40, headLeading: 1.4, textLeading: 1.55 },
 } as const;
 
 export type Type = (typeof TYPE)[keyof typeof TYPE];
@@ -52,9 +52,14 @@ export const TEXT = { start: 150, end: 72, top: SAFE.top + 50, bottom: SAFE.bott
 // docs/plans/video-pipeline.md.
 export const META = { top: 0.14, bottom: 0.35, side: 0.06, rail: { width: 0.21, height: 0.4 } } as const;
 export const ZONE = { x0: 120 / 1080, x1: 1 - 0.21, y0: 288 / 1920, y1: 1248 / 1920 } as const;
+// Inner margin text keeps from ZONE's edges, so descenders and side bearings stay inside, not on it.
+export const ZONE_INSET = 12;
 
 // Frames per word entry; a block's entry is ENTER plus its stagger.
 export const ENTER = 16;
+
+// Ken Burns end scale ceiling (guidelines §5).
+export const KEN_BURNS_MAX = 1.1;
 
 export const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 
@@ -69,6 +74,12 @@ export const headline = (t: Type, color: string, shadow = true): React.CSSProper
   textShadow: shadow ? SHADOW : undefined,
 });
 
+// The display role one size up (TYPE.*.hero) — a name that is the whole frame.
+export const hero = (t: Type, color: string, shadow = true): React.CSSProperties => ({
+  ...headline(t, color, shadow),
+  fontSize: t.hero,
+});
+
 export const body = (t: Type, color: string, shadow = true): React.CSSProperties => ({
   fontFamily: t.body,
   fontSize: t.text,
@@ -76,6 +87,12 @@ export const body = (t: Type, color: string, shadow = true): React.CSSProperties
   lineHeight: t.textLeading,
   color,
   textShadow: shadow ? SHADOW : undefined,
+});
+
+// The small role — an attribution or a source line under body text; never under 36 px (§4).
+export const caption = (t: Type, color: string, shadow = true): React.CSSProperties => ({
+  ...body(t, color, shadow),
+  fontSize: t.small,
 });
 
 export type BeatProps = { readonly copy: WeekendReelProps; readonly duration: number };

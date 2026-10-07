@@ -78,7 +78,7 @@ implementation choices stay in their plan files; an ADR is for a decision that c
 - [0043 — First quarterly review (2026-Q3): every vision principle and every architecture invariant holds; "Where we are today" rewritten](0043-q3-2026-review-vision-and-invariants-hold.md) — 2026-09-22
 - [0044 — ADR 0040 confirmed; the Operating-system block closes on a reduced Part 4, and Phase 2 opens](0044-adr-0040-confirmed-and-part-4-reduced-closure.md) — 2026-09-22
 - [0045 — The observability home is re-deferred to the 2027-01-01 quarterly review; the dated re-check list for that review](0045-observability-home-re-deferred-to-2027-01-review.md) — 2026-09-22
-- [0046 — Phase 2 mandate for 2026-Q4: the marketing quarter — every effort goes to reaching the world, measured first](0046-q4-2026-mandate-marketing-quarter.md) — 2026-09-22
+- [0046 — Phase 2 mandate for 2026-Q4: the marketing quarter — every effort goes to reaching the world, measured first](0046-q4-2026-mandate-marketing-quarter.md) — 2026-09-22 *(amended — see status)*
 - [0047 — Initiative #1 measures with GA4 + Search Console only; Ahrefs/Semrush are a paid decision; traffic numbers may appear in the public weekly issue](0047-analytics-wiring-ga4-and-gsc-only-public-numbers.md) — 2026-09-22
 - [0048 — The report agents hold no network write: they write a file and a deterministic step publishes it; every third-party action is SHA-pinned](0048-report-agents-hold-no-write-and-actions-are-sha-pinned.md) — 2026-09-22
 - [0049 — Story chrome is generated, not copied; a story pair merges only complete](0049-story-chrome-is-generated-and-a-pair-merges-complete.md) — 2026-09-22
@@ -97,3 +97,6 @@ implementation choices stay in their plan files; an ADR is for a decision that c
 - [0062 — Instruction files state rules, never present repo state; sessions open with `session-start`, which derives the board](0062-instruction-files-state-rules-never-state-sessions-open-with-session-start.md) — 2026-10-04
 - [0063 — Every story page tells a village story no other page tells](0063-every-story-page-tells-a-village-story-no-other-page-tells.md) — 2026-10-05
 - [0064 — Video is made with Remotion inside the repo; its guidelines are an agent instruction file, refreshed weekly by a research job that opens a PR the owner merges](0064-video-is-made-with-remotion-in-the-repo-guidelines-are-the-leash-refreshed-weekly-by-pr.md) — 2026-10-06
+- [0065 — The roadmap keeps history as one line per item; the Q4 mandate's eleven open lines are merged into five](0065-roadmap-consolidated-q4-mandate-merged-to-five-lines.md) — 2026-10-07
+- [0066 — The Q4 mandate gains items 16–18 and is put in the owner's order: content & media first, the paid test last](0066-q4-mandate-order-content-media-first-items-16-to-18.md) — 2026-10-07
+- [0067 — The Q4 mandate is renumbered to match its order; old numbers stay readable through a mapping](0067-q4-mandate-renumbered-to-the-order.md) — 2026-10-07
