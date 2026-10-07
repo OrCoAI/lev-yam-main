@@ -1,5 +1,7 @@
 import type { WeekendReelProps } from "../levyam/schema";
 import type { MomentsProps } from "../levyam/moments/schema";
+import { placeholderQuotes } from "../levyam/team-day/quotes";
+import type { TeamDayProps } from "../levyam/team-day/schema";
 
 // Source: levyam.com/happening/weekend/ (read 2026-10-05) and the site repo's FACTS.md.
 // Hours: FACTS.md "שעות סופי השבוע" (seasonal, dated 2026-10-06). The live page showed
@@ -36,4 +38,18 @@ export const moments: Omit<MomentsProps, "hook"> = {
   work: "לעבוד מול הים",
   food: "אוכל מקומי, מהים לשולחן",
   sunset: "ובערב, שקיעה מול הים",
+};
+
+// team-day-guests — video/briefs/team-day-guests.md (Gate 1 2026-10-07). FACTS.md § שירותים (team
+// days), § זהות (on the waterline; WhatsApp 972506669138, shown in local form), § מיקום והגעה. The
+// quotes are placeholders here: the real ones come from the gitignored private file (quotes.ts).
+export const teamDay: Omit<TeamDayProps, "hook"> = {
+  lang: "he",
+  footage: "יום צוות על קו המים",
+  question: "מחפשים מקום ליום צוות?",
+  heading: "מה אומרים האורחים",
+  village: "כפר הדייגים",
+  area: "ג'סר א-זרקא",
+  cta: { headline: "רוצים יום כזה לצוות?", line: "כתבו לנו בוואטסאפ", phone: "050-666-9138" },
+  quotes: placeholderQuotes("he"),
 };

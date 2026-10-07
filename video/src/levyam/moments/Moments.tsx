@@ -1,6 +1,6 @@
 import { TransitionSeries } from "@remotion/transitions";
 import { AbsoluteFill, useVideoConfig } from "remotion";
-import { Accent, KenBurns, Rise, Scrim, SignOff, SunDot, Words, ZoneBlock } from "../parts";
+import { Accent, KenBurns, MediaBeat, Rise, SignOff, SunDot, Words } from "../parts";
 import { SafeZone } from "../SafeZone";
 import { C, TYPE, body, headline, hero, type Type } from "../theme";
 import { heartZoom } from "../transitions/heartZoom";
@@ -28,14 +28,9 @@ type PhotoBeatProps = {
 };
 
 // A moment: the photo pushing in (the sources are ~3:4, so in 9:16 `crop` only shifts sideways;
-// its y sets where the push-in closes in), a bottom scrim, the caption at the bottom of the text zone.
-// The scrim reaches well past ZONE's bottom edge (y 1248 ≈ 65% down).
+// its y sets where the push-in closes in), the caption at the bottom of the text zone.
 const PhotoBeat: React.FC<PhotoBeatProps> = ({ src, duration, crop, to, children }) => (
-  <AbsoluteFill>
-    <KenBurns src={src} duration={duration} crop={crop} to={to} />
-    <Scrim side="bottom" reach={85} />
-    <ZoneBlock anchor="bottom">{children}</ZoneBlock>
-  </AbsoluteFill>
+  <MediaBeat media={<KenBurns src={src} duration={duration} crop={crop} to={to} />}>{children}</MediaBeat>
 );
 
 // Shot 1's text. footage: motion only for frames 0–14, then the work line. name: the name is

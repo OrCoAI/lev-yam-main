@@ -89,4 +89,10 @@ export const body = (t: Type, color: string, shadow = true): React.CSSProperties
   textShadow: shadow ? SHADOW : undefined,
 });
 
+// The small role — an attribution or a source line under body text; never under 36 px (§4).
+export const caption = (t: Type, color: string, shadow = true): React.CSSProperties => ({
+  ...body(t, color, shadow),
+  fontSize: t.small,
+});
+
 export type BeatProps = { readonly copy: WeekendReelProps; readonly duration: number };

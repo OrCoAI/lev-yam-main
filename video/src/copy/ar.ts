@@ -1,5 +1,7 @@
 import type { WeekendReelProps } from "../levyam/schema";
 import type { MomentsProps } from "../levyam/moments/schema";
+import { placeholderQuotes } from "../levyam/team-day/quotes";
+import type { TeamDayProps } from "../levyam/team-day/schema";
 
 // Source: levyam.com/happening/ar/weekend/ (read 2026-10-05); hours: FACTS.md "שעות סופי השבוע"
 // (seasonal, dated 2026-10-06). Lines marked [ar-draft] are not verbatim from the site and need a
@@ -37,4 +39,19 @@ export const moments: Omit<MomentsProps, "hook"> = {
   work: "نشتغل قبال البحر", // [ar-draft]
   food: "أكل محلي، من\u00A0البحر للسفرة", // [ar-draft] "من البحر" kept on one line
   sunset: "وبالمسا، غروب قبال البحر", // [ar-draft]
+};
+
+// team-day-guests — video/briefs/team-day-guests.md. Every line [ar-draft] until a native Levantine
+// reader signs it off; village and area as in moments above. The quotes (translated from the Hebrew
+// reviews, hence `translated`) come from the gitignored private file (quotes.ts).
+export const teamDay: Omit<TeamDayProps, "hook"> = {
+  lang: "ar",
+  footage: "يوم للفريق على شط البحر", // [ar-draft]
+  question: "بتدوروا على مكان ليوم الفريق؟", // [ar-draft]
+  heading: "شو بيحكوا ضيوفنا", // [ar-draft]
+  translated: "مترجم من العبرية", // [ar-draft]
+  village: "قرية الصيادين",
+  area: "جسر الزرقاء",
+  cta: { headline: "بدكم يوم متل هاد لفريقكم؟", line: "اكتبوا لنا على واتساب", phone: "050-666-9138" }, // [ar-draft]
+  quotes: placeholderQuotes("ar"),
 };
