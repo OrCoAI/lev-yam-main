@@ -1,7 +1,7 @@
 # 0046 — Phase 2 mandate for 2026-Q4: the marketing quarter — every effort goes to reaching the world, measured first
 
 - **Date:** 2026-09-22
-- **Status:** accepted — the Phase 2 mandate required by [0021](0021-operating-cadence-quarterly-gate.md); does not amend the vision ([0043](0043-q3-2026-review-vision-and-invariants-hold.md) holds every principle); its eleven open lines merged into five by [0065](0065-roadmap-consolidated-q4-mandate-merged-to-five-lines.md)
+- **Status:** accepted — the Phase 2 mandate required by [0021](0021-operating-cadence-quarterly-gate.md); does not amend the vision ([0043](0043-q3-2026-review-vision-and-invariants-hold.md) holds every principle); its eleven open lines merged into five by [0065](0065-roadmap-consolidated-q4-mandate-merged-to-five-lines.md); extended with items 16–18 and ordered by [0066](0066-q4-mandate-order-content-media-first-items-16-to-18.md)
 - **Decided by:** owner (first quarterly review, agenda items 4–5, [issue #62](https://github.com/OrCoAI/lev-yam-main/issues/62))
 - **Source:** the sanctioned divergent brainstorm (18 candidates) and the owner's converge picks, in session
 
