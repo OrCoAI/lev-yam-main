@@ -83,14 +83,16 @@ close-out and the decision log; this file keeps the link, not the story
 
 *The mandate and the owner's words behind it: [ADR 0046](decisions/0046-q4-2026-mandate-marketing-quarter.md);
 merged on 2026-10-07 ([ADR 0065](decisions/0065-roadmap-consolidated-q4-mandate-merged-to-five-lines.md)),
-then extended with items 16–18 and **put in the owner's order** the same day
-([ADR 0066](decisions/0066-q4-mandate-order-content-media-first-items-16-to-18.md)). Numbers are IDs,
-not ranks — the list below *is* the order. Positioning for every piece: **"Focus on private and business
-events — we want a lot of focus on the venue and what it gives to people."** Each line is its own
+extended and **put in the owner's order** the same day
+([ADR 0066](decisions/0066-q4-mandate-order-content-media-first-items-16-to-18.md)), then **renumbered
+to match the order** ([ADR 0067](decisions/0067-q4-mandate-renumbered-to-the-order.md)) — the number *is*
+the rank; *(was N)* is the number used in documents dated before the renumbering (mapping below).
+Positioning for every piece: **"Focus on private and business events — we want a lot of focus on the
+venue and what it gives to people."** Each line is its own
 initiative through `feature-spec` with an Outcome metric and a check date (ADR 0019); one spec per
-session. Items 18, 17 and 7 start without item 16 and gain GBP / Instagram / Facebook when it lands.*
+session. Items 1, 2 and 5 start without item 7 and gain GBP / Instagram / Facebook when it lands.*
 
-- [ ] **1st — 18. Content & media optimization** *(owner, 2026-10-07)* — everything published on every
+- [ ] **1. Content & media optimization** *(was 18; owner, 2026-10-07)* — everything published on every
       channel is accurate, current and keeps getting new material:
       (a) one source of truth per kind — facts `FACTS.md`, photos a Google Drive folder the owner fills
       from the phone → `media/` → optimized, video `video/` + the hero, live activity `/app/events`;
@@ -102,19 +104,19 @@ session. Items 18, 17 and 7 start without item 16 and gain GBP / Instagram / Fac
       (e) the weekly routine — an automated cross-channel check plus the owner's ~20–30 min list with
       drafts ready, and a monthly deeper audit
       → *channels in sync with `FACTS.md`; days since the last photo / video / post per channel; photos
-      added per week*. Site + Drive first; GBP and social join with item 16
-- [ ] **2nd — 17. Weekly marketing report** *(owner, 2026-10-07)* — its own weekly issue **and** an
+      added per week*. Site + Drive first; GBP and social join with item 7
+- [ ] **2. Weekly marketing report** *(was 17; owner, 2026-10-07)* — its own weekly issue **and** an
       email to the owner: traffic, `whatsapp_click` per page, the AI-citation log, outcome checks due,
-      item 18's freshness numbers, and **social publishing** *(was 6, then under 15)*: a reel a week and
+      item 1's freshness numbers, and **social publishing** *(was 6, then under 15)*: a reel a week and
       a post per story, tracked against the cadence. The engineering weekly drops its Analytics headline
       and links here. Social / GBP numbers reach the agent as a file from a fixed pre-agent step, never as
       a credential (ADR 0047/0048 pattern); the email needs its own scoped send credential — Tier A,
       security review. → *reports delivered weekly; the social cadence met*
-- [ ] **3rd — 3. Search & AI visibility** *(items 3 + 4 merged)* — the same facts everywhere (site,
+- [ ] **3. Search & AI visibility** *(was 3 + 4)* — the same facts everywhere (site,
       GBP, socials), `facts.txt` / `llms.txt` expansion, internal links between stories, the local
       queries the story backlog does not cover → *local-pack impressions, direction requests, AI-answer
       citations* (the manual citation check of ADR 0052 until a paid source is decided)
-- [ ] **4th — 2. Story pages** — **the pair cadence runs in parallel with everything above until
+- [ ] **4. Story pages** *(was 2)* — **the pair cadence runs in parallel with everything above until
       2026-10-24** (16 pairs, by hand — [ADR 0052](decisions/0052-stories-four-pairs-a-week-for-the-first-month.md));
       position 4 is its next phase: CTA sharpening and the pace after 24 Oct. Narrative essays, one village
       story each, facts into `FACTS.md` first ([ADR 0053](decisions/0053-story-pages-are-narrative-essays-village-facts-sourced-in-facts.md),
@@ -122,45 +124,47 @@ session. Items 18, 17 and 7 start without item 16 and gain GBP / Instagram / Fac
       and `whatsapp_click` by `page_slug`*. [plans/stories-authoring-tool.md](plans/stories-authoring-tool.md);
       **5 of 16 live**; check date 2026-10-25. Open `FACTS.md` gaps: a typical weekend's events, the
       Israel Trail segment, Nimer's fishing calendar (backlog topics 8, 14, 15)
-  - [ ] **CTA sharpening** *(was item 5)* — the sticky WhatsApp bar on stories (reuse יוזמות' `.hp-sticky`),
+  - [ ] **CTA sharpening** *(was 5)* — the sticky WhatsApp bar on stories (reuse יוזמות' `.hp-sticky`),
         each page's prefilled message checked → *click-through rate per page*
-  - [ ] **Content automation** *(was item 11)* — `@claude` drafts a pair from a brief issue; on hold
+  - [ ] **Content automation** *(was 11)* — `@claude` drafts a pair from a brief issue; on hold
         while pairs are written by hand (owner, 2026-10-07)
   - [ ] Bug: desktop header nav overlaps the social icons at 961–1300px, site-wide, HE + AR — Tier B,
         needs a design call (measurements in the plan's follow-ups)
   - [ ] Script the extra-figure and video-montage steps (`story-images.sh --as`, `scripts/story-video.sh`) — Tier A
-- [ ] **5th — 7. Google Business Profile loop** — posts, photos, review replies, Q&A; `AggregateRating`
-      on site; the owner's weekly part lives in item 18's list; by hand until item 16 lands →
+- [ ] **5. Google Business Profile loop** *(was 7)* — posts, photos, review replies, Q&A; `AggregateRating`
+      on site; the owner's weekly part lives in item 1's list; by hand until item 7 lands →
       *GBP calls and direction requests*
-- [ ] **6th — 9. Backlink programme** — tourism, food/travel, Arab-society media; the owner's outreach,
+- [ ] **6. Backlink programme** *(was 9)* — tourism, food/travel, Arab-society media; the owner's outreach,
       Claude drafts → *referring domains*
-- [ ] **7th — 16. Connect social + GBP to Claude** *(owner, 2026-10-07)* — read + draft, the owner
+- [ ] **7. Connect social + GBP to Claude** *(was 16; owner, 2026-10-07)* — read + draft, the owner
       publishes; the owner authorizes the connector in claude.ai (Windsor.ai the candidate — coverage
       checked at kickoff); connectors live in the owner's sessions only, never in the automated agents;
       **UTM on every owned link** (GBP website button, Instagram / Facebook bios, shares) so those visits
       stop landing as "direct" → *GBP / social numbers readable every week*
-- [ ] **8th — 10. Paid test** — a small Meta/Google campaign against one or two pages → *cost per WhatsApp
+- [ ] **8. Paid test** *(was 10)* — a small Meta/Google campaign against one or two pages → *cost per WhatsApp
       conversation*. **Prerequisite (owner, 2026-09-22):** prove the paid path end to end before
       spending — UTM on every ad URL, the campaign landing in GA4 as `Paid Social` / `Paid Search`,
       Meta Pixel `Contact` firing, `whatsapp_click` attributable by `page_slug` *and* source. (A
       campaign that stopped inside the 2026-09-22 window showed up as a drop nothing could cost.)
 - **Done this quarter:**
-  - [x] **1. Analytics wiring** *(shipped 2026-09-22, PR #73)* — [plans/marketing-analytics-wiring.md](plans/marketing-analytics-wiring.md);
+  - [x] **Analytics wiring** *(was 1; shipped 2026-09-22, PR #73)* — [plans/marketing-analytics-wiring.md](plans/marketing-analytics-wiring.md);
         Ahrefs/Semrush parked as a spend decision ([ADR 0047](decisions/0047-analytics-wiring-ga4-and-gsc-only-public-numbers.md)).
         **Outcome check due 2026-10-19**
-  - [x] **8. Public "What's happening" / יוזמות** *(shipped 2026-09-30, PRs #93 + #97)* —
+  - [x] **Public "What's happening" / יוזמות** *(was 8; shipped 2026-09-30, PRs #93 + #97)* —
         [plans/events-whats-happening.md](plans/events-whats-happening.md), ADRs 0054–0059.
         **Outcome check due 2026-10-21.** Follow-ups: [modules/events.md](modules/events.md)
-  - [x] **14. Take the public write off the report agents** *(2026-09-22,
+  - [x] **Take the public write off the report agents** *(was 14; 2026-09-22,
         [ADR 0048](decisions/0048-report-agents-hold-no-write-and-actions-are-sha-pinned.md))*
-  - [x] **15. Video pipeline (Remotion)** *(built 2026-10-06, PR #109)* — [plans/video-pipeline.md](plans/video-pipeline.md),
+  - [x] **Video pipeline (Remotion)** *(was 15; built 2026-10-06, PR #109)* — [plans/video-pipeline.md](plans/video-pipeline.md),
         [ADR 0064](decisions/0064-video-is-made-with-remotion-in-the-repo-guidelines-are-the-leash-refreshed-weekly-by-pr.md);
-        check date 2026-11-10 (4 reels posted — tracked in item 17)
+        check date 2026-11-10 (4 reels posted — tracked in item 2)
     - [ ] A render smoke in `ci.yml` when `video/` changes — Tier A
     - [ ] Re-lay out the two existing reels to the Meta safe zone
     - [ ] Arabic native-reader pass on the weekend copy; owner sets the `/app/events` weekend item to
           the FACTS hours (blocks the first post); the `VIDEO_GUIDELINES_PAT` secret
-- **Folded:** 4 → 3 · 5, 11 → 2 · 6 → 17 · 12, 13 → [ideas.md](ideas.md) (ADR 0065, 0066).
+- **Old → new numbers** (references dated before 2026-10-07 use the old ones): 18 → 1 · 17 → 2 ·
+  3, 4 → 3 · 2, 5, 11 → 4 · 7 → 5 · 9 → 6 · 16 → 7 · 10 → 8 · 6 → 2 · 12, 13 → [ideas.md](ideas.md) ·
+  done: 1 analytics, 8 What's happening, 14 report agents, 15 video pipeline (ADR 0065–0067).
 - **Out this quarter:** English stories (`/stories/en/`) — reserved in the URL structure, not built.
 
 ## Parked until a trigger *(deferred)*
@@ -207,7 +211,7 @@ nothing deferred is invisible:*
 *Replaces WhatsApp-thread reservation tracking. The shared calendar itself is the `events`
 spine landed in Phase 1 ([plans/cross-module-foundation.md](plans/cross-module-foundation.md))
 — this phase builds the bookings module **on** it. **2026-09-22:** the public "What's happening"
-half moved up into the Q4 mandate (its item 8, shipped 2026-09-30); the rest waits for the
+half moved up into the Q4 mandate (its item 8 before the renumbering; shipped 2026-09-30); the rest waits for the
 2027-01-01 review ([ADR 0046](decisions/0046-q4-2026-mandate-marketing-quarter.md)).*
 
 - [ ] `41_bookings.sql`: reservations table (RLS, permission keys) feeding the `events`
