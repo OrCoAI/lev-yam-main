@@ -3,9 +3,10 @@ import type { QuotesStrings } from './i18n'
 export const ILS = (n: number | null | undefined) =>
   '₪' + Math.round(Number(n) || 0).toLocaleString('en-US')
 
-/** Today as a DB-format date string (YYYY-MM-DD), for comparing against
- *  event_date without a timezone-sensitive Date parse. */
-export const todayDbDate = () => new Date().toLocaleDateString('en-CA')
+/** A date as a DB-format date string (YYYY-MM-DD, local calendar day), for
+ *  comparing against event_date without a timezone-sensitive Date parse. */
+export const dbDate = (d: Date) => d.toLocaleDateString('en-CA')
+export const todayDbDate = () => dbDate(new Date())
 
 /** Swap two adjacent list entries (the module's up/down reorder convention —
  *  prep checklist, quote line items). No-op if `j` is out of bounds. */
