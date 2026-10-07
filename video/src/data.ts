@@ -34,17 +34,33 @@ export const PLACEHOLDER_REVIEWS: Review[] = Array.from({ length: REVIEW_SLOTS }
 const isReview = (r: unknown): r is Review =>
   typeof r === "object" && r !== null && typeof (r as Review).name === "string" && typeof (r as Review).text === "string";
 
-export const loadReviews: CalculateMetadataFunction<ReviewProps> = async ({ props }) => {
-  const res = await fetch(staticFile(REVIEWS_FILE));
+// The one rule for every private (gitignored) file a composition's `calculateMetadata` reads from
+// public/: missing → Studio keeps the placeholders, a render throws; present → `read` validates the
+// parsed JSON and returns the props to use, or null (a malformed file throws, rightly).
+export const loadPrivate = async <P,>(file: string, props: P, read: (json: unknown) => P | null, shape: string) => {
+  const res = await fetch(staticFile(file));
   if (!res.ok) {
     if (getRemotionEnvironment().isRendering) {
-      throw new Error(`video/public/${REVIEWS_FILE} is missing (${res.status}) — a render needs the owner's copy`);
+      throw new Error(`video/public/${file} is missing (${res.status}) — a render needs the owner's copy`);
     }
     return { props }; // Studio without the file → placeholders
   }
-  const { reviews } = (await res.json()) as { reviews?: unknown }; // a malformed file throws, rightly
-  if (!Array.isArray(reviews) || reviews.length !== REVIEW_SLOTS || !reviews.every(isReview)) {
-    throw new Error(`${REVIEWS_FILE} must hold exactly ${REVIEW_SLOTS} {name, text} reviews`);
+  const next = read(await res.json());
+  if (!next) {
+    throw new Error(`${file} must hold ${shape}`);
   }
-  return { props: { ...props, reviews } };
+  return { props: next };
 };
+
+export const loadReviews: CalculateMetadataFunction<ReviewProps> = ({ props }) =>
+  loadPrivate(
+    REVIEWS_FILE,
+    props,
+    (json) => {
+      const { reviews } = json as { reviews?: unknown };
+      return Array.isArray(reviews) && reviews.length === REVIEW_SLOTS && reviews.every(isReview)
+        ? { ...props, reviews }
+        : null;
+    },
+    `exactly ${REVIEW_SLOTS} {name, text} reviews`,
+  );
