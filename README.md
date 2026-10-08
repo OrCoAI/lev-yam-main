@@ -2,146 +2,173 @@
 
 מרחב יזמות עסקית חברתית על קו המים — כפר הדייגים, ג׳יסר א-זרקא.
 
-A social-business entrepreneurship space on the waterfront in the Jisr az-Zarqa fishing
-village, on the Israeli coast between Tel Aviv and Haifa. The venue hosts corporate
-offsites, private celebrations, community days, weekend events, and full venue rental.
+A social-business venue on the waterfront in the Jisr az-Zarqa fishing village, on the Israeli
+coast between Tel Aviv and Haifa. Private and business events — the venue and what it gives
+people: corporate offsites and team days, private celebrations, community days, weekend events,
+and full venue rental.
 
 **Website:** [levyam.com](https://levyam.com) · **Status: 🟢 Live**
 **WhatsApp:** [+972506669138](https://wa.me/972506669138) · **Email:** info@levyam.com
 **Instagram:** [@levyam_](https://www.instagram.com/levyam_) · **Facebook:** [לב ים](https://m.facebook.com/profile.php?id=61585790351617)
 
+> **This repo is public.** No prices, customer data, review texts or signatures are ever
+> committed; venue facts come only from [`FACTS.md`](FACTS.md). Browser-side Supabase keys are the
+> anon keys by design — Row-Level Security is the guard.
+
+---
+
+## Where to start
+
+| You want… | Read |
+|---|---|
+| The rules for working in this repo (humans and agents) | [`CLAUDE.md`](CLAUDE.md) |
+| Where the venue and the platform are going | [`docs/VISION.md`](docs/VISION.md) |
+| What is being worked on now — the single task tracker | [`docs/ROADMAP.md`](docs/ROADMAP.md) |
+| Security model, permissions, the invariants that never break | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) |
+| Why each rule exists | [`docs/decisions/`](docs/decisions/) (ADRs) |
+| Database setup, staging/prod schema workflow | [`supabase/README.md`](supabase/README.md) |
+
 ---
 
 ## What's in the repo
 
-Deployed via **GitHub Pages** with a committed `CNAME`. It contains a **static marketing site**
-+ standalone tools (no build step), and a **built internal platform** under `/app`:
+Production deploys to **levyam.com** via **GitHub Pages**; every push to `staging` deploys to
+**staging.levyam.com** (Cloudflare Pages, noindex, its own Supabase project).
 
-| Surface | Purpose | Build |
-|---|---|---|
-| [`index.html`](index.html) | Public marketing & booking site (HE/AR) | static |
-| [`survey-june.html`](survey-june.html) | Community survey for the "חבורת לב ים" group | static |
-| [`pos.html`](pos.html) | Internal point-of-sale / billing app for staff (live) | static |
-| [`app-src/`](app-src/) → `/app` | Internal staff **platform** (login + permission-gated modules) | Vite + React + TS |
+| Surface | Path | Purpose | Build | Backend |
+|---|---|---|---|---|
+| Marketing | [`index.html`](index.html) | Public homepage + booking by WhatsApp (HE/AR) | none | none |
+| Stories | [`stories/`](stories/) → `/stories/` | Answer-first content pages, a Hebrew + Arabic pair each | generated hubs + sitemap | none |
+| Initiatives ("יוזמות") | [`happening/`](happening/) → `/happening/` | The public life of the venue, one landing page per item | generated at deploy | Supabase (read-only feed) |
+| Survey | [`survey-june.html`](survey-june.html) | Community survey | none | Supabase |
+| **Platform** | [`app-src/`](app-src/) → `/app` | Internal staff platform: login + permission-gated modules | Vite + React + TS | Supabase |
+| POS (legacy URL) | [`pos.html`](pos.html) | Redirect to `/app/pos` (cut over 2026-07-15) | none | — |
+| Video | [`video/`](video/) | Instagram/Facebook reels, HE + AR — **never deployed** | Remotion | none |
 
----
+### Marketing site — `index.html`
 
-## 1. Marketing site — `index.html`
+Single-page bilingual site (Hebrew default + Levantine Arabic, RTL), hero video, gallery carousel,
+FAQ. The HE/AR dictionary lives in [`js/app.js`](js/app.js); fonts are self-hosted woff2 subsets.
+[`llms.txt`](llms.txt) and `/facts.txt` (served from `FACTS.md`) make the venue quotable by AI
+assistants; `robots.txt` lets every crawler in except `/pos.html` and `/app`.
 
-Single-page bilingual (Hebrew + Levantine Arabic, RTL) site.
+**Analytics** — three vendors with deliberately unequal scopes:
 
-- **Sections:** hero → intro → services (5 cards) → why → gallery → FAQ (7 Q) → contact
-- **Hero:** background video (`img/hero/hero.mp4`) with poster fallback
-- **Gallery:** filmstrip carousel, 18 images (`img/gallery/01–18`)
-- **i18n:** HE ↔ AR language toggle, full dictionary in [`js/app.js`](js/app.js)
-- **Analytics:** Dynatrace RUM + 5 business-event types
-  (`whatsapp_cta`, `service_interest`, `contact_intent`, `language_switch`, `faq_open`)
-- **Marketing:** Meta Pixel `3961552923978842` — base `PageView` plus a standard
-  `Contact` event fired from every WhatsApp CTA click
-- **Google Analytics 4:** `G-VWL45MKK76` — page views, scroll and outbound clicks arrive via
-  GA4 Enhanced Measurement, plus one hand-written event: `whatsapp_click`, fired from every
-  WhatsApp CTA with the `page_slug` it came from (added 2026-08-11 with `/stories/`). Staging is
-  excluded by a hostname filter in the GA console, not in code
+- **Dynatrace RUM** + business events (WhatsApp CTA, service interest, contact intent, FAQ opens,
+  language switch, shares).
+- **Meta Pixel** — `PageView` + `Contact` on every WhatsApp CTA click.
+- **Google Analytics 4** (`G-VWL45MKK76`) — Enhanced Measurement plus two hand-written events,
+  `whatsapp_click` and `share_click`. Staging is excluded by a hostname filter in the GA console.
 
-The Meta Pixel and GA4 bootstraps live in [`js/vendor-tags.js`](js/vendor-tags.js) so their IDs
-exist in one place; the WhatsApp CTA fan-out to all three vendors is
-[`js/wa-track.js`](js/wa-track.js), shared by the homepage and every `/stories/` page.
+Tag bootstraps live in [`js/vendor-tags.js`](js/vendor-tags.js); the WhatsApp/share fan-out to the
+vendors is [`js/wa-track.js`](js/wa-track.js), shared by every public page.
 
-Styles: [`css/styles.css`](css/styles.css) · Logic: [`js/app.js`](js/app.js)
+### Stories — `/stories/`
 
-> **Note:** `og:image` is currently the 600×599 logo square. A 1200×630 banner would give
-> better social cards — optional, not blocking.
+Narrative pages, one per search-query cluster, each a pair: `stories/<slug>/` (HE) and
+`stories/ar/<slug>/` (AR) — neither ships alone. Hubs, `sitemap.xml` and every page's header and
+footer are generated by `node scripts/gen-stories-index.mjs` (CI runs `--check`). New pages are
+written with the `story-author` skill.
 
-## 2. Community survey — `survey-june.html`
+### Initiatives — `/happening/`
 
-Standalone bilingual survey for venue community members, with conditional follow-ups,
-validation, and a progress bar.
+Events and initiatives are managed by staff in `/app/events` and published to the public site.
+At deploy, [`scripts/gen-happening.mjs`](scripts/gen-happening.mjs) reads the public feed and
+renders a landing page per item per language; publishing in the app triggers a rebuild through
+the `rebuild-site` Edge Function, and production also rebuilds nightly.
 
-- Submits to **Supabase** (`survey_responses` table)
-- Optional voice notes upload to the Supabase `voice-notes` storage bucket
-- Styles: [`css/survey.css`](css/survey.css) · Logic: [`js/survey.js`](js/survey.js)
+### Internal platform — `/app`
 
-## 3. Point-of-sale app — `pos.html`
+Vite + React + TypeScript behind a Supabase Auth login (email + password, or a passkey — Face ID /
+Touch ID), served at **levyam.com/app**. Hebrew + Arabic and mobile-first are requirements.
 
-Internal billing/POS tool for staff, with live multi-device sync. Excluded from search
-engines via `robots.txt`.
+- **Permissions:** role → module → action, enforced in Postgres by RLS calling
+  `core.has_permission()`; the UI gating is a convenience mirror only.
+- **Modules** ([`app-src/src/modules/`](app-src/src/modules/), one Postgres schema each):
 
-- **Backend:** Supabase (`@supabase/supabase-js` via CDN) with realtime sync
-- **Schema:** [`supabase/schema/10_pos.sql`](supabase/schema/10_pos.sql) — run once in the Supabase SQL editor
-  - Tables: `pos_tables` (live open tables), `pos_bills` (paid bills), `pos_bill_items` (line items)
-  - RPCs: `pos_close_table`, `pos_reopen_bill` (atomic close / re-open)
-  - Analytics views: `v_sales_daily`, `v_item_sales`, `v_category_sales`, `v_sales_hourly`
-- Open-house and à-la-carte pricing modes, cash/card split, headcount & table-duration tracking
+  | Module | What it does |
+  |---|---|
+  | `users` | Staff, roles and permissions; invites, deactivate/delete, passwords |
+  | `pos` | Point of sale: tables, menu with options, split payments, kitchen view, day close |
+  | `finance` | Books: income/expenses, categories, reconciliation, cash↔bank transfers |
+  | `quotes` | Customer quotes and contracts |
+  | `events` | Events and public initiatives, HE→AR draft translation, publish to `/happening/` |
 
-## 4. Internal platform — `/app`
+- **Edge Functions** ([`supabase/functions/`](supabase/functions/)) hold the only service-role
+  access: `admin-invite`, `admin-user-ops`, `passkey-verify`, `rebuild-site`, `translate`.
+- Adding a module: [`docs/MODULE-TEMPLATE.md`](docs/MODULE-TEMPLATE.md).
 
-A Vite + React + TypeScript app (source in [`app-src/`](app-src/)) behind a Supabase Auth login,
-served at **levyam.com/app**. It's the home for new internal modules.
+### Video — `video/`
 
-- **Auth:** email + password (Face ID / passkeys planned). Excluded from crawlers in `robots.txt`.
-- **Permissions:** role → module → action (RBAC), enforced by Postgres RLS via
-  `core.has_permission()` and mirrored in the UI for gating. Schema:
-  [`supabase/schema/00_core.sql`](supabase/schema/00_core.sql).
-- **Data layout:** one Supabase project, one schema per module (`core` for identity/permissions,
-  `pos` for POS once migrated, etc.).
-- **First module:** Users & Permissions admin (`src/modules/users/`). POS and the survey stay
-  standalone until migrated in.
-
-See [`supabase/README.md`](supabase/README.md) for first-time setup.
+Reels made with [Remotion](https://www.remotion.dev); nothing here reaches the website. The rules
+are [`video/GUIDELINES.md`](video/GUIDELINES.md); usage is in [`video/README.md`](video/README.md).
+A reel starts with the `new-video` skill.
 
 ---
 
 ## Project structure
 
 ```
-lev-yam/
-├── index.html              ← Public marketing site (+ footer "Staff login" → /app)
-├── survey-june.html        ← Community survey
-├── pos.html                ← Staff POS / billing app (live, standalone)
-├── css/ js/ fonts/ img/    ← Marketing assets (styles, logic+i18n, woff2, media)
-├── app-src/                ← Internal platform: Vite + React + TS (builds to /app)
-│   ├── src/
-│   │   ├── lib/            ← supabase client, auth, permissions
-│   │   ├── shell/          ← login, layout, launcher, route guards
-│   │   └── modules/users/  ← first module: Users & Permissions admin
-│   └── vite.config.ts      ← base '/app/'
+lev-yam-main/
+├── index.html, 404.html     ← Homepage; 404 also routes /app deep links into the SPA
+├── stories/                 ← Story pairs (HE + ar/), templates (_*.html are never served)
+├── happening/               ← Initiatives hubs + item templates (pages generated at deploy)
+├── survey-june.html, pos.html
+├── FACTS.md, llms.txt       ← The only venue-fact source; AI-assistant summary
+├── css/ js/ fonts/ img/     ← Public assets (styles, logic + i18n, woff2, media)
+├── app-src/                 ← Internal platform (builds to /app)
+│   └── src/ lib/ shell/ modules/{users,pos,finance,quotes,events}/
 ├── supabase/
-│   ├── schema/
-│   │   ├── 00_core.sql     ← identity & permissions (roles, RLS, helpers)
-│   │   └── 10_pos.sql      ← POS database schema
-│   ├── functions/          ← Edge Functions (service-role only; e.g. passkeys)
-│   └── README.md           ← setup & security model
-├── .github/workflows/      ← deploy.yml (build /app + bundle marketing → Pages)
-├── docs/                   ← Brand book, source docs (archive/ = historical records)
-├── tests/                  ← Dynatrace bizevents test harnesses
-├── CNAME                   ← levyam.com (GitHub Pages)
-├── robots.txt              ← Allows all; disallows /pos.html and /app
-└── sitemap.xml
+│   ├── schema/*.sql         ← Source of truth for every schema (00_core = identity & permissions)
+│   ├── functions/           ← Edge Functions (service-role lives only here)
+│   ├── tests/               ← RLS matrix, grant audit, baseline drift check
+│   └── README.md            ← Setup, tiers, how schema reaches staging/prod
+├── scripts/                 ← Site assembly, generators, tier check, verify harness
+├── video/                   ← Remotion reels (never deployed)
+├── .github/workflows/       ← CI, deploys, scheduled agent reports
+├── .claude/                 ← Agent skills + committed permission policy
+├── docs/                    ← Vision, roadmap, architecture, ADRs, plans, module logs
+├── tests/                   ← Dynatrace bizevent test harnesses (open in a browser)
+├── CNAME, wrangler.jsonc    ← levyam.com (Pages); staging (Cloudflare)
+└── robots.txt, sitemap.xml
 ```
 
 ## Tech stack
 
-- **Marketing + survey + POS:** plain HTML5 + CSS3 + vanilla JS, no build tools. Fonts are
-  self-hosted woff2 subsets. Supabase (via CDN) backs the survey and POS.
-- **Platform (`/app`):** Vite + React 18 + TypeScript + react-router; Supabase Auth + RLS.
+- **Public pages:** plain HTML + CSS + vanilla JS, no build step; small Node generators for
+  stories and initiatives.
+- **Platform:** React 19, react-router 7, Vite 8, TypeScript; Supabase (Postgres + RLS, Auth,
+  Storage, Edge Functions); oxlint + vitest.
+- **Video:** Remotion.
+- **Node 22** for everything that builds.
 
 ## Local development
 
 ```bash
-# Marketing site / survey / POS — no build:
-python3 -m http.server 8080        # → http://localhost:8080
+# Public site — no build:
+python3 -m http.server 8080                 # → http://localhost:8080
 
-# Platform:
-cd app-src && npm install && npm run dev   # → http://localhost:5173/app
+# Platform — needs Node 22 and the local Supabase stack (Colima):
+supabase start && supabase db reset         # seed logins are in supabase/seed.sql
+cd app-src && npm ci && npm run dev         # → http://localhost:5173/app
+
+# Before pushing platform changes:
+npm run lint && npm test && npm run build
 ```
 
-Copy `app-src/.env.example` → `app-src/.env.local` and fill in your Supabase URL + anon key.
+Copy `app-src/.env.example` → `app-src/.env.local` for the local stack's URL + anon key. Local
+development never touches production.
 
-## Deployment
+## Deploying
 
-Push to `main`. The GitHub Action (`.github/workflows/deploy.yml`) builds the platform and
-bundles it with the static site, publishing to GitHub Pages at **levyam.com** (`CNAME`).
+- **Production:** merge a PR to `main` (branch-protected: PR + green CI, no direct pushes).
+  [`deploy.yml`](.github/workflows/deploy.yml) builds `/app`, assembles the site from the
+  allowlist in [`scripts/assemble-site.sh`](scripts/assemble-site.sh) — a new public page or folder
+  must be added there — runs the grant audit, and smoke-checks the live routes.
+- **Staging:** push to `staging` → [`deploy-staging.yml`](.github/workflows/deploy-staging.yml) →
+  staging.levyam.com. Every change with a deployed surface is checked there before it merges.
+- **Database:** schema files are applied to staging and production by hand, never with
+  `supabase db push` — see [`supabase/README.md`](supabase/README.md).
 
-**One-time setup:** Settings → Pages → Source = *GitHub Actions*; add repo Secrets
-`VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY`; apply `supabase/schema/*.sql` and expose the
-`core` schema — see [`supabase/README.md`](supabase/README.md).
+Every PR declares a risk tier (A/B/C) that sets its review depth — see the **Risk tiers** section
+of [`CLAUDE.md`](CLAUDE.md).
