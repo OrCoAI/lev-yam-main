@@ -154,6 +154,24 @@ records take over:
   phone, email, spelling, coordinates, Maps link); no price patterns; weight budgets and the
   share-image size. Born with the fixes so they cannot regress. Every later rule (records, consent,
   IDs, Drive-ID strings, `publish_adr`) extends this one script.
+- *As built (2026-10-14), for PR C to reproduce:*
+  - WebP renditions came from a one-off Pillow pass, not a committed script: EXIF orientation applied,
+    pixels only, `quality=80, method=6`, widths 480 and min(original, 960), named by real width.
+    `media.sh`'s `gallery`/`services` presets must reproduce these. `07`, `09` and `10` are rebuilt
+    when their WhatsApp-compressed sources are replaced by Drive originals.
+  - 13 served JPEGs carried EXIF (6 with GPS — all at the venue — plus device and capture time).
+    They were stripped (10 losslessly; 14, 15 and `weekend.jpg` rotated into their pixels and
+    re-encoded at q90, sRGB). The check's `meta` rule keeps it that way. Git history keeps the old
+    blobs; no rewrite (the coordinates are the venue's own).
+  - Phone hero: `img/hero/hero-portrait.mp4`, a centre 608×1080 crop of `hero.mp4` (H.264 CRF 29,
+    no audio, faststart), 2.5 MB vs 10 MB, served by `<source media>` to portrait phones.
+    Share image: `img/og/levyam-share.jpg`, a 1200×630 crop of gallery 18.
+  - The check also found the homepage's static Hebrew and `js/app.js` `dict.he` must be one source:
+    the `i18n` rule now compares all 77 keyed elements plus the gallery alts and labels.
+  - Follow-ups for PR C: a portrait poster plus a media-gated `<link rel=preload>` (phones still
+    preload the 308 KB landscape poster); `gen-stories-index.mjs` should write the stamped chrome
+    back into `stories/_hub*.html` like `gen-happening --stamp` does, so a chrome edit is two files,
+    not four.
 
 **PR B — fence, records, brand, voice (Tier A; `.gitignore`, `content/`, `brand/`, `CLAUDE.md`,
 `docs/ARCHITECTURE.md`, `video/GUIDELINES.md`, docs).**
@@ -346,7 +364,9 @@ Non-blocking:
   `img/gallery/01.jpg` (an aerial of the harbour; alt says sunset with a boat), `11.jpg` (children
   with a puppy on the beach; alt says aerial view), `13.jpg` (a woman and two girls by the house;
   alt says a local meal). Likely broke when the files were renamed 01–15.
-- **Identifiable children** in `img/gallery/11.jpg`; consent confirmed by the owner 2026-10-12.
+- **Identifiable people** in `img/gallery/07.jpeg` (a group of women), `11.jpg`, `13.jpg` and `14.jpg`
+  (children); consent confirmed by the owner for 11 on 2026-10-12 and for 07, 13, 14 on 2026-10-14 —
+  PR B's consent sheet records all four as scope `site`.
 - **Weekend hours** (FACTS: Fri 10:00–15:00, Sat 10:00–sunset) appear on no page; the `EventVenue`
   JSON-LD has no `openingHours`; `happening/_fixture.json` says 11:00–17:00.
 - **The long Google Maps link** carries a Tel Aviv viewport (`@32.0867773,34.76303`) in 23 files:
