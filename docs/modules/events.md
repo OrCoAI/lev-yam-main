@@ -16,6 +16,11 @@ _(none)_
 
 ## Open feature ideas
 
+- Make the photo upload's metadata strip explicit (`api.ts` resizes through a canvas, which drops
+  EXIF only as a side effect); once `content/channels.json` exists, `check-content.mjs` asserts the
+  upload's two size constants agree with the preset row (the app never reads `content/`, ADR 0069
+  §5) — ADR 0069 §6 binds every upload path; logged 2026-10-12 from
+  [plans/content-media-foundation.md](../plans/content-media-foundation.md).
 - One shared drawer script (e.g. `js/nav-drawer.js`) for story pages, the hubs and landing
   pages: `js/happening.js` carries a copy of `js/stories.js`'s drawer (minus the WhatsApp
   matcher), gated on `data-happening-slug`. Needs the assemble allowlist (Tier A) and the

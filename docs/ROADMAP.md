@@ -95,7 +95,8 @@ session. Items 1, 2 and 5 start without item 7 and gain GBP / Instagram / Facebo
 - [ ] **1. Content & media optimization** *(was 18; owner, 2026-10-07)* — everything published on every
       channel is accurate, current and keeps getting new material:
       (a) one source of truth per kind — facts `FACTS.md`, photos a Google Drive folder the owner fills
-      from the phone → `media/` → optimized, video `video/` + the hero, live activity `/app/events`;
+      from the phone → optimized by one script *(the spec's fence + `scripts/media.sh`; `media/`
+      becomes a local cache in PR B)*, video `video/` + the hero, live activity `/app/events`;
       (b) a one-time inventory of what is live on every channel, with a fix list;
       (c) freshness rules (owner sets the numbers) — zero fact mismatches, new GBP photos weekly, gallery
       monthly, story facts re-checked every 90 days, hero video quarterly, nothing expired visible;
@@ -104,7 +105,9 @@ session. Items 1, 2 and 5 start without item 7 and gain GBP / Instagram / Facebo
       (e) the weekly routine — an automated cross-channel check plus the owner's ~20–30 min list with
       drafts ready, and a monthly deeper audit
       → *channels in sync with `FACTS.md`; days since the last photo / video / post per channel; photos
-      added per week*. Site + Drive first; GBP and social join with item 7
+      added per week*. Site + Drive first; GBP and social join with item 7.
+      [plans/content-media-foundation.md](plans/content-media-foundation.md) — **Gate 1 approved
+      2026-10-12, PR A next** (ADRs 0068/0069); first pack planned the week of 2026-10-19
 - [ ] **2. Weekly marketing report** *(was 17; owner, 2026-10-07)* — its own weekly issue **and** an
       email to the owner: traffic, `whatsapp_click` per page, the AI-citation log, outcome checks due,
       item 1's freshness numbers, and **social publishing** *(was 6, then under 15)*: a reel a week and
