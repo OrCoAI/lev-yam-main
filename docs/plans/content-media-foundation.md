@@ -241,7 +241,7 @@ records take over:
 |---|---|---|---|
 | any time | photos → `Media/00 Inbox`; ideas → `Ideas/00 Raw` (phone, Drive app or Files) | owner, team | seconds |
 | Sunday | `/content-week`: sorted Inbox + faces to confirm, 5 new cards, this week's picks, the drafted pack — yes/no per item | owner + Claude | ~30 min |
-| Sun–Tue | Arabic sign-off on every caption (Drive comment; ADR 0069 §7) | the Arabic reader | ≤ 48 h |
+| Sunday | Arabic sign-off on every caption (Drive comment; ADR 0069 §7) | owner (the Arabic reader) | inside the session |
 | Tue–Sat | post from `Ready to post/<week>`, tick "posted" | owner | ~3 min per channel |
 | +7 days | results per post from the snapshot; winners remixed, losers retired, rules proposed | Claude, next session | inside the 30 min |
 | monthly | the deeper audit: pillar balance, what worked, stale cards retired, channel profiles vs FACTS, the designer's look | owner + Claude | ~60 min |
@@ -273,7 +273,7 @@ A skipped week breaks nothing: the pack carries over, the freshness number shows
 | Claude (owner's sessions) | the fence only; never deletes | PRs through the gate | sorts, shapes, drafts, records, checks |
 | the automated agents (GitHub Actions) | none (ADR 0068 §2) | read the records as files | the CI check, freshness numbers |
 | Nimer | — | — | verifies any sentence attributed to him before it is published |
-| the Arabic reader | comments on `Ready to post` | — | signs off every Arabic caption (≤ 48 h) |
+| the Arabic reader = the owner (ADR 0069, amended 2026-10-14) | comments on `Ready to post` | — | signs off every Arabic caption |
 | the designer | editor on `Brand/` | — | delivers to `Brand/00 Inbox`, monthly look, seasonal proposals |
 | a future social helper | reads `Ready to post` | — | posts the pack (when the owner delegates) |
 | team members | upload-only to `Media/00 Inbox`, `Ideas/00 Raw` | — | add photos and ideas |
@@ -338,8 +338,8 @@ re-enabled by the owner.
 ## Open questions
 
 Blocking:
-1. **The Arabic reader** (before PR C's first pack) — one named person with a 48-hour turnaround
-   (owner).
+1. ~~**The Arabic reader**~~ — **answered 2026-10-14: the owner (Or) signs off**, no dedicated
+   reader (ADR 0069 amended).
 2. ~~**Consent for `gallery/11`**~~ — **answered 2026-10-12: consent exists** (owner); the photo
    stays, the consent sheet records scope = `site` at the migration, PR A only fixes its alt.
 3. **Pillars and freshness numbers** (before PR C) — confirm or change these defaults (owner):
