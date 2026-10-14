@@ -213,7 +213,7 @@ records take over:
   minimum-size refusal per preset. `story-images.sh` calls it. The `/app/events` upload's sizes
   join the same preset table and the check asserts they agree with the renderer (ADR 0059).
 - Skills: **`content-week`** (the Sunday session: Inbox sort with faces to confirm → ~5 new cards
-  marked `source: claude` → picks against the pillars and the calendar → the pack drafted HE + AR
+  marked `source: claude` → picks against the themes (ADR 0070) and the calendar → the pack drafted HE + AR
   with one declared experiment → the Arabic reader's comment thread → "posted" boxes) and
   **`media-intake`** (the sort alone, for a day when photos arrive and no pack is due). Both carry
   ADR 0068 §5's data-not-instructions list verbatim and the fence rule, and a 3-case `EVALS.md`
@@ -244,7 +244,7 @@ records take over:
 | Sunday | Arabic sign-off on every caption (Drive comment; ADR 0069 §7) | owner (the Arabic reader) | inside the session |
 | Tue–Sat | post from `Ready to post/<week>`, tick "posted" | owner | ~3 min per channel |
 | +7 days | results per post from the snapshot; winners remixed, losers retired, rules proposed | Claude, next session | inside the 30 min |
-| monthly | the deeper audit: pillar balance, what worked, stale cards retired, channel profiles vs FACTS, the designer's look | owner + Claude | ~60 min |
+| monthly | the deeper audit: theme split vs ADR 0070, what worked, stale cards retired, channel profiles vs FACTS, the designer's look | owner + Claude | ~60 min |
 | quarterly | hero video refresh, `VOICE.md` review, skill evals | the quarterly review | — |
 
 A skipped week breaks nothing: the pack carries over, the freshness number shows it.
@@ -252,7 +252,7 @@ A skipped week breaks nothing: the pack carries over, the freshness number shows
 ## What makes it evolve
 
 1. **Measured feedback becomes rules.** Results are written on each post record; the monthly audit
-   turns patterns into `VOICE.md` amendments and pillar weights — proposed as a PR, never applied
+   turns patterns into `VOICE.md` amendments and theme shares — proposed as a PR, never applied
    unasked.
 2. **One deliberate experiment per pack** with a written hypothesis (hook, format, posting time,
    language-first, CTA wording), judged at +7 days. Reels already do this with two hook variants.
@@ -342,14 +342,15 @@ Blocking:
    reader (ADR 0069 amended).
 2. ~~**Consent for `gallery/11`**~~ — **answered 2026-10-12: consent exists** (owner); the photo
    stays, the consent sheet records scope = `site` at the migration, PR A only fixes its alt.
-3. **Pillars and freshness numbers** (before PR C) — confirm or change these defaults (owner):
-   - pillars (the mandate's positioning weights the first two): the village and the sea · teams by
-     the sea (business events) · private celebrations · the kitchen, sea-to-table · community and
-     יוזמות;
-   - freshness: ≥ 3 new photos/week in `Published` · one pack/week on every live channel · GBP a
-     photo and a post weekly · gallery swap ≥ 2 photos monthly · story facts re-checked every 90 days
-     (from the page's `levyam:updated` stamp) · hero video quarterly · channel profiles checked
-     against `FACTS.md` weekly · nothing date-bound visible past its `expires` date.
+3. ~~**Themes and freshness numbers**~~ — **answered 2026-10-14** (owner):
+   - **themes are audiences** — Companies & teams 45% · Private hosts 25% · Space renters 15% ·
+     Weekend visitors & community 15%; the village, the sea and the kitchen are the setting of
+     every post, not a theme ([ADR 0070](../decisions/0070-content-themes-are-audiences-business-first-the-place-is-the-setting-of-every-post.md));
+   - **freshness confirmed as drafted:** ≥ 3 new photos/week in `Published` · one pack/week on every
+     live channel · GBP a photo and a post weekly · gallery swap ≥ 2 photos monthly · story facts
+     re-checked every 90 days (from the page's `levyam:updated` stamp) · hero video quarterly ·
+     channel profiles checked against `FACTS.md` weekly · nothing date-bound visible past its
+     `expires` date.
 
 Non-blocking:
 4. Can the Drive connector move files between folders, or is a move a copy + archive? (Claude, at
@@ -392,6 +393,11 @@ Non-blocking:
 - 2026-10-08 · every published piece is built from IDs and recorded; the records are additive,
   never load-bearing; one derivative script, pixels only; consent has a scope; every public Arabic
   text on every channel is signed off by the native reader · [ADR 0069](../decisions/0069-every-published-piece-is-built-from-ids-and-recorded-content-records-additive-never-load-bearing.md)
+- 2026-10-14 · the Arabic reader is the owner — no dedicated reader; §7's sign-off unchanged ·
+  [ADR 0069](../decisions/0069-every-published-piece-is-built-from-ids-and-recorded-content-records-additive-never-load-bearing.md) amended
+- 2026-10-14 · the content themes are audiences (Companies 45 · Private 25 · Renters 15 · Weekend &
+  community 15), each tied to a service and one action; the place is the setting of every post ·
+  [ADR 0070](../decisions/0070-content-themes-are-audiences-business-first-the-place-is-the-setting-of-every-post.md)
 - 2026-10-08 · brand finals are copied into an owner-owned library, not transferred — an
   implementation choice recorded in PR B, no standing rule.
 
