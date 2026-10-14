@@ -53,6 +53,12 @@ jobs:
       - name: Happening chrome drift check
         run: node scripts/gen-happening.mjs --check
 
+      # Pages vs FACTS.md (hours, coordinates, spelling, one phone, one email, no long Maps
+      # links), alt text in both languages, declared image sizes, no prices, weight budgets,
+      # the share image. Sub-second, no install (docs/plans/content-media-foundation.md, PR A).
+      - name: Content check
+        run: node scripts/check-content.mjs
+
       - name: Install platform dependencies
         working-directory: app-src
         run: npm ci

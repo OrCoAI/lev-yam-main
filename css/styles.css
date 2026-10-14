@@ -916,7 +916,8 @@ p:last-child {
   background-color: color-mix(in srgb, var(--color-blue) 18%, var(--color-cream));
 }
 
-.service-media picture {
+.service-media picture,
+.gallery-item picture {
   display: block;
   block-size: 100%;
 }
