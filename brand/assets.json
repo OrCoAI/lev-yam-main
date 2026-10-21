@@ -1,0 +1,15 @@
+{
+  "$comment": "Every brand asset, by ID (content/README.md §IDs). `served` = the files the site and the reels use — owned here, not by content/media.json. `master` = the source in brand/assets/ once the designer delivers vector masters (brand/README.md, designer guide starting list); until then the served PNG is the best copy we hold and the Drive copy in Brand/10 Logos and 20 Icons is the backup. scripts/media.sh --brand (PR C) writes served files from masters.",
+  "assets": [
+    { "id": "brand-logo-full",      "what": "full logo — palm, sun, house, waves + wordmark", "served": ["img/logo/logo-full.png"] },
+    { "id": "brand-logo-mark",      "what": "the mark without the wordmark",                  "served": ["img/logo/logo-mark.png"] },
+    { "id": "brand-logo-mono",      "what": "one-colour logo, transparent background",        "served": ["img/logo/logo-mono-nobg.png"] },
+    { "id": "brand-logo-build-1",   "what": "homepage logo build, step 1 (palm, house, waves)", "served": ["img/hero/h1-aligned-opt.png"] },
+    { "id": "brand-logo-build-2",   "what": "homepage logo build, step 2 (+ sun)",            "served": ["img/hero/h2-opt.png"] },
+    { "id": "brand-logo-build-3",   "what": "homepage logo build, step 3 (+ wordmark)",       "served": ["img/hero/h3-opt.png"] },
+    { "id": "brand-icon-heart",     "what": "icon — heart",                                   "served": ["img/icons/heart.png"] },
+    { "id": "brand-icon-house",     "what": "icon — house (blue; orange recolour for reels)", "served": ["img/icons/house-blue.png", "video/public/brand/house-orange.png"] },
+    { "id": "brand-icon-palm",      "what": "icon — palm (orange; blue + cream recolours for reels)", "served": ["img/icons/palm-orange.png", "video/public/brand/palm-blue.png", "video/public/brand/palm-cream.png"] },
+    { "id": "brand-icon-sun",       "what": "icon — sun (orange)",                            "served": ["img/icons/sun-orange.png"] }
+  ]
+}

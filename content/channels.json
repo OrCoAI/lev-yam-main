@@ -1,0 +1,75 @@
+{
+  "$comment": "Every channel Lev Yam publishes to, and the one home of derivative sizes (docs/plans/content-media-foundation.md §Homes; ADR 0068 §2, ADR 0069 §6). Nothing live reads this file (ADR 0069 §5). scripts/check-content.mjs validates modes, presets and utm_source today; until scripts/media.sh (PR C) writes from the presets, scripts/story-images.sh and the /app/events upload still carry their own numbers, which must equal these. limits and freshness are read by the content-week skill (PR C) and the freshness numbers (PR D). A `publish` mode needs `publish_adr` naming an ADR whose title names the channel id (ADR 0068 §2).",
+  "channels": [
+    {
+      "id": "site",
+      "name": "levyam.com (homepage, /stories/, /happening/)",
+      "status": "live",
+      "mode": "draft",
+      "connector": "the repo — Claude opens the PR, the owner merges (CLAUDE.md gate)",
+      "presets": ["story-hero", "story-card", "gallery", "services", "share", "events-photo"],
+      "freshness": { "gallery_swap_days": 30, "min_swapped": 2, "story_facts_recheck_days": 90, "hero_video_days": 90 },
+      "utm_source": null
+    },
+    {
+      "id": "ig",
+      "name": "Instagram @levyam_",
+      "status": "live",
+      "mode": "draft",
+      "connector": null,
+      "presets": ["ig-post", "ig-reel", "ig-feed-video", "cover", "story"],
+      "limits": { "caption_chars": 2200, "hashtags": 30, "bio_chars": 150 },
+      "freshness": { "pack_days": 7 },
+      "utm_source": "instagram"
+    },
+    {
+      "id": "fb",
+      "name": "Facebook page",
+      "status": "live",
+      "mode": "draft",
+      "connector": null,
+      "presets": ["fb", "ig-reel", "story"],
+      "limits": { "intro_chars": 101 },
+      "freshness": { "pack_days": 7 },
+      "utm_source": "facebook"
+    },
+    {
+      "id": "gbp",
+      "name": "Google Business Profile",
+      "status": "live",
+      "mode": "draft",
+      "connector": null,
+      "presets": ["gbp"],
+      "limits": { "post_chars": 1500, "description_chars": 750 },
+      "freshness": { "pack_days": 7, "photo_days": 7, "profile_vs_facts_days": 7 },
+      "utm_source": "google-business"
+    },
+    {
+      "id": "wa",
+      "name": "WhatsApp Business (972506669138)",
+      "status": "live",
+      "mode": "draft",
+      "connector": null,
+      "presets": ["wa-status", "ig-reel"],
+      "limits": { "about_chars": 139, "description_chars": 512 },
+      "freshness": { "pack_days": 7 },
+      "utm_source": "whatsapp"
+    }
+  ],
+  "presets": {
+    "story-hero":   { "kind": "image", "sizes": [[1600, 900], [800, 450]], "format": "jpg", "min_source": [1600, 900], "note": "img/stories/<slug>/<name>-1600.jpg and -800.jpg (media/README.md)" },
+    "story-card":   { "kind": "image", "sizes": [[1200, 630]], "format": "jpg", "min_source": [1200, 630], "note": "og:image and the hub card" },
+    "gallery":      { "kind": "image", "widths": [480, 960], "format": "webp", "quality": 80, "note": "srcset rungs named by real width — min(original, 960); the jpg fallback is the original's web copy" },
+    "services":     { "kind": "image", "widths": [480, 960], "format": "webp", "quality": 80 },
+    "share":        { "kind": "image", "sizes": [[1200, 630]], "format": "jpg", "note": "the homepage og:image — check-content's share rule" },
+    "events-photo": { "kind": "image", "long_edge": [1600, 800], "format": "jpg", "quality": [0.85, 0.8], "note": "the /app/events browser upload (ADR 0059): the photo and its -sm.jpg copy; app-src/src/modules/events/api.ts MAX_EDGE / THUMB_EDGE must agree" },
+    "ig-post":      { "kind": "image", "sizes": [[1080, 1350]], "format": "jpg" },
+    "ig-reel":      { "kind": "video", "sizes": [[1080, 1920]], "fps": 30, "note": "video/GUIDELINES.md §2–3 for lengths and safe zones" },
+    "ig-feed-video":{ "kind": "video", "sizes": [[1080, 1350]], "fps": 30, "note": "a re-layout of the 9:16 composition, never a letterbox" },
+    "story":        { "kind": "image", "sizes": [[1080, 1920]], "format": "jpg" },
+    "cover":        { "kind": "image", "sizes": [[1080, 1920]], "format": "png", "note": "a reel's cover still — headline inside the centre 4:5 crop (GUIDELINES §2)" },
+    "wa-status":    { "kind": "image", "sizes": [[1080, 1920]], "format": "jpg", "note": "specs unverified — check the upload once (GUIDELINES §2)" },
+    "fb":           { "kind": "image", "sizes": [[1080, 1350]], "format": "jpg" },
+    "gbp":          { "kind": "image", "sizes": [[1200, 900]], "format": "jpg", "min_source": [720, 540], "note": "≥ 720 px, 4:3" }
+  }
+}

@@ -1,30 +1,29 @@
-# `media/` — story photo intake
+# `media/` — a local cache of originals
 
-Drop original photos here (any size, JPG/HEIC/PNG). **Nothing in this folder is committed or
-deployed** — `.gitignore` excludes everything but this file, because the repo is public and
-`img/` ships to levyam.com as-is.
+**Originals live in the Drive fence** ([`content/README.md`](../content/README.md) §The two
+halves); the weekly sort gives each one a media ID. This folder is only a **local cache** of
+originals pulled down to make derivatives. **Nothing in it is committed or deployed** — `.gitignore` excludes
+everything but this file, because the repo is public and `img/` ships to levyam.com as-is.
 
-When a story page is written, the `story-author` skill lists what is here, the owner picks
-one photo per page, and `scripts/story-images.sh <photo> <slug>` writes the three optimized
-derivatives the template needs into `img/stories/<slug>/` — those are what get committed:
+**Sizes live in one place: the presets in [`content/channels.json`](../content/channels.json)**
+(`story-hero`, `story-card`, `gallery`, `services`, `share`, and the social presets). A story page
+uses the `story-hero` and `story-card` presets:
 
-| File | Size | Used by |
+| File | Preset | Used by |
 |---|---|---|
-| `card.jpg` | 1200×630 | `og:image` and the hub card |
-| `hero-1600.jpg` | 1600×900 | the page hero (desktop) |
-| `hero-800.jpg` | 800×450 | the page hero (phone) |
+| `card.jpg` | `story-card` | `og:image` and the hub card |
+| `hero-1600.jpg` / `hero-800.jpg` | `story-hero` | the page hero (desktop / phone) |
 
-The script (Pillow; `python3 -m pip install pillow` once) applies the phone's rotation flag,
+`scripts/story-images.sh <photo> <slug>` writes them into `img/stories/<slug>/` and the new files
+go on the photo's record in `content/media.json` (`renditions`, `used_in`, alt HE + AR). The
+script (Pillow; `python3 -m pip install pillow` once) applies the phone's rotation flag,
 converts Display P3 colour to sRGB, and writes the derivatives from pixels only — phone
 originals carry GPS coordinates, the capture time and often the photographer's name, and
-these files go into a public repo and onto the site. HEIC originals are converted through
-macOS `sips` first. It refuses a source under 1600×900 (the hero is the page's largest
-image; upscaling ships blur). This table is the one place the sizes live.
+these files go into a public repo and onto the site (ADR 0069 §6). HEIC originals are converted
+through macOS `sips` first. It refuses a source under the preset's minimum (upscaling ships blur).
 
-Video clips and photos for reels use the same intake (`video/`, guidelines §8): originals here,
-never committed; a reel references the site's own `img/` files (synced into `video/public/site/`)
-or a small derivative placed under `video/public/`.
+Video clips and photos for reels follow the same path (`video/GUIDELINES.md` §8): originals in
+Drive, a local copy here when needed, only derivatives committed — each one a rendition on a record.
 
-Suggested habit: subfolders by subject (`media/team-days/`, `media/kitchen/`, `media/beach/`)
-so a pick takes seconds. Keep only photos Lev Yam has the right to publish, with the consent
-of anyone recognisable.
+Publish only photos Lev Yam has the right to publish — a recognisable person only within their
+consent scope ([`content/README.md`](../content/README.md) §A media record).

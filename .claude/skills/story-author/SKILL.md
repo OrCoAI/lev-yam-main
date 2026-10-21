@@ -3,7 +3,7 @@ name: story-author
 description: >
   Write one /stories/ page pair (Hebrew + Levantine Arabic twin) from a short brief, ready for
   the owner's review PR: facts only from FACTS.md with [חסר]/[مفقود] markers and a gap list,
-  every template placeholder filled, three optimized images from the media/ intake folder, hub
+  every template placeholder filled, three optimized images from the Drive fence's originals (local `media/` cache), hub
   and sitemap regenerated. Triggers: "write a story", "new story page", "story about", "draft
   the page for", "סיפור חדש". Not for editing the homepage or the platform.
 metadata:
@@ -59,13 +59,19 @@ quote. If the target query is missing, ask for it — one closed question — be
 4. **Arabic twin** from `_template.ar.html`: Levantine Arabic drafted from the approved Hebrew,
    same facts, same slug, same images, `[مفقود: …]` wherever the Hebrew has `[חסר: …]`. Not a
    word-for-word translation — natural phrasing for a reader in Jisr az-Zarqa and the north.
-5. **Photos:** list `media/` (subfolders by subject) plus the five 1600×1200 gallery files, and
+5. **Photos:** list the Drive fence's `Media/` originals (pulled into the local `media/` cache)
+   plus the five 1600×1200 gallery files, and
    propose 1–2 candidates for the hero; the owner picks. Then
    `scripts/story-images.sh <photo> <slug> [--focus top|center|bottom]` writes the three
    derivatives under `img/stories/<slug>/` (sizes in `media/README.md`), rotation applied,
    metadata stripped. It refuses a source under 1600×900; if nothing fits, stop with a named
    photo request. A second photo or a video montage is not scripted yet — the first pair's
    by-hand recipe is in `docs/plans/stories-authoring-tool.md` (Status, 2026-09-23).
+   **Record every new file** (`content/README.md` §A media record): one record per original in
+   `content/media.json` — a media ID from the sort, the renditions, the hero / figure alt HE + AR
+   exactly as the pages carry them, `people`, and `consent` (a recognisable person needs at least
+   `site` — ask the owner, never assume) — then `node scripts/check-content.mjs --write` fills
+   `used_in`. The check fails a story PR whose images have no record.
 6. **Generate:** `node scripts/gen-stories-index.mjs` — stamps chrome, rebuilds both hubs and
    `sitemap.xml`, and fails on a missing twin, a stale canonical, a leftover placeholder, a
    referenced image that does not exist, or an `og:image` that is not the slug's `card.jpg`.
