@@ -53,8 +53,10 @@ sea and the kitchen are the **setting** of every post, never its subject alone (
 
 - **One action per piece.** Two asks is none.
 - **Every owned link carries UTM** (`content/README.md` — the post ID is `utm_campaign`).
-- HE and AR are posted as **two separate pieces** on Instagram and Facebook (one language each,
-  same media), not one bilingual caption — each reads natively and RTL never mixes.
+- **Every piece is drafted in three versions — Hebrew, Arabic and mixed** (Hebrew first, then
+  Arabic, in one caption); the owner picks per piece and per channel which go out (owner,
+  2026-10-21). The post record carries all three; the mixed one keeps each language in its own
+  paragraph so RTL never breaks mid-line.
 
 ## What the loop has learned
 

@@ -127,8 +127,11 @@ results:                    # at +7 days, totals only: sessions, whatsapp_click
 …
 ## AR
 …
+## Mixed
+…
 ```
 
+- Three caption versions, always — `## HE`, `## AR`, `## Mixed` ([`VOICE.md`](VOICE.md) §Per channel); the owner picks which go out.
 - A piece posted outside the pack is recorded by hand in the next session.
 - No Arabic text is posted unsigned (`ar_signed` empty → not posted).
 - Results are totals only — never a person, a handle or a comment's text.

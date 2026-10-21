@@ -437,6 +437,8 @@ Non-blocking:
   register sheet and mirrored on the records (PR B)
 - 2026-10-21 · media records carry `people` beside `consent`; brand assets own the logo / icon
   files through `brand/assets.json` — implementation choices inside ADR 0069, no standing rule
+- 2026-10-21 · every piece is drafted in three caption versions — Hebrew, Arabic and mixed — and the
+  owner picks which go out (`content/VOICE.md`; the check requires all three on a post record)
 - 2026-10-21 · the migration registers the 38 published originals now and leaves the other
   migrated files to the weekly sorts (owner's pick of three depths)
 

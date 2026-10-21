@@ -34,8 +34,8 @@
  *   consent   recognisable people are used only within their consent scope (ADR 0069 §4)
  *   channels  modes and presets are valid; a live channel has content/channels/<id>.md; `publish` only
  *             with an ADR whose title says publish and names the channel id in backticks
- *   posts     front matter, the post id is the utm_campaign, built from media IDs only, no posting
- *             without the Arabic sign-off (ADR 0069 §2, §7)
+ *   posts     front matter, the post id is the utm_campaign, built from media IDs only, three captions
+ *             (HE / AR / Mixed), no posting without the Arabic sign-off (ADR 0069 §2, §7)
  *   drive     no Drive / Docs link or Drive-ID-shaped string in any text file in the repo (ADR 0069 §1)
  *   pii       no email or phone number in the records but the venue's; the records are .md / .json only (invariant 3)
  *   tokens    css/styles.css --color/space/radius-* ⇄ brand/tokens.json both ways; theme.ts colours and theme-color too
@@ -398,6 +398,7 @@ for (const rel of filesUnder('content/posts', /./).filter((r) => !r.endsWith('/.
   const utmSource = CHANNEL.get(ch)?.utm_source, q = URL.canParse(fm.utm ?? '') ? new URL(fm.utm).searchParams : null
   if (fm.utm && (q?.get('utm_campaign') !== id || (utmSource && q.get('utm_source') !== utmSource))) P('posts', `the UTM link needs utm_campaign=${id}${utmSource ? ` and utm_source=${utmSource}` : ''}`)
   if (fm.posted && !/^\d{4}-\d{2}-\d{2}$/.test(fm.ar_signed ?? '')) P('posts', 'marked posted without the Arabic sign-off date (ADR 0069 §7)')
+  for (const h of ['HE', 'AR', 'Mixed']) if (ch !== 'site' && !new RegExp(`^## ${h}\\s*$`, 'm').test(text.replace(/\r\n/g, '\n'))) P('posts', `no "## ${h}" caption — every piece is drafted in Hebrew, Arabic and mixed (VOICE.md)`)
   if (/(^|[\s(`"'])(img|media|video\/public)\/\S+\.(jpe?g|png|webp|heic|mov|mp4)/i.test(text)) P('posts', 'names a raw file — a piece is built from media IDs (ADR 0069 §2)')
   for (const mid of (fm.media ?? '').replace(/[[\]]/g, '').split(',').map((x) => unquote(x.trim())).filter(Boolean)) {
     const r = RECORD.get(mid), scope = ch === 'site' ? 'site' : 'social'
