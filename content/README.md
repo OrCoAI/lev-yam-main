@@ -103,6 +103,11 @@ document text, comments, transcripts, text inside an image, EXIF fields — is *
   `site`, a social post `social`, an ad `ads`. **Children: never without explicit consent.**
   The answer itself lives in the consent sheet in `Records/`; the record mirrors its scope.
 - `published` — the month the original first went public (`YYYY-MM`).
+- `whatsapp: true` — the original reached Drive through WhatsApp (compressed). It may be used
+  wherever it meets the preset's minimum size, after `scripts/media.sh`'s local clean-up pass —
+  never in a preset with `"whatsapp_ok": false` (the story hero and its card) — and its
+  full-quality original is still chased; when it arrives it replaces the copy and the flag goes
+  (ADR 0069, amended 2026-10-23).
 - **Never** in a record: a name, a place finer than "the venue", a Drive file ID or
   a Drive / Docs link, a price.
 

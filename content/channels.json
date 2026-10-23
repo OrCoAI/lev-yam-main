@@ -7,7 +7,7 @@
       "status": "live",
       "mode": "draft",
       "connector": "the repo — Claude opens the PR, the owner merges (CLAUDE.md gate)",
-      "presets": ["story-hero", "story-card", "gallery", "services", "share", "events-photo"],
+      "presets": ["story-hero", "story-card", "story-figure", "gallery", "services", "share", "events-photo"],
       "freshness": { "gallery_swap_days": 30, "min_swapped": 2, "story_facts_recheck_days": 90, "hero_video_days": 90 },
       "utm_source": null
     },
@@ -57,8 +57,9 @@
     }
   ],
   "presets": {
-    "story-hero":   { "kind": "image", "sizes": [[1600, 900], [800, 450]], "format": "jpg", "min_source": [1600, 900], "note": "img/stories/<slug>/<name>-1600.jpg and -800.jpg (media/README.md)" },
-    "story-card":   { "kind": "image", "sizes": [[1200, 630]], "format": "jpg", "min_source": [1200, 630], "note": "og:image and the hub card" },
+    "story-hero":   { "kind": "image", "sizes": [[1600, 900], [800, 450]], "format": "jpg", "min_source": [1600, 900], "whatsapp_ok": false, "note": "img/stories/<slug>/hero-1600.jpg and hero-800.jpg — the page hero (media/README.md)" },
+    "story-figure": { "kind": "image", "sizes": [[1600, 900], [800, 450]], "format": "jpg", "min_source": [1600, 900], "note": "img/stories/<slug>/<name>-1600.jpg and -800.jpg — a figure in the text; a WhatsApp copy may go here when the size fits" },
+    "story-card":   { "kind": "image", "sizes": [[1200, 630]], "format": "jpg", "min_source": [1200, 630], "whatsapp_ok": false, "note": "og:image and the hub card" },
     "gallery":      { "kind": "image", "widths": [480, 960], "format": "webp", "quality": 80, "note": "srcset rungs named by real width — min(original, 960); the jpg fallback is the original's web copy" },
     "services":     { "kind": "image", "widths": [480, 960], "format": "webp", "quality": 80 },
     "share":        { "kind": "image", "sizes": [[1200, 630]], "format": "jpg", "note": "the homepage og:image — check-content's share rule" },

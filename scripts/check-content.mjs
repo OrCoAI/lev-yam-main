@@ -27,7 +27,8 @@
  *
  * Rules (v2 — the content records, PR B; content/README.md is the model):
  *   records   content/media.json + brand/assets.json: every rendition exists, every img/ file has exactly
- *             one owner (a media record, or a brand asset for logos and icons)
+ *             one owner (a media record, or a brand asset for logos and icons); a whatsapp: true record
+ *             never sits in a whatsapp_ok: false preset
  *   ids       media / post / brand / card IDs match their grammar (ADR 0068 §5)
  *   used      a record's used_in equals the served pages, js/ and css/ that reference its renditions
  *   alt       a non-empty page alt equals the record's alt in that page's language (HE + AR)
@@ -327,11 +328,23 @@ const adrNames = (num, c) => {
   return new RegExp(`\\bpublish(es|ed|ing)?\\b[^.;]*\`${c.id}\``, 'i').test(title) && !/\b(never|not|no|without|until|stays?)\b/i.test(title)
 }
 const CHANNEL = new Map((channels?.channels ?? []).map((c) => [c.id, c]))
+// the files scripts/story-images.sh writes, with the preset and size rung each one is cut at (its SIZES)
+const STORY_FILES = [['card.jpg', 'story-card', 0], ['hero-1600.jpg', 'story-hero', 0], ['hero-800.jpg', 'story-hero', 1]]
+// which preset a committed file was cut at — the story files are the only ones named by preset today
+const presetName = (f) => {
+  const m = f.match(/^img\/stories\/[^/]+\/(card|hero|[a-z0-9-]+?)(?:-(?:1600|800))?\.jpg$/)
+  return !m ? undefined : f.endsWith('/card.jpg') ? 'story-card' : m[1] === 'hero' ? 'story-hero' : /-(1600|800)\.jpg$/.test(f) ? 'story-figure' : undefined
+}
+const MAPPED_PRESETS = new Set(['story-card', 'story-hero', 'story-figure'])
 for (const c of CHANNEL.values()) {
   if (!['read', 'draft', 'publish'].includes(c.mode)) C('channels', `${c.id}: mode "${c.mode}" is not read|draft|publish`)
   for (const p of c.presets ?? []) if (!channels.presets?.[p]) C('channels', `${c.id}: preset "${p}" is not defined`)
   if (c.status === 'live' && !existsSync(join(ROOT, `content/channels/${c.id}.md`))) C('channels', `${c.id} is live without its profile text in content/channels/${c.id}.md`)
   if (c.mode === 'publish' && !adrNames(c.publish_adr, c)) C('channels', `${c.id} is in publish mode without an ADR (publish_adr) whose title says publish and names \`${c.id}\``)
+}
+for (const [name, p] of Object.entries(channels?.presets ?? {})) {
+  if ('whatsapp_ok' in p && typeof p.whatsapp_ok !== 'boolean') C('channels', `${name}: whatsapp_ok must be true or false`)
+  if (p.whatsapp_ok === false && !MAPPED_PRESETS.has(name)) C('channels', `${name}: whatsapp_ok false, but check-content maps no files to this preset — teach presetName() first`)
 }
 
 // every committed rendition — img/ and the reels' own files — has exactly one owner: a media record or a brand asset
@@ -350,7 +363,13 @@ for (const r of media) {
   if (!SCOPES.includes(r.consent)) M('records', `${r.id}: consent "${r.consent}" is not ${SCOPES.join('|')}`)
   if (!/^\d{4}-\d{2}$/.test(r.published ?? '')) M('records', `${r.id}: published "${r.published}" is not YYYY-MM`)
   if (r.kind === 'image' && !(r.alt?.he && r.alt?.ar)) M('records', `${r.id}: an image record needs alt.he and alt.ar`)
-  for (const f of r.renditions ?? []) own(f, r.id, M)
+  if ('whatsapp' in r && r.whatsapp !== true) M('records', `${r.id}: whatsapp must be true or absent`)
+  for (const f of r.renditions ?? []) {
+    own(f, r.id, M)
+    // a WhatsApp copy is a last-choice source, refused by any preset with whatsapp_ok: false (ADR 0069 amended 2026-10-23)
+    const preset = presetName(f)
+    if (r.whatsapp && channels?.presets?.[preset]?.whatsapp_ok === false) M('records', `${r.id}: ${f} is cut at ${preset}, which refuses a WhatsApp copy — use the original`)
+  }
 }
 for (const a of brandAssets) {
   if (!ID.brand.test(a.id ?? '')) B('ids', `brand id "${a.id}" does not match ${ID.brand}`)
@@ -414,8 +433,10 @@ for (const m of backlog.matchAll(/^###\s+(.*)$/gm)) if (!ID.card.test(m[1].trim(
 // carry their own numbers must equal them
 if (channels?.presets) {
   const pr = channels.presets, sh = read('scripts/story-images.sh'), api = read('app-src/src/modules/events/api.ts')
-  const want = [['card.jpg', pr['story-card']?.sizes[0]], ['hero-1600.jpg', pr['story-hero']?.sizes[0]], ['hero-800.jpg', pr['story-hero']?.sizes[1]]]
-  for (const [name, wh] of want) if (!sh.includes(`('${name}', ${wh?.[0]}, ${wh?.[1]})`)) fail('scripts/story-images.sh', 1, 'sizes', `${name} is not ${wh?.join('×')} (content/channels.json presets)`)
+  for (const [name, preset, rung] of STORY_FILES) {
+    const wh = pr[preset]?.sizes[rung]
+    if (!sh.includes(`('${name}', ${wh?.[0]}, ${wh?.[1]})`)) fail('scripts/story-images.sh', 1, 'sizes', `${name} is not ${wh?.join('×')} (content/channels.json presets)`)
+  }
   const [big, small] = pr['events-photo']?.long_edge ?? []
   if (!new RegExp(`\\bMAX_EDGE = ${big}\\b`).test(api) || !new RegExp(`\\bTHUMB_EDGE = ${small}\\b`).test(api)) fail('app-src/src/modules/events/api.ts', 1, 'sizes', `MAX_EDGE / THUMB_EDGE are not ${big} / ${small} (the events-photo preset)`)
 }

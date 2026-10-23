@@ -179,7 +179,8 @@ records take over:
   ADR 0068 §3) from the six owner-approved sources — `תמונות מתחם`, `תמונות א.נשים`, `תמונות`,
   `סרטונים`, `אירועים עסקיים`, `עיצוב - מיתוג - תוצרי שיווק` — plus local `media/`:
   de-duplicated, IDs assigned, faces flagged for the owner's consent answers, WhatsApp-compressed
-  copies marked "never a source".
+  copies kept apart (~~"never a source"~~ — since 2026-10-23 a last-choice source where the size
+  fits, ADR 0069 amended).
 - `content/media.json` for every file already in `img/` (alt from the pages, renditions); the
   ID → Drive mapping and the consent answers as one sheet in `Records/`; the check gains "page alt
   == record alt", "consent scope covers the use", "no Drive-ID-shaped string under `content/`" and
@@ -242,7 +243,12 @@ records take over:
 - `scripts/media.sh <id> <preset…>`: one Pillow/ffmpeg path for every derivative — the story trio,
   gallery `srcset` rungs + WebP, `ig-post` 1080×1350, `ig-reel`/`story`/`wa-status` 1080×1920,
   `fb`, `gbp` (≥ 720 px, 4:3), clip renditions — pixels only (ADR 0069 §6), one quality table, a
-  minimum-size refusal per preset. `story-images.sh` calls it. The `/app/events` upload's sizes
+  minimum-size refusal per preset; for a `whatsapp: true` record a light clean-up pass (de-blocking
+  and tone, local only, never upscaling) and a refusal for any preset with `"whatsapp_ok": false`
+  (ADR 0069, amended 2026-10-23). ffmpeg runs with `-map_metadata -1` (it copies input metadata by
+  default) and maps only the video and audio streams (`-map 0:v:0 -map 0:a:0? -dn -sn` — a phone's
+  data tracks can carry GPS); the check's `meta` rule widens from JPEG to WebP and MP4 and also
+  refuses JPEG comment segments. `story-images.sh` calls it. The `/app/events` upload's sizes
   join the same preset table and the check asserts they agree with the renderer (ADR 0059).
 - Skills: **`content-week`** (the Sunday session: Inbox sort with faces to confirm → ~5 new cards
   marked `source: claude` → picks against the themes (ADR 0070) and the calendar → the pack drafted HE + AR
@@ -441,6 +447,9 @@ Non-blocking:
   owner picks which go out (`content/VOICE.md`; the check requires all three on a post record)
 - 2026-10-21 · the migration registers the 38 published originals now and leaves the other
   migrated files to the weekly sorts (owner's pick of three depths)
+- 2026-10-23 · WhatsApp copies are a last-choice source wherever the preset's minimum size fits,
+  after a clean-up pass, never a story hero or its card; records carry `whatsapp: true`; the original is still
+  chased · [ADR 0069](../decisions/0069-every-published-piece-is-built-from-ids-and-recorded-content-records-additive-never-load-bearing.md) amended
 
 ## Close-out
 *(appended when done — CLAUDE.md "Roadmap item close-out")*

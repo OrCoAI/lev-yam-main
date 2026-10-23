@@ -132,7 +132,8 @@
       ],
       "people": "adults",
       "consent": "site",
-      "published": "2026-05"
+      "published": "2026-05",
+      "whatsapp": true
     },
     {
       "id": "2026-10-venue-01",
@@ -172,7 +173,8 @@
       ],
       "people": "not-recognisable",
       "consent": "none",
-      "published": "2026-05"
+      "published": "2026-05",
+      "whatsapp": true
     },
     {
       "id": "2026-10-beach-01",
@@ -191,7 +193,8 @@
       ],
       "people": "none",
       "consent": "none",
-      "published": "2026-05"
+      "published": "2026-05",
+      "whatsapp": true
     },
     {
       "id": "2026-10-beach-02",
