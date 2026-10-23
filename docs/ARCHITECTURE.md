@@ -185,6 +185,14 @@ flexible"* — maps to specific structural choices:
 - **Evolution, not revolution:** every migration runs the old tool and the new module
   side by side until parity is proven (quotes → then POS), so flexibility never costs
   operational continuity.
+- **Side systems are additive, never load-bearing.** Anything that *observes* or *records*
+  the live system — telemetry (§6b, [ADR 0013](decisions/0013-platform-telemetry-separate-envs-allow-list-additive.md)),
+  the content records in `content/` and `brand/`
+  ([ADR 0069](decisions/0069-every-published-piece-is-built-from-ids-and-recorded-content-records-additive-never-load-bearing.md) §5) —
+  is never read by a page, a feed, a build or a request path. When it is missing or broken, the
+  live system behaves exactly as without it; the failure surfaces loudly where it belongs (a log
+  line, a red CI check), never as a failed request or a failed deploy. Reverting it changes
+  nothing live. A side system that becomes load-bearing is an architecture change, decided as one.
 
 ## 6b. Observability
 
@@ -210,7 +218,7 @@ embeds the invitee's address. This is enforced by the wrapper (`supabase/functio
 not by call-site discipline: `report()` accepts a fixed type and `sanitize()` gates every value,
 including the span name. Adding a field is a decision, not a convenience.
 
-**Telemetry is additive and never load-bearing.** With no `OTEL_*` secrets the SDK is never even
+**Telemetry is additive and never load-bearing** (the general rule is §6, *Side systems*). With no `OTEL_*` secrets the SDK is never even
 imported and the functions behave exactly as before (invariant 7). A broken exporter degrades to
 "no telemetry", never to a failed request — but never *silently*: initialization and emit failures
 log once to Supabase's own function logs, because "no spans" and "no traffic" are otherwise

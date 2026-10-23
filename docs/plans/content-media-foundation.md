@@ -179,7 +179,8 @@ records take over:
   ADR 0068 §3) from the six owner-approved sources — `תמונות מתחם`, `תמונות א.נשים`, `תמונות`,
   `סרטונים`, `אירועים עסקיים`, `עיצוב - מיתוג - תוצרי שיווק` — plus local `media/`:
   de-duplicated, IDs assigned, faces flagged for the owner's consent answers, WhatsApp-compressed
-  copies marked "never a source".
+  copies kept apart (~~"never a source"~~ — since 2026-10-23 a last-choice source where the size
+  fits, ADR 0069 amended).
 - `content/media.json` for every file already in `img/` (alt from the pages, renditions); the
   ID → Drive mapping and the consent answers as one sheet in `Records/`; the check gains "page alt
   == record alt", "consent scope covers the use", "no Drive-ID-shaped string under `content/`" and
@@ -205,12 +206,49 @@ records take over:
   and §9 (publish log → `content/posts/`).
 - Cowork retirement (ADR 0068 §1): the owner disables the two scheduled tasks; the engine document
   and its outputs move to `Records/`.
+- *As built (2026-10-21), for PR C to build on:*
+  - **Records.** `content/media.json` holds 38 records — every original behind a file in `img/`
+    (gallery 18, services 5, the hero clip, the story photos and clips); a record groups all its
+    renditions (gallery 18 also owns the share image and the `dugma` hero, which are crops of it).
+    IDs use the sort month `2026-10`; `published` is the month git first saw a rendition. Each
+    record carries **`people`** (`none | not-recognisable | adults | children`) beside `consent` —
+    consent alone cannot tell "no face" from "no answer". `used_in` is recomputed by the check
+    over the served pages, `js/` and `css/`.
+  - **Consent answered by the owner 2026-10-21:** scope `site` for all 24 records with
+    recognisable people (adults and children); none has `social` yet — a social post of one of
+    them needs a fresh yes first.
+  - **Brand.** `brand/assets.json` names 10 brand assets and owns `img/logo/`, `img/icons/`, the
+    homepage logo build `img/hero/h*.png` and `video/public/brand/`. No vector master exists
+    anywhere (the designer delivered PNG/JPEG), so `brand/assets/` waits for the designer guide's
+    item 1. `tokens.json` = the brand book's three colours + the site's derived shades.
+  - **Check v2** (`scripts/check-content.mjs`): records ↔ files, ids, used, alt (HE + AR, the
+    homepage's Arabic through the dictionary), consent, channels (+ a profile file per live
+    channel), posts, drive, pii, tokens — each rule proven by a planted violation.
+  - **Drive.** The fence and its tree were created 2026-10-21 with the Hebrew README, the designer
+    guide, the sort-notes and delivery-log sheets. The migration copied the four media folders into
+    `Media/00 Inbox/migration 2026-10/` (by source, WhatsApp copies apart) and the designer's
+    finals + the business-event flyers into `Brand/` (de-duplicated, originals untouched). The
+    one media register (ID → Drive file, consent) is a sheet in `Records/`; the 38 published IDs
+    are in it with the Drive original **not yet matched** — hash-matching through Drive for
+    Desktop is blocked by macOS privacy settings, so the first `media-intake` session matches them
+    by eye. Local `media/` (77 files, 263 MB) is too big for the connector: the owner drags it
+    into `from local media (owner uploads)`.
+  - **Sizes.** `channels.json` presets are the one home; `media/README.md` and
+    `video/GUIDELINES.md` §2 point at them. The weekly refresh job still writes only
+    `GUIDELINES.md`: a platform size change is proposed there as a line and the owner applies it
+    to the preset — no workflow change.
+  - **The site is `draft` too** — Claude opens the PR, the owner merges; no channel is `publish`.
 
 **PR C — the script and the weekly session (Tier A; `scripts/`, `.claude/skills/`, `video/`).**
 - `scripts/media.sh <id> <preset…>`: one Pillow/ffmpeg path for every derivative — the story trio,
   gallery `srcset` rungs + WebP, `ig-post` 1080×1350, `ig-reel`/`story`/`wa-status` 1080×1920,
   `fb`, `gbp` (≥ 720 px, 4:3), clip renditions — pixels only (ADR 0069 §6), one quality table, a
-  minimum-size refusal per preset. `story-images.sh` calls it. The `/app/events` upload's sizes
+  minimum-size refusal per preset; for a `whatsapp: true` record a light clean-up pass (de-blocking
+  and tone, local only, never upscaling) and a refusal for any preset with `"whatsapp_ok": false`
+  (ADR 0069, amended 2026-10-23). ffmpeg runs with `-map_metadata -1` (it copies input metadata by
+  default) and maps only the video and audio streams (`-map 0:v:0 -map 0:a:0? -dn -sn` — a phone's
+  data tracks can carry GPS); the check's `meta` rule widens from JPEG to WebP and MP4 and also
+  refuses JPEG comment segments. `story-images.sh` calls it. The `/app/events` upload's sizes
   join the same preset table and the check asserts they agree with the renderer (ADR 0059).
 - Skills: **`content-week`** (the Sunday session: Inbox sort with faces to confirm → ~5 new cards
   marked `source: claude` → picks against the themes (ADR 0070) and the calendar → the pack drafted HE + AR
@@ -353,8 +391,8 @@ Blocking:
      `expires` date.
 
 Non-blocking:
-4. Can the Drive connector move files between folders, or is a move a copy + archive? (Claude, at
-   PR B — either works; the README says which.)
+4. ~~Can the Drive connector move files between folders?~~ — **answered 2026-10-21: yes** (a parent
+   change), so a move is a move; `content/README.md` and the Drive README say so.
 5. The Futura licence — buy, or approve Heebo/Assistant as the brand web fonts (owner + designer).
 6. Big-media trigger: clips move to object storage when `img/` passes 100 MB or story montages
    become routine (owner confirms the number; roadmap "Parked until a trigger").
@@ -400,6 +438,18 @@ Non-blocking:
   [ADR 0070](../decisions/0070-content-themes-are-audiences-business-first-the-place-is-the-setting-of-every-post.md)
 - 2026-10-08 · brand finals are copied into an owner-owned library, not transferred — an
   implementation choice recorded in PR B, no standing rule.
+- 2026-10-21 · consent for every published photo with recognisable people (24 records, children
+  included) is scope `site`, answered by the owner; social use needs a fresh yes — recorded in the
+  register sheet and mirrored on the records (PR B)
+- 2026-10-21 · media records carry `people` beside `consent`; brand assets own the logo / icon
+  files through `brand/assets.json` — implementation choices inside ADR 0069, no standing rule
+- 2026-10-21 · every piece is drafted in three caption versions — Hebrew, Arabic and mixed — and the
+  owner picks which go out (`content/VOICE.md`; the check requires all three on a post record)
+- 2026-10-21 · the migration registers the 38 published originals now and leaves the other
+  migrated files to the weekly sorts (owner's pick of three depths)
+- 2026-10-23 · WhatsApp copies are a last-choice source wherever the preset's minimum size fits,
+  after a clean-up pass, never a story hero or its card; records carry `whatsapp: true`; the original is still
+  chased · [ADR 0069](../decisions/0069-every-published-piece-is-built-from-ids-and-recorded-content-records-additive-never-load-bearing.md) amended
 
 ## Close-out
 *(appended when done — CLAUDE.md "Roadmap item close-out")*
