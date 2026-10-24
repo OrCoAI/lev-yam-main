@@ -180,6 +180,7 @@ export const todayKey = () => new Date().toDateString()
 
 // YYYY-MM-DD → DD.MM (compact day label for report rows)
 export const dm = (ymd: string) => ymd.slice(8, 10) + '.' + ymd.slice(5, 7)
+export const dmy = (ymd: string) => dm(ymd) + '.' + ymd.slice(0, 4)
 
 export function fmtTime(ts: number | string) {
   const d = new Date(ts)
