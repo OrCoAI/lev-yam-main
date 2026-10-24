@@ -56,9 +56,11 @@ Ask only what the idea left open; propose the guideline's default as the first o
    [brief-template.md](brief-template.md) (seconds, exact copy per language, the asset, the
    kit motion); the owner edits line by line. Every on-screen fact names its `FACTS.md` line or
    the page it came from; a missing fact becomes `[חסר: …]` / `[مفقود: …]`.
-7. **Assets** — list candidates by path from `img/` (via `video/public/site/`), the committed
-   `video/public/brand|photos/`, and the gitignored `media/` intake; the owner picks. Nothing
-   outside those three sources.
+7. **Assets** — list candidates by media / brand ID (`content/media.json`, `brand/assets.json`):
+   the site's renditions (via `video/public/site/`), the committed `video/public/brand|photos/`,
+   and originals from the Drive fence (local `media/` cache); the owner picks. Nothing outside
+   those sources. A new file in `video/public/photos/` gets its record in the same PR; a
+   recognisable person in a reel needs consent `social` before it is posted.
 8. **Out of scope for this reel** — what a reader might assume is in (sound, English, a second
    CTA, a price) and is not.
 
