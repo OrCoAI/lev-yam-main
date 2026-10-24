@@ -2,6 +2,8 @@
 
 - **Date:** 2026-10-08
 - **Status:** accepted — applies [0013](0013-platform-telemetry-separate-envs-allow-list-additive.md)'s "additive, never load-bearing" to content; extends [0049](0049-story-chrome-is-generated-and-a-pair-merges-complete.md)'s metadata-stripped derivatives and `media/README.md`'s consent line from stories to every channel; widens the native-reader rule of [0007](0007-story-page-ships-only-with-arabic-twin.md) / CLAUDE.md (stories) and [0055](0055-whats-happening-arabic-may-be-machine-drafted-but-never-published-unreviewed.md) (initiatives) to every channel
+- **Amended 2026-10-23:** a **WhatsApp-compressed copy** (a photo or clip that reached Drive through WhatsApp) is a source like any other **wherever it meets the preset's minimum size**, after a light clean-up pass in `scripts/media.sh` once it lands (PR C) — de-blocking and tone, run locally (Pillow / ffmpeg, never a third-party service), never AI upscaling, which invents detail in photos of real people and the real place; **never a story hero or its card** (presets with `whatsapp_ok: false`; a figure in the text, the gallery, the homepage share image and the reels let size decide); its record carries `whatsapp: true`, so it is the last choice and its original is still chased and replaces it. Gallery 07 / 09 / 10 predate the pass and are the first originals to chase. Replaces the plan's "never a source" (owner, 2026-10-23: WhatsApp copies measured 1600×1200 and 1404×2048 — larger than some camera files on the site; what they lose is compression quality, which shows at full width and barely in a phone feed)
+- **Amended 2026-10-14:** the Arabic reader is **the owner (Or)** — there is no dedicated reader; §7's sign-off stands unchanged, the owner gives it (owner's answer to the plan's open question 1)
 - **Decided by:** owner (kickoff of `docs/plans/content-media-foundation.md`) + Claude Code
 - **Source:** the owner's question *"If I will want to create videos with Remotion and new posts based on our media it will get aligned and organized afterwards, correct?"* and the alignment answers that followed, 2026-10-08
 
@@ -61,3 +63,6 @@ paths cannot answer "where is this used", "what is still unused" or "is this fac
   ADR (the plan's PRs B and C carry the edits).
 - The weekly pack waits on the Arabic reader; a named reader with a short turnaround is a
   precondition of the loop, not an optional step.
+- *(2026-10-14)* The reader is the owner, so the Arabic sign-off happens inside the owner's Sunday
+  session and the Sun–Tue 48-hour wait for a second person is gone. The cost: no second pair of
+  eyes on the Arabic — if a native reader joins later, §7 already covers them, no new ADR needed.

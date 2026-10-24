@@ -5,14 +5,15 @@
 // Sections are collapsible accordions; expenses carry who/when + a receipt flag
 // (cost-perm gated) + a paid date (manage gated), and the expense list spans the
 // whole selected range. "Post day to finance" (pos.close_day) for pos.manage.
-import { Fragment, useEffect, useState, type ReactNode } from 'react'
+// Managers also get a pinned "unpaid" list across every date, whatever the range.
+import { Fragment, useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 import {
-  addExpense, closeDay, deleteExpense, fetchDayReport, fetchDayStatus, fetchRangeReport,
+  addExpense, closeDay, deleteExpense, fetchDayReport, fetchDayStatus, fetchRangeReport, fetchUnpaidExpenses,
   setDayPin, setExpensePaid, setExpenseReceipt, updateExpense, type DayStatus,
 } from './api'
 import { useCan, PERM } from '../../lib/permissions'
 import { itemName, usePosTr } from './i18n'
-import { dateRange, dm, fmtTime, jerusalemDate, shiftDate, startOfMonth, startOfWeek, todayKey } from './logic'
+import { dateRange, dm, dmy, fmtTime, jerusalemDate, shiftDate, startOfMonth, startOfWeek, todayKey } from './logic'
 import S, { INK, SEA, SEA_DEEP, SUN } from './styles'
 import type { ClosedBill, DayReport, DayReportExpense } from './types'
 import { TotalCell } from './widgets'
@@ -26,15 +27,16 @@ const discLabel = (k: string, tr: (he: string, ar: string) => string) =>
   : tr('ללא שיוך', 'غير مُصنّف')
 
 // Collapsible section with a title, optional right-side summary, and a chevron.
-function Section({ title, right, open, onToggle, children }: {
+function Section({ title, right, open, onToggle, style, children }: {
   title: string
   right?: string
   open: boolean
   onToggle: () => void
+  style?: CSSProperties
   children: ReactNode
 }) {
   return (
-    <div style={S.acc}>
+    <div style={{ ...S.acc, ...style }}>
       <button className="pos-tap" style={S.accHead} onClick={onToggle}>
         <span style={S.accTitle}>{title}</span>
         <span style={S.accRight}>
@@ -69,11 +71,13 @@ export default function ReportView({ initialDate, full, canAddFood, canAddLabor,
   const [labor, setLabor] = useState({ amount: '', note: '' })
   const [editId, setEditId] = useState<number | null>(null)
   const [editDraft, setEditDraft] = useState({ note: '', amount: '' })
-  const [open, setOpen] = useState<Record<string, boolean>>({ food: true, labor: false, items: false, details: false, closed: false })
+  const [open, setOpen] = useState<Record<string, boolean>>({ unpaid: false, food: true, labor: false, items: false, details: false, closed: false })
   const [closing, setClosing] = useState(false)
   const [pinning, setPinning] = useState(false)
   const [closeMsg, setCloseMsg] = useState<string | null>(null)
   const [dayStat, setDayStat] = useState<DayStatus | null>(null)
+  const [unpaid, setUnpaid] = useState<DayReportExpense[]>([])
+  const showUnpaid = full && canManage // reading needs pos.reports, paying needs pos.manage
   const canOverride = useCan(PERM.financeOverride)
   const isRange = from !== to
   const rangeDays = isRange ? dateRange(from, to).length : 1
@@ -127,6 +131,16 @@ export default function ReportView({ initialDate, full, canAddFood, canAddLabor,
     return () => { alive = false }
   }, [from, isRange, full, tick])
 
+  // Every unpaid expense, independent of the date scope. Refetched on any
+  // report resync (tick: add/edit/delete, pay/un-pay, a failed write).
+  useEffect(() => {
+    if (!showUnpaid) return
+    let alive = true
+    // a failed fetch keeps the last list — an empty one would read as "all paid"
+    fetchUnpaidExpenses().then((u) => { if (alive) setUnpaid(u) }).catch(() => {})
+    return () => { alive = false }
+  }, [showUnpaid, tick])
+
   const s = rep?.summary ?? { bills: 0, covers: 0, avg_minutes: 0 }
   const isToday = !isRange && from === today
   const foodTotal = rep ? Number(rep.food) || 0 : 0
@@ -155,8 +169,11 @@ export default function ReportView({ initialDate, full, canAddFood, canAddLabor,
   }
   // Patch one expense in place so a toggle updates just its chip instead of
   // refetching the whole report.
-  const patchExpense = (id: number, patch: Partial<DayReportExpense>) =>
-    setRep((r) => (r ? { ...r, expenses: r.expenses.map((e) => (e.id === id ? { ...e, ...patch } : e)) } : r))
+  const patchExpense = (id: number, patch: Partial<DayReportExpense>) => {
+    const apply = (e: DayReportExpense) => (e.id === id ? { ...e, ...patch } : e)
+    setRep((r) => (r ? { ...r, expenses: r.expenses.map(apply) } : r))
+    setUnpaid((u) => u.map(apply))
+  }
   // Optimistic write: patch locally for instant feedback, fire the RPC, and pull
   // server truth back only if it failed. `reconcile` additionally resyncs on
   // success — needed when the change moves the day's food/labor totals (edit,
@@ -179,6 +196,7 @@ export default function ReportView({ initialDate, full, canAddFood, canAddLabor,
       : tr('למחוק את ההוצאה?', 'حذف المصروف؟')
     if (!window.confirm(q)) return
     setRep((r) => (r ? { ...r, expenses: r.expenses.filter((x) => x.id !== e.id) } : r)) // optimistic
+    setUnpaid((u) => u.filter((x) => x.id !== e.id))
     writeExpense(() => deleteExpense(e.id), tr('מחיקת ההוצאה נכשלה', 'فشل حذف المصروف'), true)
   }
   const startEdit = (e: DayReportExpense) => { setEditId(e.id); setEditDraft({ note: e.note || '', amount: String(e.amount) }) }
@@ -195,9 +213,14 @@ export default function ReportView({ initialDate, full, canAddFood, canAddLabor,
     patchExpense(e.id, { has_receipt: next })
     writeExpense(() => setExpenseReceipt(e.id, next), tr('עדכון קבלה נכשל', 'فشل تحديث الفاتورة'))
   }
-  const markPaid = (id: number, paidOn: string | null) => {
+  // The pinned list hides paid rows as it renders. Pay/un-pay resyncs:
+  // un-paying may bring in a row the list never held, and a new tick makes
+  // the fetch effects drop any response still in flight from before the write.
+  // Re-dating an already-paid row (redate) changes neither list, so it skips
+  // the resync — the date input fires on every keystroke.
+  const markPaid = (id: number, paidOn: string | null, redate = false) => {
     patchExpense(id, { paid_on: paidOn })
-    writeExpense(() => setExpensePaid(id, paidOn), tr('סימון תשלום נכשל', 'فشل تحديد الدفع'))
+    writeExpense(() => setExpensePaid(id, paidOn), tr('סימון תשלום נכשל', 'فشل تحديد الدفع'), !redate)
   }
 
   // NEW: post the business day into the finance spine (idempotent; deltas on re-run).
@@ -249,6 +272,13 @@ export default function ReportView({ initialDate, full, canAddFood, canAddLabor,
       <button className="pos-tap" style={S.costAdd} onClick={() => submit(kind, d, set)}>{tr('הוסף', 'إضافة')}</button>
     </div>
   )
+  // Note + amount line, shared by the report rows and the pinned unpaid rows.
+  const expHead = (e: DayReportExpense) => (
+    <div style={S.expTop}>
+      <span style={S.expNote}>{e.note || tr('ללא הערה', 'بدون ملاحظة')}</span>
+      <span style={S.expAmt}>{e.amount} ₪</span>
+    </div>
+  )
   // One expense: note+amount, who/when, then receipt + paid + edit/delete.
   // Managers can switch a row into inline edit (name + amount).
   const expenseRow = (e: DayReportExpense) => {
@@ -269,10 +299,7 @@ export default function ReportView({ initialDate, full, canAddFood, canAddLabor,
     }
     return (
       <div key={e.id} style={S.expRow}>
-        <div style={S.expTop}>
-          <span style={S.expNote}>{e.note || tr('ללא הערה', 'بدون ملاحظة')}</span>
-          <span style={S.expAmt}>{e.amount} ₪</span>
-        </div>
+        {expHead(e)}
         {/* full email + time on their own line — wrap freely, never shift the chips below */}
         <div style={S.expWhoLine}>
           {(e.by || tr('לא ידוע', 'غير معروف')) + ' · ' + (isRange ? dm(e.business_date) + ' · ' : '') + fmtTime(e.at)}
@@ -289,7 +316,7 @@ export default function ReportView({ initialDate, full, canAddFood, canAddLabor,
             canManage ? (
               <span style={S.expPaidWrap}>
                 <span style={S.expPaidTick}>✓</span>
-                <input type="date" max={today} value={e.paid_on} style={S.expDate} onChange={(ev) => ev.target.value && markPaid(e.id, ev.target.value)} />
+                <input type="date" max={today} value={e.paid_on} style={S.expDate} onChange={(ev) => ev.target.value && markPaid(e.id, ev.target.value, true)} />
                 <button className="pos-tap" style={S.expUnpay} title={tr('בטל תשלום', 'إلغاء الدفع')} onClick={() => markPaid(e.id, null)}>✕</button>
               </span>
             ) : (
@@ -306,6 +333,21 @@ export default function ReportView({ initialDate, full, canAddFood, canAddLabor,
       </div>
     )
   }
+
+  // Pinned list grouped by business day, oldest first (the fetch is ordered);
+  // rows paid since the fetch drop out here (patchExpense sets their paid_on).
+  const openUnpaid = unpaid.filter((e) => !e.paid_on)
+  let unpaidTotal = 0
+  const unpaidDays: { date: string; list: DayReportExpense[]; total: number }[] = []
+  for (const e of openUnpaid) {
+    const amt = Number(e.amount) || 0
+    unpaidTotal += amt
+    const last = unpaidDays[unpaidDays.length - 1]
+    if (last?.date === e.business_date) { last.list.push(e); last.total += amt }
+    else unpaidDays.push({ date: e.business_date, list: [e], total: amt })
+  }
+  // jump the report to that day and fold the list so the day itself is in view
+  const goDay = (d: string) => { setFrom(d); setTo(d); setOpen((o) => ({ ...o, unpaid: false })) }
 
   const todayClosed = isToday ? closed.filter((c) => new Date(c.paidAt).toDateString() === todayKey()) : []
   const addHint = <div style={S.reportHint}>{tr('בחרו יום ספציפי כדי להוסיף הוצאה', 'اختر يوماً محدداً لإضافة مصروف')}</div>
@@ -332,6 +374,38 @@ export default function ReportView({ initialDate, full, canAddFood, canAddLabor,
         </div>
 
         <div style={S.receiptScroll}>
+          {/* independent of the date scope — shown even while the report loads or fails */}
+          {showUnpaid && openUnpaid.length > 0 && (
+            <Section
+              style={S.accAlert}
+              title={'⚠ ' + tr('הוצאות שלא שולמו', 'مصاريف غير مدفوعة')}
+              right={openUnpaid.length + ' · ' + unpaidTotal + ' ₪'}
+              open={open.unpaid}
+              onToggle={() => toggle('unpaid')}
+            >
+              {unpaidDays.map(({ date: d, list, total }) => (
+                <Fragment key={d}>
+                  {/* tapping the day opens it in the report below */}
+                  <button className="pos-tap" style={S.unpaidDay} onClick={() => goDay(d)}>
+                    <span>{dmy(d)}</span>
+                    <span>{total + ' ₪'}</span>
+                  </button>
+                  {list.map((e) => (
+                    <div key={e.id} style={S.expRow}>
+                      {expHead(e)}
+                      <div style={S.expWhoLine}>
+                        {(e.kind === 'food' ? tr('מזון', 'طعام') : tr('עובדים', 'عمال')) + ' · ' + (e.has_receipt ? '🧾 ' + tr('יש קבלה', 'يوجد فاتورة') : tr('ללא קבלה', 'بدون فاتورة'))}
+                      </div>
+                      <div style={S.expActions}>
+                        <button className="pos-tap" style={{ ...S.expChip, ...S.unpaidPay }} onClick={() => markPaid(e.id, today)}>{'✓ ' + tr('סמן שולם היום', 'تحديد مدفوع اليوم')}</button>
+                      </div>
+                    </div>
+                  ))}
+                </Fragment>
+              ))}
+            </Section>
+          )}
+
           {loading ? (
             <div style={S.receiptEmpty}>{tr('טוען…', 'جار التحميل…')}</div>
           ) : !rep ? (

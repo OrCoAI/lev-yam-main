@@ -3,7 +3,7 @@
 import { pos } from '../../lib/supabase'
 import { jerusalemDate, reconcileItems } from './logic'
 import { getMenuGroups } from './menuData'
-import type { CloseDayResult, ClosedBill, DayReport, PosPayment, PosTable } from './types'
+import type { CloseDayResult, ClosedBill, DayReport, DayReportExpense, PosPayment, PosTable } from './types'
 
 // ── row mappers (wire format frozen — shared with pos.html) ──
 interface TableRow {
@@ -199,6 +199,19 @@ export async function fetchRangeReport(from: string, to: string): Promise<DayRep
   const { data, error } = await pos().rpc('range_report', { p_from: from, p_to: to })
   if (error) throw error
   return data as DayReport
+}
+
+// Every unpaid expense, any date — the report's pinned "unpaid" list. Raw rows
+// are readable under pos.reports (RLS). The aliases mirror the expense objects
+// that pos.report_for_range builds — change both together.
+export async function fetchUnpaidExpenses(): Promise<DayReportExpense[]> {
+  const { data, error } = await pos().from('pos_expenses')
+    .select('id, kind, amount, note, by:created_by, at:created_at, business_date, has_receipt, paid_on')
+    .is('paid_on', null)
+    .order('business_date')
+    .order('id')
+  if (error) throw error
+  return (data ?? []) as DayReportExpense[]
 }
 
 // created_by is server-authored (pos.set_actor_from_jwt trigger) — no client value to send

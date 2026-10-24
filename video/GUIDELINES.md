@@ -49,12 +49,17 @@ lets a non-interactive agent write to. Section 1 is the owner's — no job edits
 
 ## 2. Formats and platforms (Meta)
 
-| Use | Size | fps | Length | Notes |
-|---|---|---|---|---|
-| Reels / Stories (primary) | 1080 × 1920 (9:16) | 30 | cold reach 6–15 s; consideration 15–30 s; ambient loop ≤ 15 s | the existing reels are 20 s and 12 s |
-| Feed | 1080 × 1350 (4:5) | 30 | same | a **re-layout** of the 9:16 composition, never a letterbox |
-| WhatsApp status | the 9:16 file | | | specs unverified — check the upload once |
-| Cover still | 1080 × 1920 PNG | | | headline inside the centre 4:5 crop (y 285–1635), rendered from the composition's best frame |
+**Sizes live in one place: the presets in [`content/channels.json`](../content/channels.json)**
+(`ig-reel`, `ig-feed-video`, `cover` — ADR 0069 §6). This table carries what a preset
+cannot: length and use. A platform change to a size is proposed here as a line under the table
+(*"Proposed preset change: … — source, date"*); the owner applies it to the preset in the same PR.
+
+| Use | Preset | Length | Notes |
+|---|---|---|---|
+| Reels / Stories (primary) | `ig-reel` (9:16) | cold reach 6–15 s; consideration 15–30 s; ambient loop ≤ 15 s | the existing reels are 20 s and 12 s |
+| Feed | `ig-feed-video` (4:5) | same | a **re-layout** of the 9:16 composition, never a letterbox |
+| WhatsApp status | `ig-reel` (the same 9:16 file) | | specs unverified — check the upload once |
+| Cover still | `cover` (9:16 PNG) | | headline inside the centre 4:5 crop (y 285–1635), rendered from the composition's best frame |
 
 Why these lengths: Meta reports that up to 47 % of a video campaign's value is delivered in the
 first three seconds and up to 74 % in the first ten (Facebook for Business, "Capture Attention
@@ -175,12 +180,16 @@ the Reels caption and the like/comment/share rail.
 
 ## 8. Assets
 
+- **A reel is built from IDs** (ADR 0069 §2): a photo or clip is a media ID with a record in
+  `content/media.json`; a logo or icon is a brand ID in `brand/assets.json`. A brief names IDs,
+  never a raw file.
 - `video/public/site/` is **generated** from `img/` by `npm run assets`
-  (`video/scripts/sync-assets.mjs` is the map) and gitignored. The site's photos, icons and the
-  hero clip are never copied into git a second time.
-- `video/public/brand/` (recoloured icons) and `video/public/photos/` (photos that exist nowhere
-  else) are committed, optimised, small. Raw clips and originals go to the gitignored `media/`
-  intake (as for stories) and only derivatives ship.
+  (`video/scripts/sync-assets.mjs` is the map) and gitignored. The site's photos, icons and the hero clip are never copied into git a second time.
+- `video/public/brand/` (recoloured icons) is committed and owned by `brand/assets.json`;
+  `video/public/photos/` (photos that exist nowhere else) is committed, optimised, small, and each
+  file is a rendition on a media record. Originals live in the Drive fence
+  ([`content/README.md`](../content/README.md)); the gitignored `media/` is a local cache of them,
+  and only derivatives ship.
 - Reference files with `staticFile("site/…")`; a remote URL is never used for a brand asset.
 - Photos: `<Img>` / `<CanvasImage>` with `objectFit: "cover"` and a stated `objectPosition`; a
   small source (the 708 × 387 aerial) is a card, never stretched full-frame.
@@ -191,8 +200,10 @@ the Reels caption and the like/comment/share rail.
 
 Brief → **Gate 1** (the owner approves the storyboard, one line per shot) → build in Studio →
 review stills → **Gate 2** (the owner sees the stills) → render on request → **Gate 3** (the MP4
-on a phone) → the owner posts by hand, both languages, and logs the reel in the plan's publish
-log (date, slug, language, hook, platform; the hook rate from Meta Insights when read). The
+on a phone) → the owner posts by hand, both languages, and each posted reel is a post record in
+`content/posts/<post id>.md` (channel, media IDs, hook variant as the experiment, `posted`, the
+owner's Arabic sign-off; the hook rate from Meta Insights in `results` when read) — the one
+publish record, replacing the video plan's publish log (ADR 0069 §3). The
 procedure — commands, frames, the reviewer as a subagent — is `SKILL.md` §4–6 and `review.md`;
 this file carries the rules only.
 
