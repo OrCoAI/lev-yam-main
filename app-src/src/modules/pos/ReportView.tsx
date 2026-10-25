@@ -26,6 +26,10 @@ const discLabel = (k: string, tr: (he: string, ar: string) => string) =>
   : k === 'other' ? tr('אחר', 'أخرى')
   : tr('ללא שיוך', 'غير مُصنّف')
 
+// Expense kind label (food / labor).
+const kindLabel = (k: DayReportExpense['kind'], tr: (he: string, ar: string) => string) =>
+  k === 'food' ? tr('מזון', 'طعام') : tr('עובדים', 'عمال')
+
 // Collapsible section with a title, optional right-side summary, and a chevron.
 function Section({ title, right, open, onToggle, style, children }: {
   title: string
@@ -77,6 +81,7 @@ export default function ReportView({ initialDate, full, canAddFood, canAddLabor,
   const [closeMsg, setCloseMsg] = useState<string | null>(null)
   const [dayStat, setDayStat] = useState<DayStatus | null>(null)
   const [unpaid, setUnpaid] = useState<DayReportExpense[]>([])
+  const [unpaidKind, setUnpaidKind] = useState<'all' | DayReportExpense['kind']>('all')
   const showUnpaid = full && canManage // reading needs pos.reports, paying needs pos.manage
   const canOverride = useCan(PERM.financeOverride)
   const isRange = from !== to
@@ -336,17 +341,25 @@ export default function ReportView({ initialDate, full, canAddFood, canAddLabor,
 
   // Pinned list grouped by business day, oldest first (the fetch is ordered);
   // rows paid since the fetch drop out here (patchExpense sets their paid_on).
+  // The header always carries the overall count/total; the kind filter only
+  // narrows the rows (and the per-day subtotals) below it.
   const openUnpaid = unpaid.filter((e) => !e.paid_on)
-  let unpaidTotal = 0
+  const kindSum: Record<'all' | DayReportExpense['kind'], { n: number; t: number }> =
+    { all: { n: 0, t: 0 }, food: { n: 0, t: 0 }, labor: { n: 0, t: 0 } }
   const unpaidDays: { date: string; list: DayReportExpense[]; total: number }[] = []
   for (const e of openUnpaid) {
     const amt = Number(e.amount) || 0
-    unpaidTotal += amt
+    kindSum.all.n += 1; kindSum.all.t += amt
+    // kind has no CHECK in the table — a stray kind still counts in the total
+    // rather than throwing (the insert policy only admits food/labor today)
+    if (e.kind === 'food' || e.kind === 'labor') { kindSum[e.kind].n += 1; kindSum[e.kind].t += amt }
+    if (unpaidKind !== 'all' && e.kind !== unpaidKind) continue
     const last = unpaidDays[unpaidDays.length - 1]
     if (last?.date === e.business_date) { last.list.push(e); last.total += amt }
     else unpaidDays.push({ date: e.business_date, list: [e], total: amt })
   }
   // jump the report to that day and fold the list so the day itself is in view
+  const sumTxt = (k: keyof typeof kindSum) => kindSum[k].n + ' · ' + kindSum[k].t + ' ₪'
   const goDay = (d: string) => { setFrom(d); setTo(d); setOpen((o) => ({ ...o, unpaid: false })) }
 
   const todayClosed = isToday ? closed.filter((c) => new Date(c.paidAt).toDateString() === todayKey()) : []
@@ -379,10 +392,18 @@ export default function ReportView({ initialDate, full, canAddFood, canAddLabor,
             <Section
               style={S.accAlert}
               title={'⚠ ' + tr('הוצאות שלא שולמו', 'مصاريف غير مدفوعة')}
-              right={openUnpaid.length + ' · ' + unpaidTotal + ' ₪'}
+              right={sumTxt('all')}
               open={open.unpaid}
               onToggle={() => toggle('unpaid')}
             >
+              <div style={S.unpaidKinds}>
+                {(['all', 'food', 'labor'] as const).map((k) => (
+                  <button key={k} className="pos-tap" aria-pressed={unpaidKind === k} style={{ ...S.expChip, ...(unpaidKind === k ? S.expChipOn : {}) }} onClick={() => setUnpaidKind(k)}>
+                    {(k === 'all' ? tr('הכל', 'الكل') : kindLabel(k, tr)) + ' ' + sumTxt(k)}
+                  </button>
+                ))}
+              </div>
+              {unpaidDays.length === 0 && <div style={S.reportEmptySec}>—</div>}
               {unpaidDays.map(({ date: d, list, total }) => (
                 <Fragment key={d}>
                   {/* tapping the day opens it in the report below */}
@@ -394,7 +415,7 @@ export default function ReportView({ initialDate, full, canAddFood, canAddLabor,
                     <div key={e.id} style={S.expRow}>
                       {expHead(e)}
                       <div style={S.expWhoLine}>
-                        {(e.kind === 'food' ? tr('מזון', 'طعام') : tr('עובדים', 'عمال')) + ' · ' + (e.has_receipt ? '🧾 ' + tr('יש קבלה', 'يوجد فاتورة') : tr('ללא קבלה', 'بدون فاتورة'))}
+                        {kindLabel(e.kind, tr) + ' · ' + (e.has_receipt ? '🧾 ' + tr('יש קבלה', 'يوجد فاتورة') : tr('ללא קבלה', 'بدون فاتورة'))}
                       </div>
                       <div style={S.expActions}>
                         <button className="pos-tap" style={{ ...S.expChip, ...S.unpaidPay }} onClick={() => markPaid(e.id, today)}>{'✓ ' + tr('סמן שולם היום', 'تحديد مدفوع اليوم')}</button>
