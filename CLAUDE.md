@@ -107,7 +107,10 @@ The three that never break:
 - **Never a Drive file ID or Drive link in this repo** — the ID → Drive map stays in the fence.
 - **Draft-only:** Claude drafts, the owner posts; a channel in `publish` needs its own ADR.
 
-`node scripts/check-content.mjs` (CI) enforces the model; `--write` refreshes `used_in`.
+Every derivative is cut by `scripts/media.sh` from the `content/channels.json` presets — the record
+decides consent and WhatsApp copies; only site presets write into `img/`. The Sunday session is the
+`content-week` skill (`media-intake` is its sort alone). `node scripts/check-content.mjs` (CI)
+enforces the model; `--write` refreshes `used_in`.
 
 ### Video (`video/`, never deployed)
 Reels for Instagram/Facebook are made with **Remotion** in `video/` — Node 22, beside `app-src/`,
@@ -421,7 +424,7 @@ line, so a bare `Bash(git log *)` splits into three tokens and the rule silently
 - **`.claude/skills/` and `.claude/settings.json` are versioned with the repo** (the gate depends on
   `verify`; the settings file is the committed permission policy). Skills: engineering — `verify`,
   `production-query`, `bluebox-*`; product — `session-start`, `product-context`, `feature-spec`,
-  `idea-capture`, `weekly-review`, `feedback-triage`, `quarterly-review`; content — `story-author`, `new-video`; monthly
+  `idea-capture`, `weekly-review`, `feedback-triage`, `quarterly-review`; content — `content-week`, `media-intake`, `story-author`, `new-video`; monthly
   `obs-best-practices`. Each ships a
   3-case `EVALS.md`, run at the quarterly ceremony audit. `.claude/settings.local.json` and other
   agent state stay untracked. Also ignored: `.DS_Store`, `node_modules/`, `app-src/dist/`, `.env*`, raw source media.

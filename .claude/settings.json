@@ -33,6 +33,8 @@
       "Bash(npm run *)",
       "Bash(npm test *)",
       "Bash(python3 *)",
+      "Bash(scripts/media.sh *)",
+      "Bash(scripts/story-images.sh *)",
       "Bash(deno check *)",
       "Bash(supabase start)",
       "Bash(supabase stop)",

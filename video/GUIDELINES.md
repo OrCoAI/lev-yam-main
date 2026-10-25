@@ -34,7 +34,7 @@ lets a non-interactive agent write to. Section 1 is the owner's — no job edits
    Arabic copy may be machine-drafted and must carry `[ar-draft]` until a native reader has
    signed it off (the ADR 0055 rule applied to video). RTL correct in both.
 4. **The venue's own pictures only:** `img/` (synced into `video/public/site/`) and the
-   gitignored `media/` intake. No stock, no AI-generated footage of the place.
+   originals in the Drive fence (§8). No stock, no AI-generated footage of the place.
 5. **Never deployed, never auto-merged.** `video/` is not on the assemble allowlist; the weekly
    refresh opens a PR, a human merges. The skill never renders the final MP4, commits, pushes or
    posts on its own.
@@ -184,12 +184,12 @@ the Reels caption and the like/comment/share rail.
   `content/media.json`; a logo or icon is a brand ID in `brand/assets.json`. A brief names IDs,
   never a raw file.
 - `video/public/site/` is **generated** from `img/` by `npm run assets`
-  (`video/scripts/sync-assets.mjs` is the map) and gitignored. The site's photos, icons and the hero clip are never copied into git a second time.
+  (`video/assets.json` maps each name to the media / brand ID it is cut from) and gitignored. The site's photos, icons and the hero clip are never copied into git a second time.
 - `video/public/brand/` (recoloured icons) is committed and owned by `brand/assets.json`;
   `video/public/photos/` (photos that exist nowhere else) is committed, optimised, small, and each
   file is a rendition on a media record. Originals live in the Drive fence
-  ([`content/README.md`](../content/README.md)); the gitignored `media/` is a local cache of them,
-  and only derivatives ship.
+  ([`content/README.md`](../content/README.md)); `scripts/media.sh` cuts every derivative from
+  them, pixels only, and only derivatives ship.
 - Reference files with `staticFile("site/…")`; a remote URL is never used for a brand asset.
 - Photos: `<Img>` / `<CanvasImage>` with `objectFit: "cover"` and a stated `objectPosition`; a
   small source (the 708 × 387 aerial) is a card, never stretched full-frame.
