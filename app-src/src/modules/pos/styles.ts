@@ -325,6 +325,7 @@ const styles = {
   // pinned "unpaid" list: alert-tinted accordion, one tappable header per business day
   accAlert: { borderColor: CLAY },
   unpaidPay: { background: '#fff', borderColor: SEA, color: SEA_DEEP },
+  unpaidKinds: { display: 'flex', flexWrap: 'wrap', gap: 8, padding: '10px 14px', borderBottom: '1px solid ' + LINE },
   unpaidDay: { width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '9px 14px', background: SAND, border: 'none', borderBottom: '1px solid ' + LINE, cursor: 'pointer', fontSize: 12, fontWeight: 800, color: SEA_DEEP, textAlign: 'start' },
   payField: { display: 'flex', alignItems: 'center', gap: 10, background: SAND, border: '1.5px solid ' + LINE, borderRadius: 12, padding: '10px 14px' },
   payFieldLbl: { fontSize: 15, fontWeight: 800, color: INK, minWidth: 62 },
