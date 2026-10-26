@@ -1,0 +1,17 @@
+{
+  "$comment": "The reels' asset map: public/site/<name> ← the media or brand ID it is cut from (ADR 0069 §2). video/scripts/sync-assets.mjs copies the record's first rendition in the name's format that is not a sized cut (card.jpg, <name>-<width>.*) (content/media.json renditions, brand/assets.json served); scripts/check-content.mjs checks every ID exists. Add a line here, never drop a file into public/site/ by hand.",
+  "site": {
+    "hero.mp4": "2026-10-beach-03",
+    "sunset-pair.jpg": "2026-10-sunset-03",
+    "sunset-thatch.jpg": "2026-10-sunset-04",
+    "village-aerial.jpg": "2026-10-harbour-01",
+    "family-house.jpg": "2026-10-weekend-02",
+    "weekend-table.jpg": "2026-10-weekend-04",
+    "work-window.jpg": "2026-10-work-03",
+    "logo.png": "brand-logo-mono",
+    "icons/palm-orange.png": "brand-icon-palm",
+    "icons/heart.png": "brand-icon-heart",
+    "icons/sun-orange.png": "brand-icon-sun",
+    "icons/house-blue.png": "brand-icon-house"
+  }
+}
