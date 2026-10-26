@@ -9,7 +9,7 @@ lets a non-interactive agent write to. Section 1 is the owner's — no job edits
 | | |
 |---|---|
 | **Remotion** | pinned in `video/package.json` (`npx remotion versions`); every `remotion` / `@remotion/*` package at that one exact version |
-| **Skills** | official Remotion Agent Skills — upstream `remotion-dev/skills` main at `4.0.533` (read 2026-10-06); installed per machine at `~/.agents/skills/remotion-*` still `4.0.532` (`remotion-markup` folder hash `e671b318`): `npx skills update` reported "up to date" on 2026-10-06, re-check next week |
+| **Skills** | official Remotion Agent Skills — upstream `remotion-dev/skills` main at `4.0.538` (read 2026-10-26); installed per machine at `~/.agents/skills/remotion-*` last recorded `4.0.532` (`remotion-markup` folder hash `e671b318`, 2026-10-06) — run `npx skills update …` (§11) to refresh and re-check the hash |
 | **Platforms** | Meta only this quarter: Reels, Stories, feed 4:5 (owner, 2026-10-06) |
 | **Audio** | none in v1 (owner, 2026-10-06) |
 | **License** | Remotion free license — organisations of up to 3 people, client work included (owner's count 2026-10-06: ≤ 3); re-read weekly |
@@ -275,11 +275,11 @@ related product.
 - Meta Ads Guide — Reels / Stories safe zone 14 / 35 / 6 % *(official)*; Meta Business Help Center
   — 40 % with a disclaimer *(official)*; Facebook for Business, "Capture Attention with Updated
   Features for Video Ads" — the 47 % / 74 % figures *(official, self-reported Nielsen finding)*.
-- Remotion Agent Skills `remotion-dev/skills` 4.0.533 (bumped from 4.0.532, checked 2026-10-06 —
+- Remotion Agent Skills `remotion-dev/skills` 4.0.538 (bumped from 4.0.533, checked 2026-10-26 —
   raw.githubusercontent.com/remotion-dev/skills/main/skills/{remotion-best-practices,remotion-markup}/SKILL.md)
   — markup, timing, transitions, fonts, interactivity, rendering rules *(official)*;
   `remotion.dev/docs/license` — free for ≤ 3 people *(official; re-check before any purchase;
-  re-verified 2026-10-06 against `raw.githubusercontent.com/remotion-dev/remotion/main/LICENSE.md`,
+  re-verified 2026-10-26 against `raw.githubusercontent.com/remotion-dev/remotion/main/LICENSE.md`,
   unchanged)*.
 - Sabrina Ramonov, "5 INSANE Claude Code + Video Prompts" (2026-03-21) — prompt skeleton, the
   testimonial pattern *(practitioner; her 150 / 170 px zone and "generate a plausible URL" are
@@ -300,6 +300,38 @@ related product.
 ## Changelog
 
 *Newest first; the weekly job adds its entry at the top.*
+
+### 2026-10-26 — weekly refresh
+- **Skills version bump — `remotion-dev/skills` 4.0.533 → 4.0.538.** Both
+  `remotion-best-practices/SKILL.md` and `remotion-markup/SKILL.md` frontmatter now read
+  `4.0.538`. Content check: the markup skill's RTL guidance (`arabic-text.md`) still says set
+  `dir="rtl"` + `lang`, animate Arabic by word not letter, and avoid `letter-spacing` /
+  `-webkit-text-stroke` — matches §4 as written; no rule-affecting change found in either skill's
+  markup, timing, transitions, fonts or interactivity guidance. The header's installed-per-machine
+  note (still `4.0.532`, 2026-10-06) was not re-checked — no shell access this run. Why: the
+  weekly refresh compares the header's Skills line against upstream. Run locally: `npx skills
+  update remotion-best-practices remotion-captions remotion-create remotion-docs
+  remotion-interactivity remotion-maps remotion-markup remotion-multimedia remotion-render
+  remotion-saas remotion-studio remotion-upgrade --yes` (guidelines §11), then update the header's
+  hash by hand. Source: https://raw.githubusercontent.com/remotion-dev/skills/main/skills/remotion-best-practices/SKILL.md
+  and .../remotion-markup/SKILL.md, read 2026-10-26.
+- **New upstream Remotion releases since the pin (`video/package.json` still `4.0.536`; this is a
+  dependabot bump, not this job's to make):** v4.0.537 (2026-10-19) adds to `@remotion/effects`
+  `cylinder()` / `sphere()` projections, `pageTurn()`, `fractalNoise()`, `turbulentDisplace()`,
+  `lensBlur()`, `bevelAlpha()`, and adds `parseVtt()` to `@remotion/captions`; v4.0.538
+  (2026-10-22) adds `longShadows()` to `@remotion/effects` and a `preservePitch` option to
+  `@remotion/media`, and **removes `@remotion/serverless` / `@remotion/serverless-client`**
+  (breaking; this repo uses neither — local renders only, §10/§13). None of this changes an
+  existing rule: §11's `hueShift` note is about `4.0.533` specifically and is unaffected; no new
+  effect is in use without a brief. Source: https://github.com/remotion-dev/remotion/releases.atom
+  and the v4.0.537 / v4.0.538 release pages, read 2026-10-26.
+- Checked and unchanged (no edit needed): Meta's own safe-zone page
+  (facebook.com/business/help/980593475366490, read 2026-10-26) — still 14 % top / 35 % bottom /
+  6 % sides for Reels ads, and confirms Stories shares the same safe-zone guidance as Reels,
+  matching §3; the free-license clause
+  (raw.githubusercontent.com/remotion-dev/remotion/main/LICENSE.md, 2026-10-26) — "a for-profit
+  organization with up to 3 employees," no client-work clause either way, unchanged; no newer
+  official figure found for the 47 % / 74 % first-seconds value-delivery stat in §2.
 
 ### 2026-10-06 — weekly refresh
 - **Skills version bump — `remotion-dev/skills` 4.0.532 → 4.0.533.** Both
