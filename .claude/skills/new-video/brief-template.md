@@ -27,11 +27,11 @@
 
 Missing: {{GAPS_OR_NONE}}
 
-## Assets (by path)
+## Assets (by ID)
 
 | Shot | File | Why this one · crop / focus |
 |---|---|---|
-| 1 | `site/hero.mp4` (from `img/hero/hero.mp4`) | … |
+| 1 | `site/hero.mp4` ← `2026-10-beach-03` (the media / brand ID the asset map cuts it from) | … |
 
 ## Shots
 

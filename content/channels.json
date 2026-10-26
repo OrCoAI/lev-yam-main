@@ -1,5 +1,5 @@
 {
-  "$comment": "Every channel Lev Yam publishes to, and the one home of derivative sizes (docs/plans/content-media-foundation.md §Homes; ADR 0068 §2, ADR 0069 §6). Nothing live reads this file (ADR 0069 §5). scripts/check-content.mjs validates modes, presets and utm_source today; until scripts/media.sh (PR C) writes from the presets, scripts/story-images.sh and the /app/events upload still carry their own numbers, which must equal these. limits and freshness are read by the content-week skill (PR C) and the freshness numbers (PR D). A `publish` mode needs `publish_adr` naming an ADR whose title names the channel id (ADR 0068 §2).",
+  "$comment": "Every channel Lev Yam publishes to, and the one home of derivative sizes (docs/plans/content-media-foundation.md §Homes; ADR 0068 §2, ADR 0069 §6). Nothing live reads this file (ADR 0069 §5). scripts/media.sh cuts every preset it makes from here — sizes, quality, the file stem, min_source (the smallest source region a preset accepts; absent = its largest size), whatsapp_ok; a preset with made_by is made by another tool (check-content holds the /app/events upload's numbers equal to events-photo). limits and freshness are read by the content-week skill and the freshness numbers (PR D). A `publish` mode needs `publish_adr` naming an ADR whose title names the channel id (ADR 0068 §2).",
   "channels": [
     {
       "id": "site",
@@ -56,21 +56,22 @@
       "utm_source": "whatsapp"
     }
   ],
+  "quality": { "jpg": 82, "webp": 80, "mp4_crf": 20 },
   "presets": {
-    "story-hero":   { "kind": "image", "sizes": [[1600, 900], [800, 450]], "format": "jpg", "min_source": [1600, 900], "whatsapp_ok": false, "note": "img/stories/<slug>/hero-1600.jpg and hero-800.jpg — the page hero (media/README.md)" },
+    "story-hero":   { "kind": "image", "sizes": [[1600, 900], [800, 450]], "format": "jpg", "stem": "hero", "min_source": [1600, 900], "whatsapp_ok": false, "note": "img/stories/<slug>/hero-1600.jpg and hero-800.jpg — the page hero (media/README.md)" },
     "story-figure": { "kind": "image", "sizes": [[1600, 900], [800, 450]], "format": "jpg", "min_source": [1600, 900], "note": "img/stories/<slug>/<name>-1600.jpg and -800.jpg — a figure in the text; a WhatsApp copy may go here when the size fits" },
-    "story-card":   { "kind": "image", "sizes": [[1200, 630]], "format": "jpg", "min_source": [1200, 630], "whatsapp_ok": false, "note": "og:image and the hub card" },
-    "gallery":      { "kind": "image", "widths": [480, 960], "format": "webp", "quality": 80, "note": "srcset rungs named by real width — min(original, 960); the jpg fallback is the original's web copy" },
-    "services":     { "kind": "image", "widths": [480, 960], "format": "webp", "quality": 80 },
+    "story-card":   { "kind": "image", "sizes": [[1200, 630]], "format": "jpg", "stem": "card", "min_source": [1200, 630], "whatsapp_ok": false, "note": "og:image and the hub card" },
+    "gallery":      { "kind": "image", "widths": [480, 960], "format": "webp", "fallback_long_edge": 1600, "note": "srcset rungs named by real width — min(original, 960) — plus <stem>.jpg, the web copy, long edge ≤ 1600" },
+    "services":     { "kind": "image", "widths": [480, 960], "format": "webp", "fallback_long_edge": 1600 },
     "share":        { "kind": "image", "sizes": [[1200, 630]], "format": "jpg", "note": "the homepage og:image — check-content's share rule" },
-    "events-photo": { "kind": "image", "long_edge": [1600, 800], "format": "jpg", "quality": [0.85, 0.8], "note": "the /app/events browser upload (ADR 0059): the photo and its -sm.jpg copy; app-src/src/modules/events/api.ts MAX_EDGE / THUMB_EDGE must agree" },
-    "ig-post":      { "kind": "image", "sizes": [[1080, 1350]], "format": "jpg" },
-    "ig-reel":      { "kind": "video", "sizes": [[1080, 1920]], "fps": 30, "note": "video/GUIDELINES.md §2–3 for lengths and safe zones" },
-    "ig-feed-video":{ "kind": "video", "sizes": [[1080, 1350]], "fps": 30, "note": "a re-layout of the 9:16 composition, never a letterbox" },
-    "story":        { "kind": "image", "sizes": [[1080, 1920]], "format": "jpg" },
-    "cover":        { "kind": "image", "sizes": [[1080, 1920]], "format": "png", "note": "a reel's cover still — headline inside the centre 4:5 crop (GUIDELINES §2)" },
-    "wa-status":    { "kind": "image", "sizes": [[1080, 1920]], "format": "jpg", "note": "specs unverified — check the upload once (GUIDELINES §2)" },
-    "fb":           { "kind": "image", "sizes": [[1080, 1350]], "format": "jpg" },
+    "events-photo": { "kind": "image", "long_edge": [1600, 800], "format": "jpg", "quality": [0.85, 0.8], "made_by": "the /app/events upload", "note": "the /app/events browser upload (ADR 0059): the photo and its -sm.jpg copy; app-src/src/modules/events/api.ts MAX_EDGE / THUMB_EDGE must agree" },
+    "ig-post":      { "kind": "image", "sizes": [[1080, 1350]], "format": "jpg", "min_source": [864, 1080] },
+    "ig-reel":      { "kind": "video", "sizes": [[1080, 1920]], "fps": 30, "min_source": [720, 1280], "note": "video/GUIDELINES.md §2–3 for lengths and safe zones" },
+    "ig-feed-video":{ "kind": "video", "sizes": [[1080, 1350]], "fps": 30, "min_source": [720, 900], "note": "a re-layout of the 9:16 composition, never a letterbox" },
+    "story":        { "kind": "image", "sizes": [[1080, 1920]], "format": "jpg", "min_source": [810, 1440] },
+    "cover":        { "kind": "image", "sizes": [[1080, 1920]], "format": "png", "made_by": "Remotion (npm run render)", "note": "a reel's cover still — headline inside the centre 4:5 crop (GUIDELINES §2)" },
+    "wa-status":    { "kind": "image", "sizes": [[1080, 1920]], "format": "jpg", "min_source": [810, 1440], "note": "specs unverified — check the upload once (GUIDELINES §2)" },
+    "fb":           { "kind": "image", "sizes": [[1080, 1350]], "format": "jpg", "min_source": [864, 1080] },
     "gbp":          { "kind": "image", "sizes": [[1200, 900]], "format": "jpg", "min_source": [720, 540], "note": "≥ 720 px, 4:3" }
   }
 }

@@ -261,6 +261,63 @@ records take over:
   renditions and `brand/assets/` instead of its hand-kept map; the two existing briefs
   (`video/briefs/moments-by-the-sea.md`, `video/briefs/team-day-guests.md`) are re-pointed.
 - The first pack goes out of this PR's session.
+- *As built (2026-10-24), for PR D and the first sessions:*
+  - **`scripts/media.sh <id> <source> <out-dir> <preset>[=<stem>] … [--focus …]`** — Python
+    (Pillow) inside a bash shell like `story-images.sh`, ffmpeg for clips and the WhatsApp pass.
+    It reads the record before anything else: consent per preset (site / social), `whatsapp_ok`,
+    kind; every size is checked against `min_source` (the source region that reaches the frame;
+    absent = the preset's largest size) before the first file is written. Sources only from the
+    fence's synced folder, the `media/` cache or the record's own renditions; social presets write
+    only into the fence or the cache, site presets may write under `img/` and are appended to the
+    record's renditions. Clips: autorotated, cropped by an expression of the decoded frame (a
+    phone's coded size can carry a crop), one video + one audio stream, frame side data deleted,
+    every tag but the container's brand removed, then re-probed and refused if anything survived.
+  - **The WhatsApp pass** = ffmpeg `deblock` (weak, 8 px) + a light spatial `hqdn3d` in planar RGB
+    (no colour conversion), then a luminance-only autocontrast at 0.2 %. Proven on gallery 07: the
+    blocks soften, nothing smears, colour does not shift.
+  - **Presets** gained `quality` (one table: jpg 82, webp 80, mp4 CRF 20), `stem` (`card`, `hero`),
+    `fallback_long_edge` (gallery/services' JPEG web copy, ≤ 1600), `made_by` (`cover` is Remotion's,
+    `events-photo` the `/app/events` upload's — media.sh refuses both) and a `min_source` for each
+    social size: ig-post / fb 864×1080, story / wa-status 810×1440, ig-reel 720×1280,
+    ig-feed-video 720×900 (at most ~1.25–1.5× of upscaling; a 1600×1200 landscape is refused for a
+    9:16 story — use a portrait).
+  - **`story-images.sh <media-id> <photo> <slug>`** is a thin call into `media.sh` — the ID and the
+    record now come before the cut.
+  - **Check v3:** `meta` covers every committed rendition — JPEG EXIF/XMP/IPTC/comments, WebP
+    EXIF/XMP, PNG eXIf/text, an MP4's location, Apple camera keys, capture time or data track; it
+    found and the PR stripped, byte for byte with identical pixels, the encoder comment on the five
+    video posters, `Software: Picasa` on `video/public/photos/terrace.jpg` (outside the old rule's
+    reach) and resolution `eXIf` on the three logo PNGs — nothing personal in any of them. `sizes`
+    validates the presets; `briefs` fails a reel brief that names a raw file and an asset-map
+    entry that is not a media / brand ID. Each rule proven by a planted file.
+  - **The reels' asset map** moved to `video/assets.json` (name → ID; `sync-assets.mjs` and the check
+    both read it) and resolves to the record's first rendition in that format that is not a sized
+    cut — the same 12 files as before. Both briefs re-pointed;
+    `team-day-guests`' originals get their IDs at the first `media-intake` (their Drive names stand
+    in until then).
+  - **Two doors into the fence** (ADR 0068 amended 2026-10-24): the connector for documents, the
+    synced folder for bytes; the register and sort notes become CSV files in `Records/` (neither
+    door edits a Google Sheet), converted on the first session.
+  - **The gate's findings, fixed:** clip sources are read by ffmpeg's MOV/MP4 reader only (a
+    `.m3u8` playlist in the Inbox could otherwise pull any local file into a cut); consent fails
+    closed on an unknown `people` value; nothing in the fence is overwritten; clips are converted to
+    BT.709 SDR (iPhone HLG and Display P3 passed through before; no `zscale` here, so HLG goes
+    through `colorspace` as BT.2020 — HLG's own SDR fallback — and PQ is refused); a phone clip's
+    size is measured on the decoded frame (its coded size carries a crop ffprobe does not apply);
+    `video/public/photos` and `private` are media.sh destinations held to `social`. The check's
+    `meta` rule fails any other committed format, data after a JPEG's end and MP4 text tags; the raw
+    file rule catches `/img/…` paths; the asset map is resolved as `sync-assets` resolves it.
+    `scripts/media-inbox.py` indexes the Inbox by number with previews and moves by number with a
+    sha256 check, so an uploaded file's name never reaches a shell command (and macOS `mv -n`'s
+    silent clash cannot leave a register row pointing at the wrong photo).
+  - **Found on the way, for the owner:** three reels in `video/` show photos whose consent is
+    `site` only — `2026-10-weekend-02` and `-04` (children) and `2026-10-sunset-03` (adults). A
+    reel's post record lists every media ID it shows, so none of them can be marked posted before
+    the owner's `social` answer.
+  - **Not in this PR:** PR A's two follow-ups (a portrait hero poster with a media-gated preload;
+    `gen-stories-index.mjs` writing stamped chrome back into `stories/_hub*.html`) — both change
+    deployed pages and wait for their own small Tier-B PR; `media.sh --brand` waits for the
+    designer's vector masters; the story clips (`clip.mp4` / `clip-540.mp4`) are not a preset yet.
 
 **PR D — learn + freshness (Tier A; `.github/workflows/`, `scripts/analytics-snapshot.mjs`).**
 - `analytics-snapshot.mjs` adds a per-`utm_campaign` breakdown (sessions, `whatsapp_click`) in the
@@ -450,6 +507,13 @@ Non-blocking:
 - 2026-10-23 · WhatsApp copies are a last-choice source wherever the preset's minimum size fits,
   after a clean-up pass, never a story hero or its card; records carry `whatsapp: true`; the original is still
   chased · [ADR 0069](../decisions/0069-every-published-piece-is-built-from-ids-and-recorded-content-records-additive-never-load-bearing.md) amended
+
+- 2026-10-24 · photos and clips move between Drive and the Mac through the synced folder
+  (Google Drive for Desktop), never through the connector; the owner allowed VS Code to read
+  Drive; the register and sort notes become CSV files in `Records/` ·
+  [ADR 0068](../decisions/0068-content-system-home-is-the-repo-one-fenced-drive-area-cowork-engine-retired.md) amended
+- 2026-10-24 · each social preset carries its own `min_source` (≤ ~1.25–1.5× upscaling); a preset
+  another tool makes says `made_by` — implementation choices inside ADR 0069 §6, no standing rule
 
 ## Close-out
 *(appended when done — CLAUDE.md "Roadmap item close-out")*
