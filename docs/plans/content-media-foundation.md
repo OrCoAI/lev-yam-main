@@ -453,6 +453,10 @@ Non-blocking:
 5. The Futura licence — buy, or approve Heebo/Assistant as the brand web fonts (owner + designer).
 6. Big-media trigger: clips move to object storage when `img/` passes 100 MB or story montages
    become routine (owner confirms the number; roadmap "Parked until a trigger").
+7. **Where every CTA goes** (owner, 2026-10-28, at the first pack): a plan for which link each
+   channel's call to action points to — WhatsApp, a story page, a landing page — so the UTM
+   destinations are chosen, not improvised per post. Until then a piece links its closest story
+   page or asks for a WhatsApp message.
 
 ## Inventory (2026-10-08) — the fix list PR A works from
 
