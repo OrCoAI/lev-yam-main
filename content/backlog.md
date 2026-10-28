@@ -98,6 +98,46 @@ The card format: [README.md §A card](README.md#a-card--backlogmd).
 - source: owner (story backlog approved 2026-09-23, docs/plans/stories-authoring-tool.md)
 - added: 2026-10-21
 
+### card-year-end-team-day
+- theme: companies
+- channel: ig · fb · gbp
+- action: WhatsApp inquiry for a business event
+- needs: 2026-10-team-day-06 (a group under the pergola), 2026-10-work-05; FACTS ✓ — team days and what can be combined
+- source: claude (calendar — Nov–Dec, companies book year-end team days 4–6 weeks ahead)
+- added: 2026-10-26
+
+### card-work-day-by-the-sea
+- theme: companies
+- channel: fb · ig · gbp
+- action: WhatsApp inquiry for a business event
+- needs: 2026-10-work-05 (laptops by the sea), 2026-10-venue-03 (armchairs at the old windows); FACTS ✓ — fast internet, screen, pergola
+- source: claude (picked originals no post has used)
+- added: 2026-10-26
+
+### card-sunset-celebration
+- theme: private
+- channel: gbp · ig · fb
+- action: WhatsApp inquiry for a private event
+- needs: 2026-10-sunset-12, 2026-10-sunset-14; FACTS ✓ — private events, local fresh food
+- source: claude (calendar — November sunsets come earlier; afternoon events end on the sunset)
+- added: 2026-10-26
+
+### card-fish-on-the-grill
+- theme: private
+- channel: ig reel · wa
+- action: WhatsApp inquiry for a private event
+- needs: 2026-10-kitchen-02 (clip), 2026-10-kitchen-04; FACTS ✓ — sea-to-table, fresh fish; the kitchen is not kosher, kosher catering is allowed
+- source: claude (picked originals no post has used)
+- added: 2026-10-26
+
+### card-weekend-open-house
+- theme: weekend
+- channel: wa · ig
+- action: come Fri/Sat
+- needs: 2026-10-weekend-05, 2026-10-sunset-13; FACTS ✓ — weekend hours re-confirmed by the owner before posting
+- source: claude (picked originals no post has used)
+- added: 2026-10-26
+
 ## Archive
 
 *(cards not picked for 8 weeks, with the date they left)*
