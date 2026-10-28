@@ -59,6 +59,19 @@ Six capabilities → five PRs. Umbrella: [../plans/pos-operations-v2.md](../plan
 
 ## Done
 
+- 2026-10-25: **unpaid list filters by kind** (owner request). Chips at the top of the
+  open "הוצאות שלא שולמו" list — הכל / מזון / עובדים, each with its count and total;
+  the rows and per-day subtotals follow the chip, the section header keeps the overall
+  count/total so the warning never understates what is owed. UI-only.
+
+- 2026-10-24: **unpaid expenses, pinned in the report** (owner request). A collapsed
+  "הוצאות שלא שולמו" section at the top of the report lists every expense with no
+  `paid_on`, across all dates whatever range is picked: count + total in the header,
+  rows grouped by business day (oldest first), one "mark paid today" button per row;
+  tapping a day opens it in the report below (the date can be corrected there). Shown to
+  `pos.manage` + `pos.reports` only (reading raw rows is `pos.reports` RLS, paying is
+  `set_expense_paid`). UI-only — no schema or permission change.
+
 - 2026-07-22: **legacy-day revenue-wipe hotfix** (part of PR C/E, #29). PR C rewrote
   `pos.post_day` to derive cash/card revenue only from the new `pos_payments` table;
   every bill closed before split-payments shipped has its money only on `pos_bills`

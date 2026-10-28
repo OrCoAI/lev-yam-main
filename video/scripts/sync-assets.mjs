@@ -1,42 +1,38 @@
 #!/usr/bin/env node
 // video/public/site/ is GENERATED from the site's own img/ tree and gitignored (ADR 0064 §2):
 // the reels use photos, icons and the hero clip the site already ships, so the repo never
-// carries a second copy. This map is the only place those paths live — add a line here, never
-// drop a file into public/site/ by hand. Run by `npm run dev`, `npm run review`, `npm run render`.
+// carries a second copy. The map is video/assets.json — a name the compositions use, and the
+// media or brand ID it is cut from (ADR 0069 §2). An ID resolves to its record's first rendition
+// in the name's format that is not a sized cut (card.jpg, hero-1600.jpg, 18-960.webp): the web
+// copy. Run by `npm run dev`, `npm run review`, `npm run render`.
 // Committed assets (derivatives that exist nowhere else) live in public/brand/ and public/photos/.
-import { copyFileSync, existsSync, mkdirSync, statSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync } from "node:fs";
+import { dirname, extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const VIDEO = join(dirname(fileURLToPath(import.meta.url)), "..");
-const IMG = join(VIDEO, "..", "img");
+const REPO = join(VIDEO, "..");
 const OUT = join(VIDEO, "public", "site");
+const json = (rel) => JSON.parse(readFileSync(join(REPO, rel), "utf8"));
 
-/** public/site/<to>  ←  img/<from> */
-const MAP = {
-  "hero.mp4": "hero/hero.mp4", // the homepage hero clip (1080p, muted)
-  "sunset-pair.jpg": "gallery/16.jpg", // SunsetDream's photo (1200×1600)
-  "sunset-thatch.jpg": "gallery/18.jpg",
-  "village-aerial.jpg": "gallery/01.jpg", // 708×387 — a card, never full-frame
-  "family-house.jpg": "gallery/13.jpg",
-  "weekend-table.jpg": "services/weekend.jpg",
-  "work-window.jpg": "gallery/12.jpg", // moments-by-the-sea hook (1205×1600)
-  "logo.png": "logo/logo-mono-nobg.png",
-  "icons/palm-orange.png": "icons/palm-orange.png",
-  "icons/heart.png": "icons/heart.png",
-  "icons/sun-orange.png": "icons/sun-orange.png",
-  "icons/house-blue.png": "icons/house-blue.png",
-};
+/** public/site/<name>  ←  the media / brand ID */
+const MAP = json("video/assets.json").site;
+const FILES = new Map([
+  ...json("content/media.json").media.map((r) => [r.id, r.renditions ?? []]),
+  ...json("brand/assets.json").assets.map((a) => [a.id, a.served ?? []]),
+]);
+const SIZED_CUT = /(\/card|-\d+)\.[a-z0-9]+$/;
 
 let copied = 0;
 const missing = [];
-for (const [to, from] of Object.entries(MAP)) {
-  const src = join(IMG, from);
-  const dst = join(OUT, to);
-  if (!existsSync(src)) {
-    missing.push(from);
+for (const [to, id] of Object.entries(MAP)) {
+  const from = (FILES.get(id) ?? []).find((f) => extname(f) === extname(to) && !SIZED_CUT.test(f));
+  const src = from && join(REPO, from);
+  if (!src || !existsSync(src)) {
+    missing.push(`${to} ← ${id}`);
     continue;
   }
+  const dst = join(OUT, to);
   mkdirSync(dirname(dst), { recursive: true });
   const source = statSync(src);
   const copy = statSync(dst, { throwIfNoEntry: false });
@@ -47,7 +43,7 @@ for (const [to, from] of Object.entries(MAP)) {
   }
 }
 if (missing.length) {
-  console.error(`sync-assets: missing in img/: ${missing.join(", ")} — the map in scripts/sync-assets.mjs names a file the site no longer has.`);
+  console.error(`sync-assets: no rendition for ${missing.join(", ")} — video/assets.json names an ID without a web copy in that format.`);
   process.exit(1);
 }
 console.log(`sync-assets: ${copied} copied, ${Object.keys(MAP).length} files current in public/site/`);

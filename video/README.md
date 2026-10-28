@@ -16,7 +16,7 @@ npm run lint           # eslint + tsc (what CI runs)
 - `src/levyam/` — the brand kit: `theme.ts` (colours, type, safe zones), `parts.tsx` (Words,
   Bidi, KenBurns, Scrim, Pill…), `transitions/` (the five brand cuts), `SafeZone.tsx` (Studio guide).
 - `src/copy/<lang>.ts` — every word on screen; a new reel is new copy, not new markup.
-- `public/site/` — **generated** from `../img` by `scripts/sync-assets.mjs` (gitignored).
+- `public/site/` — **generated** from `../img` by `scripts/sync-assets.mjs`, by the IDs in `assets.json` (gitignored).
   `public/brand/`, `public/photos/` — committed derivatives that exist nowhere else.
 - `briefs/` — one prompt per reel, written by the `new-video` skill with the owner.
 - `public/private/reviews.json` — **gitignored, the owner's copy only:** the testimonial reel's

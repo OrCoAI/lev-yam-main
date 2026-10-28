@@ -30,7 +30,7 @@ a price, or puts a reviewer's or staff member's name on screen.
 
 ## 1. Read, don't recall
 
-`video/GUIDELINES.md` (all sections), `FACTS.md`, the `/happening/` page the reel is about (if any,
+`video/GUIDELINES.md` (all sections), `FACTS.md`, `content/VOICE.md`, the `/happening/` page the reel is about (if any,
 read today — `happening/` shells or the live `levyam.com/happening/<slug>/`), every existing
 `video/briefs/*.md` (to refuse a near-duplicate and reuse a proven shot list), `video/src/Root.tsx`
 (what compositions and variants exist), `video/src/copy/*.ts` (the copy conventions), and
@@ -56,9 +56,14 @@ Ask only what the idea left open; propose the guideline's default as the first o
    [brief-template.md](brief-template.md) (seconds, exact copy per language, the asset, the
    kit motion); the owner edits line by line. Every on-screen fact names its `FACTS.md` line or
    the page it came from; a missing fact becomes `[חסר: …]` / `[مفقود: …]`.
-7. **Assets** — list candidates by path from `img/` (via `video/public/site/`), the committed
-   `video/public/brand|photos/`, and the gitignored `media/` intake; the owner picks. Nothing
-   outside those three sources.
+7. **Assets** — list candidates by media / brand ID (`content/media.json`, `brand/assets.json`):
+   the site's renditions (via `video/public/site/`), the committed `video/public/brand|photos/`,
+   and originals from the Drive fence's `Media/` (through the synced folder — `media-intake`
+   §Two doors); the owner picks. Nothing outside those sources. A site rendition reaches the reel
+   through a line in `video/assets.json` (a name and its ID); a raw phone clip used
+   as-is is cut by `scripts/media.sh <id> <clip> <fence>/Ready to post/<date> ig-reel`. A new file
+   in `video/public/photos/` gets its record in the same PR; a recognisable person in a reel needs
+   consent `social` before it is posted.
 8. **Out of scope for this reel** — what a reader might assume is in (sound, English, a second
    CTA, a price) and is not.
 

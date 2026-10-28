@@ -42,14 +42,14 @@ link sticker at posting time; it is not part of the render.
 
 Missing: none. No seasonal fact (no hours, no days).
 
-## Assets (by path)
+## Assets (by ID)
 
 | Shot | File | Why this one · crop / focus |
 |---|---|---|
-| 1 | `site/work-window.jpg` (from `img/gallery/12.jpg`, 1205 × 1600) — **new line in `scripts/sync-assets.mjs`** | laptop + iced coffee, the sea through the old window · 3:4 source, so in 9:16 it only crops sideways; `crop` y sets where the push-in closes in |
-| 2 | `site/weekend-table.jpg` (from `img/services/weekend.jpg`, 900 × 1200 — already mapped) | the laid table by the sea · `objectPosition: "50% 70%"` (a 3:4 source only crops sideways in 9:16, so the frame shows the two diners and the table — the y position has no effect); upscaled ~1.6× — check sharpness at Gate 2, keep Ken Burns ≤ 1.05 |
-| 3 | `site/sunset-pair.jpg` (from `img/gallery/16.jpg`, 1200 × 1600 — already mapped) | the sun low over the sea from the pergola · 3:4 source, crops sideways only; the push-in closes in toward the sky (`crop` y 30%) |
-| 4 | `site/logo.png` (from `img/logo/logo-mono-nobg.png`) on cream `C.cream` | sign-off |
+| 1 | `site/work-window.jpg` ← `2026-10-work-03` (1205 × 1600) — **new line in the asset map** | laptop + iced coffee, the sea through the old window · 3:4 source, so in 9:16 it only crops sideways; `crop` y sets where the push-in closes in |
+| 2 | `site/weekend-table.jpg` ← `2026-10-weekend-04` (900 × 1200 — already mapped) | the laid table by the sea · `objectPosition: "50% 70%"` (a 3:4 source only crops sideways in 9:16, so the frame shows the two diners and the table — the y position has no effect); upscaled ~1.6× — check sharpness at Gate 2, keep Ken Burns ≤ 1.05 |
+| 3 | `site/sunset-pair.jpg` ← `2026-10-sunset-03` (1200 × 1600 — already mapped) | the sun low over the sea from the pergola · 3:4 source, crops sideways only; the push-in closes in toward the sky (`crop` y 30%) |
+| 4 | `site/logo.png` ← `brand-logo-mono` on cream `C.cream` | sign-off |
 
 ## Shots
 

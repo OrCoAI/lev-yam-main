@@ -3,7 +3,7 @@ name: story-author
 description: >
   Write one /stories/ page pair (Hebrew + Levantine Arabic twin) from a short brief, ready for
   the owner's review PR: facts only from FACTS.md with [חסר]/[مفقود] markers and a gap list,
-  every template placeholder filled, three optimized images from the media/ intake folder, hub
+  every template placeholder filled, three optimized images cut by scripts/media.sh from a media ID's original in the Drive fence, hub
   and sitemap regenerated. Triggers: "write a story", "new story page", "story about", "draft
   the page for", "סיפור חדש". Not for editing the homepage or the platform.
 metadata:
@@ -25,7 +25,7 @@ quote. If the target query is missing, ask for it — one closed question — be
 
 ## Procedure
 
-1. **Read, don't recall:** `FACTS.md` in full, `stories/_template.html`,
+1. **Read, don't recall:** `FACTS.md` in full, `content/VOICE.md`, `stories/_template.html`,
    `stories/_template.ar.html`, and every existing `stories/<slug>/index.html` title (to
    refuse a near-duplicate — one page, one query cluster).
 2. **Slug:** English kebab-case, shared by both twins (`stories/<slug>/`, `stories/ar/<slug>/`).
@@ -51,21 +51,33 @@ quote. If the target query is missing, ask for it — one closed question — be
      the slug.
    - CTA lead and the URL-encoded WhatsApp message are page-specific and mention the topic.
    - The figure needs a **landscape image at least 1600px wide** (`/img/{{IMAGE_PATH}}`); the
-     frame crops it to 16:9. Pick one from `img/gallery/` (`08`, `09`, `10`, `14`, `18` are
-     1600×1200) or delete the whole
-     `<figure>` — the generator refuses a page that references a missing image.
+     frame crops it to 16:9. Pick one from `img/gallery/` whose record has no `whatsapp: true`
+     (`08`, `14`, `18` are 1600×1200; a WhatsApp copy waits for `media.sh`'s clean-up pass) or
+     delete the whole `<figure>` — the generator refuses a page that references a missing image.
    - Leave the chrome regions (between the `chrome:header` / `chrome:footer` markers) exactly
      as the template has them — the generator stamps them.
 4. **Arabic twin** from `_template.ar.html`: Levantine Arabic drafted from the approved Hebrew,
    same facts, same slug, same images, `[مفقود: …]` wherever the Hebrew has `[חסר: …]`. Not a
    word-for-word translation — natural phrasing for a reader in Jisr az-Zarqa and the north.
-5. **Photos:** list `media/` (subfolders by subject) plus the five 1600×1200 gallery files, and
-   propose 1–2 candidates for the hero; the owner picks. Then
-   `scripts/story-images.sh <photo> <slug> [--focus top|center|bottom]` writes the three
-   derivatives under `img/stories/<slug>/` (sizes in `media/README.md`), rotation applied,
-   metadata stripped. It refuses a source under 1600×900; if nothing fits, stop with a named
-   photo request. A second photo or a video montage is not scripted yet — the first pair's
-   by-hand recipe is in `docs/plans/stories-authoring-tool.md` (Status, 2026-09-23).
+5. **Photos:** list the picked and published originals in the Drive fence's `Media/` (through the
+   synced folder — `media-intake` §Two doors) plus the 1600×1200 gallery files, and
+   propose 1–2 candidates for the hero — never a WhatsApp copy (ADR 0069, amended 2026-10-23: never
+   a story hero or its card). A file is a WhatsApp copy when its record says `whatsapp: true`, when
+   it sits in the Inbox's WhatsApp-copies folder, or when its name looks like WhatsApp's
+   (`PHOTO-YYYY-MM-DD…`, `IMG-…-WA…`, `WhatsApp Image …`); unsure → ask the owner. The owner picks.
+   **The record comes first** (`content/README.md` §A media record): a picked original without one
+   in `content/media.json` gets it now — its media ID from the sort, `renditions: []`, the hero /
+   figure alt HE + AR exactly as the pages will carry them, `people`, `consent` (a recognisable
+   person needs at least `site` — ask the owner, never assume) and `whatsapp: true` for a copy.
+   Then `scripts/story-images.sh <media-id> <photo> <slug> [--focus top|center|bottom]` cuts the
+   card and hero into `img/stories/<slug>/` through `scripts/media.sh` and adds them to the record's
+   renditions; a figure in the text is
+   `scripts/media.sh <media-id> <photo> img/stories/<slug> story-figure=<name>`. Both refuse a
+   source under the preset's minimum, a WhatsApp copy for the hero or card, and a consent that
+   does not cover `site`; if nothing fits, stop with a named photo request. A video montage is not
+   scripted yet — the first pair's by-hand recipe is in `docs/plans/stories-authoring-tool.md`
+   (Status, 2026-09-23). Then `node scripts/check-content.mjs --write` fills `used_in`; the check
+   fails a story PR whose images have no record.
 6. **Generate:** `node scripts/gen-stories-index.mjs` — stamps chrome, rebuilds both hubs and
    `sitemap.xml`, and fails on a missing twin, a stale canonical, a leftover placeholder, a
    referenced image that does not exist, or an `og:image` that is not the slug's `card.jpg`.

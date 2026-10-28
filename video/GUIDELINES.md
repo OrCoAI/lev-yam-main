@@ -34,7 +34,7 @@ lets a non-interactive agent write to. Section 1 is the owner's — no job edits
    Arabic copy may be machine-drafted and must carry `[ar-draft]` until a native reader has
    signed it off (the ADR 0055 rule applied to video). RTL correct in both.
 4. **The venue's own pictures only:** `img/` (synced into `video/public/site/`) and the
-   gitignored `media/` intake. No stock, no AI-generated footage of the place.
+   originals in the Drive fence (§8). No stock, no AI-generated footage of the place.
 5. **Never deployed, never auto-merged.** `video/` is not on the assemble allowlist; the weekly
    refresh opens a PR, a human merges. The skill never renders the final MP4, commits, pushes or
    posts on its own.
@@ -49,12 +49,17 @@ lets a non-interactive agent write to. Section 1 is the owner's — no job edits
 
 ## 2. Formats and platforms (Meta)
 
-| Use | Size | fps | Length | Notes |
-|---|---|---|---|---|
-| Reels / Stories (primary) | 1080 × 1920 (9:16) | 30 | cold reach 6–15 s; consideration 15–30 s; ambient loop ≤ 15 s | the existing reels are 20 s and 12 s |
-| Feed | 1080 × 1350 (4:5) | 30 | same | a **re-layout** of the 9:16 composition, never a letterbox |
-| WhatsApp status | the 9:16 file | | | specs unverified — check the upload once |
-| Cover still | 1080 × 1920 PNG | | | headline inside the centre 4:5 crop (y 285–1635), rendered from the composition's best frame |
+**Sizes live in one place: the presets in [`content/channels.json`](../content/channels.json)**
+(`ig-reel`, `ig-feed-video`, `cover` — ADR 0069 §6). This table carries what a preset
+cannot: length and use. A platform change to a size is proposed here as a line under the table
+(*"Proposed preset change: … — source, date"*); the owner applies it to the preset in the same PR.
+
+| Use | Preset | Length | Notes |
+|---|---|---|---|
+| Reels / Stories (primary) | `ig-reel` (9:16) | cold reach 6–15 s; consideration 15–30 s; ambient loop ≤ 15 s | the existing reels are 20 s and 12 s |
+| Feed | `ig-feed-video` (4:5) | same | a **re-layout** of the 9:16 composition, never a letterbox |
+| WhatsApp status | `ig-reel` (the same 9:16 file) | | specs unverified — check the upload once |
+| Cover still | `cover` (9:16 PNG) | | headline inside the centre 4:5 crop (y 285–1635), rendered from the composition's best frame |
 
 Why these lengths: Meta reports that up to 47 % of a video campaign's value is delivered in the
 first three seconds and up to 74 % in the first ten (Facebook for Business, "Capture Attention
@@ -175,12 +180,16 @@ the Reels caption and the like/comment/share rail.
 
 ## 8. Assets
 
+- **A reel is built from IDs** (ADR 0069 §2): a photo or clip is a media ID with a record in
+  `content/media.json`; a logo or icon is a brand ID in `brand/assets.json`. A brief names IDs,
+  never a raw file.
 - `video/public/site/` is **generated** from `img/` by `npm run assets`
-  (`video/scripts/sync-assets.mjs` is the map) and gitignored. The site's photos, icons and the
-  hero clip are never copied into git a second time.
-- `video/public/brand/` (recoloured icons) and `video/public/photos/` (photos that exist nowhere
-  else) are committed, optimised, small. Raw clips and originals go to the gitignored `media/`
-  intake (as for stories) and only derivatives ship.
+  (`video/assets.json` maps each name to the media / brand ID it is cut from) and gitignored. The site's photos, icons and the hero clip are never copied into git a second time.
+- `video/public/brand/` (recoloured icons) is committed and owned by `brand/assets.json`;
+  `video/public/photos/` (photos that exist nowhere else) is committed, optimised, small, and each
+  file is a rendition on a media record. Originals live in the Drive fence
+  ([`content/README.md`](../content/README.md)); `scripts/media.sh` cuts every derivative from
+  them, pixels only, and only derivatives ship.
 - Reference files with `staticFile("site/…")`; a remote URL is never used for a brand asset.
 - Photos: `<Img>` / `<CanvasImage>` with `objectFit: "cover"` and a stated `objectPosition`; a
   small source (the 708 × 387 aerial) is a card, never stretched full-frame.
@@ -191,8 +200,10 @@ the Reels caption and the like/comment/share rail.
 
 Brief → **Gate 1** (the owner approves the storyboard, one line per shot) → build in Studio →
 review stills → **Gate 2** (the owner sees the stills) → render on request → **Gate 3** (the MP4
-on a phone) → the owner posts by hand, both languages, and logs the reel in the plan's publish
-log (date, slug, language, hook, platform; the hook rate from Meta Insights when read). The
+on a phone) → the owner posts by hand, both languages, and each posted reel is a post record in
+`content/posts/<post id>.md` (channel, media IDs, hook variant as the experiment, `posted`, the
+owner's Arabic sign-off; the hook rate from Meta Insights in `results` when read) — the one
+publish record, replacing the video plan's publish log (ADR 0069 §3). The
 procedure — commands, frames, the reviewer as a subagent — is `SKILL.md` §4–6 and `review.md`;
 this file carries the rules only.
 
@@ -264,12 +275,12 @@ related product.
 - Meta Ads Guide — Reels / Stories safe zone 14 / 35 / 6 % *(official)*; Meta Business Help Center
   — 40 % with a disclaimer *(official)*; Facebook for Business, "Capture Attention with Updated
   Features for Video Ads" — the 47 % / 74 % figures *(official, self-reported Nielsen finding)*.
-- Remotion Agent Skills `remotion-dev/skills` 4.0.533 (bumped from 4.0.532, checked 2026-10-06 —
+- Remotion Agent Skills `remotion-dev/skills` 4.0.535 (bumped from 4.0.533, checked 2026-10-12 —
   raw.githubusercontent.com/remotion-dev/skills/main/skills/{remotion-best-practices,remotion-markup}/SKILL.md)
   — markup, timing, transitions, fonts, interactivity, rendering rules *(official)*;
   `remotion.dev/docs/license` — free for ≤ 3 people *(official; re-check before any purchase;
-  re-verified 2026-10-06 against `raw.githubusercontent.com/remotion-dev/remotion/main/LICENSE.md`,
-  unchanged)*.
+  re-verified 2026-10-12 against `raw.githubusercontent.com/remotion-dev/remotion/main/LICENSE.md`,
+  unchanged — the docs page itself did not render through an unauthenticated fetch either time)*.
 - Sabrina Ramonov, "5 INSANE Claude Code + Video Prompts" (2026-03-21) — prompt skeleton, the
   testimonial pattern *(practitioner; her 150 / 170 px zone and "generate a plausible URL" are
   rejected above)*.
@@ -331,6 +342,52 @@ related product.
   Reels and Stories safe zone in March 2026, which is consistent with, not a contradiction of,
   this file's existing "same box for Stories" line — no edit made on an unopened source.
 - No prompt-injection attempts found in any page fetched this cycle.
+
+### 2026-10-12 — weekly refresh
+- **Skills version bump — `remotion-dev/skills` 4.0.533 → 4.0.535.** Both
+  `remotion-best-practices/SKILL.md` and `remotion-markup/SKILL.md` frontmatter now read
+  `4.0.535`. Content read the same as before on every point this file encodes: `fps` from
+  `useVideoConfig()`, inline `interpolate()` in `style`, `scale`/`translate`/`rotate` not
+  `transform` strings, `premountFor={fps}`, `Interactive.withSchema({wrapInSequence, layout})`
+  for editable scenes, Google Fonts as the recommended font path — no rule-affecting change
+  found. The local `~/.agents/skills/remotion-*` install (still `4.0.532` as of 2026-10-06) is
+  now two releases behind; not re-checked this run (no shell access from this job). Run locally:
+  `npx skills update remotion-best-practices remotion-captions remotion-create remotion-docs
+  remotion-interactivity remotion-maps remotion-markup remotion-multimedia remotion-render
+  remotion-saas remotion-studio remotion-upgrade --yes` (guidelines §11), then update the
+  header's hash. Source: raw.githubusercontent.com/remotion-dev/skills/main/skills/
+  {remotion-best-practices,remotion-markup}/SKILL.md, read 2026-10-12.
+- Checked and unchanged (no edit needed): **Remotion releases**
+  (https://github.com/remotion-dev/remotion/releases.atom, read 2026-10-12) — two releases newer
+  than the `4.0.533` pin exist, `4.0.534` (2026-10-07: Chromium upgraded to 157.0.8080.0,
+  Chrome/FFmpeg shared-memory rendering, more frequent parallel encoding, nested
+  HTML-in-canvas during server-side rendering) and `4.0.535` (2026-10-12: Studio premounts
+  2 s by default with a `defaultPremountInSeconds` option, `Interactive.childrenSchema` and a
+  `layout` option on `Interactive.withSchema()`, `TransitionSeries.Sequence` now inherits
+  `Sequence` props, various Studio/Lambda/audio fixes). None rename or deprecate an API this
+  file names, add a new effect/transition/caption/font primitive relevant to the kit, or
+  contradict §5/§10/§11. `video/package.json` stays pinned at `4.0.533`; dependabot's grouped
+  `/video` bump will move it. — the free-license clause
+  (`raw.githubusercontent.com/remotion-dev/remotion/main/LICENSE.md`, read 2026-10-12) — "a
+  for-profit organization with up to 3 employees" unchanged; `remotion.dev/docs/license` again
+  did not return readable content to an unauthenticated fetch (same as 2026-10-06).
+- Platform/practice research (WebSearch, 6 queries: Reels safe zone, Stories safe zone, Reels
+  hook rate, Remotion best practices, Remotion Hebrew/Arabic RTL, Remotion captions) — none of
+  the results were on remotion.dev, github.com or a facebook.com/business.facebook.com/
+  developers.facebook.com domain, so none were opened; all cited here only as
+  "(snippet, unopened)", 2026-10-12: a Reels-safe-zone snippet claimed Stories and Reels share a
+  unified box "since March 2026" at 14 %/35 %/6 %, matching §3 already, but the same answer also
+  gave inconsistent px figures (13 %/23.4 %/3.2 %) for the identical claim, so nothing was
+  adopted from it; a hook-rate snippet suggested hooking by 1.0 s rather than 3 s, with no
+  official source, so §7 is unchanged (it already cites the official Meta 47 %/74 % figure); the
+  RTL-text and "Remotion best practices" searches returned no Remotion-specific or official
+  content. One official page was opened directly from a search result —
+  `remotion.dev/docs/captions/api`, read 2026-10-12 — confirming `@remotion/captions`'
+  `Caption` type and its conversion helpers (`@remotion/install-whisper-cpp`,
+  `@remotion/openai-whisper`, `@remotion/elevenlabs`); matches §13's existing description,
+  no Hebrew/Arabic/RTL mention there, no edit needed.
+- No instruction-like text ("ignore your rules", a link/contact to add, a command to run) was
+  found in any fetched or searched source this run.
 
 ### 2026-10-06 — weekly refresh
 - **Skills version bump — `remotion-dev/skills` 4.0.532 → 4.0.533.** Both

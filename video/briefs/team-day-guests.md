@@ -71,14 +71,14 @@ price, or reading as a machine translation.
 
 Missing: none.
 
-## Assets (by path)
+## Assets (by ID)
 
-All derivatives are made from the gitignored `media/` intake into the **gitignored**
+All derivatives are made from the originals in the Drive fence (`Media/`) into the **gitignored**
 `video/public/private/team-day/` (owner, 2026-10-07: the footage shows a client's team, and the
 repo is public). Stills: sRGB, EXIF stripped, 2560 px wide. Clips: H.264, 30 fps, muted, from the
 150 fps HEVC live clips.
 
-| Shot | File | Source in `media/` | Why this one · crop / focus |
+| Shot | File | Original — media ID from the first `media-intake`; its Drive name until then | Why this one · crop / focus |
 |---|---|---|---|
 | 1A, 1B | `private/team-day/table-sea.mp4` | `Lev Yam - Event - 4 of 41.mov` (2.83 s) | the long table, the sea behind the palms · landscape → 9:16 crops sideways only; `Clip` `x={45}` keeps the standing speaker and the sea; `playbackRate` 0.94 to fill 90 frames |
 | 2 (Q1) | `private/team-day/table-wide.mp4` | `Lev Yam - Event - 3 of 41.mov` (2.53 s) | the table from the side, the beach beyond · `Clip` `x={60}`; `playbackRate` 0.9 to fill 84 frames |
@@ -87,7 +87,7 @@ repo is public). Stills: sRGB, EXIF stripped, 2560 px wide. Clips: H.264, 30 fps
 | 5 (Q4) | `private/team-day/table-04.jpg` | same | crop on the far end of the table (`"85% 50%"`) |
 | 6 (Q5) | `private/team-day/table-03.jpg` | same | crop on the near end of the table (`"20% 50%"`) |
 | 7 | `private/team-day/group.jpg` | `Lev Yam - Event - 5 of 41.HEIC` | the group on the sand, the two lighthouses behind · a horizontal pan across the group (translate, ≤ `KEN_BURNS_MAX`) |
-| 8 | `site/logo.png` (from `img/logo/logo-mono-nobg.png`) on cream `C.cream` | — | end card |
+| 8 | `site/logo.png` on cream `C.cream` | `brand-logo-mono` | end card |
 
 ## Shots
 

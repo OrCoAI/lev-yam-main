@@ -1,0 +1,814 @@
+{
+  "$comment": "One record per published original (content/README.md §A media record; ADR 0069 §1). Seeded 2026-10-21 from the served pages. No names, no places, no Drive IDs — the ID → Drive map and the consent answers are a sheet in the fence.",
+  "media": [
+    {
+      "id": "2026-10-harbour-01",
+      "kind": "image",
+      "renditions": [
+        "img/gallery/01-480.webp",
+        "img/gallery/01-708.webp",
+        "img/gallery/01.jpg"
+      ],
+      "alt": {
+        "he": "מבט אווירי על כפר הדייגים וחוף ג'סר א-זרקא",
+        "ar": "إطلالة جوية على قرية الصيادين وشاطئ جسر الزرقاء"
+      },
+      "used_in": [
+        "index.html"
+      ],
+      "people": "none",
+      "consent": "none",
+      "published": "2026-05"
+    },
+    {
+      "id": "2026-10-sunset-01",
+      "kind": "image",
+      "renditions": [
+        "img/gallery/02-480.webp",
+        "img/gallery/02-900.webp",
+        "img/gallery/02.jpg"
+      ],
+      "alt": {
+        "he": "שקיעה כתומה עם סירה וגומא מול הים",
+        "ar": "غروب برتقالي مع قارب وقصب على البحر"
+      },
+      "used_in": [
+        "index.html"
+      ],
+      "people": "none",
+      "consent": "none",
+      "published": "2026-05"
+    },
+    {
+      "id": "2026-10-sunset-02",
+      "kind": "image",
+      "renditions": [
+        "img/gallery/03-480.webp",
+        "img/gallery/03-900.webp",
+        "img/gallery/03.jpg"
+      ],
+      "alt": {
+        "he": "חלון ישן עם נוף שקיעה מבפנים בלב ים",
+        "ar": "نافذة قديمة بإطلالة على الغروب من داخل ليف يام"
+      },
+      "used_in": [
+        "index.html"
+      ],
+      "people": "none",
+      "consent": "none",
+      "published": "2026-05"
+    },
+    {
+      "id": "2026-10-weekend-01",
+      "kind": "image",
+      "renditions": [
+        "img/gallery/04-480.webp",
+        "img/gallery/04-900.webp",
+        "img/gallery/04.jpg"
+      ],
+      "alt": {
+        "he": "אנשים עובדים יחד בחוץ מול הים בלב ים",
+        "ar": "أناس يعملون معًا في الخارج أمام البحر في ليف يام"
+      },
+      "used_in": [
+        "index.html"
+      ],
+      "people": "adults",
+      "consent": "site",
+      "published": "2026-05"
+    },
+    {
+      "id": "2026-10-harbour-02",
+      "kind": "image",
+      "renditions": [
+        "img/gallery/05-480.webp",
+        "img/gallery/05-900.webp",
+        "img/gallery/05.jpg"
+      ],
+      "alt": {
+        "he": "שיחה בין אנשים בכפר הדייגים",
+        "ar": "حديث بين الناس في قرية الصيادين"
+      },
+      "used_in": [
+        "index.html"
+      ],
+      "people": "adults",
+      "consent": "site",
+      "published": "2026-05"
+    },
+    {
+      "id": "2026-10-work-01",
+      "kind": "image",
+      "renditions": [
+        "img/gallery/06-480.webp",
+        "img/gallery/06-675.webp",
+        "img/gallery/06.jpg"
+      ],
+      "alt": {
+        "he": "אדם עובד לבד מול הים בלב ים",
+        "ar": "شخص يعمل وحده أمام البحر في ليف يام"
+      },
+      "used_in": [
+        "index.html"
+      ],
+      "people": "not-recognisable",
+      "consent": "none",
+      "published": "2026-05"
+    },
+    {
+      "id": "2026-10-community-01",
+      "kind": "image",
+      "renditions": [
+        "img/gallery/07-480.webp",
+        "img/gallery/07-960.webp",
+        "img/gallery/07.jpeg"
+      ],
+      "alt": {
+        "he": "קבוצת נשים יחד בחצר לב ים",
+        "ar": "مجموعة من النساء معًا في باحة ليف يام"
+      },
+      "used_in": [
+        "index.html"
+      ],
+      "people": "adults",
+      "consent": "site",
+      "published": "2026-05",
+      "whatsapp": true
+    },
+    {
+      "id": "2026-10-venue-01",
+      "kind": "image",
+      "renditions": [
+        "img/gallery/08-480.webp",
+        "img/gallery/08-960.webp",
+        "img/gallery/08.jpg"
+      ],
+      "alt": {
+        "he": "כורסאות ישנות מול חלונות עם נוף הים בלב ים",
+        "ar": "كراسي قديمة أمام نوافذ بإطلالة على البحر في ليف يام"
+      },
+      "used_in": [
+        "index.html"
+      ],
+      "people": "none",
+      "consent": "none",
+      "published": "2026-05"
+    },
+    {
+      "id": "2026-10-work-02",
+      "kind": "image",
+      "renditions": [
+        "img/gallery/09-480.webp",
+        "img/gallery/09-960.webp",
+        "img/gallery/09.jpg"
+      ],
+      "alt": {
+        "he": "מבט מלמעלה על חלל העבודה המשותף בלב ים",
+        "ar": "إطلالة من الأعلى على فضاء العمل المشترك في ليف يام"
+      },
+      "used_in": [
+        "index.html",
+        "stories/ar/dugma/index.html",
+        "stories/dugma/index.html"
+      ],
+      "people": "not-recognisable",
+      "consent": "none",
+      "published": "2026-05",
+      "whatsapp": true
+    },
+    {
+      "id": "2026-10-beach-01",
+      "kind": "image",
+      "renditions": [
+        "img/gallery/10-480.webp",
+        "img/gallery/10-960.webp",
+        "img/gallery/10.jpg"
+      ],
+      "alt": {
+        "he": "קנים ירוקים עם סירה וחוף הים בלב ים",
+        "ar": "قصب أخضر مع قارب وشاطئ البحر في ليف يام"
+      },
+      "used_in": [
+        "index.html"
+      ],
+      "people": "none",
+      "consent": "none",
+      "published": "2026-05",
+      "whatsapp": true
+    },
+    {
+      "id": "2026-10-beach-02",
+      "kind": "image",
+      "renditions": [
+        "img/gallery/11-480.webp",
+        "img/gallery/11-900.webp",
+        "img/gallery/11.jpg"
+      ],
+      "alt": {
+        "he": "ילדים משחקים עם גור כלבים בחול, ליד סירת דייגים",
+        "ar": "أطفال يلعبون مع جرو على الرمل قرب قارب صيد"
+      },
+      "used_in": [
+        "index.html"
+      ],
+      "people": "children",
+      "consent": "site",
+      "published": "2026-05"
+    },
+    {
+      "id": "2026-10-work-03",
+      "kind": "image",
+      "renditions": [
+        "img/gallery/12-480.webp",
+        "img/gallery/12-960.webp",
+        "img/gallery/12.jpg"
+      ],
+      "alt": {
+        "he": "מחשב נייד ושולחן עבודה מול חלונות הים בלב ים",
+        "ar": "حاسوب محمول وطاولة عمل أمام نوافذ البحر في ليف يام"
+      },
+      "used_in": [
+        "index.html"
+      ],
+      "people": "none",
+      "consent": "none",
+      "published": "2026-05"
+    },
+    {
+      "id": "2026-10-weekend-02",
+      "kind": "image",
+      "renditions": [
+        "img/gallery/13-480.webp",
+        "img/gallery/13-900.webp",
+        "img/gallery/13.jpg"
+      ],
+      "alt": {
+        "he": "אישה ושתי ילדות ליד בית האבן בלב ים",
+        "ar": "امرأة وطفلتان قرب البيت الحجري في ليف يام"
+      },
+      "used_in": [
+        "index.html"
+      ],
+      "people": "children",
+      "consent": "site",
+      "published": "2026-05"
+    },
+    {
+      "id": "2026-10-weekend-03",
+      "kind": "image",
+      "renditions": [
+        "img/gallery/14-480.webp",
+        "img/gallery/14-960.webp",
+        "img/gallery/14.jpg"
+      ],
+      "alt": {
+        "he": "רגע משפחתי על כריות כתומות מול הים בלב ים",
+        "ar": "لحظة عائلية على وسائد برتقالية أمام البحر في ليف يام"
+      },
+      "used_in": [
+        "index.html"
+      ],
+      "people": "children",
+      "consent": "site",
+      "published": "2026-05"
+    },
+    {
+      "id": "2026-10-community-02",
+      "kind": "image",
+      "renditions": [
+        "img/gallery/15-480.webp",
+        "img/gallery/15-960.webp",
+        "img/gallery/15.jpg"
+      ],
+      "alt": {
+        "he": "חברים נהנים יחד מול הים בלב ים",
+        "ar": "أصدقاء يستمتعون معًا أمام البحر في ليف يام"
+      },
+      "used_in": [
+        "index.html"
+      ],
+      "people": "adults",
+      "consent": "site",
+      "published": "2026-05"
+    },
+    {
+      "id": "2026-10-sunset-03",
+      "kind": "image",
+      "renditions": [
+        "img/gallery/16-480.webp",
+        "img/gallery/16-960.webp",
+        "img/gallery/16.jpg"
+      ],
+      "alt": {
+        "he": "אנשים ליד הים בשקיעה בכפר הדייגים בלב ים",
+        "ar": "أناس قرب البحر عند الغروب في قرية الصيادين في ليف يام"
+      },
+      "used_in": [
+        "index.html"
+      ],
+      "people": "adults",
+      "consent": "site",
+      "published": "2026-05"
+    },
+    {
+      "id": "2026-10-offsite-01",
+      "kind": "image",
+      "renditions": [
+        "img/gallery/17-480.webp",
+        "img/gallery/17-960.webp",
+        "img/gallery/17.jpg"
+      ],
+      "alt": {
+        "he": "שיחה ועבודה מול חלונות הים בלב ים",
+        "ar": "حديث وعمل أمام نوافذ البحر في ليف يام"
+      },
+      "used_in": [
+        "index.html"
+      ],
+      "people": "not-recognisable",
+      "consent": "none",
+      "published": "2026-05"
+    },
+    {
+      "id": "2026-10-sunset-04",
+      "kind": "image",
+      "renditions": [
+        "img/gallery/18-480.webp",
+        "img/gallery/18-960.webp",
+        "img/gallery/18.jpg",
+        "img/og/levyam-share.jpg",
+        "img/stories/dugma/hero-1600.jpg",
+        "img/stories/dugma/hero-800.jpg",
+        "img/stories/dugma/card.jpg"
+      ],
+      "alt": {
+        "he": "שקיעה כתומה עם סירת דייגים מתחת לפרגולה בלב ים",
+        "ar": "غروب برتقالي مع قارب صياد تحت العريشة في ليف يام"
+      },
+      "used_in": [
+        "index.html",
+        "stories/ar/dugma/index.html",
+        "stories/dugma/index.html"
+      ],
+      "people": "none",
+      "consent": "none",
+      "published": "2026-05"
+    },
+    {
+      "id": "2026-10-offsite-02",
+      "kind": "image",
+      "renditions": [
+        "img/services/offsite-480.webp",
+        "img/services/offsite-960.webp",
+        "img/services/offsite.jpeg"
+      ],
+      "alt": {
+        "he": "אירוע עסקי קבוצתי תחת הפרגולה של לב ים",
+        "ar": "فعالية أعمال جماعية تحت العريشة في ليف يام"
+      },
+      "used_in": [
+        "index.html",
+        "stories/ar/dugma/index.html",
+        "stories/dugma/index.html"
+      ],
+      "people": "adults",
+      "consent": "site",
+      "published": "2026-05"
+    },
+    {
+      "id": "2026-10-private-event-01",
+      "kind": "image",
+      "renditions": [
+        "img/services/private-480.webp",
+        "img/services/private-960.webp",
+        "img/services/private.jpg"
+      ],
+      "alt": {
+        "he": "שולחן ערוך לארוחה מול סירות הדייגים בלב ים",
+        "ar": "طاولة معدّة لوجبة أمام قوارب الصيادين في ليف يام"
+      },
+      "used_in": [
+        "index.html"
+      ],
+      "people": "adults",
+      "consent": "site",
+      "published": "2026-05"
+    },
+    {
+      "id": "2026-10-sunset-05",
+      "kind": "image",
+      "renditions": [
+        "img/services/Rent-480.webp",
+        "img/services/Rent-960.webp",
+        "img/services/Rent.jpg"
+      ],
+      "alt": {
+        "he": "שקיעה כתומה מהפרגולה עם ספסל מול הים בלב ים",
+        "ar": "غروب برتقالي من العريشة مع مقعد مقابل البحر في ليف يام"
+      },
+      "used_in": [
+        "index.html"
+      ],
+      "people": "none",
+      "consent": "none",
+      "published": "2026-05"
+    },
+    {
+      "id": "2026-10-community-03",
+      "kind": "image",
+      "renditions": [
+        "img/services/community-480.webp",
+        "img/services/community-960.webp",
+        "img/services/community.jpg"
+      ],
+      "alt": {
+        "he": "קהילת לב ים — אנשים מתכנסים תחת הפרגולה מול הים",
+        "ar": "مجتمع ليف يام — ناس يجتمعون تحت العريشة أمام البحر"
+      },
+      "used_in": [
+        "index.html"
+      ],
+      "people": "adults",
+      "consent": "site",
+      "published": "2026-05"
+    },
+    {
+      "id": "2026-10-weekend-04",
+      "kind": "image",
+      "renditions": [
+        "img/services/weekend-480.webp",
+        "img/services/weekend-900.webp",
+        "img/services/weekend.jpg"
+      ],
+      "alt": {
+        "he": "ארוחה משפחתית עם נוף הים בלב ים",
+        "ar": "وجبة عائلية بإطلالة على البحر في ليف يام"
+      },
+      "used_in": [
+        "index.html"
+      ],
+      "people": "children",
+      "consent": "site",
+      "published": "2026-05"
+    },
+    {
+      "id": "2026-10-beach-03",
+      "kind": "clip",
+      "renditions": [
+        "img/hero/hero.mp4",
+        "img/hero/hero-portrait.mp4",
+        "img/hero/hero-poster.jpg"
+      ],
+      "alt": {
+        "he": "לב ים — שקיעה מול הים",
+        "ar": "ليف يام — غروب الشمس على البحر"
+      },
+      "used_in": [
+        "index.html",
+        "js/happening-render.js",
+        "stories/ar/dugma/index.html",
+        "stories/dugma/index.html"
+      ],
+      "people": "none",
+      "consent": "none",
+      "published": "2026-05"
+    },
+    {
+      "id": "2026-10-team-day-01",
+      "kind": "image",
+      "renditions": [
+        "img/stories/company-event-near-caesarea/hero-1600.jpg",
+        "img/stories/company-event-near-caesarea/hero-800.jpg",
+        "img/stories/company-event-near-caesarea/card.jpg"
+      ],
+      "alt": {
+        "he": "קבוצה גדולה עומדת תחת הפרגולה של לב ים, והים מאחוריה",
+        "ar": "مجموعة كبيرة واقفة تحت عريشة ليف يام، والبحر وراها"
+      },
+      "used_in": [
+        "stories/ar/company-event-near-caesarea/index.html",
+        "stories/ar/index.html",
+        "stories/company-event-near-caesarea/index.html",
+        "stories/index.html"
+      ],
+      "people": "adults",
+      "consent": "site",
+      "published": "2026-09"
+    },
+    {
+      "id": "2026-10-community-04",
+      "kind": "image",
+      "renditions": [
+        "img/stories/company-event-near-caesarea/lunch-1600.jpg",
+        "img/stories/company-event-near-caesarea/lunch-800.jpg"
+      ],
+      "alt": {
+        "he": "קבוצה סביב שולחן ארוך תחת הפרגולה, והים ברקע",
+        "ar": "مجموعة حول طاولة طويلة تحت العريشة، والبحر بالخلفية"
+      },
+      "used_in": [
+        "stories/ar/company-event-near-caesarea/index.html",
+        "stories/company-event-near-caesarea/index.html"
+      ],
+      "people": "children",
+      "consent": "site",
+      "published": "2026-09"
+    },
+    {
+      "id": "2026-10-team-day-02",
+      "kind": "clip",
+      "renditions": [
+        "img/stories/company-event-near-caesarea/clip.mp4",
+        "img/stories/company-event-near-caesarea/clip-540.mp4",
+        "img/stories/company-event-near-caesarea/clip-poster.jpg"
+      ],
+      "used_in": [
+        "stories/ar/company-event-near-caesarea/index.html",
+        "stories/company-event-near-caesarea/index.html"
+      ],
+      "people": "adults",
+      "consent": "site",
+      "published": "2026-09"
+    },
+    {
+      "id": "2026-10-beach-04",
+      "kind": "image",
+      "renditions": [
+        "img/stories/how-to-get-to-jisr-az-zarqa/beach-1600.jpg",
+        "img/stories/how-to-get-to-jisr-az-zarqa/beach-800.jpg"
+      ],
+      "alt": {
+        "he": "צעירים משחקים כדורגל על החוף של כפר הדייגים",
+        "ar": "شباب بيلعبوا كورة على شط قرية الصيادين"
+      },
+      "used_in": [
+        "stories/ar/how-to-get-to-jisr-az-zarqa/index.html",
+        "stories/how-to-get-to-jisr-az-zarqa/index.html"
+      ],
+      "people": "children",
+      "consent": "site",
+      "published": "2026-09"
+    },
+    {
+      "id": "2026-10-harbour-03",
+      "kind": "image",
+      "renditions": [
+        "img/stories/how-to-get-to-jisr-az-zarqa/hero-1600.jpg",
+        "img/stories/how-to-get-to-jisr-az-zarqa/hero-800.jpg",
+        "img/stories/how-to-get-to-jisr-az-zarqa/card.jpg"
+      ],
+      "alt": {
+        "he": "סירות דייגים במעגנה של כפר הדייגים בג'סר א-זרקא, ואנשים עולים לאחת מהן",
+        "ar": "قوارب صيد بمرسى قرية الصيادين بجسر الزرقاء، وناس طالعين على وحدة منها"
+      },
+      "used_in": [
+        "stories/ar/how-to-get-to-jisr-az-zarqa/index.html",
+        "stories/ar/index.html",
+        "stories/how-to-get-to-jisr-az-zarqa/index.html",
+        "stories/index.html"
+      ],
+      "people": "children",
+      "consent": "site",
+      "published": "2026-09"
+    },
+    {
+      "id": "2026-10-sunset-06",
+      "kind": "clip",
+      "renditions": [
+        "img/stories/how-to-get-to-jisr-az-zarqa/clip.mp4",
+        "img/stories/how-to-get-to-jisr-az-zarqa/clip-540.mp4",
+        "img/stories/how-to-get-to-jisr-az-zarqa/clip-poster.jpg"
+      ],
+      "used_in": [
+        "stories/ar/how-to-get-to-jisr-az-zarqa/index.html",
+        "stories/how-to-get-to-jisr-az-zarqa/index.html"
+      ],
+      "people": "none",
+      "consent": "none",
+      "published": "2026-09"
+    },
+    {
+      "id": "2026-10-private-event-02",
+      "kind": "image",
+      "renditions": [
+        "img/stories/private-event-on-the-beach/hero-1600.jpg",
+        "img/stories/private-event-on-the-beach/hero-800.jpg",
+        "img/stories/private-event-on-the-beach/card.jpg"
+      ],
+      "alt": {
+        "he": "שתיים מתחבקות תחת בלונים ורודים בפרגולה, והים בשקיעה מאחוריהן",
+        "ar": "ثنتين متعبطين تحت بالونات زهر بالعريشة، والبحر وقت الغروب وراهن"
+      },
+      "used_in": [
+        "stories/ar/index.html",
+        "stories/ar/private-event-on-the-beach/index.html",
+        "stories/index.html",
+        "stories/private-event-on-the-beach/index.html"
+      ],
+      "people": "children",
+      "consent": "site",
+      "published": "2026-09"
+    },
+    {
+      "id": "2026-10-private-event-03",
+      "kind": "image",
+      "renditions": [
+        "img/stories/private-event-on-the-beach/table-1600.jpg",
+        "img/stories/private-event-on-the-beach/table-800.jpg"
+      ],
+      "alt": {
+        "he": "שולחן ארוך ערוך לחגיגה מול הים",
+        "ar": "طاولة طويلة مجهّزة للاحتفال مقابل البحر"
+      },
+      "used_in": [
+        "stories/ar/private-event-on-the-beach/index.html",
+        "stories/private-event-on-the-beach/index.html"
+      ],
+      "people": "not-recognisable",
+      "consent": "none",
+      "published": "2026-09"
+    },
+    {
+      "id": "2026-10-private-event-04",
+      "kind": "clip",
+      "renditions": [
+        "img/stories/private-event-on-the-beach/clip.mp4",
+        "img/stories/private-event-on-the-beach/clip-540.mp4",
+        "img/stories/private-event-on-the-beach/clip-poster.jpg"
+      ],
+      "used_in": [
+        "stories/ar/private-event-on-the-beach/index.html",
+        "stories/private-event-on-the-beach/index.html"
+      ],
+      "people": "children",
+      "consent": "site",
+      "published": "2026-09"
+    },
+    {
+      "id": "2026-10-offsite-03",
+      "kind": "image",
+      "renditions": [
+        "img/stories/strategy-offsite-by-the-sea/circle-1600.jpg",
+        "img/stories/strategy-offsite-by-the-sea/circle-800.jpg"
+      ],
+      "alt": {
+        "he": "קבוצה יושבת במעגל על החול בצל, ליד סירת דייגים ומול הים",
+        "ar": "مجموعة قاعدة بدايرة على الرمل بالفيّ، جنب شختورة صيد ومقابل البحر"
+      },
+      "used_in": [
+        "stories/ar/strategy-offsite-by-the-sea/index.html",
+        "stories/strategy-offsite-by-the-sea/index.html"
+      ],
+      "people": "adults",
+      "consent": "site",
+      "published": "2026-10"
+    },
+    {
+      "id": "2026-10-offsite-04",
+      "kind": "image",
+      "renditions": [
+        "img/stories/strategy-offsite-by-the-sea/hero-1600.jpg",
+        "img/stories/strategy-offsite-by-the-sea/hero-800.jpg",
+        "img/stories/strategy-offsite-by-the-sea/card.jpg"
+      ],
+      "alt": {
+        "he": "קבוצה יושבת סביב שולחן עבודה ארוך תחת הפרגולה של לב ים, והים מאחוריה",
+        "ar": "مجموعة قاعدة حوالين طاولة شغل طويلة تحت عريشة ليف يام، والبحر وراها"
+      },
+      "used_in": [
+        "stories/ar/index.html",
+        "stories/ar/strategy-offsite-by-the-sea/index.html",
+        "stories/index.html",
+        "stories/strategy-offsite-by-the-sea/index.html"
+      ],
+      "people": "adults",
+      "consent": "site",
+      "published": "2026-10"
+    },
+    {
+      "id": "2026-10-team-day-03",
+      "kind": "image",
+      "renditions": [
+        "img/stories/team-day-by-the-sea/group-1600.jpg",
+        "img/stories/team-day-by-the-sea/group-800.jpg"
+      ],
+      "alt": {
+        "he": "קבוצה גדולה עומדת על החול בכפר הדייגים, עם סירות הדייגים והמעגנה מאחוריה",
+        "ar": "مجموعة كبيرة واقفة على الرمل في قرية الصيادين، ووراها قوارب الصيد والمرسى"
+      },
+      "used_in": [
+        "stories/ar/team-day-by-the-sea/index.html",
+        "stories/team-day-by-the-sea/index.html"
+      ],
+      "people": "adults",
+      "consent": "site",
+      "published": "2026-09"
+    },
+    {
+      "id": "2026-10-team-day-04",
+      "kind": "image",
+      "renditions": [
+        "img/stories/team-day-by-the-sea/hero-1600.jpg",
+        "img/stories/team-day-by-the-sea/hero-800.jpg",
+        "img/stories/team-day-by-the-sea/card.jpg"
+      ],
+      "alt": {
+        "he": "קבוצה יושבת סביב שולחנות ארוכים תחת הפרגולה של לב ים, והים מאחוריה",
+        "ar": "مجموعة قاعدة حول طاولات طويلة تحت عريشة ليف يام، والبحر وراها"
+      },
+      "used_in": [
+        "stories/ar/index.html",
+        "stories/ar/team-day-by-the-sea/index.html",
+        "stories/index.html",
+        "stories/team-day-by-the-sea/index.html"
+      ],
+      "people": "adults",
+      "consent": "site",
+      "published": "2026-09"
+    },
+    {
+      "id": "2026-10-team-day-05",
+      "kind": "clip",
+      "renditions": [
+        "img/stories/team-day-by-the-sea/clip.mp4",
+        "img/stories/team-day-by-the-sea/clip-540.mp4",
+        "img/stories/team-day-by-the-sea/clip-poster.jpg"
+      ],
+      "used_in": [
+        "stories/ar/team-day-by-the-sea/index.html",
+        "stories/team-day-by-the-sea/index.html"
+      ],
+      "people": "adults",
+      "consent": "site",
+      "published": "2026-09"
+    },
+    {
+      "id": "2026-10-venue-02",
+      "kind": "image",
+      "renditions": [
+        "video/public/photos/terrace.jpg"
+      ],
+      "alt": {
+        "he": "שולחן עץ וכיסאות מתקפלים תחת הפרגולה של לב ים, והים מאחור",
+        "ar": "طاولة خشب وكراسي قابلة للطي تحت عريشة ليف يام، والبحر وراها"
+      },
+      "used_in": [],
+      "people": "none",
+      "consent": "none",
+      "published": "2026-10"
+    },
+    {
+      "id": "2026-10-team-day-06",
+      "kind": "image",
+      "renditions": [],
+      "alt": {
+        "he": "קבוצה גדולה יושבת תחת הפרגולה בלב ים, הים ברקע",
+        "ar": "مجموعة كبيرة قاعدة تحت البرجولا بليف يام، والبحر وراها"
+      },
+      "used_in": [],
+      "people": "adults",
+      "consent": "social",
+      "published": "2026-10"
+    },
+    {
+      "id": "2026-10-work-05",
+      "kind": "image",
+      "renditions": [],
+      "alt": {
+        "he": "שניים עובדים עם מחשב נייד ליד שולחן ארוך תחת הפרגולה, מול הים בלב ים",
+        "ar": "اثنين بيشتغلوا على لابتوب عند طاولة طويلة تحت البرجولا، قبال البحر بليف يام"
+      },
+      "used_in": [],
+      "people": "adults",
+      "consent": "social",
+      "published": "2026-10"
+    },
+    {
+      "id": "2026-10-sunset-12",
+      "kind": "image",
+      "renditions": [],
+      "alt": {
+        "he": "שקיעה מבעד לפרגולה בלב ים, סירת דייגים על החול",
+        "ar": "غروب الشمس من تحت البرجولا بليف يام، وشختورة صيد على الرمل"
+      },
+      "used_in": [],
+      "people": "none",
+      "consent": "none",
+      "published": "2026-10"
+    },
+    {
+      "id": "2026-10-weekend-05",
+      "kind": "image",
+      "renditions": [],
+      "alt": {
+        "he": "משפחות עם ילדים יושבות בצל בסוף שבוע בלב ים",
+        "ar": "عائلات مع ولاد قاعدين بالفيّ بويك إند بليف يام"
+      },
+      "used_in": [],
+      "people": "children",
+      "consent": "social",
+      "published": "2026-10",
+      "whatsapp": true
+    }
+  ]
+}
