@@ -74,3 +74,5 @@ usage text (clear space, minimum size, the do/don't above) · empty template mas
 Instagram 4:5 and 9:16, Facebook, GBP and WhatsApp status at the `content/channels.json` sizes ·
 icon names matching the meanings above. Then monthly: the look of the month and seasonal
 proposals (`calendar.md`), delivered to `Brand/00 Inbox` and logged in the delivery log.
+Their deliveries are inputs, not a fixed frame: every weekly pack carries a fresh design made
+inside these rules ([ADR 0071](../docs/decisions/0071-every-pack-carries-designed-versions-a-fresh-creative-look-each-week-inside-the-brand.md)).

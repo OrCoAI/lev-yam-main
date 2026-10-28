@@ -135,6 +135,9 @@ scripts/media.sh <media-id> <source> <out-dir> <preset>[=<stem>] … [--focus to
   `social`; every preset may write into the fence (`Ready to post/<date>/`) or the `media/` cache.
   Files under `img/` and `video/public/photos/` join the record's `renditions`. A file already in the
   fence is never replaced.
+- **Designs** are not cut by `media.sh`: `content-week` makes a fresh branded
+  `<post id>-designed.jpg` from each piece's cut, every week a different look
+  ([ADR 0071](../docs/decisions/0071-every-pack-carries-designed-versions-a-fresh-creative-look-each-week-inside-the-brand.md)).
 - **Sources** are JPEG, PNG, WebP or HEIC photos and MOV / MP4 clips — nothing else is opened.
   Clips come out BT.709 SDR (HLG converted; a PQ clip is refused).
 - **The Inbox** is handled by number through `scripts/media-inbox.py` (index, preview, move) — an

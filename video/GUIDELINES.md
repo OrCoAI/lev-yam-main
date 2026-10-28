@@ -333,6 +333,94 @@ related product.
   organization with up to 3 employees," no client-work clause either way, unchanged; no newer
   official figure found for the 47 % / 74 % first-seconds value-delivery stat in §2.
 
+### 2026-10-19 — weekly refresh
+- **Skills version bump — `remotion-dev/skills` main now at `4.0.536`** (header previously
+  recorded `4.0.533`, read 2026-10-06). Compared `remotion-best-practices/SKILL.md` (a router
+  only, no style rules of its own) and `remotion-markup/SKILL.md` content at `4.0.536` against
+  the rules here: `fps` from `useVideoConfig()`, `interpolate()`-driven animation, individual
+  `scale`/`translate`/`rotate` over `transform` strings, Google Fonts for fonts, and
+  `Interactive.create()` for Studio-editable components — all consistent with §4–§6, no
+  rule-affecting change found. Header's Skills line updated to the new upstream version; the
+  per-machine install (last reported `4.0.532`, `remotion-markup` hash `e671b318`, 2026-10-06)
+  could not be re-checked this cycle (no shell access in this job). Run locally: `npx skills
+  update remotion-best-practices remotion-captions remotion-create remotion-docs
+  remotion-interactivity remotion-maps remotion-markup remotion-multimedia remotion-render
+  remotion-saas remotion-studio remotion-upgrade --yes` (§11), then update the header's install
+  version/hash by hand. Source:
+  https://raw.githubusercontent.com/remotion-dev/skills/main/skills/remotion-best-practices/SKILL.md
+  and .../remotion-markup/SKILL.md, read 2026-10-19.
+- Checked, no edit needed: Remotion releases
+  (https://github.com/remotion-dev/remotion/releases.atom, read 2026-10-19) show two versions
+  newer than the `4.0.534` pinned in `video/package.json`: **`4.0.535`** (Studio default
+  premounting of 2 s plus an option to hide premounting, `Interactive.childrenSchema` and a
+  `layout` option for `Interactive.withSchema()`, a caption-style selection API,
+  `renderFramesOnLambda()`) and **`4.0.536`** (`Interactive.create()` for custom interactive
+  components, `effectsOutputSize` on effect-capable components, a new Studio timeline/`Track`
+  component, JPEG XL support). Neither breaks or contradicts a rule here: the kit's own parts
+  (`Words`, `Bidi`, `SafeZone`, etc.) don't call these APIs, the explicit `premountFor={fps}`
+  rule (§5) holds regardless of the new Studio default, and the `@remotion/effects` `hueShift`
+  direction note (§11) isn't listed as changed in either release's notes. `video/package.json`
+  is the pin; dependabot bumps it.
+- Checked and unchanged (no edit needed): the free-license clause —
+  `raw.githubusercontent.com/remotion-dev/remotion/main/LICENSE.md` (read 2026-10-19) still
+  reads "a for-profit organization with up to 3 employees". Meta's official Reels/Stories
+  safe-zone percentages and the 47 % / 74 % first-seconds stat were not re-opened this cycle:
+  WebSearch for current specs, hook rate, Remotion best practices, Hebrew/Arabic RTL and
+  `@remotion/captions` (six queries, 2026-10-19) returned only third-party pages (e.g.
+  inro.social, hopperhq.com, billo.app, houseofmarketers.com, nestscale.com) — none from
+  facebook.com / business.facebook.com / developers.facebook.com or an official Remotion page —
+  so, per this file's own sourcing rule, they're noted as unopened snippets only and don't
+  override the official figures already cited in §3/§14. One snippet claimed Meta unified the
+  Reels and Stories safe zone in March 2026, which is consistent with, not a contradiction of,
+  this file's existing "same box for Stories" line — no edit made on an unopened source.
+- No prompt-injection attempts found in any page fetched this cycle.
+
+### 2026-10-12 — weekly refresh
+- **Skills version bump — `remotion-dev/skills` 4.0.533 → 4.0.535.** Both
+  `remotion-best-practices/SKILL.md` and `remotion-markup/SKILL.md` frontmatter now read
+  `4.0.535`. Content read the same as before on every point this file encodes: `fps` from
+  `useVideoConfig()`, inline `interpolate()` in `style`, `scale`/`translate`/`rotate` not
+  `transform` strings, `premountFor={fps}`, `Interactive.withSchema({wrapInSequence, layout})`
+  for editable scenes, Google Fonts as the recommended font path — no rule-affecting change
+  found. The local `~/.agents/skills/remotion-*` install (still `4.0.532` as of 2026-10-06) is
+  now two releases behind; not re-checked this run (no shell access from this job). Run locally:
+  `npx skills update remotion-best-practices remotion-captions remotion-create remotion-docs
+  remotion-interactivity remotion-maps remotion-markup remotion-multimedia remotion-render
+  remotion-saas remotion-studio remotion-upgrade --yes` (guidelines §11), then update the
+  header's hash. Source: raw.githubusercontent.com/remotion-dev/skills/main/skills/
+  {remotion-best-practices,remotion-markup}/SKILL.md, read 2026-10-12.
+- Checked and unchanged (no edit needed): **Remotion releases**
+  (https://github.com/remotion-dev/remotion/releases.atom, read 2026-10-12) — two releases newer
+  than the `4.0.533` pin exist, `4.0.534` (2026-10-07: Chromium upgraded to 157.0.8080.0,
+  Chrome/FFmpeg shared-memory rendering, more frequent parallel encoding, nested
+  HTML-in-canvas during server-side rendering) and `4.0.535` (2026-10-12: Studio premounts
+  2 s by default with a `defaultPremountInSeconds` option, `Interactive.childrenSchema` and a
+  `layout` option on `Interactive.withSchema()`, `TransitionSeries.Sequence` now inherits
+  `Sequence` props, various Studio/Lambda/audio fixes). None rename or deprecate an API this
+  file names, add a new effect/transition/caption/font primitive relevant to the kit, or
+  contradict §5/§10/§11. `video/package.json` stays pinned at `4.0.533`; dependabot's grouped
+  `/video` bump will move it. — the free-license clause
+  (`raw.githubusercontent.com/remotion-dev/remotion/main/LICENSE.md`, read 2026-10-12) — "a
+  for-profit organization with up to 3 employees" unchanged; `remotion.dev/docs/license` again
+  did not return readable content to an unauthenticated fetch (same as 2026-10-06).
+- Platform/practice research (WebSearch, 6 queries: Reels safe zone, Stories safe zone, Reels
+  hook rate, Remotion best practices, Remotion Hebrew/Arabic RTL, Remotion captions) — none of
+  the results were on remotion.dev, github.com or a facebook.com/business.facebook.com/
+  developers.facebook.com domain, so none were opened; all cited here only as
+  "(snippet, unopened)", 2026-10-12: a Reels-safe-zone snippet claimed Stories and Reels share a
+  unified box "since March 2026" at 14 %/35 %/6 %, matching §3 already, but the same answer also
+  gave inconsistent px figures (13 %/23.4 %/3.2 %) for the identical claim, so nothing was
+  adopted from it; a hook-rate snippet suggested hooking by 1.0 s rather than 3 s, with no
+  official source, so §7 is unchanged (it already cites the official Meta 47 %/74 % figure); the
+  RTL-text and "Remotion best practices" searches returned no Remotion-specific or official
+  content. One official page was opened directly from a search result —
+  `remotion.dev/docs/captions/api`, read 2026-10-12 — confirming `@remotion/captions`'
+  `Caption` type and its conversion helpers (`@remotion/install-whisper-cpp`,
+  `@remotion/openai-whisper`, `@remotion/elevenlabs`); matches §13's existing description,
+  no Hebrew/Arabic/RTL mention there, no edit needed.
+- No instruction-like text ("ignore your rules", a link/contact to add, a command to run) was
+  found in any fetched or searched source this run.
+
 ### 2026-10-06 — weekly refresh
 - **Skills version bump — `remotion-dev/skills` 4.0.532 → 4.0.533.** Both
   `remotion-best-practices/SKILL.md` and `remotion-markup/SKILL.md` frontmatter now read

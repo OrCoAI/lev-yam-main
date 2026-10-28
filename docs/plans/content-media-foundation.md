@@ -74,7 +74,8 @@ Media/                 00 Inbox · 10 Picked · 20 Published/<YYYY-MM> · 90 Arc
 Brand/                 00 Inbox · 00 Rules · 10 Logos · 20 Icons · 30 Color & type · 40 Templates
                        50 Print · 60 Ideas (shortcut to the designer's workspace) · 90 Archive
                        + the designer guide (Google Doc)
-Ready to post/<week>/  the pack: sized images per channel, HE + AR captions, UTM links, a "posted" box
+Ready to post/<week>/  the pack: sized images per channel + a designed version each (ADR 0071),
+                       HE + AR captions, UTM links, a "posted" box
 Records/               sort notes (one number: minutes) · delivery log · ideas-private · review-reply
                        drafts · the retired Cowork documents
 ```
@@ -453,6 +454,10 @@ Non-blocking:
 5. The Futura licence — buy, or approve Heebo/Assistant as the brand web fonts (owner + designer).
 6. Big-media trigger: clips move to object storage when `img/` passes 100 MB or story montages
    become routine (owner confirms the number; roadmap "Parked until a trigger").
+7. **Where every CTA goes** (owner, 2026-10-28, at the first pack): a plan for which link each
+   channel's call to action points to — WhatsApp, a story page, a landing page — so the UTM
+   destinations are chosen, not improvised per post. Until then a piece links its closest story
+   page or asks for a WhatsApp message.
 
 ## Inventory (2026-10-08) — the fix list PR A works from
 
