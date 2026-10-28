@@ -74,7 +74,8 @@ Media/                 00 Inbox · 10 Picked · 20 Published/<YYYY-MM> · 90 Arc
 Brand/                 00 Inbox · 00 Rules · 10 Logos · 20 Icons · 30 Color & type · 40 Templates
                        50 Print · 60 Ideas (shortcut to the designer's workspace) · 90 Archive
                        + the designer guide (Google Doc)
-Ready to post/<week>/  the pack: sized images per channel, HE + AR captions, UTM links, a "posted" box
+Ready to post/<week>/  the pack: sized images per channel + a designed version each (ADR 0071),
+                       HE + AR captions, UTM links, a "posted" box
 Records/               sort notes (one number: minutes) · delivery log · ideas-private · review-reply
                        drafts · the retired Cowork documents
 ```
