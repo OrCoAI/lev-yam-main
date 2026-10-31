@@ -10,7 +10,7 @@ description: >
   "פוסטים לשבוע". Not for a story page (story-author), a reel (new-video) or a sort alone
   (media-intake).
 metadata:
-  version: '0.2.0'
+  version: '0.3.0'
 ---
 
 # Content week
@@ -41,8 +41,15 @@ the last four weeks. Plan: `docs/plans/content-media-foundation.md` §The weekly
 
 - The post records with an empty `posted:` — one closed multi-select question: which went out?
   Each yes gets `posted: YYYY-MM-DD` (the day the owner names; today if they don't know).
-- `results:` stays empty until the analytics snapshot carries per-post totals (the plan's PR D) —
-  never an estimate. A record past its `expires:` that never went out is noted, not deleted.
+- **Results** come from a script, never by hand:
+  1. `gh run list --workflow weekly-review.yml --branch main --event schedule --status success --limit 3 --json databaseId,createdAt`
+     lists the scheduled runs on main, never a dispatch or a pull request's;
+  2. `gh run download <id> -n post-days -D <scratch>/post-days` fetches the newest one's per-post
+     numbers (if it has none, the next one's);
+  3. `node scripts/post-results.mjs <scratch>/post-days/post-days.json --write` writes them.
+
+  It writes only whole 7-day windows and prints why any record waits; quote its output in the
+  hand-off. A record past its `expires:` that never went out is noted, not deleted.
 
 ## 1. Intake
 

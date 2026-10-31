@@ -39,6 +39,7 @@
  *             with an ADR whose title says publish and names the channel id in backticks
  *   posts     front matter, the post id is the utm_campaign, built from media IDs only, three captions
  *             (HE / AR / Mixed), no posting without the Arabic sign-off (ADR 0069 §2, §7)
+ *             · `results` only as scripts/post-results.mjs writes it, over the 7 days from `posted` (PR D)
  *   drive     no Drive / Docs link or Drive-ID-shaped string in any text file in the repo (ADR 0069 §1)
  *   pii       no email or phone number in the records but the venue's; the records are .md / .json only (invariant 3)
  *   tokens    css/styles.css --color/space/radius-* ⇄ brand/tokens.json both ways; theme.ts colours and theme-color too
@@ -52,6 +53,7 @@ import { join } from 'node:path'
 import vm from 'node:vm'
 import { execFileSync } from 'node:child_process'
 import { ROOT } from './lib/chrome.mjs'
+import { ID, THEMES, isDate, RESULTS, RESULT_DAYS, resultsEnd, front, unquote } from './lib/content.mjs'
 
 const KB = 1024, MB = 1024 * KB
 const RULES = {
@@ -404,15 +406,8 @@ else {
 const readJson = (rel) => { try { return JSON.parse(read(rel)) } catch (e) { fail(rel, 1, 'records', `not valid JSON — ${e.message}`); return null } }
 const failIn = (file) => (rule, msg) => fail(file, 1, rule, msg)
 const M = failIn('content/media.json'), C = failIn('content/channels.json'), B = failIn('brand/assets.json')
-const ID = {
-  media: /^\d{4}-\d{2}-[a-z][a-z0-9-]*-\d{2}$/,
-  post: /^\d{4}-\d{2}-\d{2}-([a-z]+)-[a-z0-9-]+$/,   // the middle part is a channel id from channels.json
-  brand: /^brand-[a-z]+-[a-z0-9-]+$/,
-  card: /^card-[a-z0-9-]+$/,
-}
 const SCOPES = ['none', 'site', 'social', 'ads']
 const PEOPLE = ['none', 'not-recognisable', 'adults', 'children']
-const THEMES = ['companies', 'private', 'renters', 'weekend']   // ADR 0070
 /** A record may be used at `scope` — recognisable people only within their consent (ADR 0069 §4). */
 const covers = (r, scope) => !['adults', 'children'].includes(r.people) || SCOPES.indexOf(r.consent) >= SCOPES.indexOf(scope)
 
@@ -505,11 +500,7 @@ for (const g of gallery) altCheck('js/app.js', 1, local(attr(g[0].match(/<img\b[
 const RAW_FILE = /(^|[\s(`"'/.])(img|media|video\/public)\/\S+\.(jpe?g|png|webp|heic|mov|mp4)/i
 // post records: a file in content/posts/ is a post (only .gitkeep is not), built from media IDs,
 // consent covering the channel, never posted before the Arabic sign-off (ADR 0069 §2, §3, §7)
-// a small YAML subset: `key: value`, a trailing # comment, quotes stripped, false / no / null = empty
-const unquote = (v) => v.replace(/^(["'])(.*)\1$/, '$2')
-const front = (text) => Object.fromEntries((text.replace(/\r\n/g, '\n').match(/^---\n([\s\S]*?)\n---/)?.[1] ?? '').split('\n')
-  .map((l) => l.replace(/\s+#.*$/, '').match(/^([a-z_]+):\s*(.*)$/)).filter(Boolean)
-  .map((m) => [m[1], /^(false|no|null|~)$/i.test(m[2].trim()) ? '' : unquote(m[2].trim())]))
+// front matter: scripts/lib/content.mjs (one parser for the check, the freshness numbers and the results)
 for (const rel of filesUnder('content/posts', /./).filter((r) => !r.endsWith('/.gitkeep'))) {
   const P = failIn(rel), text = read(rel), fm = front(text), id = rel.replace(/^.*\//, '').replace(/\.md$/, '')
   const ch = id.match(ID.post)?.[1]
@@ -519,7 +510,15 @@ for (const rel of filesUnder('content/posts', /./).filter((r) => !r.endsWith('/.
   if (!THEMES.includes(fm.theme)) P('posts', `theme "${fm.theme}" is not one of ADR 0070's: ${THEMES.join(', ')}`)
   const utmSource = CHANNEL.get(ch)?.utm_source, q = URL.canParse(fm.utm ?? '') ? new URL(fm.utm).searchParams : null
   if (fm.utm && (q?.get('utm_campaign') !== id || (utmSource && q.get('utm_source') !== utmSource))) P('posts', `the UTM link needs utm_campaign=${id}${utmSource ? ` and utm_source=${utmSource}` : ''}`)
-  if (fm.posted && !/^\d{4}-\d{2}-\d{2}$/.test(fm.ar_signed ?? '')) P('posts', 'marked posted without the Arabic sign-off date (ADR 0069 §7)')
+  if (fm.posted && !isDate(fm.posted)) P('posts', `posted "${fm.posted}" is not a YYYY-MM-DD date`)
+  if (fm.posted && !isDate(fm.ar_signed)) P('posts', 'marked posted without the Arabic sign-off date (ADR 0069 §7)')
+  // results are written by scripts/post-results.mjs: the post's first RESULT_DAYS days, totals only
+  if (fm.results) {
+    const r = fm.results.match(RESULTS)
+    if (!r) P('posts', `results "${fm.results}" is not "sessions N · whatsapp_click N · YYYY-MM-DD..YYYY-MM-DD" (scripts/post-results.mjs writes it)`)
+    else if (!fm.utm) P('posts', 'results on a post with no link — it carries no utm_campaign to measure')
+    else if (!isDate(fm.posted) || r[3] !== fm.posted || r[4] !== resultsEnd(fm.posted)) P('posts', `results cover ${r[3]}..${r[4]}, not the ${RESULT_DAYS} days from posted ${fm.posted || '(empty)'}`)
+  }
   for (const h of ['HE', 'AR', 'Mixed']) if (ch !== 'site' && !new RegExp(`^## ${h}\\s*$`, 'm').test(text.replace(/\r\n/g, '\n'))) P('posts', `no "## ${h}" caption — every piece is drafted in Hebrew, Arabic and mixed (VOICE.md)`)
   if (RAW_FILE.test(text)) P('posts', 'names a raw file — a piece is built from media IDs (ADR 0069 §2)')
   for (const mid of (fm.media ?? '').replace(/[[\]]/g, '').split(',').map((x) => unquote(x.trim())).filter(Boolean)) {

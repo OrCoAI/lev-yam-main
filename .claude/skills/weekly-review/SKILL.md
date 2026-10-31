@@ -9,7 +9,7 @@ description: >
   from the weekly GitHub Action and on demand. Triggers: "weekly review", "weekly report",
   "what shipped this week", "drift check", "harness health".
 metadata:
-  version: '0.1.0'
+  version: '0.2.0'
 ---
 
 # Weekly review
@@ -41,17 +41,22 @@ states its source; a source that is unavailable prints **n/a + why**, never a gu
    `whatsapp_click` total and top 3 pages, GSC clicks/impressions and top 3 queries, each with
    the delta against the trailing 28-day weekly average; a source with an `error` field prints
    `n/a — <reason>`, never a guess and never another source.
-8. **Alerts & problems**: open/closed Davis problems in the window (queries §3) and the
+8. **Content freshness**: from `.reports/freshness.json` (queries §8) — the content outcome
+   metric (`outcome.count` of `outcome.of` weeks with a pack posted on every channel), each
+   channel's days since its last post against its `pack_days`, posts drafted but never marked
+   posted, photos published this month vs last, backlog depth and stale cards, story pages past
+   their fact re-check. A missing file or an `errors` entry prints `n/a — <reason>`.
+9. **Alerts & problems**: open/closed Davis problems in the window (queries §3) and the
    Bluebox Routine's findings (`bluebox ask`, queries §4). Alerts stay inside the platforms by
    decision (ADR 0018) — this line is the weekly eyes. If it proves too slow, that is the
    logged trigger for an external channel; say so if an alert sat unseen > 7 days.
-9. **Harness health** (ADR 0034): time-to-merge per tier (median), rework rate (PRs with a
+10. **Harness health** (ADR 0034): time-to-merge per tier (median), rework rate (PRs with a
    second push after opening, or a `changes_requested` review), Gate-2 queue depth (open PRs
    awaiting the owner), cost/tokens per merged PR from the Claude Code OpenTelemetry export
    (`n/a until H9.5-E`). These numbers decide tier promotions and the deferred AI pre-review.
-10. **Quarterly checklist reminder** (work order G6.4), first week of each quarter only:
+11. **Quarterly checklist reminder** (work order G6.4), first week of each quarter only:
     `@simplewebauthn/server` on Deno is not watched by dependabot — check its releases.
-11. **Open decisions**: questions waiting on Gate 1 (open plans with blocking questions;
+12. **Open decisions**: questions waiting on Gate 1 (open plans with blocking questions;
     open PRs marked hold).
 
 ## Rules

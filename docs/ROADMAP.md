@@ -108,7 +108,9 @@ session. Items 1, 2 and 5 start without item 7 and gain GBP / Instagram / Facebo
       added per week*. Site + Drive first; GBP and social join with item 7.
       [plans/content-media-foundation.md](plans/content-media-foundation.md) — **Gate 1 approved
       2026-10-12** (ADRs 0068/0069); **PR A (live fixes + `check-content.mjs` in CI) merged 2026-10-14
-      (#133); PR B (Drive fence + migration, `content/` records, `brand/`, voice, check v2) merged (#145); PR C (`media.sh`, `content-week` + `media-intake`, check v3) in review** — the first pack goes out of PR C's session
+      (#133); PR B (Drive fence + migration, `content/` records, `brand/`, voice, check v2) merged (#145); PR C (`media.sh`,
+      `content-week` + `media-intake`, check v3) merged (#152); first pack merged (#155), posting from 2026-10-29; a fresh
+      design per pack (ADR 0071, #156); PR D (per-post results + freshness numbers) in review** — outcome check 2026-11-26
 - [ ] **2. Weekly marketing report** *(was 17; owner, 2026-10-07)* — its own weekly issue **and** an
       email to the owner: traffic, `whatsapp_click` per page, the AI-citation log, outcome checks due,
       item 1's freshness numbers, and **social publishing** *(was 6, then under 15)*: a reel a week and
