@@ -102,6 +102,14 @@ on:
       label:
         required: true
         type: string
+      content_numbers:
+        description: >
+          Keep the per-post GA4 numbers as the `post-days` artifact and write the content
+          freshness file (content PR D). Only weekly-review sets it: content-week downloads from
+          that workflow, and only its skill reads freshness.json.
+        required: false
+        type: boolean
+        default: false
     secrets:
       # A Claude subscription token from `claude setup-token`, not an API key (ADR 0042).
       claude_code_oauth_token:
@@ -173,6 +181,29 @@ jobs:
         env:
           GOOGLE_SA_KEY: ${{ secrets.google_sa_key }}
         run: node scripts/analytics-snapshot.mjs | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # The snapshot's per-post file feeds each post record's `results:` (content PR D):
+      # content-week downloads this artifact with `gh run download` and scripts/post-results.mjs
+      # writes the totals, so no key ever reaches a session. Uploaded before the agent runs, so the
+      # file is the script's, never the agent's. The repo is public and so are its artifacts: the
+      # file holds daily totals only, for campaigns that are post IDs (ADR 0047, ADR 0069 §3),
+      # and lives 8 days: one content session reads it.
+      - name: Keep the per-post numbers for the content session
+        if: steps.key.outputs.ready == 'true' && inputs.content_numbers
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: post-days
+          path: .reports/post-days.json
+          retention-days: 8 # one session reads it; each run makes its own
+          if-no-files-found: ignore
+
+      # Freshness numbers from the content records — no credential, no network (content PR D).
+      - name: Content freshness
+        if: steps.key.outputs.ready == 'true' && inputs.content_numbers
+        continue-on-error: true
+        shell: bash
+        run: node scripts/content-freshness.mjs | tee -a "$GITHUB_STEP_SUMMARY"
 
       - if: steps.key.outputs.ready == 'true'
         uses: anthropics/claude-code-action@db77d4d3c98f3f6380e7cd45ffba2342a3dbde3c # v1

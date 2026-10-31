@@ -37,7 +37,7 @@ with many other MCPs and connectors in an easy way."*
 | Source | a count over `content/posts/` (each posted piece is one entry; the owner marks it posted) · the CI check's last run on `main` · `content/media.json` rows by `published` date · `Records/` sort notes |
 | Baseline (2026-10-12) | 0 of the last 4 weeks (nothing posted on any social channel since 2026-08-31; the site got story pairs only) · check does not exist · 0 photos/week · no session yet |
 | Target | **3 of the first 4 weeks** after the first pack · 0 findings · ≥ 3 photos/week · ≤ 30 min/session |
-| Check date | **2026-11-16** (planned first pack in the week of 2026-10-19, + 4 weeks; corrected at close-out to the real first pack + 4 weeks) — `weekly-review` lists it when due |
+| Check date | **2026-11-26** — the real first pack (posted from 2026-10-29) + 4 weeks; was 2026-11-16, planned from a first pack in the week of 2026-10-19. `weekly-review` lists it when due; the primary number is the Content freshness line of the 2026-11-29 report, whose four whole weeks are W44–W47, the first four of the pack |
 | Verdict owner | owner |
 
 "Cannot tell" on the primary number means the owner did not mark posts — a finding about the pack's
@@ -330,6 +330,19 @@ records take over:
 - Freshness numbers computed from the records (days since the last photo / pack per channel, photos
   added per week, backlog depth, cards older than 8 weeks) into the weekly report's data file for
   mandate item 2 to carry; the engineering weekly links to it.
+- *As built (2026-10-28):*
+  - `analytics-snapshot.mjs` also writes `.reports/post-days.json`: daily sessions and
+    `whatsapp_click` per post ID over 35 days, asked only for post IDs. `agent-report.yml` keeps it
+    as the `post-days` artifact (8 days) for the weekly run only. The report agents never read it.
+  - `scripts/post-results.mjs` turns it into `results:` lines; `content-week` §0 runs it. The
+    check holds the format and the 7-day window.
+  - `scripts/content-freshness.mjs` (no key) writes `.reports/freshness.json` for `weekly-review`'s
+    new "Content freshness" section; the shape is in its queries §8. Photos are counted per month,
+    because `published` holds a month.
+  - `scripts/lib/content.mjs` is the one home of the ID grammar, the front matter and the results
+    format.
+  - **Not done:** adding `gh run download` to `.claude/settings.json` was refused to the agent
+    (self-modification), so it prompts until the owner adds it.
 
 ## The weekly rhythm — the owner's time, about 45 minutes a week
 
