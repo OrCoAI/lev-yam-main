@@ -1,6 +1,7 @@
 import type { WeekendReelProps } from "../levyam/schema";
 import type { MomentsProps } from "../levyam/moments/schema";
 import { placeholderQuotes } from "../levyam/team-day/quotes";
+import type { StrategyDayProps } from "../levyam/strategy-day/schema";
 import type { TeamDayProps } from "../levyam/team-day/schema";
 
 // Source: levyam.com/happening/weekend/ (read 2026-10-05) and the site repo's FACTS.md.
@@ -52,4 +53,18 @@ export const teamDay: Omit<TeamDayProps, "hook"> = {
   area: "ג'סר א-זרקא",
   cta: { headline: "רוצים יום כזה לצוות?", line: "כתבו לנו בוואטסאפ", phone: "050-666-9138" },
   quotes: placeholderQuotes("he"),
+};
+
+// strategy-day-by-the-sea — video/briefs/strategy-day-by-the-sea.md (Gate 1 2026-11-02). FACTS.md
+// § שירותים (strategy days; booking by WhatsApp), § המתחם (pergola facing the sea), § זהות
+// (WhatsApp 972506669138, in local form); small-group work and the circle from the live
+// /stories/strategy-offsite-by-the-sea/ page, read 2026-11-02.
+export const strategyDay: Omit<StrategyDayProps, "hook"> = {
+  lang: "he",
+  question: "עוד יום אסטרטגיה בחדר ישיבות?",
+  footage: "יום אסטרטגיה, מול הים",
+  groups: "עבודה בקבוצות קטנות, מול הים",
+  table: "הדיון: סביב שולחן אחד",
+  circle: "והשיחה החשובה: במעגל על החול",
+  cta: { headline: "מתכננים יום אסטרטגיה?", line: "כתבו לנו בוואטסאפ", phone: "050-666-9138" },
 };

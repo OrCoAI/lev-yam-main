@@ -534,12 +534,12 @@ for (const rel of filesUnder('video/briefs', /\.md$/).filter((r) => !r.endsWith(
 }
 const assetMap = readJson('video/assets.json')?.site ?? {}
 if (!Object.keys(assetMap).length) fail('video/assets.json', 1, 'briefs', 'no "site" map — the reels\' asset map names a media or brand ID per file')
-// resolved as sync-assets.mjs does: the first rendition in the name's format that is not a sized cut
+// sync-assets.mjs picks one rendition in the name's format (its rule); it stops only when there is none
 const extOf = (f) => f.slice(f.lastIndexOf('.'))
 for (const [name, id] of Object.entries(assetMap)) {
   const files = RECORD.get(id)?.renditions ?? brandAssets.find((a) => a.id === id)?.served
   if (!files) fail('video/assets.json', 1, 'briefs', `${name}: "${id}" is not a media or brand ID`)
-  else if (!files.some((f) => extOf(f) === extOf(name) && !/(\/card|-\d+)\.[a-z0-9]+$/.test(f))) fail('video/assets.json', 1, 'briefs', `${name}: ${id} has no web copy in ${extOf(name)} — sync-assets would stop`)
+  else if (!files.some((f) => extOf(f) === extOf(name))) fail('video/assets.json', 1, 'briefs', `${name}: ${id} has no web copy in ${extOf(name)} — sync-assets would stop`)
 }
 const backlog = read('content/backlog.md')
 // every card heading in the Shaped / Archive lists is a card id
