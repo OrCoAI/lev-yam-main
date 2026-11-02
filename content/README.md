@@ -162,7 +162,7 @@ experiment:                 # one hypothesis per pack, or empty
 expires:                    # YYYY-MM-DD when time-bound
 posted:                     # empty until the owner marks it — the outcome metric counts this
 ar_signed:                  # YYYY-MM-DD, the owner's Arabic sign-off (ADR 0069 §7)
-results:                    # at +7 days, totals only: sessions, whatsapp_click
+results:                    # scripts/post-results.mjs — e.g. sessions 12 · whatsapp_click 2 · 2026-10-29..2026-11-04
 ---
 ## HE
 …
@@ -177,7 +177,8 @@ results:                    # at +7 days, totals only: sessions, whatsapp_click
 - Three caption versions, always — `## HE`, `## AR`, `## Mixed` ([`VOICE.md`](VOICE.md) §Per channel); the owner picks which go out.
 - A piece posted outside the pack is recorded by hand in the next session.
 - No Arabic text is posted unsigned (`ar_signed` empty → not posted).
-- Results are totals only — never a person, a handle or a comment's text.
+- Results are totals only — never a person, a handle or a comment's text. They are written only
+  by `scripts/post-results.mjs`: 7 days from `posted`, visits whose `utm_campaign` is the post ID.
 
 ## Channels and modes (ADR 0068 §2)
 

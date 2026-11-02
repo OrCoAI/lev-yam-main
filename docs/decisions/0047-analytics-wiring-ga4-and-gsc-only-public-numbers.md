@@ -2,6 +2,11 @@
 
 - **Date:** 2026-09-22
 - **Status:** accepted — amends the item-1 row of [0046](0046-q4-2026-mandate-marketing-quarter.md)
+- **Amended 2026-10-31 (content PR D):** one exception to "never archived". The per-post daily
+  numbers (sessions and `whatsapp_click` for campaigns that are post IDs, nothing else) are kept
+  for 8 days as the weekly run's public `post-days` artifact. `content-week` reads them once to
+  write each post's `results:` line, and each copy expires after 8 days. The weekly issues stay
+  the time series. Raised by the PR D security review; the owner decides at the PR.
 - **Decided by:** owner + Claude Code (kickoff of `docs/plans/marketing-analytics-wiring.md`)
 - **Source:** the `feature-spec` alignment questions, in session
 

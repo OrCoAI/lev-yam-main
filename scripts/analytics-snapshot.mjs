@@ -28,10 +28,12 @@
 import { createSign } from 'node:crypto'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
+import { readPosts, addDays, isDate } from './lib/content.mjs'
 
 const PROPERTY = '549432476' // GA4 property "Lev Yam" (an id, not a credential)
 const SITE = 'sc-domain:levyam.com'
 const OUT = process.env.ANALYTICS_OUT || '.reports/analytics.json'
+const POST_OUT = process.env.POST_DAYS_OUT || '.reports/post-days.json' // per post — never read by the report agents
 const SCOPES = 'https://www.googleapis.com/auth/analytics.readonly https://www.googleapis.com/auth/webmasters.readonly'
 const TOP = 10
 const RANGES = ['current', 'trailing']
@@ -49,6 +51,10 @@ const windows = (lag) => ({
   current: { start: day(lag + 6), end: day(lag) },
   trailing: { start: day(lag + 7 + 27), end: day(lag + 7) },
 })
+const GA4_WINDOWS = windows(1)
+const GSC_WINDOWS = windows(3)
+// the per-post allow-list: each post ID with the day it went out (`posted:`, else the ID's date)
+const POSTS = (() => { try { return readPosts().map((p) => ({ id: p.id, day: isDate(p.fm.posted) ? p.fm.posted : p.date })) } catch { return [] } })()
 
 // ── scrubbing ────────────────────────────────────────────────────────────────
 // Control and bidi-override characters, then the punctuation that turns a value into
@@ -139,13 +145,16 @@ const failed = (part) => (part && part.error ? part.error : null)
 // ── GA4 Data API ─────────────────────────────────────────────────────────────
 // One request carries both date ranges; rows come back with a trailing `dateRange`
 // dimension value ("current" / "trailing") that we use to split them.
+const GA4_URL = `https://analyticsdata.googleapis.com/v1beta/properties/${PROPERTY}:runReport`
+const eventFilter = (name) => ({ filter: { fieldName: 'eventName', stringFilter: { value: name } } })
+const thresholdedIn = (body) => Boolean(body.metadata?.subjectToThresholding)
 const ga4Report = async (token, w, { dimension, metrics, filter }) => {
-  const body = await post(token, `https://analyticsdata.googleapis.com/v1beta/properties/${PROPERTY}:runReport`, {
+  const body = await post(token, GA4_URL, {
     dateRanges: RANGES.map((name) => ({ name, startDate: w[name].start, endDate: w[name].end })),
     dimensions: dimension ? [{ name: dimension }] : [],
     metrics: metrics.map((name) => ({ name })),
     ...(dimension && { orderBys: [{ metric: { metricName: metrics[0] }, desc: true }] }),
-    ...(filter && { dimensionFilter: { filter: { fieldName: 'eventName', stringFilter: { value: filter } } } }),
+    ...(filter && { dimensionFilter: eventFilter(filter) }),
     limit: 100,
   })
   // With more than one dateRange the API appends a `dateRange` dimension valued to the
@@ -155,7 +164,7 @@ const ga4Report = async (token, w, { dimension, metrics, filter }) => {
   const rangeAt = headers.indexOf('dateRange')
   const valueAt = headers.findIndex((h) => h === dimension)
   if (body.rows?.length && rangeAt === -1) throw new Error('GA4 response carries no dateRange column')
-  const split = { current: [], trailing: [], thresholded: Boolean(body.metadata?.subjectToThresholding) }
+  const split = { current: [], trailing: [], thresholded: thresholdedIn(body) }
   for (const row of body.rows || []) {
     const values = (row.dimensionValues || []).map((v) => v.value)
     // GA4 answers with a literal placeholder ROW, not an absence, when it has no value
@@ -167,6 +176,56 @@ const ga4Report = async (token, w, { dimension, metrics, filter }) => {
     split[values[rangeAt]]?.push(rec)
   }
   return split
+}
+
+// ── per post (content PR D) ──────────────────────────────────────────────────
+// Daily sessions and whatsapp_click per utm_campaign → POST_OUT, the `post-days` artifact that
+// scripts/post-results.mjs turns into each post record's `results:` line. Its own file and its own
+// source: the report agents never read it, and its errors and thresholding stay apart from the
+// headline's. utm_campaign is collected unauthenticated like page_slug, so the request asks only
+// for campaigns that are post IDs in content/posts/ and the answer is filtered to them again — no
+// other value reaches the file (ADR 0069 §3). The window is both GA4 ranges end to end (35 days),
+// so a post's first 7 days are whole in at least one weekly snapshot.
+const POST_LOOKBACK_DAYS = 14 // an unmarked post can go out a little after the date in its ID
+const POST_WINDOW = { start: GA4_WINDOWS.trailing.start, end: GA4_WINDOWS.current.end }
+const ga4Daily = async (token, campaigns, metric, event) => {
+  const inList = { filter: { fieldName: 'sessionCampaignName', inListFilter: { values: campaigns } } }
+  const body = await post(token, GA4_URL, {
+    dateRanges: [{ startDate: POST_WINDOW.start, endDate: POST_WINDOW.end }],
+    dimensions: [{ name: 'sessionCampaignName' }, { name: 'date' }],
+    metrics: [{ name: metric }],
+    dimensionFilter: event ? { andGroup: { expressions: [inList, eventFilter(event)] } } : inList,
+    limit: 10000,
+  })
+  // columns by name, as ga4Report does
+  const headers = (body.dimensionHeaders || []).map((h) => h.name)
+  const [at, dayAt] = [headers.indexOf('sessionCampaignName'), headers.indexOf('date')]
+  if (body.rows?.length && (at === -1 || dayAt === -1)) throw new Error('GA4 response lacks the campaign or date column')
+  const wanted = new Set(campaigns)
+  const rows = (body.rows || []).map((row) => ({
+    campaign: row.dimensionValues?.[at]?.value,
+    date: String(row.dimensionValues?.[dayAt]?.value).replace(/^(\d{4})(\d{2})(\d{2})$/, '$1-$2-$3'),
+    value: Number(row.metricValues?.[0]?.value),
+  })).filter((r) => wanted.has(r.campaign) && isDate(r.date) && Number.isInteger(r.value) && r.value >= 0)
+  return { rows, thresholded: thresholdedIn(body) }
+}
+
+const postDays = async (token) => {
+  // `asked` lets post-results tell "asked, no visits" (0) from "not asked" (wait for a later snapshot)
+  const from = addDays(POST_WINDOW.start, -POST_LOOKBACK_DAYS)
+  const campaigns = POSTS.filter((p) => p.day >= from && p.day <= POST_WINDOW.end).map((p) => p.id)
+  const out = { window: POST_WINDOW, asked: campaigns, posts: {} }
+  if (!campaigns.length) return out
+  const parts = await settle({
+    sessions: ga4Daily(token, campaigns, 'sessions'),
+    whatsapp_click: ga4Daily(token, campaigns, 'eventCount', 'whatsapp_click'),
+  })
+  for (const [metric, part] of Object.entries(parts)) {
+    if (failed(part)) return { window: POST_WINDOW, error: part.error }
+    if (part.thresholded) out.thresholded = true
+    for (const r of part.rows) ((out.posts[r.campaign] ??= {})[r.date] ??= { sessions: 0, whatsapp_click: 0 })[metric] = r.value
+  }
+  return out
 }
 
 const named = (part, range) => (failed(part) ? [] : part[range].filter((r) => !r.unset))
@@ -265,22 +324,27 @@ const gsc = async (token) => {
 }
 
 // ── main ─────────────────────────────────────────────────────────────────────
-const GA4_WINDOWS = windows(1)
-const GSC_WINDOWS = windows(3)
 const snapshot = { generated_at: new Date(NOW).toISOString(), property: PROPERTY, site: SITE }
 const sources = { ga4, gsc }
+let perPost
 try {
   const token = await accessToken(loadKey())
-  Object.assign(snapshot, await settle(Object.fromEntries(Object.entries(sources).map(([n, fn]) => [n, fn(token)]))))
+  const settled = await settle({ ...Object.fromEntries(Object.entries(sources).map(([n, fn]) => [n, fn(token)])), perPost: postDays(token) })
+  ;({ perPost } = settled)
+  delete settled.perPost
+  Object.assign(snapshot, settled)
 } catch (e) {
   // Keep the windows even when auth failed: the report still names the range it has no
   // numbers for, instead of dropping (or inventing) the dates.
   snapshot.ga4 = { windows: GA4_WINDOWS, error: reason(e) }
   snapshot.gsc = { windows: GSC_WINDOWS, error: reason(e) }
+  perPost = { window: POST_WINDOW, error: reason(e) }
 }
 
-mkdirSync(dirname(OUT), { recursive: true })
-writeFileSync(OUT, JSON.stringify(snapshot, null, 2) + '\n')
+for (const [file, data] of [[OUT, snapshot], [POST_OUT, { generated_at: snapshot.generated_at, ...perPost }]]) {
+  mkdirSync(dirname(file), { recursive: true })
+  writeFileSync(file, JSON.stringify(data, null, 2) + '\n')
+}
 const status = Object.keys(sources)
   .map((n) => (failed(snapshot[n]) ? `${n} n/a — ${snapshot[n].error}` : `${n} ok${snapshot[n].errors ? ` (partial: ${Object.keys(snapshot[n].errors).join(', ')})` : ''}`))
   .join(' · ')

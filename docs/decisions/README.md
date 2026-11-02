@@ -79,7 +79,7 @@ implementation choices stay in their plan files; an ADR is for a decision that c
 - [0044 — ADR 0040 confirmed; the Operating-system block closes on a reduced Part 4, and Phase 2 opens](0044-adr-0040-confirmed-and-part-4-reduced-closure.md) — 2026-09-22
 - [0045 — The observability home is re-deferred to the 2027-01-01 quarterly review; the dated re-check list for that review](0045-observability-home-re-deferred-to-2027-01-review.md) — 2026-09-22
 - [0046 — Phase 2 mandate for 2026-Q4: the marketing quarter — every effort goes to reaching the world, measured first](0046-q4-2026-mandate-marketing-quarter.md) — 2026-09-22 *(amended — see status)*
-- [0047 — Initiative #1 measures with GA4 + Search Console only; Ahrefs/Semrush are a paid decision; traffic numbers may appear in the public weekly issue](0047-analytics-wiring-ga4-and-gsc-only-public-numbers.md) — 2026-09-22
+- [0047 — Initiative #1 measures with GA4 + Search Console only; Ahrefs/Semrush are a paid decision; traffic numbers may appear in the public weekly issue](0047-analytics-wiring-ga4-and-gsc-only-public-numbers.md) — 2026-09-22 *(amended — see status)*
 - [0048 — The report agents hold no network write: they write a file and a deterministic step publishes it; every third-party action is SHA-pinned](0048-report-agents-hold-no-write-and-actions-are-sha-pinned.md) — 2026-09-22
 - [0049 — Story chrome is generated, not copied; a story pair merges only complete](0049-story-chrome-is-generated-and-a-pair-merges-complete.md) — 2026-09-22
 - [0050 — Story pages carry no links in the body text](0050-story-pages-carry-no-body-links.md) — 2026-09-23
