@@ -1,6 +1,7 @@
 import type { WeekendReelProps } from "../levyam/schema";
 import type { MomentsProps } from "../levyam/moments/schema";
 import { placeholderQuotes } from "../levyam/team-day/quotes";
+import type { StrategyDayProps } from "../levyam/strategy-day/schema";
 import type { TeamDayProps } from "../levyam/team-day/schema";
 
 // Source: levyam.com/happening/ar/weekend/ (read 2026-10-05); hours: FACTS.md "שעות סופי השבוע"
@@ -54,4 +55,16 @@ export const teamDay: Omit<TeamDayProps, "hook"> = {
   area: "جسر الزرقاء",
   cta: { headline: "بدكم يوم متل هاد لفريقكم؟", line: "اكتبوا لنا على واتساب", phone: "050-666-9138" }, // [ar-draft]
   quotes: placeholderQuotes("ar"),
+};
+
+// strategy-day-by-the-sea — video/briefs/strategy-day-by-the-sea.md. Every line [ar-draft] until the
+// owner signs the Arabic off.
+export const strategyDay: Omit<StrategyDayProps, "hook"> = {
+  lang: "ar",
+  question: "كمان يوم استراتيجية بغرفة اجتماعات؟", // [ar-draft]
+  footage: "يوم استراتيجية، قبال البحر", // [ar-draft]
+  groups: "شغل بمجموعات صغيرة، قبال البحر", // [ar-draft]
+  table: "النقاش: حوالين طاولة وحدة", // [ar-draft]
+  circle: "والحديث المهم: بدايرة على الرمل", // [ar-draft]
+  cta: { headline: "عم تخططوا ليوم استراتيجية؟", line: "اكتبوا لنا على واتساب", phone: "050-666-9138" }, // [ar-draft]
 };

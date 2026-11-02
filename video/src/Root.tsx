@@ -1,10 +1,12 @@
 import { Composition, Folder } from "remotion";
-import { ar, moments as momentsAr, teamDay as teamDayAr } from "./copy/ar";
-import { he, moments as momentsHe, teamDay as teamDayHe } from "./copy/he";
+import { ar, moments as momentsAr, strategyDay as strategyDayAr, teamDay as teamDayAr } from "./copy/ar";
+import { he, moments as momentsHe, strategyDay as strategyDayHe, teamDay as teamDayHe } from "./copy/he";
 import { PLACEHOLDER_REVIEWS, loadReviews } from "./data";
 import { WeekendReel } from "./levyam/WeekendReel";
 import { MOMENTS_FRAMES, Moments } from "./levyam/moments/Moments";
 import { momentsSchema } from "./levyam/moments/schema";
+import { strategyDaySchema } from "./levyam/strategy-day/schema";
+import { STRATEGY_DAY_FRAMES, StrategyDay } from "./levyam/strategy-day/StrategyDay";
 import { weekendReelSchema } from "./levyam/schema";
 import { loadQuotes } from "./levyam/team-day/quotes";
 import { teamDaySchema } from "./levyam/team-day/schema";
@@ -202,6 +204,48 @@ export const RemotionRoot: React.FC = () => {
             height={1920}
             defaultProps={{ ...teamDayAr, hook: "question" as const }}
             calculateMetadata={loadQuotes}
+          />
+        </Folder>
+        <Folder name="StrategyDay">
+          <Composition
+            id="strategy-day-by-the-sea-he-question"
+            component={StrategyDay}
+            schema={strategyDaySchema}
+            durationInFrames={STRATEGY_DAY_FRAMES}
+            fps={30}
+            width={1080}
+            height={1920}
+            defaultProps={{ ...strategyDayHe, hook: "question" as const }}
+          />
+          <Composition
+            id="strategy-day-by-the-sea-he-footage"
+            component={StrategyDay}
+            schema={strategyDaySchema}
+            durationInFrames={STRATEGY_DAY_FRAMES}
+            fps={30}
+            width={1080}
+            height={1920}
+            defaultProps={{ ...strategyDayHe, hook: "footage" as const }}
+          />
+          <Composition
+            id="strategy-day-by-the-sea-ar-question"
+            component={StrategyDay}
+            schema={strategyDaySchema}
+            durationInFrames={STRATEGY_DAY_FRAMES}
+            fps={30}
+            width={1080}
+            height={1920}
+            defaultProps={{ ...strategyDayAr, hook: "question" as const }}
+          />
+          <Composition
+            id="strategy-day-by-the-sea-ar-footage"
+            component={StrategyDay}
+            schema={strategyDaySchema}
+            durationInFrames={STRATEGY_DAY_FRAMES}
+            fps={30}
+            width={1080}
+            height={1920}
+            defaultProps={{ ...strategyDayAr, hook: "footage" as const }}
           />
         </Folder>
         <Folder name="SunsetDream-parts">
