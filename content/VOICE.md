@@ -63,4 +63,14 @@ sea and the kitchen are the **setting** of every post, never its subject alone (
 *Amendments land here, newest first, each with the post IDs that showed it and the date — the
 monthly audit proposes them (the plan's "What makes it evolve" §1).*
 
-- (none yet — the first pack is the baseline)
+- **2026-11-02: the first pack was not posted** (`2026-10-29-ig-year-end-team-day`,
+  `2026-10-29-fb-work-day-by-the-sea`, `2026-10-30-gbp-sunset-celebration`,
+  `2026-10-30-wa-this-weekend`). The owner judged the captions too long, salesy (a feature list:
+  fast internet, a big screen, the pergola) and generic, and the design flat. So:
+  - **Short.** Instagram and Facebook get at most 3 short lines before the action. Google Business
+    gets 2–3 sentences.
+  - **One real moment, a person talking.** Build the caption around what this photo shows
+    happening, in the voice of someone who was there. No list of what the venue has: the facts
+    live on the linked page.
+  - **Specific to here.** If the sentence would fit any venue by the sea, cut it.
+  - The owner sees one finished piece, words and design, before the rest of the pack is made.
