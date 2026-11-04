@@ -123,6 +123,12 @@ session. Items 1, 2 and 5 start without item 7 and gain GBP / Instagram / Facebo
       GBP, socials), `facts.txt` / `llms.txt` expansion, internal links between stories, the local
       queries the story backlog does not cover → *local-pack impressions, direction requests, AI-answer
       citations* (the manual citation check of ADR 0052 until a paid source is decided)
+- [ ] **3a. Fix the channel profiles** *(owner, 2026-11-04; placed after item 3, nothing renumbered)* — the
+      fix list in [`content/channels/`](../content/channels/): the Google Business category (restaurant) and
+      address, the Facebook categories, the village spelling and the events positioning in the Instagram and
+      Facebook bios, UTM on the owned links (shared with item 7). The fields a logged-out read can't see come
+      first: the WhatsApp profile, the Google description, services and hours, the highlights and the Facebook
+      button. Claude drafts HE + AR, the owner edits each app → *zero mismatches against `FACTS.md`*
 - [ ] **4. Story pages** *(was 2)* — **the pair cadence runs in parallel with everything above until
       2026-10-24** (16 pairs, by hand — [ADR 0052](decisions/0052-stories-four-pairs-a-week-for-the-first-month.md));
       position 4 is its next phase: CTA sharpening; the pace in November is one pair a week (ADR 0072). Narrative essays, one village
