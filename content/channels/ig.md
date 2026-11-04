@@ -1,11 +1,13 @@
 # ig — Instagram @levyam_ profile text
 
 As it stands in the app — pasted by the owner, never edited here first (edit the app, then this).
-Limits: `channels.json`. Checked against `FACTS.md`: [חסר: date of the first paste].
+Limits: `channels.json`. Read from the public profile 2026-11-04. Checked against `FACTS.md`: 2026-11-04.
 
 | Field | HE | AR |
 |---|---|---|
-| name | [חסר: the profile name as shown] | — |
-| bio (≤ 150) | [חסר: the bio] | [مفقود: the Arabic bio, if any] |
-| link in bio | [חסר: the URL, with its UTM] | — |
-| highlights | [חסר: highlight names, in order] | — |
+| name | לב ים | — |
+| bio (≤ 150) | לב ים הוא מרחב על קו החוף בג׳יסר א־זרקא לחיבורים, יצירה ומפגש. / מקום לאנשים, רעיונות ורגעים משמעותיים מול הים. | [مفقود: none on the public profile] |
+| link in bio | `wa.me/message/MSIDIY2YRX6DB1` · `http://www.levyam.com` (no UTM) · the Facebook page | — |
+| highlights | [חסר: not visible logged out] | — |
+
+Open against the rules: the bio spells the village ג׳יסר א־זרקא (FACTS: ג'סר א-זרקא) and names neither private nor business events (`VOICE.md`); the website link has no UTM.
