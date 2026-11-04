@@ -110,11 +110,12 @@ session. Items 1, 2 and 5 start without item 7 and gain GBP / Instagram / Facebo
       2026-10-12** (ADRs 0068/0069); **PR A (live fixes + `check-content.mjs` in CI) merged 2026-10-14
       (#133); PR B (Drive fence + migration, `content/` records, `brand/`, voice, check v2) merged (#145); PR C (`media.sh`,
       `content-week` + `media-intake`, check v3) merged (#152); first pack merged (#155), posting from 2026-10-29; a fresh
-      design per pack (ADR 0071, #156); PR D (per-post results + freshness numbers) in review** — outcome check 2026-11-26
+      design per pack (ADR 0071, #156); PR D (per-post results + freshness numbers) merged (#161)**; the first pack was not posted; November's
+      weekly output is [ADR 0072](decisions/0072-november-content-output-one-idea-pack-ten-reels-a-story-pair-a-week.md); outcome check 2026-11-26
 - [ ] **2. Weekly marketing report** *(was 17; owner, 2026-10-07)* — its own weekly issue **and** an
       email to the owner: traffic, `whatsapp_click` per page, the AI-citation log, outcome checks due,
-      item 1's freshness numbers, and **social publishing** *(was 6, then under 15)*: a reel a week and
-      a post per story, tracked against the cadence. The engineering weekly drops its Analytics headline
+      item 1's freshness numbers, and **social publishing** *(was 6, then under 15)*: a reel a week *(ten in
+      November, ADR 0072)* and a post per story, tracked against the cadence. The engineering weekly drops its Analytics headline
       and links here. Social / GBP numbers reach the agent as a file from a fixed pre-agent step, never as
       a credential (ADR 0047/0048 pattern); the email needs its own scoped send credential — Tier A,
       security review. → *reports delivered weekly; the social cadence met*
@@ -124,7 +125,7 @@ session. Items 1, 2 and 5 start without item 7 and gain GBP / Instagram / Facebo
       citations* (the manual citation check of ADR 0052 until a paid source is decided)
 - [ ] **4. Story pages** *(was 2)* — **the pair cadence runs in parallel with everything above until
       2026-10-24** (16 pairs, by hand — [ADR 0052](decisions/0052-stories-four-pairs-a-week-for-the-first-month.md));
-      position 4 is its next phase: CTA sharpening and the pace after 24 Oct. Narrative essays, one village
+      position 4 is its next phase: CTA sharpening; the pace in November is one pair a week (ADR 0072). Narrative essays, one village
       story each, facts into `FACTS.md` first ([ADR 0053](decisions/0053-story-pages-are-narrative-essays-village-facts-sourced-in-facts.md),
       [0063](decisions/0063-every-story-page-tells-a-village-story-no-other-page-tells.md)) → *organic sessions
       and `whatsapp_click` by `page_slug`*. [plans/stories-authoring-tool.md](plans/stories-authoring-tool.md);

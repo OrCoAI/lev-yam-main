@@ -358,6 +358,11 @@ records take over:
 
 A skipped week breaks nothing: the pack carries over, the freshness number shows it.
 
+**November 2026** ([ADR 0072](../decisions/0072-november-content-output-one-idea-pack-ten-reels-a-story-pair-a-week.md)):
+one idea cut for four channels each week with a carousel as the Instagram piece, seven wordless daily
+Instagram photos made on Sunday, ten reels and a story pair a week. This is more than the 45 minutes
+above; the pack and dailies, a story pair and a reel each run in their own session.
+
 ## What makes it evolve
 
 1. **Measured feedback becomes rules.** Results are written on each post record; the monthly audit
@@ -532,6 +537,10 @@ Non-blocking:
   [ADR 0068](../decisions/0068-content-system-home-is-the-repo-one-fenced-drive-area-cowork-engine-retired.md) amended
 - 2026-10-24 · each social preset carries its own `min_source` (≤ ~1.25–1.5× upscaling); a preset
   another tool makes says `made_by` — implementation choices inside ADR 0069 §6, no standing rule
+
+- 2026-11-04 · November's weekly output is one idea cut for four channels with an Instagram carousel,
+  seven daily photos, plus ten reels and a story pair a week; this week stays Instagram + Facebook,
+  so the best primary number on 2026-11-26 is 2 of 4 · [ADR 0072](../decisions/0072-november-content-output-one-idea-pack-ten-reels-a-story-pair-a-week.md)
 
 ## Close-out
 *(appended when done — CLAUDE.md "Roadmap item close-out")*

@@ -10,7 +10,7 @@ description: >
   "פוסטים לשבוע". Not for a story page (story-author), a reel (new-video) or a sort alone
   (media-intake).
 metadata:
-  version: '0.3.0'
+  version: '0.4.0'
 ---
 
 # Content week
@@ -72,6 +72,8 @@ Propose the week as one table and one closed multi-select (yes / no per piece):
   channel's presets;
 - **business first** (ADR 0070): `companies` and `private` carry at least half; a calendar hook due
   within six weeks goes in;
+- **November 2026 (ADR 0072):** one idea cut for all four channels, the Instagram piece a 5-slide
+  carousel, plus seven wordless daily photos for the week ahead, each cut `story` and `ig-post`;
 - each piece's media IDs — a picked or published original whose consent covers `social` (or shows no
   recognisable person); a WhatsApp copy only where its preset allows one and the size fits;
 - **one experiment for the pack**: a written hypothesis (hook, format, posting time, language first,

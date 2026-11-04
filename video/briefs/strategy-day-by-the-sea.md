@@ -7,11 +7,9 @@ reviewed (Gate 2 2026-11-02) → rendered → posted*
 > This file is the complete prompt. A build session reads **`video/GUIDELINES.md`
 > first**, then follows this brief shot by shot. Nothing on screen that is not written here.
 
-> **Blocked for posting on consent.** `2026-10-offsite-03` and `-04` show recognisable adults and
-> carry consent **`site`** only; a reel needs **`social`** (content/README, ADR 0069). The owner
-> asks the group (2026-11-02). The reel may be built and reviewed now; it is **not posted** until
-> both records (and `Records/media-register.csv` in the fence) read `social` with the owner's
-> note. (`2026-10-work-05`, the first card since Gate 2, is `social` already.) The reviewer reports this as a known exception, not a FAIL.
+> **Consent cleared 2026-11-04.** `2026-10-offsite-03` and `-04` read **`social`** with the owner's
+> note in `content/media.json` and `Records/media-register.csv`. Posting still needs the Arabic
+> sign-off and Gate 3.
 
 ## Spec
 
@@ -113,7 +111,7 @@ above verbatim; the Arabic lines carry `// [ar-draft]`.
 - [ ] Each caption sits below the stack, inside `ZONE`; no text in the right rail; never two captions on screen at once
 - [ ] Nobody is named anywhere — screen, copy file, brief, commit message; no date of the day
 - [ ] The end card holds still for its last 45 frames and says the ask in words
-- [ ] Posting blocked until `offsite-03/04` read consent `social` (known exception, reported)
+- [x] `offsite-03/04` read consent `social` (owner, 2026-11-04)
 - [ ] Arabic signed off by the owner before posting
 
 ## Render matrix
