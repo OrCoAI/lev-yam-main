@@ -22,14 +22,13 @@ jobs:
     permissions:
       contents: read
       issues: write
-      id-token: write
     secrets:
       claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
       google_sa_key: ${{ secrets.GOOGLE_SA_KEY }}
     with:
       max_turns: '120'
       label: quarterly-review
-      allowed_tools: Read,Glob,Grep,Write,Bash(git log *),Bash(git diff *),Bash(gh issue list *),Bash(gh issue view *),Bash(gh pr list *),Bash(gh pr view *),Bash(date *),Bash(grep *),Bash(wc *),Bash(sort *),Bash(uniq *),Bash(head *),Bash(tail *),Bash(cut *),Bash(ls *)
+      allowed_tools: Read,Glob,Grep,Write,Bash(git log *),Bash(git diff *),Bash(gh issue list *),Bash(gh issue view *),Bash(gh pr list *),Bash(gh pr view *),Bash(date *),Bash(grep *),Bash(wc *),Bash(uniq *),Bash(head *),Bash(tail *),Bash(cut *),Bash(ls *)
       prompt: |
         Assemble the evidence pack for the quarter that just ended.
 

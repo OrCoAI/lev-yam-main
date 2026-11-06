@@ -16,6 +16,7 @@ export const ID = {
   post: /^\d{4}-\d{2}-\d{2}-([a-z]+)-[a-z0-9-]+$/,   // the middle part is a channel id from channels.json
   brand: /^brand-[a-z]+-[a-z0-9-]+$/,
   card: /^card-[a-z0-9-]+$/,
+  reel: /^[a-z0-9]+(-[a-z0-9]+)*$/,                  // a post record's `reel:` — one slug per different reel (ADR 0073)
 }
 
 export const THEMES = ['companies', 'private', 'renters', 'weekend']   // ADR 0070

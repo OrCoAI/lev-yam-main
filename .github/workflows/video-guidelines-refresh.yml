@@ -209,7 +209,7 @@ jobs:
       # back the files this run itself touched, put back the pre-agent git config, and run
       # git with every config-driven command off (global/system config nulled, hooks,
       # fsmonitor, external diff and textconv disabled, attribute and exclude files cleared).
-      # report-guard.py is restored from the commit before it runs, as agent-report.yml does.
+      # report-guard.py is restored from the commit before it runs.
       # Values are compared, never interpolated.
       # The action logs only its first and last message; the per-call transcript (every tool
       # call and every denial) is $RUNNER_TEMP/claude-execution-output.json. It is the only

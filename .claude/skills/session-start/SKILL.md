@@ -65,9 +65,8 @@ Per unticked item: **not started** (no `plans/…md` link) or **in progress** (t
 bold state says where it stands), plus any date on it within 14 days of today, either side.
 
 **d. Outcome checks** — the shipped-but-unvalidated list. Rule and the `*(appended on …)*`
-placeholder trap: `weekly-review` step 5 / queries §5; its loop is not on the allowlist, so the
-raw grep runs here, with two deltas: a **soon** window — **DUE** ≤ today, **soon** ≤ today +
-14 days, else later — and the scoping §5 gets from `## Outcome metric`: a `## Outcome check`
+placeholder trap: `marketing-report` step 6 / queries §4; the raw grep runs here, with one delta: a
+**soon** window — **DUE** ≤ today, **soon** ≤ today + 14 days, else later. A `## Outcome check`
 heading with no `Check date` row is a pre-ADR-0019 plan, skipped, not retrofitted (CLAUDE.md
 "Outcome check").
 ```

@@ -2,6 +2,7 @@
 
 - **Date:** 2026-09-22
 - **Status:** accepted — amends the "Automations (the night shift)" rules in `CLAUDE.md` and the threat model in `.github/workflows/agent-report.yml`
+- **Amended 2026-11-04 ([ADR 0073](0073-the-marketing-report-is-its-own-sunday-issue-github-notification-is-the-email.md)):** the deterministic step is now its own job on a fresh runner, and the agent's token reads only. Below, `Write` is in fact a plain grant, and the runner's file commands stay open to the agent: step env cannot redirect them.
 - **Decided by:** owner (asked for both to be solved immediately, at the analytics-wiring gate)
 - **Source:** the security review of [PR #73](https://github.com/OrCoAI/lev-yam-main/pull/73); roadmap Phase 2 item 14
 

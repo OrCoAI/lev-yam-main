@@ -201,8 +201,8 @@ the Reels caption and the like/comment/share rail.
 Brief → **Gate 1** (the owner approves the storyboard, one line per shot) → build in Studio →
 review stills → **Gate 2** (the owner sees the stills) → render on request → **Gate 3** (the MP4
 on a phone) → the owner posts by hand, both languages, and each posted reel is a post record in
-`content/posts/<post id>.md` (channel, media IDs, hook variant as the experiment, `posted`, the
-owner's Arabic sign-off; the hook rate from Meta Insights in `results` when read) — the one
+`content/posts/<post id>.md` (channel, `reel: <slug>`, media IDs, hook variant as the experiment,
+`posted`, the owner's Arabic sign-off; the hook rate from Meta Insights in `results` when read) — the one
 publish record, replacing the video plan's publish log (ADR 0069 §3). The
 procedure — commands, frames, the reviewer as a subagent — is `SKILL.md` §4–6 and `review.md`;
 this file carries the rules only.

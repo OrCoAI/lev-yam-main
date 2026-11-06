@@ -8,13 +8,14 @@
  * Numbers computed from the repo's records only — no credential, no network: the post records'
  * `posted:` dates, content/media.json, content/backlog.md and the story pairs' dates in
  * sitemap.xml (gen-stories-index writes them: `levyam:updated`, else `published`; noindex skipped).
- * The weekly review reads the file (queries §8); mandate item 2's marketing report will carry it.
+ * The marketing report reads the file (its queries.md §3).
  * Never fails the job: a record it cannot read is reported in `errors`, and the exit code stays 0.
  */
 
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { ROOT, ID, readPosts, addDays, daysBetween, isDate } from './lib/content.mjs'
+import { writeJson } from './lib/snapshot.mjs'
 
 const OUT = process.env.FRESHNESS_OUT || join(ROOT, '.reports/freshness.json')
 const TODAY = new Date().toISOString().slice(0, 10)
@@ -23,7 +24,8 @@ const CARD_STALE_DAYS = 56 // a card older than 8 weeks is proposed for the arch
 const errors = {}
 const attempt = (name, fn, fallback) => { try { return fn() } catch (e) { errors[name] = String(e.message).slice(0, 200); return fallback } }
 
-const channels = attempt('channels', () => JSON.parse(readFileSync(join(ROOT, 'content/channels.json'), 'utf8')).channels, [])
+const config = attempt('channels', () => JSON.parse(readFileSync(join(ROOT, 'content/channels.json'), 'utf8')), {})
+const channels = config.channels ?? []
 const posts = attempt('posts', () => readPosts(), [])
 const posted = posts.filter((p) => isDate(p.fm.posted) && p.fm.posted <= TODAY)
 // the pack's channels: every live one with a pack cadence in channels.json (the site has none)
@@ -36,12 +38,36 @@ const isoWeek = (start) => {
   const jan1 = Date.UTC(thursday.getUTCFullYear(), 0, 1)
   return `${thursday.getUTCFullYear()}-W${String(Math.ceil(((thursday - jan1) / 86_400_000 + 1) / 7)).padStart(2, '0')}`
 }
-const weeks = Array.from({ length: WEEKS }, (_, i) => {
-  const start = addDays(monday(TODAY), -7 * (WEEKS - i)), end = addDays(start, 6)
+const weekRow = (start) => {
+  const end = addDays(start, 6)
   const on = [...new Set(posted.filter((p) => p.fm.posted >= start && p.fm.posted <= end).map((p) => p.fm.channel))]
   const every = packChannels.length > 0 && packChannels.every((c) => on.includes(c.id))
   return { week: isoWeek(start), start, end, channels_posted: on.sort(), every_channel: every }
-})
+}
+const weeks = Array.from({ length: WEEKS }, (_, i) => weekRow(addDays(monday(TODAY), -7 * (WEEKS - i))))
+
+// The marketing report's cadence (ADR 0073), against the dated target in channels.json `cadence`.
+// A different reel counts once, in the week it first went out, whatever the number of channels.
+const firstPosted = new Map()
+for (const p of [...posted].sort((a, b) => a.fm.posted.localeCompare(b.fm.posted))) {
+  if (p.fm.reel && !firstPosted.has(p.fm.reel)) firstPosted.set(p.fm.reel, p.fm.posted)
+}
+const cadenceOf = (target) => {
+  // A week counts from the day it ends: the Sunday session marks it, the report goes out that evening.
+  const rows = Array.from({ length: target.weeks }, (_, i) => weekRow(addDays(target.from, 7 * i)))
+    .filter((w) => w.end <= TODAY)
+    .map((w) => {
+      const reels = [...firstPosted].filter(([, d]) => d >= w.start && d <= w.end).map(([slug]) => slug).sort()
+      return { ...w, reels, met: w.every_channel && reels.length >= target.reels_per_week }
+    })
+  return {
+    reels_per_week: target.reels_per_week,
+    weeks: rows,
+    met: rows.filter((w) => w.met).length,
+    of: target.weeks,
+    reels_total: { reels: target.reels, by: target.by, posted: [...firstPosted.values()].filter((d) => d >= target.reels_from && d <= target.by).length },
+  }
+}
 
 const perChannel = Object.fromEntries(packChannels.map((c) => {
   const mine = posted.filter((p) => p.fm.channel === c.id).map((p) => p.fm.posted).sort()
@@ -92,6 +118,7 @@ const out = {
     count: weeks.filter((w) => w.every_channel).length,
     of: WEEKS,
   },
+  cadence: config.cadence ? attempt('cadence', () => cadenceOf(config.cadence), null) : null,
   channels: perChannel,
   posts: { drafted: posts.length, posted: posted.length, unmarked_past_a_week: unmarked, expired_unposted: expiredUnposted },
   photos_published: { [thisMonth]: published(thisMonth), [lastMonth]: published(lastMonth) },
@@ -108,7 +135,6 @@ const out = {
   ...(Object.keys(errors).length && { errors }),
 }
 
-mkdirSync(dirname(OUT), { recursive: true })
-writeFileSync(OUT, JSON.stringify(out, null, 2) + '\n')
+writeJson(OUT, out)
 const overdue = Object.entries(perChannel).filter(([, c]) => c.overdue).map(([id]) => id)
-console.log(`content freshness: outcome ${out.outcome.count} of ${WEEKS} weeks · overdue channels: ${overdue.join(', ') || 'none'} · stories to re-check: ${out.stories.overdue.length}${out.errors ? ` · errors: ${Object.keys(errors).join(', ')}` : ''} → ${OUT}`)
+console.log(`content freshness: outcome ${out.outcome.count} of ${WEEKS} weeks · cadence ${out.cadence ? `${out.cadence.met} of ${out.cadence.of}` : 'n/a'} · overdue channels: ${overdue.join(', ') || 'none'} · stories to re-check: ${out.stories.overdue.length}${out.errors ? ` · errors: ${Object.keys(errors).join(', ')}` : ''} → ${OUT}`)

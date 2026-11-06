@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Vet and split an agent-written report before anything publishes it (roadmap item 14).
 
-Run by `agent-report.yml` between the agent and the publish step. Exit 0 and write
+Run by `agent-report.yml`'s `publish` job on the report the agent wrote. Exit 0 and write
 `title.txt` + `body.md` = safe to publish; exit 1 = withhold and fail the job.
 
 `--scan-only <file>` runs the secret check alone on another job's hand-off file and nothing
-else (`video-guidelines-refresh.yml` vets its proposed patch with it, ADR 0064): exit 1 on a
-hit. One scanner, so a hardening here reaches every job that publishes agent text.
+else (`video-guidelines-refresh.yml` vets its proposed patch with it, ADR 0064; `agent-report.yml`'s
+`snapshot` job its files, ADR 0073): exit 1 on a hit. One scanner, so a hardening here reaches every job that publishes agent text.
 
 Parsing lives here rather than in the shell so a title carrying quotes or backticks
 cannot escape into a command line.
@@ -15,12 +15,13 @@ Why a check and not a redaction: the report jobs read public issue text and, sin
 analytics wiring, attacker-influenceable values from GA4 and Search Console. The agent
 cannot publish anything itself any more — but it can still read its own environment
 (`$VAR` expands inside any allowed command's arguments; `gh --jq` is gojq and implements
-`$ENV`), so the one remaining path for a secret is the report file. Quietly redacting
+`$ENV`), so the one remaining path this can vet is the report file. Quietly redacting
 and shipping would hide the attempt; the report is worth less than knowing it happened.
 
 Honest limits: this matches literal values only. Any encoding — base64, reversal,
 interleaving — passes it. It makes the naive attempt loud and costs an attacker an extra
-step; it is not a boundary. The boundary is that the agent holds no network write.
+step; it is not a boundary. Nor is it the last word: the agent's report and the public step
+summary can both carry an encoded value (ADR 0073).
 """
 
 import os
@@ -34,8 +35,9 @@ MAX_TITLE = 120
 # report — failing at `gh issue create` would lose it entirely, and the API error reads
 # like a bug in the publish step rather than a long report.
 MAX_BODY = 60000
-# Values the agent could have reached. Names only are logged, never values.
-WATCHED = ('SCAN_OAUTH', 'SCAN_GH', 'SCAN_GOOGLE')
+# Every SCAN_* variable the workflow passes is a value to refuse: the workflow's env block is the
+# one list. Names only are logged, never values.
+PREFIX = 'SCAN_'
 MIN_LEN = 12  # below this a "secret" is too short to match without false positives
 
 
@@ -44,8 +46,9 @@ def find_hits(text: str) -> list:
     removed (a token pasted into markdown may pick up a line break)."""
     hits = []
     joined = ''.join(text.split())
-    for name in WATCHED:
-        value = os.environ.get(name, '')
+    for name, value in sorted(os.environ.items()):
+        if not name.startswith(PREFIX):
+            continue
         if len(value) < MIN_LEN:
             continue
         if value in text:
@@ -69,8 +72,8 @@ def scan_only(path: str) -> int:
     if hits:
         print(f'report-guard: REFUSING — {path} contains the value of: ' + ', '.join(hits))
         print('This is not a formatting problem. Treat it as a compromised run: rotate the '
-              'named secret, then read the run log and the agent transcript to find what '
-              'instructed it. Nothing was published.')
+              'named secret, then read the run log, and the agent transcript if the job has '
+              'one, to find how it got there. Nothing left this step.')
         return 1
     print(f'report-guard: {path} clean')
     return 0
@@ -92,7 +95,8 @@ def main() -> int:
               + ', '.join(hits))
         print('This is not a formatting problem. Treat it as a compromised run: rotate the '
               'named secret, then read the run log and the agent transcript to find what '
-              'instructed it. The report was not published.')
+              'instructed it. The report was withheld from the issue; the run log holds it '
+              'as base64.')
         return 1
 
     lines = report.split('\n')
@@ -118,7 +122,7 @@ def main() -> int:
     if truncated:
         body = body[:MAX_BODY].rstrip() + (
             f'\n\n---\n*[truncated at {MAX_BODY} characters — GitHub caps an issue body at '
-            '65,536. The full report is in the workflow run log.]*')
+            '65,536. The full report is in the workflow run log, as base64.]*')
     with open(BODY_OUT, 'w', encoding='utf-8') as fh:
         fh.write(body + '\n')
 

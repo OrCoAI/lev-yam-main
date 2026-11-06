@@ -22,14 +22,13 @@ jobs:
     permissions:
       contents: read
       issues: write
-      id-token: write
     secrets:
       claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
       google_sa_key: ${{ secrets.GOOGLE_SA_KEY }}
     with:
       max_turns: '120'
       label: monthly-review
-      allowed_tools: Read,Glob,Grep,Write,Bash(git log *),Bash(git diff *),Bash(gh issue list *),Bash(gh issue view *),Bash(gh pr list *),Bash(gh pr view *),Bash(date *),Bash(grep *),Bash(wc *),Bash(sort *),Bash(uniq *),Bash(head *),Bash(tail *),Bash(cut *),Bash(ls *)
+      allowed_tools: Read,Glob,Grep,Write,Bash(git log *),Bash(git diff *),Bash(gh issue list *),Bash(gh issue view *),Bash(gh pr list *),Bash(gh pr view *),Bash(date *),Bash(grep *),Bash(wc *),Bash(uniq *),Bash(head *),Bash(tail *),Bash(cut *),Bash(ls *)
       prompt: |
         Produce this month's roadmap review.
 
@@ -40,7 +39,7 @@ jobs:
 
         - Title line exactly: `# Monthly roadmap review <YYYY>-<MM>` for the month that just ended.
         - Run the `feedback-triage` skill over whatever signal is reachable from the
-          repository (the analytics snapshot and the weekly-review issues). Reviews and survey
+          repository (the analytics snapshot, the marketing-report and the weekly-review issues). Reviews and survey
           answers have no wired source, so end the digest with a short, specific paste-list of
           what the owner should drop into this issue (Google reviews, survey answers) for the
           digest to be completed on the next pass. Do not invent numbers you could not read.

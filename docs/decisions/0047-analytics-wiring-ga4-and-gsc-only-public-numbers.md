@@ -7,6 +7,11 @@
   for 8 days as the weekly run's public `post-days` artifact. `content-week` reads them once to
   write each post's `results:` line, and each copy expires after 8 days. The weekly issues stay
   the time series. Raised by the PR D security review; the owner decides at the PR.
+- **Amended 2026-11-04 ([ADR 0073](0073-the-marketing-report-is-its-own-sunday-issue-github-notification-is-the-email.md)):** a second exception. The snapshot files
+  pass between jobs as a public artifact kept one day; they hold totals and scrubbed free text. The
+  `post-days` artifact now comes from the marketing report, and the marketing issues are the time
+  series. `id-token: write` is gone from the report jobs, so a keyless path would have to add it to
+  the `snapshot` job and its callers.
 - **Decided by:** owner + Claude Code (kickoff of `docs/plans/marketing-analytics-wiring.md`)
 - **Source:** the `feature-spec` alignment questions, in session
 

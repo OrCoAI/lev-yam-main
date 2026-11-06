@@ -24,7 +24,7 @@ destination. Everything else is the module's own UI.
   number this module is supposed to move, where it is read from, its value today, the target,
   and the date the verdict is due (ship + 2–4 weeks). It goes in the plan file's **Outcome
   metric** table — `.claude/skills/feature-spec/plan-template.md` is the shape. A module with
-  no named metric cannot be validated later, only admired; `weekly-review` lists the check when
+  no named metric cannot be validated later, only admired; `marketing-report` lists the check when
   it comes due and the verdict is appended to the plan under **Outcome check**.
 - [ ] **Instrumentation is part of the slice, not a follow-up.** If the metric is a Dynatrace
   bizevent or a GA4 event, the emitting code ships with the feature — allow-listed attributes

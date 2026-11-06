@@ -11,10 +11,12 @@
  * signed JWT + fetch is all the two APIs need (Node >= 18).
  *
  * Never fails the job: every error becomes `ga4.error` / `gsc.error` (or a per-part error
- * inside them) and the exit code stays 0 — the weekly review prints `n/a — <reason>` from it.
+ * inside them) and the exit code stays 0 — the reports print `n/a — <reason>` from it.
  *
- * Two things leave this file for a PUBLIC GitHub issue, so both are scrubbed here rather
- * than trusted downstream:
+ * ANALYTICS_MARKETING=1 (the marketing report only) adds the deep read and the per-post file.
+ *
+ * Two things leave this file for a PUBLIC GitHub issue, so both are scrubbed (scripts/lib/scrub.mjs)
+ * rather than trusted downstream:
  *   - Free text from Google. `page_slug` and `source` come from GA4 collection, which is
  *     unauthenticated — anyone who knows the measurement ID (it is in the page source) can
  *     POST an event with an arbitrary parameter — and `query` is whatever people typed into
@@ -26,19 +28,31 @@
  */
 
 import { createSign } from 'node:crypto'
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname } from 'node:path'
-import { readPosts, addDays, isDate } from './lib/content.mjs'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { ROOT, readPosts, addDays, isDate } from './lib/content.mjs'
+import { clean, reason } from './lib/scrub.mjs'
+import { dayFrom, settle, failed, errorsOf, fetchJson, exchangeToken, writeJson, statusLine } from './lib/snapshot.mjs'
 
 const PROPERTY = '549432476' // GA4 property "Lev Yam" (an id, not a credential)
 const SITE = 'sc-domain:levyam.com'
 const OUT = process.env.ANALYTICS_OUT || '.reports/analytics.json'
 const POST_OUT = process.env.POST_DAYS_OUT || '.reports/post-days.json' // per post — never read by the report agents
+const MARKETING = Boolean(process.env.ANALYTICS_MARKETING)
 const SCOPES = 'https://www.googleapis.com/auth/analytics.readonly https://www.googleapis.com/auth/webmasters.readonly'
 const TOP = 10
+const DEEP_TOP = 8 // rows per list in the marketing report's deep read (ADR 0073)
+const OPPORTUNITY = { rows: 1000, best: 4, worst: 10, keep: 5 } // queries on page one, not yet on top; GSC sorts by clicks, so read deep enough to reach the zero-click ones
+// A channel seen from the site: its utm_source and referrers, from content/channels.json
+const CHANNEL_SOURCES = (() => {
+  try {
+    const { channels } = JSON.parse(readFileSync(join(ROOT, 'content/channels.json'), 'utf8'))
+    return Object.fromEntries(channels.filter((c) => c.utm_source).map((c) => [c.id, [c.utm_source, ...(c.referrers ?? [])]]))
+  } catch { return {} }
+})()
+const ARABIC_PATH = /^\/(stories|happening)\/ar(\/|$)/
 const RANGES = ['current', 'trailing']
 const UNSET = new Set(['(not set)', '(other)', '', '(not set) / (not set)'])
-const TIMEOUT_MS = 20_000
 
 // ── windows ──────────────────────────────────────────────────────────────────
 // GA4 is complete after ~1 day, Search Console after ~3. Both windows are "7 full days"
@@ -46,7 +60,7 @@ const TIMEOUT_MS = 20_000
 // One `now` for the whole run: four `new Date()` calls could straddle UTC midnight and
 // silently produce an 8-day "week".
 const NOW = Date.now()
-const day = (offset) => new Date(NOW - offset * 86_400_000).toISOString().slice(0, 10)
+const day = dayFrom(NOW)
 const windows = (lag) => ({
   current: { start: day(lag + 6), end: day(lag) },
   trailing: { start: day(lag + 7 + 27), end: day(lag + 7) },
@@ -55,33 +69,6 @@ const GA4_WINDOWS = windows(1)
 const GSC_WINDOWS = windows(3)
 // the per-post allow-list: each post ID with the day it went out (`posted:`, else the ID's date)
 const POSTS = (() => { try { return readPosts().map((p) => ({ id: p.id, day: isDate(p.fm.posted) ? p.fm.posted : p.date })) } catch { return [] } })()
-
-// ── scrubbing ────────────────────────────────────────────────────────────────
-// Control and bidi-override characters, then the punctuation that turns a value into
-// markdown (a backtick closes the code span the report renders it in; brackets and
-// parentheses make links; `!` makes an image, which GitHub fetches through camo).
-const clean = (value) => String(value ?? '')
-  .replace(/[\p{Cc}\p{Cf}]/gu, ' ')
-  .replace(/[`$<>|\\[\]()!]/g, ' ')
-  .replace(/\s+/g, ' ')
-  .trim()
-  .slice(0, 80) || '(empty)'
-
-// Errors get their own clamp: Google's actionable half ("Enable it at …") sits past
-// clean()'s 80-character value limit, and a truncated reason wastes the report's one line.
-// But the reason reaches a public step summary and a public issue, and Google's
-// SERVICE_DISABLED text carries the GCP project number and its console URL — so URLs and
-// long digit runs go, and the sentence that tells the owner what to do stays.
-const reason = (e) => String(e?.message ?? e ?? 'unknown error')
-  .replace(/[\p{Cc}\p{Cf}]/gu, ' ')
-  .replace(/[`<>|\[\]()!]/g, ' ')                                  // strip first, so the markers below survive
-  .replace(/https?:\/\/\S+/g, 'URL')                              // console links name the GCP project
-  .replace(/[\w.+-]+@[\w.-]*\.iam\.gserviceaccount\.com/g, 'SERVICE-ACCOUNT') // IAM denials name the principal
-  .replace(/\/\S*\//g, 'PATH')                                     // a local key path is nobody's business
-  .replace(/\d{6,}/g, 'ID')
-  .replace(/\s+/g, ' ')
-  .trim()
-  .slice(0, 200) || 'unknown error'
 
 // ── auth: service-account JWT → access token ─────────────────────────────────
 const loadKey = () => {
@@ -108,39 +95,14 @@ const accessToken = async (key) => {
     JSON.stringify({ iss: key.client_email, scope: SCOPES, aud: key.token_uri, iat: now, exp: now + 600 }),
   )}`
   const signature = createSign('RSA-SHA256').update(unsigned).sign(key.private_key, 'base64url')
-  const res = await fetch(key.token_uri, {
-    method: 'POST',
-    headers: { 'content-type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer', assertion: `${unsigned}.${signature}` }),
-    signal: AbortSignal.timeout(TIMEOUT_MS),
-  })
-  const body = await res.json().catch(() => ({}))
-  if (!res.ok || !body.access_token) throw new Error(`token exchange failed: ${res.status} ${body.error || 'no token'}`)
-  return body.access_token
+  return exchangeToken(key.token_uri, { grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer', assertion: `${unsigned}.${signature}` })
 }
 
-// ── one POST helper; Google error bodies are summarised, never dumped ────────
-const post = async (token, url, payload) => {
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
-    body: JSON.stringify(payload),
-    signal: AbortSignal.timeout(TIMEOUT_MS),
-  })
-  const body = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(`${res.status} ${body.error?.status || ''}: ${body.error?.message || 'request failed'}`.trim())
-  return body
-}
-
-// Every part of a source is fetched independently: one failing part must not cost the
-// others. The expected case is `customEvent:page_slug` 400-ing until the owner registers
-// the custom dimension — the sessions half of the headline still has to arrive.
-const settle = async (parts) => {
-  const settled = await Promise.allSettled(Object.values(parts))
-  return Object.fromEntries(Object.keys(parts).map((name, i) =>
-    [name, settled[i].status === 'fulfilled' ? settled[i].value : { error: reason(settled[i].reason) }]))
-}
-const failed = (part) => (part && part.error ? part.error : null)
+const post = (token, url, payload) => fetchJson(url, token, {
+  method: 'POST',
+  headers: { 'content-type': 'application/json' },
+  body: JSON.stringify(payload),
+})
 
 // ── GA4 Data API ─────────────────────────────────────────────────────────────
 // One request carries both date ranges; rows come back with a trailing `dateRange`
@@ -229,7 +191,45 @@ const postDays = async (token) => {
 }
 
 const named = (part, range) => (failed(part) ? [] : part[range].filter((r) => !r.unset))
-const rank = (part, range, label) => named(part, range).slice(0, 3).map((r) => ({ [label]: r.key, clicks: r.eventCount }))
+const top = (part, range, label, metric, n = 3) => named(part, range).slice(0, n).map((r) => ({ [label]: r.key, [metric === 'eventCount' ? 'clicks' : metric]: r[metric] }))
+const pct = (value) => (Number.isFinite(value) ? Number(value.toFixed(1)) : null)
+const sumFor = (part, range, metric, wanted) => (failed(part) ? null : named(part, range).filter(wanted).reduce((n, r) => n + r[metric], 0))
+const fromChannel = (id) => (r) => CHANNEL_SOURCES[id].includes(r.key.split(' / ')[0].trim().toLowerCase())
+
+// The marketing report's deep read (ADR 0073). A second batch, after the headline: GA4 allows
+// ten concurrent requests per property, and together they would pass it.
+const deepRead = (token, w) => settle({
+  landing: ga4Report(token, w, { dimension: 'landingPage', metrics: ['sessions', 'engagementRate'] }),
+  landingClicks: ga4Report(token, w, { dimension: 'landingPage', metrics: ['eventCount'], filter: 'whatsapp_click' }),
+  devices: ga4Report(token, w, { dimension: 'deviceCategory', metrics: ['sessions'] }),
+  countries: ga4Report(token, w, { dimension: 'country', metrics: ['sessions'] }),
+  visitors: ga4Report(token, w, { dimension: 'newVsReturning', metrics: ['sessions'] }),
+  sources: ga4Report(token, w, { dimension: 'sessionSourceMedium', metrics: ['sessions'] }),
+})
+
+const deepCurrent = (deep, bySource) => {
+  const range = 'current'
+  const clicks = failed(deep.landingClicks) ? null : new Map(named(deep.landingClicks, range).map((r) => [r.key, r.eventCount]))
+  return {
+    // A landing page's clicks over its sessions: the page that opened the visit, wherever the click came.
+    landing_pages: named(deep.landing, range).slice(0, DEEP_TOP).map((r) => {
+      const n = clicks ? (clicks.get(r.key) ?? 0) : null
+      return { page: r.key, sessions: r.sessions, engagement_rate_pct: pct(r.engagementRate * 100), whatsapp_click: n, conversion_pct: n === null || !r.sessions ? null : pct((n / r.sessions) * 100) }
+    }),
+    devices: top(deep.devices, range, 'device', 'sessions', DEEP_TOP),
+    countries: top(deep.countries, range, 'country', 'sessions', DEEP_TOP),
+    visitors: top(deep.visitors, range, 'visitor', 'sessions', DEEP_TOP),
+    // The homepage swaps language client-side, so its Arabic visits are not separable; this is Arabic URLs only.
+    arabic_url_landings: {
+      sessions: sumFor(deep.landing, range, 'sessions', (r) => ARABIC_PATH.test(r.key)),
+      whatsapp_click: sumFor(deep.landingClicks, range, 'eventCount', (r) => ARABIC_PATH.test(r.key)),
+    },
+    channels_from_site: Object.fromEntries(Object.keys(CHANNEL_SOURCES).map((id) => [id, {
+      sessions: sumFor(deep.sources, range, 'sessions', fromChannel(id)),
+      whatsapp_click: sumFor(bySource, range, 'eventCount', fromChannel(id)),
+    }])),
+  }
+}
 
 // `page_slug` is a custom event parameter: grouping by it needs the event-scoped custom
 // dimension registered in the GA4 UI (plan scope (a)). There is deliberately no fallback to
@@ -241,7 +241,7 @@ const ga4 = async (token) => {
   // `totals` is un-dimensioned on purpose: `totalUsers` is de-duplicated per row, so
   // summing it across channel groups counts anyone who arrived two ways twice.
   const parts = await settle({
-    totals: ga4Report(token, w, { metrics: ['sessions', 'totalUsers'] }),
+    totals: ga4Report(token, w, { metrics: ['sessions', 'totalUsers', 'engagementRate'] }),
     // The headline number is un-dimensioned on purpose: derived from `byPage` it would
     // vanish along with the custom dimension — i.e. exactly during the first month, when
     // the outcome check (ADR 0047) is read.
@@ -250,9 +250,11 @@ const ga4 = async (token) => {
     byPage: ga4Report(token, w, { dimension: 'customEvent:page_slug', ...wa }),
     bySource: ga4Report(token, w, { dimension: 'sessionSourceMedium', ...wa }),
   })
-  const out = { windows: w, errors: Object.fromEntries(Object.entries(parts).filter(([, p]) => failed(p)).map(([n, p]) => [n, p.error])) }
+  const deep = MARKETING ? await deepRead(token, w) : null
+  const all = { ...parts, ...deep }
+  const out = { windows: w, errors: errorsOf(all) }
   if (Object.keys(out.errors).length === 0) delete out.errors
-  if (Object.values(parts).some((p) => p.thresholded)) {
+  if (Object.values(all).some((p) => p.thresholded)) {
     out.thresholded = 'GA4 withheld low-volume rows (data thresholding) — these numbers are a floor, not a count'
   }
   // Custom dimensions are not retroactive. The signature is a trailing window that HAD
@@ -273,45 +275,50 @@ const ga4 = async (token) => {
     }
   }
   for (const range of RANGES) {
+    const totals = failed(parts.totals) ? null : (parts.totals[range][0] ?? { sessions: 0, totalUsers: 0, engagementRate: 0 })
     out[range] = {
-      sessions: failed(parts.totals) ? null : (parts.totals[range][0]?.sessions ?? 0),
-      users: failed(parts.totals) ? null : (parts.totals[range][0]?.totalUsers ?? 0),
-      sessions_by_channel: named(parts.channels, range).slice(0, 3).map((r) => ({ channel: r.key, sessions: r.sessions })),
+      sessions: totals && totals.sessions,
+      users: totals && totals.totalUsers,
+      engagement_rate_pct: totals && pct(totals.engagementRate * 100),
+      sessions_by_channel: top(parts.channels, range, 'channel', 'sessions'),
       whatsapp_click: failed(parts.clicks) ? null : (parts.clicks[range][0]?.eventCount ?? 0),
-      whatsapp_click_by_page: rank(parts.byPage, range, 'page'),
-      whatsapp_click_by_source: rank(parts.bySource, range, 'source'),
+      whatsapp_click_by_page: top(parts.byPage, range, 'page', 'eventCount'),
+      whatsapp_click_by_source: top(parts.bySource, range, 'source', 'eventCount'),
+      ...(deep && range === 'current' && { deep: deepCurrent(deep, parts.bySource) }),
     }
   }
   return out
 }
 
 // ── Search Console API ───────────────────────────────────────────────────────
-const gscQuery = async (token, range, dimension) => {
+const gscQuery = async (token, range, dimension, rowLimit = TOP) => {
   const body = await post(token, `https://searchconsole.googleapis.com/webmasters/v3/sites/${encodeURIComponent(SITE)}/searchAnalytics/query`, {
     startDate: range.start,
     endDate: range.end,
     dimensions: dimension ? [dimension] : [],
-    rowLimit: dimension ? TOP : 1,
+    rowLimit: dimension ? rowLimit : 1,
   })
   return (body.rows || []).map((r) => ({
-    ...(dimension && { [dimension]: clean(r.keys[0]) }),
+    ...(dimension && { [dimension]: clean(r.keys[0].replace(/^https?:\/\//, '')) }),
     clicks: r.clicks,
     impressions: r.impressions,
-    ctr_pct: Number((r.ctr * 100).toFixed(1)), // GSC returns a 0–1 fraction; this is 0–100
+    ctr_pct: pct(r.ctr * 100), // GSC returns a 0–1 fraction; this is 0–100
     position: Number(r.position.toFixed(1)),
   }))
 }
 
 const gsc = async (token) => {
   const w = GSC_WINDOWS
-  const parts = await settle(Object.fromEntries(RANGES.flatMap((range) => [
-    [`${range}_totals`, gscQuery(token, w[range])],
-    [`${range}_queries`, gscQuery(token, w[range], 'query')],
-    [`${range}_pages`, gscQuery(token, w[range], 'page')],
-  ])))
+  const parts = await settle({
+    ...Object.fromEntries(RANGES.flatMap((range) => [
+      [`${range}_totals`, gscQuery(token, w[range])],
+      [`${range}_queries`, gscQuery(token, w[range], 'query', range === 'current' ? OPPORTUNITY.rows : TOP)],
+      [`${range}_pages`, gscQuery(token, w[range], 'page')],
+    ])),
+  })
   const out = { windows: w }
-  const errors = Object.entries(parts).filter(([, p]) => failed(p)).map(([n, p]) => [n, p.error])
-  if (errors.length) out.errors = Object.fromEntries(errors)
+  const errors = errorsOf(parts)
+  if (Object.keys(errors).length) out.errors = errors
   for (const range of RANGES) {
     const totals = parts[`${range}_totals`]
     out[range] = {
@@ -320,6 +327,10 @@ const gsc = async (token) => {
       top_pages: failed(parts[`${range}_pages`]) ? [] : parts[`${range}_pages`].slice(0, 3),
     }
   }
+  out.current.opportunities = failed(parts.current_queries) ? [] : parts.current_queries
+    .filter((r) => r.position >= OPPORTUNITY.best && r.position <= OPPORTUNITY.worst)
+    .sort((a, b) => b.impressions - a.impressions)
+    .slice(0, OPPORTUNITY.keep)
   return out
 }
 
@@ -329,7 +340,7 @@ const sources = { ga4, gsc }
 let perPost
 try {
   const token = await accessToken(loadKey())
-  const settled = await settle({ ...Object.fromEntries(Object.entries(sources).map(([n, fn]) => [n, fn(token)])), perPost: postDays(token) })
+  const settled = await settle({ ...Object.fromEntries(Object.entries(sources).map(([n, fn]) => [n, fn(token)])), ...(MARKETING && { perPost: postDays(token) }) })
   ;({ perPost } = settled)
   delete settled.perPost
   Object.assign(snapshot, settled)
@@ -341,11 +352,6 @@ try {
   perPost = { window: POST_WINDOW, error: reason(e) }
 }
 
-for (const [file, data] of [[OUT, snapshot], [POST_OUT, { generated_at: snapshot.generated_at, ...perPost }]]) {
-  mkdirSync(dirname(file), { recursive: true })
-  writeFileSync(file, JSON.stringify(data, null, 2) + '\n')
-}
-const status = Object.keys(sources)
-  .map((n) => (failed(snapshot[n]) ? `${n} n/a — ${snapshot[n].error}` : `${n} ok${snapshot[n].errors ? ` (partial: ${Object.keys(snapshot[n].errors).join(', ')})` : ''}`))
-  .join(' · ')
-console.log(`analytics snapshot: ${status} → ${OUT}`)
+writeJson(OUT, snapshot)
+if (MARKETING) writeJson(POST_OUT, { generated_at: snapshot.generated_at, ...perPost })
+console.log(`analytics snapshot: ${statusLine(Object.keys(sources), snapshot)} → ${OUT}`)
