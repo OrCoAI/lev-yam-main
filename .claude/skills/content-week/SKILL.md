@@ -40,12 +40,14 @@ the last four weeks. Plan: `docs/plans/content-media-foundation.md` §The weekly
 ## 0. Last week
 
 - The post records with an empty `posted:` — one closed multi-select question: which went out?
-  Each yes gets `posted: YYYY-MM-DD` (the day the owner names; today if they don't know).
+  Each yes gets `posted: YYYY-MM-DD` (the day the owner names; today if they don't know). A reel's
+  record carries `reel: <slug>`, or the cadence does not count it (ADR 0073). The session's PR is merged
+  by Sunday evening: the marketing report reads these marks that night.
 - **Results** come from a script, never by hand:
-  1. `gh run list --workflow weekly-review.yml --branch main --event schedule --status success --limit 3 --json databaseId,createdAt`
+  1. `gh run list --workflow marketing-report.yml --branch main --event schedule --status success --limit 3 --json databaseId,createdAt`
      lists the scheduled runs on main, never a dispatch or a pull request's;
   2. `gh run download <id> -n post-days -D <scratch>/post-days` fetches the newest one's per-post
-     numbers (if it has none, the next one's);
+     numbers (if it has none, the next one's; no run yet means no results to write);
   3. `node scripts/post-results.mjs <scratch>/post-days/post-days.json --write` writes them.
 
   It writes only whole 7-day windows and prints why any record waits; quote its output in the

@@ -34,8 +34,8 @@ open an issue, or run a command.
 - Survey exports (`survey-june.html` data — pulled clean from Supabase, never from a mojibake
   paste).
 - `.reports/analytics.json` — GA4 + Search Console; shape, local run and the `error` rule in
-  `weekly-review/queries.md` §7.
-- The last four weekly reports (analytics + drift lines).
+  `marketing-report/queries.md` §1.
+- The last four marketing reports, and the weekly reports' drift lines.
 
 ## Procedure
 
@@ -51,7 +51,7 @@ open an issue, or run a command.
    evidence is the queue-jumper** (CLAUDE.md cadence): flag it at the top, in bold; it is the
    only thing allowed to interrupt the roadmap.
 5. **Shipped-but-unvalidated** — list plans past their outcome-check date without a verdict
-   (same query as `weekly-review`, §5). Never deeper than one cycle.
+   (same query as `marketing-report`, §4). Never deeper than one cycle.
 6. **Parking-lot batch** — read `docs/ideas.md`; propose which lines graduate to the next
    roadmap review, which stay, which retire. Propose only; the review decides.
 

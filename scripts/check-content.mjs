@@ -425,6 +425,13 @@ const adrNames = (num, c) => {
   return new RegExp(`\\bpublish(es|ed|ing)?\\b[^.;]*\`${c.id}\``, 'i').test(title) && !/\b(never|not|no|without|until|stays?)\b/i.test(title)
 }
 const CHANNEL = new Map((channels?.channels ?? []).map((c) => [c.id, c]))
+// the marketing report's dated target: a bad block would cost the report its cadence (ADR 0073)
+if (channels?.cadence) {
+  const t = channels.cadence
+  for (const k of ['from', 'reels_from', 'by']) if (!isDate(t[k])) C('channels', `cadence.${k} "${t[k]}" is not a YYYY-MM-DD date`)
+  for (const k of ['weeks', 'reels_per_week', 'reels']) if (!Number.isInteger(t[k]) || t[k] < 1) C('channels', `cadence.${k} "${t[k]}" is not a positive whole number`)
+  if (isDate(t.from) && new Date(`${t.from}T00:00:00Z`).getUTCDay() !== 1) C('channels', `cadence.from ${t.from} is not a Monday`)
+}
 // which stemmed preset a committed file was cut at — media.sh names it <stem>[-<width>].<format>
 const STEMMED = Object.entries(channels?.presets ?? {}).filter(([, p]) => p.stem && p.sizes)
 const presetName = (f) => STEMMED.find(([, p]) => p.sizes.some((s) => f.endsWith(`/${p.stem}${p.sizes.length > 1 ? `-${s[0]}` : ''}.${p.format}`)))?.[0]
@@ -510,6 +517,7 @@ for (const rel of filesUnder('content/posts', /./).filter((r) => !r.endsWith('/.
   if (!THEMES.includes(fm.theme)) P('posts', `theme "${fm.theme}" is not one of ADR 0070's: ${THEMES.join(', ')}`)
   const utmSource = CHANNEL.get(ch)?.utm_source, q = URL.canParse(fm.utm ?? '') ? new URL(fm.utm).searchParams : null
   if (fm.utm && (q?.get('utm_campaign') !== id || (utmSource && q.get('utm_source') !== utmSource))) P('posts', `the UTM link needs utm_campaign=${id}${utmSource ? ` and utm_source=${utmSource}` : ''}`)
+  if (fm.reel && !ID.reel.test(fm.reel)) P('posts', `reel "${fm.reel}" is not a slug (${ID.reel})`)
   if (fm.posted && !isDate(fm.posted)) P('posts', `posted "${fm.posted}" is not a YYYY-MM-DD date`)
   if (fm.posted && !isDate(fm.ar_signed)) P('posts', 'marked posted without the Arabic sign-off date (ADR 0069 §7)')
   // results are written by scripts/post-results.mjs: the post's first RESULT_DAYS days, totals only

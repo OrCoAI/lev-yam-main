@@ -1,5 +1,6 @@
 {
   "$comment": "Every channel Lev Yam publishes to, and the one home of derivative sizes (docs/plans/content-media-foundation.md §Homes; ADR 0068 §2, ADR 0069 §6). Nothing live reads this file (ADR 0069 §5). scripts/media.sh cuts every preset it makes from here — sizes, quality, the file stem, min_source (the smallest source region a preset accepts; absent = its largest size), whatsapp_ok; a preset with made_by is made by another tool (check-content holds the /app/events upload's numbers equal to events-photo). limits and freshness are read by the content-week skill and the freshness numbers (PR D). A `publish` mode needs `publish_adr` naming an ADR whose title names the channel id (ADR 0068 §2).",
+  "cadence": { "from": "2026-11-09", "weeks": 3, "reels_per_week": 3, "reels": 10, "reels_from": "2026-11-01", "by": "2026-11-30" },
   "channels": [
     {
       "id": "site",
@@ -20,7 +21,8 @@
       "presets": ["ig-post", "ig-reel", "ig-feed-video", "cover", "story"],
       "limits": { "caption_chars": 2200, "hashtags": 30, "bio_chars": 150 },
       "freshness": { "pack_days": 7 },
-      "utm_source": "instagram"
+      "utm_source": "instagram",
+      "referrers": ["ig", "instagram.com", "l.instagram.com"]
     },
     {
       "id": "fb",
@@ -31,7 +33,8 @@
       "presets": ["fb", "ig-reel", "story"],
       "limits": { "intro_chars": 101 },
       "freshness": { "pack_days": 7 },
-      "utm_source": "facebook"
+      "utm_source": "facebook",
+      "referrers": ["fb", "facebook.com", "m.facebook.com", "l.facebook.com", "lm.facebook.com"]
     },
     {
       "id": "gbp",
@@ -53,7 +56,8 @@
       "presets": ["wa-status", "ig-reel"],
       "limits": { "about_chars": 139, "description_chars": 512 },
       "freshness": { "pack_days": 7 },
-      "utm_source": "whatsapp"
+      "utm_source": "whatsapp",
+      "referrers": ["wa", "web.whatsapp.com", "l.wl.co"]
     }
   ],
   "quality": { "jpg": 82, "webp": 80, "mp4_crf": 20 },

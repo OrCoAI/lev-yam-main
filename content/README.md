@@ -156,6 +156,7 @@ Front matter, then the captions:
 id: 2026-10-26-ig-team-table
 channel: ig
 theme: companies            # companies | private | renters | weekend  (ADR 0070)
+reel:                       # a reel only: its slug, the same on every channel — the cadence counts different slugs (ADR 0073)
 media: [2026-10-team-day-03]
 utm: https://levyam.com/stories/team-day-by-the-sea/?utm_source=instagram&utm_medium=social&utm_campaign=2026-10-26-ig-team-table
 experiment:                 # one hypothesis per pack, or empty
@@ -189,7 +190,9 @@ and a security review; the row then carries `publish_adr: "00NN"` and the check 
 ADR exists and its title says *publish* and names the channel id in backticks (`` `ig` ``). The automated agents (GitHub Actions) hold no
 connector — they read these files.
 
-Adding a channel is one row: status, mode, connector, presets, limits, freshness, UTM source.
+Adding a channel is one row: status, mode, connector, presets, limits, freshness, UTM source, referrers.
+The file's `cadence` block is the marketing report's dated target (ADR 0073): a new month's target is a
+change to that block.
 The skills never name a vendor.
 
 ## A card — `backlog.md`

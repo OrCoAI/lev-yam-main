@@ -5,7 +5,7 @@
  *   node scripts/post-results.mjs <post-days.json>           print what each posted record would get
  *   node scripts/post-results.mjs <post-days.json> --write   and write the `results:` lines
  *
- * <post-days.json> is the `post-days` artifact of the newest scheduled weekly-review run on main
+ * <post-days.json> is the `post-days` artifact of the newest scheduled marketing-report run on main
  * (scripts/analytics-snapshot.mjs writes it). For every record with `posted:`, a link and an empty
  * `results:`, the totals over its first RESULT_DAYS days are written — only when the snapshot asked
  * GA4 about that post and covers all of its days with a day to spare (GA4's newest day can still be

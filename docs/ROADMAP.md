@@ -112,13 +112,14 @@ session. Items 1, 2 and 5 start without item 7 and gain GBP / Instagram / Facebo
       `content-week` + `media-intake`, check v3) merged (#152); first pack merged (#155), posting from 2026-10-29; a fresh
       design per pack (ADR 0071, #156); PR D (per-post results + freshness numbers) merged (#161)**; the first pack was not posted; November's
       weekly output is [ADR 0072](decisions/0072-november-content-output-one-idea-pack-ten-reels-a-story-pair-a-week.md); outcome check 2026-11-26
-- [ ] **2. Weekly marketing report** *(was 17; owner, 2026-10-07)* — its own weekly issue **and** an
-      email to the owner: traffic, `whatsapp_click` per page, the AI-citation log, outcome checks due,
+- [ ] **2. Weekly marketing report** *(was 17; owner, 2026-10-07)* — its own weekly issue, and GitHub's
+      notification is the email ([ADR 0073](decisions/0073-the-marketing-report-is-its-own-sunday-issue-github-notification-is-the-email.md)):
+      traffic, `whatsapp_click` per page, the AI-citation log, outcome checks due,
       item 1's freshness numbers, and **social publishing** *(was 6, then under 15)*: a reel a week *(ten in
-      November, ADR 0072)* and a post per story, tracked against the cadence. The engineering weekly drops its Analytics headline
-      and links here. Social / GBP numbers reach the agent as a file from a fixed pre-agent step, never as
-      a credential (ADR 0047/0048 pattern); the email needs its own scoped send credential — Tier A,
-      security review. → *reports delivered weekly; the social cadence met*
+      November, ADR 0072)* and a post per story, tracked against the cadence. The engineering weekly hands over its
+      marketing sections and links here. Social / GBP numbers are read directly from Meta and Google and reach the agent as a
+      file from a fixed pre-agent step, never as a credential (ADR 0047/0048 pattern). → *reports delivered weekly; the social cadence met*
+      [plans/marketing-weekly-report.md](plans/marketing-weekly-report.md) — **Gate 1 approved 2026-11-04**; merge by 2026-11-15; outcome check 2026-11-30
 - [ ] **3. Search & AI visibility** *(was 3 + 4)* — the same facts everywhere (site,
       GBP, socials), `facts.txt` / `llms.txt` expansion, internal links between stories, the local
       queries the story backlog does not cover → *local-pack impressions, direction requests, AI-answer
@@ -149,7 +150,7 @@ session. Items 1, 2 and 5 start without item 7 and gain GBP / Instagram / Facebo
       *GBP calls and direction requests*
 - [ ] **6. Backlink programme** *(was 9)* — tourism, food/travel, Arab-society media; the owner's outreach,
       Claude drafts → *referring domains*
-- [ ] **7. Connect social + GBP to Claude** *(was 16; owner, 2026-10-07)* — read + draft, the owner
+- [ ] **7. Connect social + GBP to Claude** *(was 16; owner, 2026-10-07; the weekly read moved to item 2, ADR 0073)* — read + draft, the owner
       publishes; the owner authorizes the connector in claude.ai (Windsor.ai the candidate — coverage
       checked at kickoff); connectors live in the owner's sessions only, never in the automated agents;
       **UTM on every owned link** (GBP website button, Instagram / Facebook bios, shares) so those visits
