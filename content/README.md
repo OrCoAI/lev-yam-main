@@ -135,6 +135,9 @@ scripts/media.sh <media-id> <source> <out-dir> <preset>[=<stem>] … [--focus to
   `social`; every preset may write into the fence (`Ready to post/<date>/`) or the `media/` cache.
   Files under `img/` and `video/public/photos/` join the record's `renditions`. A file already in the
   fence is never replaced.
+- **Designs** are not cut by `media.sh`: `content-week` makes a fresh branded
+  `<post id>-designed.jpg` from each piece's cut, every week a different look
+  ([ADR 0071](../docs/decisions/0071-every-pack-carries-designed-versions-a-fresh-creative-look-each-week-inside-the-brand.md)).
 - **Sources** are JPEG, PNG, WebP or HEIC photos and MOV / MP4 clips — nothing else is opened.
   Clips come out BT.709 SDR (HLG converted; a PQ clip is refused).
 - **The Inbox** is handled by number through `scripts/media-inbox.py` (index, preview, move) — an
@@ -153,13 +156,14 @@ Front matter, then the captions:
 id: 2026-10-26-ig-team-table
 channel: ig
 theme: companies            # companies | private | renters | weekend  (ADR 0070)
+reel:                       # a reel only: its slug, the same on every channel — the cadence counts different slugs (ADR 0073)
 media: [2026-10-team-day-03]
 utm: https://levyam.com/stories/team-day-by-the-sea/?utm_source=instagram&utm_medium=social&utm_campaign=2026-10-26-ig-team-table
 experiment:                 # one hypothesis per pack, or empty
 expires:                    # YYYY-MM-DD when time-bound
 posted:                     # empty until the owner marks it — the outcome metric counts this
 ar_signed:                  # YYYY-MM-DD, the owner's Arabic sign-off (ADR 0069 §7)
-results:                    # at +7 days, totals only: sessions, whatsapp_click
+results:                    # scripts/post-results.mjs — e.g. sessions 12 · whatsapp_click 2 · 2026-10-29..2026-11-04
 ---
 ## HE
 …
@@ -174,7 +178,8 @@ results:                    # at +7 days, totals only: sessions, whatsapp_click
 - Three caption versions, always — `## HE`, `## AR`, `## Mixed` ([`VOICE.md`](VOICE.md) §Per channel); the owner picks which go out.
 - A piece posted outside the pack is recorded by hand in the next session.
 - No Arabic text is posted unsigned (`ar_signed` empty → not posted).
-- Results are totals only — never a person, a handle or a comment's text.
+- Results are totals only — never a person, a handle or a comment's text. They are written only
+  by `scripts/post-results.mjs`: 7 days from `posted`, visits whose `utm_campaign` is the post ID.
 
 ## Channels and modes (ADR 0068 §2)
 
@@ -185,7 +190,9 @@ and a security review; the row then carries `publish_adr: "00NN"` and the check 
 ADR exists and its title says *publish* and names the channel id in backticks (`` `ig` ``). The automated agents (GitHub Actions) hold no
 connector — they read these files.
 
-Adding a channel is one row: status, mode, connector, presets, limits, freshness, UTM source.
+Adding a channel is one row: status, mode, connector, presets, limits, freshness, UTM source, referrers.
+The file's `cadence` block is the marketing report's dated target (ADR 0073): a new month's target is a
+change to that block.
 The skills never name a vendor.
 
 ## A card — `backlog.md`

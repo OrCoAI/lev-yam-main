@@ -19,18 +19,12 @@ Ticked this week: … · Still open in the block: …
 ## Open plans without close-out
 - `docs/plans/….md` — since …
 
-## Outcome checks due
-| Plan | Metric | Check date | Overdue by |
-|---|---|---|---|
-
 ## Drift check
 N of M PRs off-roadmap: … (target 0)
 
-## Analytics headline
-<!-- Filling rules: queries.md §7. One line per source; keep the `ga4.thresholded` /
-     `ga4.page_attribution` note, when present, as the last bullet of this section. -->
-- GA4 (YYYY-MM-DD → YYYY-MM-DD): sessions … (Δ …) · users … · `whatsapp_click` … (Δ …) — top pages: `…` n, `…` n, `…` n · top sources: `…` n, `…` n · channels: … / …
-- Search Console (YYYY-MM-DD → YYYY-MM-DD): clicks … (Δ …) · impressions … (Δ …) · CTR …% · avg position … — top queries: `…` n, `…` n, `…` n · top pages: `…` n
+## Marketing
+Traffic, channels, content freshness and outcome checks due: [the Marketing report issues](https://github.com/OrCoAI/lev-yam-main/issues?q=label%3Amarketing-report) (ADR 0073)
+
 - Dynatrace bizevents: n/a — observability home deferred (ADR 0045)
 
 ## Alerts & problems
@@ -46,4 +40,4 @@ Gate-2 queue: N open PRs awaiting the owner (oldest: …) · Cost per merged PR:
 ## Open decisions (Gate 1)
 - …
 
-*Sources: gh CLI, git log, docs/ROADMAP.md, docs/plans/, `.reports/analytics.json` (GA4 + Search Console), dtctl (context …), bluebox ask.*
+*Sources: gh CLI, git log, docs/ROADMAP.md, docs/plans/, dtctl (context …), bluebox ask.*

@@ -10,7 +10,8 @@ Window: the quarter (or since the last review). Every item names its source file
    Gate-2 queue depth over time.
 3. **Monthly digests**: the quarter's `Monthly roadmap review` issues — ranked opportunities
    that recurred, bets validated/contradicted, parking-lot graduations.
-4. **Analytics trajectory**: the weekly-review issues' Analytics headlines across the quarter
+4. **Analytics trajectory**: the `Marketing report` issues across the quarter, and before 2026-W46
+   the weekly-review issues' Analytics headlines
    (WhatsApp CTA by page, sessions, GSC clicks/impressions/queries) plus the current
    `.reports/analytics.json` (ADR 0047), `/stories/` performance, survey signal.
    **Dynatrace RUM and bizevents are unavailable** — the home is itself a deferred decision

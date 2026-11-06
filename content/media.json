@@ -660,7 +660,7 @@
         "stories/strategy-offsite-by-the-sea/index.html"
       ],
       "people": "adults",
-      "consent": "site",
+      "consent": "social",
       "published": "2026-10"
     },
     {
@@ -682,7 +682,7 @@
         "stories/strategy-offsite-by-the-sea/index.html"
       ],
       "people": "adults",
-      "consent": "site",
+      "consent": "social",
       "published": "2026-10"
     },
     {
@@ -773,7 +773,9 @@
     {
       "id": "2026-10-work-05",
       "kind": "image",
-      "renditions": [],
+      "renditions": [
+        "video/public/photos/work-05.jpg"
+      ],
       "alt": {
         "he": "שניים עובדים עם מחשב נייד ליד שולחן ארוך תחת הפרגולה, מול הים בלב ים",
         "ar": "اثنين بيشتغلوا على لابتوب عند طاولة طويلة تحت البرجولا، قبال البحر بليف يام"
@@ -809,6 +811,32 @@
       "consent": "social",
       "published": "2026-10",
       "whatsapp": true
+    },
+    {
+      "id": "2026-10-venue-05",
+      "kind": "image",
+      "renditions": [],
+      "alt": {
+        "he": "שני אנשים עומדים ליד חלון ישן בלב ים ומביטים אל הים",
+        "ar": "شخصين واقفين جنب شباك قديم بليف يام وبطلّعوا عالبحر"
+      },
+      "used_in": [],
+      "people": "not-recognisable",
+      "consent": "none",
+      "published": "2026-11"
+    },
+    {
+      "id": "2026-10-kitchen-03",
+      "kind": "image",
+      "renditions": [],
+      "alt": {
+        "he": "שולחן ארוך מול הים בלב ים: דג שלם על הגריל, סלטים ולחם",
+        "ar": "طاولة طويلة قبال البحر بليف يام: سمكة كاملة مشوية، سلطات وخبز"
+      },
+      "used_in": [],
+      "people": "adults",
+      "consent": "social",
+      "published": "2026-11"
     }
   ]
 }

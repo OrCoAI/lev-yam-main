@@ -4,7 +4,8 @@
 // carries a second copy. The map is video/assets.json — a name the compositions use, and the
 // media or brand ID it is cut from (ADR 0069 §2). An ID resolves to its record's first rendition
 // in the name's format that is not a sized cut (card.jpg, hero-1600.jpg, 18-960.webp): the web
-// copy. Run by `npm run dev`, `npm run review`, `npm run render`.
+// copy. A record with only sized cuts (a story's hero-1600 / hero-800 / card) gives its widest.
+// Run by `npm run dev`, `npm run review`, `npm run render`.
 // Committed assets (derivatives that exist nowhere else) live in public/brand/ and public/photos/.
 import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, extname, join } from "node:path";
@@ -22,11 +23,17 @@ const FILES = new Map([
   ...json("brand/assets.json").assets.map((a) => [a.id, a.served ?? []]),
 ]);
 const SIZED_CUT = /(\/card|-\d+)\.[a-z0-9]+$/;
+const cutWidth = (f) => Number(/-(\d+)\.[a-z0-9]+$/.exec(f)?.[1] ?? 0);
+
+const pick = (files, ext) => {
+  const same = files.filter((f) => extname(f) === ext);
+  return same.find((f) => !SIZED_CUT.test(f)) ?? same.toSorted((a, b) => cutWidth(b) - cutWidth(a))[0];
+};
 
 let copied = 0;
 const missing = [];
 for (const [to, id] of Object.entries(MAP)) {
-  const from = (FILES.get(id) ?? []).find((f) => extname(f) === extname(to) && !SIZED_CUT.test(f));
+  const from = pick(FILES.get(id) ?? [], extname(to));
   const src = from && join(REPO, from);
   if (!src || !existsSync(src)) {
     missing.push(`${to} ← ${id}`);

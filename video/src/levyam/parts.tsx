@@ -10,6 +10,7 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+import { StampFrame } from "../brand";
 import { C, ENTER, KEN_BURNS_MAX, TEXT, ZONE, ZONE_INSET, clamp, headline, type Type } from "./theme";
 import { SWEEP } from "./transitions/timing";
 
@@ -259,6 +260,59 @@ export const MediaBeat: React.FC<{ readonly media: React.ReactNode; readonly chi
   </AbsoluteFill>
 );
 
+type PhotoCardProps = {
+  readonly src: string;
+  // The photo's own aspect (width / height): it is shown whole, never cropped to the frame.
+  readonly aspect: number;
+  readonly width: number;
+  // The card's centre, in frame pixels.
+  readonly centerY: number;
+  // A fixed tilt in degrees (a photo is never mirrored, only turned).
+  readonly tilt: number;
+  // Local frame the card starts landing; it has landed ENTER frames later.
+  readonly start: number;
+};
+
+const CARD_BORDER = 26;
+
+// A small or landscape photo as a printed card (guidelines §8: a small source is a card, never
+// stretched full-frame): the photo whole inside the brand's zigzag stamp edge, rising 60 px into
+// place. Cards placed later stack on top of earlier ones.
+export const PhotoCard: React.FC<PhotoCardProps> = ({ src, aspect, width, centerY, tilt, start }) => {
+  const p = useEnter(start);
+  const { width: frameWidth } = useVideoConfig();
+  const photoHeight = (width - 2 * CARD_BORDER) / aspect;
+  const height = photoHeight + 2 * CARD_BORDER;
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: (frameWidth - width) / 2,
+        top: centerY - height / 2,
+        width,
+        height,
+        opacity: interpolate(p, [0, 0.4], [0, 1], clamp),
+        translate: `0 ${interpolate(p, [0, 1], [60, 0], clamp)}px`,
+        scale: interpolate(p, [0, 1], [0.96, 1], { ...clamp, output: "perceptual-scale" }),
+        rotate: `${tilt}deg`,
+      }}
+    >
+      <StampFrame width={width} height={height} color={C.orange} tooth={30} amp={12} />
+      <Img
+        src={staticFile(src)}
+        style={{
+          position: "absolute",
+          left: CARD_BORDER,
+          top: CARD_BORDER,
+          width: width - 2 * CARD_BORDER,
+          height: photoHeight,
+          objectFit: "cover",
+        }}
+      />
+    </div>
+  );
+};
+
 type SignOffProps = {
   readonly t: Type;
   readonly title: string;
@@ -269,6 +323,9 @@ type SignOffProps = {
   readonly fitZone?: boolean;
   // Frames between the title's words (a longer title takes less, to settle in time).
   readonly stagger?: number;
+  // The logo's side in px. A tall group (a title that wraps to three lines, plus an ask) takes a
+  // smaller logo to fit ZONE; the default keeps the shipped reels' end cards as they were.
+  readonly logoSize?: number;
   readonly children?: React.ReactNode;
 };
 
@@ -279,7 +336,7 @@ const zoneFit = (width: number) => 2 * Math.min(width / 2 - width * ZONE.x0, wid
 // orange), the logo, the title; the reel's own lines follow as children. The logo settles by local
 // frame 20, a one-word title by 24 (each further word + `stagger`, default 10).
 
-export const SignOff: React.FC<SignOffProps> = ({ t, title, lift = 0, fitZone = false, stagger = 10, children }) => {
+export const SignOff: React.FC<SignOffProps> = ({ t, title, lift = 0, fitZone = false, stagger = 10, logoSize = 420, children }) => {
   const logo = useEnter(4);
   const { width } = useVideoConfig();
   return (
@@ -288,7 +345,7 @@ export const SignOff: React.FC<SignOffProps> = ({ t, title, lift = 0, fitZone = 
     >
       <Img
         src={staticFile("site/logo.png")}
-        style={{ width: 420, height: 420, opacity: logo, scale: interpolate(logo, [0, 1], [0.92, 1], clamp) }}
+        style={{ width: logoSize, height: logoSize, opacity: logo, scale: interpolate(logo, [0, 1], [0.92, 1], clamp) }}
       />
       <Words
         text={title}

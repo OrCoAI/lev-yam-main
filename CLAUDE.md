@@ -274,8 +274,8 @@ the summary and verdict.
 proves the thing was *built*, not that it *worked*. Every plan **from 2026-09-21 onward** names an
 **Outcome metric** at kickoff (`feature-spec`, MODULE-TEMPLATE §0) with a check date of
 ship + 2–4 weeks. On that date the metric's value goes under `## Outcome check` in the plan file
-with a verdict — **worked / did not / cannot tell** — and what it changes. `weekly-review` lists
-checks that have come due; the monthly triage carries the **shipped-but-unvalidated** list, which
+with a verdict — **worked / did not / cannot tell** — and what it changes. `marketing-report` lists
+checks that have come due ([ADR 0073](docs/decisions/0073-the-marketing-report-is-its-own-sunday-issue-github-notification-is-the-email.md)); the monthly triage carries the **shipped-but-unvalidated** list, which
 per the operating system must never be deeper than one cycle. Both scope to plans that *have* an
 Outcome metric table — plans closed out before 2026-09-21 predate the rule and are not retrofitted.
 "Cannot tell" is a finding about the instrumentation, not a pass.
@@ -290,7 +290,7 @@ needed. **Live since 2026-09-21** on the owner's subscription token
 
 | When | What | Who |
 |---|---|---|
-| **Weekly** (Sun) | `weekly-review` — shipped vs the roadmap block, Tier-C merges that auto-shipped, plans missing a close-out, outcome checks now due, drift check, analytics headline, Alerts & problems, Harness health | automated; owner reads |
+| **Weekly** (Sun) | `weekly-review` — shipped vs the roadmap block, Tier-C merges that auto-shipped, plans missing a close-out, drift check, Alerts & problems, Harness health · `marketing-report` — the posting cadence, website, every channel, content freshness, outcome checks now due | automated; owner reads |
 | **Monthly** (1st) | `feedback-triage` digest + parking-lot batch + obs-best-practices audit + shipped-but-unvalidated | automated agenda; owner decides |
 | **Quarterly** (1st of Jan/Apr/Jul/Oct) | vision audit, architecture audit, then the one sanctioned divergent brainstorm, then converge | **owner's judgment, never run unattended**; evidence pack assembled for them |
 | **Per initiative** | kickoff alignment (Gate 1) → build → outcome check (Gate 2) | owner at the two gates only |
@@ -338,19 +338,20 @@ included (ARCHITECTURE §6c). Pushing `staging` triggers `deploy-staging.yml` �
 
 ## Automations (the night shift)
 
-Six triggers run without a human ([ADR 0039](docs/decisions/0039-dependabot-auto-merge-scope.md),
+Seven triggers run without a human ([ADR 0039](docs/decisions/0039-dependabot-auto-merge-scope.md),
 work order G4). All of them go through the same rails as a human PR — none is a shortcut past the gate.
 
 | Workflow | Fires | Produces |
 |---|---|---|
 | `claude.yml` | `@claude` on an issue or PR | a branch + PR through the normal gate, tier declared |
 | `weekly-review.yml` | Sun 17:00 UTC | `report.md` → issue `Weekly review YYYY-Www` — the solo product council, incl. **Alerts & problems** (the only weekly eyes Dynatrace/Bluebox get) and **Harness health** |
+| `marketing-report.yml` | Sun 17:30 UTC | `report.md` → issue `Marketing report YYYY-Www` — the cadence, the website, every channel's native numbers, content freshness, outcome checks due; GitHub's notification is the email ([ADR 0073](docs/decisions/0073-the-marketing-report-is-its-own-sunday-issue-github-notification-is-the-email.md)) |
 | `monthly-triage.yml` | 1st of the month | `report.md` → issue `Monthly roadmap review YYYY-MM` — feedback digest + parking-lot batch + obs-best-practices audit |
 | `quarterly-prep.yml` | 1st of Jan/Apr/Jul/Oct | `report.md` → issue `Quarterly review YYYY-Qn` — evidence pack + agenda checklist. **The review session itself is never run unattended** |
 | `dependabot-auto-merge.yml` | dependabot PRs | the Tier line, and auto-merge for npm minor/patch |
 | `video-guidelines-refresh.yml` | Mon 05:00 UTC | a PR amending `video/GUIDELINES.md` from Remotion releases, the official skills, the license page and Meta specs — Tier A, the owner merges; a research job on a read-only token and a separate publish job with no agent ([ADR 0064](docs/decisions/0064-video-is-made-with-remotion-in-the-repo-guidelines-are-the-leash-refreshed-weekly-by-pr.md)) |
 
-The three report jobs share one reusable worker, `agent-report.yml` (`workflow_call` only) —
+The four report jobs share one reusable worker, `agent-report.yml` (`workflow_call` only) —
 schedule, prompt and tool scope are all that differ. Each caller has `workflow_dispatch`; that
 manual run is the acceptance test. They authenticate with **the owner's Claude subscription token** (`claude setup-token` →
 repo secret `CLAUDE_CODE_OAUTH_TOKEN`), not API credits ([ADR 0042](docs/decisions/0042-agent-workflows-run-on-the-subscription-token.md)); without it they
@@ -371,20 +372,21 @@ established, both load-bearing:
   options — so only the documented set survives the translation: `--mcp-config`, `--allowedTools`,
   `--disallowedTools`, `--max-turns`, `--model`, `--append-system-prompt`. Passing the others killed
   every run in ~120 ms with `is_error: true` and no error text. Don't reintroduce them.
-- **The report agents hold no write to any public surface** ([ADR 0048](docs/decisions/0048-report-agents-hold-no-write-and-actions-are-sha-pinned.md)).
-  They write `report.md`; a fixed step after them runs `scripts/report-guard.py`, then labels,
-  de-duplicates (`jq --arg`, never a search string built from agent text) and publishes — a rerun
+- **The report agents hold no write to issues** ([ADR 0048](docs/decisions/0048-report-agents-hold-no-write-and-actions-are-sha-pinned.md)).
+  They write `report.md`; a `publish` job with no agent, on a fresh runner, runs
+  `scripts/report-guard.py`, then labels, de-duplicates (`jq --arg`, never a search string built from agent text) and publishes — a rerun
   that produces the same title comments on the existing issue instead of opening a new one, so
   read an issue's comments before calling a run missed. Say
   plainly what the deny list does **not** do: `$VAR` expands in any *allowed* command's
-  arguments, `gh --jq` is gojq with `$ENV`, and `head`/`tail`/`cut`/`sort` read
+  arguments, `gh --jq` is gojq with `$ENV`, and `head`/`tail`/`cut` read
   `/proc/self/environ` — so a bash-capable agent reads its own environment whatever is denied.
-  The design therefore assumes it may learn a secret and removes every way to send one: the `gh`
-  write family denied, `Write` scoped to `report.md`, `.git/` denied (git runs `diff.external`
-  through the shell on an allowed `git log -p`), and the runner's own file commands —
-  `GITHUB_STEP_SUMMARY`, which renders publicly, plus `GITHUB_ENV`/`PATH`/`OUTPUT` — pointed at
-  `/dev/null` for the agent step, since an allowed command with a redirect reaches them whatever
-  `Write` is scoped to. The guard, which withholds the whole report if a secret's value appears in
+  The design therefore assumes it may learn a secret and narrows the ways to send one: a token that
+  only reads, the `gh` write family denied, `gh` URLs and `-R`/`--repo` denied (a read sends its
+  argument to whatever host it names), a plain `Write` (path specifiers on an allow are not honoured
+  here), `.git/` denied through `Write` (git runs `textconv` through the shell on `git log -p`).
+  It does not close them: an encoded value can ride the report, and the runner's file commands stay
+  open whatever a step's env says, `GITHUB_STEP_SUMMARY` rendering publicly unvetted.
+  The guard, which withholds the whole report if a secret's value appears in
   it, is a loud detector on top of that, not a boundary. **Every third-party action is
   SHA-pinned** with the version in a trailing comment, in every workflow file that uses one;
   dependabot keeps them current.
@@ -397,12 +399,18 @@ established, both load-bearing:
   for the same reason. It triggers for **write-access accounts only** (`allowed_non_write_users`
   and `allowed_bots` pinned to `""`).
 
-- **Analytics reach the report jobs as a file, never as a credential:** a pre-agent step in
-  `agent-report.yml` is the only one that names `GOOGLE_SA_KEY`; the agent only `Read`s
-  `.reports/analytics.json` ([ADR 0047](docs/decisions/0047-analytics-wiring-ga4-and-gsc-only-public-numbers.md)).
+- **Analytics and channel numbers reach the report jobs as files, never as credentials:** the
+  `snapshot` job of `agent-report.yml`, on its own runner, is the only one that names `GOOGLE_SA_KEY`
+  and the Meta and Google Business secrets. It scans its files for those values and hands them over as a
+  one-day artifact; the agent only `Read`s them ([ADR 0047](docs/decisions/0047-analytics-wiring-ga4-and-gsc-only-public-numbers.md),
+  [ADR 0073](docs/decisions/0073-the-marketing-report-is-its-own-sunday-issue-github-notification-is-the-email.md)).
+  **No step of ours with a credential runs after the agent on its runner:** git, Python, `jq` and the
+  shell there read files the agent could have written; the actions' own post steps are the remainder. The agent's `report` job hands `report.md` on as a
+  base64 output and `publish` reads it as data, the hand-off of `video-guidelines-refresh.yml`.
 
-All five workflows need **`id-token: write`** — the action mints its token through GitHub's OIDC
-endpoint and fails without it. It is not a repo-write grant.
+**`claude.yml` needs `id-token: write`:** with no `github_token` input the action mints its token
+through GitHub's OIDC endpoint and fails without it. The report jobs pass `github_token`, so they make
+no OIDC call and hold no such grant: it could be exchanged for the Claude App's write token (ADR 0073).
 
 **A skill's `queries.md` and its workflow's `allowed_tools` are one unit.** The weekly report failed
 its first live run because the skill's shell pipelines (`date`, `grep`, `awk`) and its `dtctl` /
@@ -424,7 +432,7 @@ line, so a bare `Bash(git log *)` splits into three tokens and the rule silently
 - **`.claude/skills/` and `.claude/settings.json` are versioned with the repo** (the gate depends on
   `verify`; the settings file is the committed permission policy). Skills: engineering — `verify`,
   `production-query`, `bluebox-*`; product — `session-start`, `product-context`, `feature-spec`,
-  `idea-capture`, `weekly-review`, `feedback-triage`, `quarterly-review`; content — `content-week`, `media-intake`, `story-author`, `new-video`; monthly
+  `idea-capture`, `weekly-review`, `marketing-report`, `feedback-triage`, `quarterly-review`; content — `content-week`, `media-intake`, `story-author`, `new-video`; monthly
   `obs-best-practices`. Each ships a
   3-case `EVALS.md`, run at the quarterly ceremony audit. `.claude/settings.local.json` and other
   agent state stay untracked. Also ignored: `.DS_Store`, `node_modules/`, `app-src/dist/`, `.env*`, raw source media.

@@ -13,7 +13,7 @@ Two or three sentences: the problem, who has it, what not solving it costs. Evid
 | Source | GA4 event · Dynatrace bizevent · SQL count · module report tab |
 | Baseline (today) | number + date |
 | Target | number |
-| Check date | ship + 2–4 weeks (YYYY-MM-DD) — `weekly-review` lists it when due |
+| Check date | ship + 2–4 weeks (YYYY-MM-DD) — `marketing-report` lists it when due |
 | Verdict owner | owner |
 
 ## Scope
