@@ -190,12 +190,17 @@ with no secret, and a `post-days` artifact, the first ever produced. Staging dep
 staging project was restored; production deployed on a re-run after a GitHub Pages sync timeout.
 
 **Not proven yet.**
-- **The email.** None arrived for #174: the owner's account was not watching the repo, so GitHub created
-  no notification. The owner chose to watch it for issues (2026-11-08); the next report proves it.
+- **The email** — *proven 2026-11-08.* None arrived for #174: the owner's account was not watching the
+  repo, so GitHub created no notification. The owner set Watch → Custom → Issues, a dispatched run opened
+  #176, and the owner confirmed its email arrived. A Custom watch shows as "not subscribed" in the API
+  and is not counted among watchers; the notification list is the check.
 - **Meta and Google Business.** None of the four secrets exist, so every metric name is unproven; the
   Delivery section's setup is the owner's.
 - **The cadence lines.** #174 ran before the target's first week, so the agent filled the table from
   another count and printed `null`; the skill now says what to print, from its 0.1.1.
+
+**After the close-out (owner, 2026-11-08):** the email opens with an *At a glance* scorecard and a **Next:**
+line, and the report draws its comparisons as text bars, the only graph GitHub's email shows (skill 0.2.0).
 
 **Schema / permissions:** none in the database. In GitHub: the `marketing-report` label; the report jobs
 drop `id-token: write` and their agent's token drops to `issues: read`.
