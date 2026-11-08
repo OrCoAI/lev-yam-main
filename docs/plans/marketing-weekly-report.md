@@ -172,7 +172,44 @@ Accepted by the owner on 2026-11-06, for this PR. Each stays open; none is made 
   listed in the follow-ups above; the marketing agent has no `git`.
 
 ## Close-out
-*(appended when done — CLAUDE.md "Roadmap item close-out")*
+
+*2026-11-08 — shipped in [PR #173](https://github.com/OrCoAI/lev-yam-main/pull/173), merged 2026-11-06.*
+
+**What shipped.** `marketing-report.yml` opens `Marketing report YYYY-Www` every Sunday at 17:30 UTC, labelled
+`marketing-report`, from the new `marketing-report` skill. `scripts/social-snapshot.mjs` reads Instagram, Facebook
+and Google Business; `analytics-snapshot.mjs` gained the deep website read; `content-freshness.mjs` gained the
+`cadence` block, read from `content/channels.json`; post records gained `reel:`. The engineering weekly
+links to the new issue instead of carrying those sections. `agent-report.yml` became three jobs for all four
+reports: `snapshot` holds the credentials, `report` runs the agent on a read-only token with no
+`id-token: write`, and `publish` vets and publishes on a fresh runner (ADR 0073 §10, §12).
+
+**Proven live.** A weekly run from the branch proved `report` and `publish` without `id-token`, and
+commented on #163. After the merge, the acceptance run opened [#174](https://github.com/OrCoAI/lev-yam-main/issues/174)
+with all three jobs green: real GA4 and Search Console numbers, `n/a` with its reason for every channel
+with no secret, and a `post-days` artifact, the first ever produced. Staging deployed clean after the idle
+staging project was restored; production deployed on a re-run after a GitHub Pages sync timeout.
+
+**Not proven yet.**
+- **The email.** None arrived for #174: the owner's account was not watching the repo, so GitHub created
+  no notification. The owner chose to watch it for issues (2026-11-08); the next report proves it.
+- **Meta and Google Business.** None of the four secrets exist, so every metric name is unproven; the
+  Delivery section's setup is the owner's.
+- **The cadence lines.** #174 ran before the target's first week, so the agent filled the table from
+  another count and printed `null`; the skill now says what to print, from its 0.1.1.
+
+**Schema / permissions:** none in the database. In GitHub: the `marketing-report` label; the report jobs
+drop `id-token: write` and their agent's token drops to `issues: read`.
+
+**Decided on the way:** all in [ADR 0073](../decisions/0073-the-marketing-report-is-its-own-sunday-issue-github-notification-is-the-email.md)
+§1–§12, amending ADR 0047 and 0048. The waivers above are the owner's, 2026-11-06.
+
+**Left out, deliberately:** a real send credential, Instagram story numbers, WhatsApp status views,
+per-slide carousel numbers, ad numbers, the AI-citation log, December's cadence (*Explicitly out of scope*).
+
+**Alignment.** *VISION:* serves the **Join** circle through the marketing quarter; principle 4 holds, the
+numbers stay in a public issue. *ARCHITECTURE:* no database, permission or browser-key surface; invariant 3
+holds, the issue carries totals and scrubbed text, never PII or prices; the report jobs' threat model is
+narrower than before and says plainly what it does not close. **No drift.**
 
 ## Outcome check
 *(appended on the check date: metric value vs target, verdict, what it changes)*
