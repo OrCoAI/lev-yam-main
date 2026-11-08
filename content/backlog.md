@@ -14,7 +14,7 @@ The card format: [README.md §A card](README.md#a-card--backlogmd).
 - theme: renters
 - channel: site (story) · ig · fb
 - action: inquiry to rent the whole venue
-- needs: story pair 6; FACTS ✓ — no lodging, say so
+- needs: story pair 6; 2026-11-venue-02 (the empty pergola), 2026-11-venue-08, 2026-11-venue-10 (pergola, kayaks behind) for the posts; FACTS ✓ — a day, a weekend or longer; no lodging, say so
 - source: owner (story backlog approved 2026-09-23, docs/plans/stories-authoring-tool.md)
 - added: 2026-10-21
 
@@ -100,9 +100,9 @@ The card format: [README.md §A card](README.md#a-card--backlogmd).
 
 ### card-year-end-team-day
 - theme: companies
-- channel: ig · fb · gbp
+- channel: ig · fb · gbp · wa
 - action: WhatsApp inquiry for a business event
-- needs: 2026-10-team-day-06 (a group under the pergola), 2026-10-work-05; FACTS ✓ — team days and what can be combined
+- needs: FACTS ✓ — team days, what can be combined, a festive dinner. Pack of 2026-11-08 (ADR 0072, Nov 10–13): 2026-11-10-ig-year-end-long-table (group-visit-11/-10, kitchen-07, group-visit-14, sunset-03), 2026-11-11-fb (group-visit-10), 2026-11-12-gbp (group-visit-15), 2026-11-13-wa (group-visit-13). Still unused for a December toast angle: 2026-11-group-visit-12, 2026-11-sunset-01; 2026-10-team-day-06 and 2026-10-work-05 went to the unposted first pack
 - source: claude (calendar — Nov–Dec, companies book year-end team days 4–6 weeks ahead)
 - added: 2026-10-26
 
@@ -126,7 +126,7 @@ The card format: [README.md §A card](README.md#a-card--backlogmd).
 - theme: private
 - channel: ig reel · wa
 - action: WhatsApp inquiry for a private event
-- needs: 2026-10-kitchen-02 (clip), 2026-10-kitchen-04; FACTS ✓ — sea-to-table, fresh fish; the kitchen is not kosher, kosher catering is allowed
+- needs: 2026-10-kitchen-02 (clip), 2026-10-kitchen-04, 2026-11-kitchen-08 (the cook at the grill, side view), 2026-11-kitchen-10, 2026-11-kitchen-11 (the tray, the cook behind); FACTS ✓ — sea-to-table, fresh fish; the kitchen is not kosher, kosher catering is allowed
 - source: claude (picked originals no post has used)
 - added: 2026-10-26
 
@@ -137,6 +137,33 @@ The card format: [README.md §A card](README.md#a-card--backlogmd).
 - needs: 2026-10-weekend-05, 2026-10-sunset-13; FACTS ✓ — weekend hours re-confirmed by the owner before posting
 - source: claude (picked originals no post has used)
 - added: 2026-10-26
+
+
+### card-winter-indoors
+- theme: companies
+- channel: fb · ig · gbp
+- action: WhatsApp inquiry for a business event
+- needs: the moment — a winter group inside the old fishermen's building while the storm is at the windows (FACTS: a partly covered space; winter groups coordinated by the weather; storms October–April); 2026-11-venue-05, 2026-11-venue-06 as settings, a storm-day shot to take; the features stay on the linked page (VOICE 2026-11-02). The bad-weather answer to card-work-day-by-the-sea
+- source: claude (calendar — Jan–Feb, the quiet season)
+- added: 2026-11-08
+
+
+### card-family-gathering-december
+- theme: private
+- channel: ig · fb · wa
+- action: WhatsApp inquiry for a private event
+- needs: 2026-11-kitchen-01 (fish, pita and salads on the table), 2026-11-kitchen-05 (the platter, lemons, stone wall); FACTS ✓ — private events, local fresh food; the kitchen is not kosher, kosher catering is allowed
+- source: claude (calendar — December: Hanukkah, Christmas, New Year)
+- added: 2026-11-08
+
+
+### card-throw-net-morning
+- theme: weekend
+- channel: site (story) · ig
+- action: come Fri/Sat
+- needs: a story pair; FACTS ✓ — the round 3 m throw-net for the morning hours, as the park authority describes it; public fact, not attributed to anyone; a morning shot of the boats to take. Not the shaarak, the ghazl or the sanabek — /stories/team-day-by-the-sea/ tells those
+- source: claude (village fact no page has told — ADR 0063: the throw-net is the one method still untold)
+- added: 2026-11-08
 
 ## Archive
 
