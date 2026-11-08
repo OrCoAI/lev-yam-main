@@ -6,7 +6,7 @@ media: [2026-10-venue-05]
 utm: https://levyam.com/stories/strategy-offsite-by-the-sea/?utm_source=instagram&utm_medium=social&utm_campaign=2026-11-04-ig-the-window
 experiment:
 expires:
-posted:
+posted: 2026-11-04
 ar_signed: 2026-11-02
 results:
 ---
