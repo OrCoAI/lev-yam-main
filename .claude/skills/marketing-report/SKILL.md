@@ -8,7 +8,7 @@ description: >
   "channel numbers", "what did the posts do", "reach this week". Not for engineering status (that is
   `weekly-review`).
 metadata:
-  version: '0.1.0'
+  version: '0.1.1'
 ---
 
 # Marketing report
@@ -29,6 +29,8 @@ Read the three files first, whole: `.reports/analytics.json`, `.reports/freshnes
 
 1. **Cadence** (§3): each week so far met or not, packs and different reels; reels against the target
    and date in the file. A `null` cadence prints `n/a — no target set`, or `errors.cadence` if the file has one.
+   Before the target's first week has ended, `cadence.weeks` is empty: print the one line the template
+   gives for it and no table. Never fill the cadence table from `outcome.weeks`, which is another count.
 2. **Website** (§1): the headline with deltas, then the deep read: landing pages with engagement and
    conversion, devices, countries, new vs returning, Arabic URLs, search opportunities.
 3. **Channels** (§1, §2): one row per channel, native numbers next to what the site saw from it, then

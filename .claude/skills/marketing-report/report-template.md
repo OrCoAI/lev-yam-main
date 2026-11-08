@@ -8,7 +8,8 @@
 <!-- SKILL.md step 7: 3–5 lines, written last, each naming a number below, ending in the one next step. -->
 
 ## Did it go out? — cadence
-<!-- queries.md §3 -->
+<!-- queries.md §3. One row per entry of `cadence.weeks`. When it is empty, no table, only:
+     `The target's first week, YYYY-Www, ends YYYY-MM-DD — nothing to count yet.` (from `content/channels.json` `cadence.from`) -->
 | Week | Pack on every channel | Different reels (target N) | Met |
 |---|---|---|---|
 
@@ -45,7 +46,7 @@ Not here by nature: Instagram stories (their numbers last 24 hours), the slides 
 ## Content freshness
 <!-- queries.md §3 -->
 - Outcome: `count` of `of` weeks with a pack posted on every channel in `outcome.channels` — each week ✓/✗
-- Days since the last post: one `<channel> <days_since>/<pack_days>` per channel — overdue: …
+- Days since the last post: one `<channel> <days_since>/<pack_days>` per channel, `never` for a `null` — overdue: …
 - Photos published YYYY-MM … (last month …) · backlog … cards, … stale · story pairs past re-check: …
 
 ## AI citations
