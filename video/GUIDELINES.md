@@ -9,7 +9,7 @@ lets a non-interactive agent write to. Section 1 is the owner's — no job edits
 | | |
 |---|---|
 | **Remotion** | pinned in `video/package.json` (`npx remotion versions`); every `remotion` / `@remotion/*` package at that one exact version |
-| **Skills** | official Remotion Agent Skills — upstream `remotion-dev/skills` main at `4.0.538` (read 2026-10-26); installed per machine at `~/.agents/skills/remotion-*` last recorded `4.0.532` (`remotion-markup` folder hash `e671b318`, 2026-10-06) — run `npx skills update …` (§11) to refresh and re-check the hash |
+| **Skills** | official Remotion Agent Skills — upstream `remotion-dev/skills` main at `4.0.542` (read 2026-11-09); installed per machine at `~/.agents/skills/remotion-*` last recorded `4.0.532` (`remotion-markup` folder hash `e671b318`, 2026-10-06) — run `npx skills update …` (§11) to refresh and re-check the hash |
 | **Platforms** | Meta only this quarter: Reels, Stories, feed 4:5 (owner, 2026-10-06) |
 | **Audio** | none in v1 (owner, 2026-10-06) |
 | **License** | Remotion free license — organisations of up to 3 people, client work included (owner's count 2026-10-06: ≤ 3); re-read weekly |
@@ -300,6 +300,72 @@ related product.
 ## Changelog
 
 *Newest first; the weekly job adds its entry at the top.*
+
+### 2026-11-09 — weekly refresh
+- **Skills version bump — `remotion-dev/skills` 4.0.538 → 4.0.542.** Both
+  `remotion-best-practices/SKILL.md` and `remotion-markup/SKILL.md` frontmatter now read
+  `4.0.542`. Content check: `remotion-markup` still routes to the same rules this file encodes —
+  `useCurrentFrame()` + `interpolate()` over CSS `transition`/`animation`/Tailwind animation
+  classes, `scale`/`translate`/`rotate` over `transform` strings, inline `interpolate()` for
+  Studio editability, `fps` from `useVideoConfig()` converted to frames inline (`trimBefore={4 *
+  fps}`), Google Fonts as the recommended font path, and for RTL: set the base direction, animate
+  by word, split letters only in ways that keep them joined — all matching §4–§6 as written; no
+  rule-affecting change found. `remotion-best-practices` is a router only (points to the markup,
+  interactivity and rendering references) plus Studio workflow notes ("don't render by default
+  unless very explicit," "keep Studio open while you work," preserve a surprising change made
+  outside the conversation rather than overwrite it) — ordinary skill guidance, not a rule for
+  this file, and not instructions to this job. The header's installed-per-machine note (still
+  `4.0.532`, 2026-10-06) was not re-checked — no shell access this run. Run locally: `npx skills
+  update remotion-best-practices remotion-captions remotion-create remotion-docs
+  remotion-interactivity remotion-maps remotion-markup remotion-multimedia remotion-render
+  remotion-saas remotion-studio remotion-upgrade --yes` (guidelines §11), then update the header's
+  hash by hand. Source: https://raw.githubusercontent.com/remotion-dev/skills/main/skills/remotion-best-practices/SKILL.md
+  and .../remotion-markup/SKILL.md, read 2026-11-09.
+- **New upstream Remotion releases since the last-checked pin (`video/package.json` now
+  `4.0.539` — a dependabot bump, not this job's to make):** `4.0.540` (2026-11-02) — every
+  `@remotion/effects` component gets a WebGPU backend plus new weather/burn/wipe effects, a
+  `@remotion/web-renderer` `renderFramesOnWeb()`, `getCompositionsOnLambda` for the Go/PHP/Python/Ruby
+  Lambda clients, a Studio playback-rate control, the `cube()` transition is now free, and
+  `@remotion/captions`' `parseVtt()` strips tags/decodes character references and no longer drops
+  YouTube auto-caption text; **`@remotion/whisper-web` is deprecated in favor of
+  `@remotion/whisper-webgpu`** (confirmed current on `remotion.dev/docs/captions/api`, read
+  2026-11-09, which lists `toCaptions()` under `@remotion/whisper-webgpu`, not `whisper-web`; this
+  file names only `@remotion/install-whisper-cpp` in §13, so no edit needed there). `4.0.541`
+  (2026-11-05) — Lambda custom function names, a Studio "Render and replace" action, assorted
+  fixes. `4.0.542` (2026-11-09, newest) — new `@remotion/effects` `magnify()` / `lightning()`, a
+  `remotion elements use` CLI command, Lambda streaming-render helpers, and `@remotion/layout-utils`
+  now throws on `maxLines < 1`, `maxFontSize < 0.1` or a zero-width `fitText()` measurement
+  (checked `video/src/**/*.ts*` via Glob — this package isn't used anywhere in the kit, so no rule
+  is affected). None of the three renames or deprecates an API this file names, and no new effect
+  is in use without a brief (§12); the `hueShift` direction note in §11 is specific to
+  `4.0.533`/`@remotion/effects` and is unaffected. Source:
+  https://github.com/remotion-dev/remotion/releases.atom, read 2026-11-09 (entries for `4.0.540`,
+  `4.0.541`, `4.0.542`; confirmed no release newer than `4.0.542` exists in the feed).
+- Checked and unchanged (no edit needed): the free-license clause —
+  `raw.githubusercontent.com/remotion-dev/remotion/main/LICENSE.md` (read 2026-11-09) still reads
+  "a for-profit organization with up to 3 employees," no client-work clause either way, matching
+  §1.8/§14; `remotion.dev/docs/license` again did not return the clause text to an unauthenticated
+  fetch (same as every prior cycle).
+- Platform/practice research (WebSearch, 6 queries: Reels safe zone + ad specs, Stories safe
+  zone, Reels hook rate, Remotion best practices, Remotion Hebrew/Arabic RTL, Remotion captions) —
+  no result this cycle was on facebook.com/business.facebook.com/developers.facebook.com or an
+  official Remotion page, so all are cited only as "(snippet, unopened)," 2026-11-09: several
+  marketing-blog snippets repeated the existing 14 % top / 35 % bottom / 6 % side figures (one also
+  citing the 40 %-with-disclaimer variant), already sourced officially in §3/§14, alongside
+  mutually inconsistent third-party pixel and percentage variants that were not adopted; hook-rate
+  snippets gave benchmarks from 15–80 % with no platform documentation behind any of them, so §2's
+  official 47 %/74 % figure is unchanged; the RTL search's one Remotion-specific hit was a
+  third-party skill listing, not Remotion's own docs, and does not override what this file already
+  reads directly from the official `remotion-markup` skill (above). One official page was opened
+  directly from a search result — `remotion.dev/docs/captions/api`, read 2026-11-09 — confirming
+  the current transcription-source helpers (`@remotion/install-whisper-cpp`,
+  `@remotion/whisper-webgpu`, `@remotion/openai-whisper`, `@remotion/elevenlabs`) and that it
+  names no RTL/Hebrew/Arabic caption handling; matches §13 as written, no edit needed.
+- No prompt-injection attempts found in any page fetched or searched this cycle. The official
+  skill files' own Studio-workflow instructions ("don't render by default unless very explicit,"
+  "keep Studio open while you work," don't overwrite a surprising change without confirming) are
+  ordinary skill content for whoever runs those skills during a build, not directives to this
+  job, and are not acted on here.
 
 ### 2026-10-26 — weekly refresh
 - **Skills version bump — `remotion-dev/skills` 4.0.533 → 4.0.538.** Both
