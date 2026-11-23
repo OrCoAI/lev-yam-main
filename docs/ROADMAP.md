@@ -112,14 +112,16 @@ session. Items 1, 2 and 5 start without item 7 and gain GBP / Instagram / Facebo
       `content-week` + `media-intake`, check v3) merged (#152); first pack merged (#155), posting from 2026-10-29; a fresh
       design per pack (ADR 0071, #156); PR D (per-post results + freshness numbers) merged (#161)**; the first pack was not posted; November's
       weekly output is [ADR 0072](decisions/0072-november-content-output-one-idea-pack-ten-reels-a-story-pair-a-week.md); outcome check 2026-11-26
-- [ ] **2. Weekly marketing report** *(was 17; owner, 2026-10-07)* — its own weekly issue, and GitHub's
+- [x] **2. Weekly marketing report** *(was 17; owner, 2026-10-07)* — its own weekly issue, and GitHub's
       notification is the email ([ADR 0073](decisions/0073-the-marketing-report-is-its-own-sunday-issue-github-notification-is-the-email.md)):
       traffic, `whatsapp_click` per page, the AI-citation log, outcome checks due,
       item 1's freshness numbers, and **social publishing** *(was 6, then under 15)*: a reel a week *(ten in
       November, ADR 0072)* and a post per story, tracked against the cadence. The engineering weekly hands over its
       marketing sections and links here. Social / GBP numbers are read directly from Meta and Google and reach the agent as a
       file from a fixed pre-agent step, never as a credential (ADR 0047/0048 pattern). → *reports delivered weekly; the social cadence met*
-      [plans/marketing-weekly-report.md](plans/marketing-weekly-report.md) — **Gate 1 approved 2026-11-04**; merge by 2026-11-15; outcome check 2026-11-30
+      [plans/marketing-weekly-report.md](plans/marketing-weekly-report.md) — **shipped 2026-11-06** ([PR #173](https://github.com/OrCoAI/lev-yam-main/pull/173), first issue #174); outcome check 2026-11-30.
+      Still open: the email, once the owner watches the repo; Meta and Google numbers, once their secrets exist.
+      Follow-up: take `gh` away from the report agents (plan, *Follow-ups found by the gate*).
 - [ ] **3. Search & AI visibility** *(was 3 + 4)* — the same facts everywhere (site,
       GBP, socials), `facts.txt` / `llms.txt` expansion, internal links between stories, the local
       queries the story backlog does not cover → *local-pack impressions, direction requests, AI-answer

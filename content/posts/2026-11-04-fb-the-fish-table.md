@@ -6,7 +6,7 @@ media: [2026-10-kitchen-03]
 utm: https://levyam.com/stories/private-event-on-the-beach/?utm_source=facebook&utm_medium=social&utm_campaign=2026-11-04-fb-the-fish-table
 experiment:
 expires:
-posted:
+posted: 2026-11-04
 ar_signed: 2026-11-02
 results:
 ---
