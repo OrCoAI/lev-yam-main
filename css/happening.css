@@ -481,7 +481,7 @@ a.hp-fact-line { inline-size: fit-content; }
 
 .hp-slides {
   position: relative;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 1 / 1;
   border-radius: var(--hp-tile-radius);
   overflow: hidden;
   background: color-mix(in srgb, var(--color-blue) 18%, var(--color-cream));
@@ -492,9 +492,11 @@ a.hp-fact-line { inline-size: fit-content; }
   user-select: none;
 }
 .hp-slides:focus-visible { outline: 3px solid var(--color-orange); outline-offset: 3px; }
-@media (min-width: 800px) {
-  .hp-slides { aspect-ratio: 16 / 10; }
-}
+/* Square at every width, never taller than the screen (a landscape phone) and
+   never wider than 600px (a 1120px-wide square would fill two screens); a
+   capped frame sits under the title at the inline start. vh is the fallback. */
+.hp-slides { max-inline-size: min(600px, 85vh); }
+.hp-slides { max-inline-size: min(600px, 85svh); }
 .hp-slide {
   position: absolute;
   inset: 0;
@@ -669,12 +671,11 @@ a.hp-fact-line { inline-size: fit-content; }
 }
 
 /* ── Desktop: the page stretches. A 1120px column, the action panel beside
-   the facts, titles and text at the inline start, the photo frame 16:9. ── */
+   the facts, titles and text at the inline start. ── */
 @media (min-width: 1024px) {
   .hp-sheet > .container-narrow { --container-narrow: 1120px; }
   .hp-hero-body { max-inline-size: 1120px; }
   .hp-top { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--space-4); align-items: stretch; }
-  .hp-slides { aspect-ratio: 16 / 9; }
 }
 
 /* ── The hub's calendar (js/happening.js fills it): the month card and,
@@ -802,4 +803,5 @@ button.hp-cal-day:focus-visible { outline: 3px solid var(--color-orange); outlin
   .story-header, .wave-divider, .hp-sticky, .hp-float, .hp-share, .site-footer,
   .hp-slide-arrow, .hp-slide-dots, .hp-slide-count { display: none !important; }
   .hp-hero { min-block-size: auto; }
+  .hp-slides { max-inline-size: 60%; }
 }
