@@ -37,6 +37,10 @@ _(none)_
 
 ## Done
 
+- 2026-11-23 — Landing-page photos are square (owner's call): the slideshow frame was 4:3 on
+  phones, 16:10 from 800px, 16:9 from 1024px; now 1:1 everywhere, capped at 600px and 85% of
+  the screen height (landscape phones), 60% of the page in print. CSS only (`css/happening.css`).
+
 - 2026-10-01 — A landing page's phone menu is wired before the feed-config guard in
   `js/happening.js` (works when the config or renderer fails to load; hubs keep
   `js/stories.js`'s drawer); the staff list holds a time range left-to-right (LRI/PDI), like
