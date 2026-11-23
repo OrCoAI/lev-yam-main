@@ -9,7 +9,7 @@ lets a non-interactive agent write to. Section 1 is the owner's — no job edits
 | | |
 |---|---|
 | **Remotion** | pinned in `video/package.json` (`npx remotion versions`); every `remotion` / `@remotion/*` package at that one exact version |
-| **Skills** | official Remotion Agent Skills — upstream `remotion-dev/skills` main at `4.0.538` (read 2026-10-26); installed per machine at `~/.agents/skills/remotion-*` last recorded `4.0.532` (`remotion-markup` folder hash `e671b318`, 2026-10-06) — run `npx skills update …` (§11) to refresh and re-check the hash |
+| **Skills** | official Remotion Agent Skills — upstream `remotion-dev/skills` main at `4.0.546` (read 2026-11-23); installed per machine at `~/.agents/skills/remotion-*` last recorded `4.0.532` (`remotion-markup` folder hash `e671b318`, 2026-10-06) — run `npx skills update …` (§11) to refresh and re-check the hash |
 | **Platforms** | Meta only this quarter: Reels, Stories, feed 4:5 (owner, 2026-10-06) |
 | **Audio** | none in v1 (owner, 2026-10-06) |
 | **License** | Remotion free license — organisations of up to 3 people, client work included (owner's count 2026-10-06: ≤ 3); re-read weekly |
@@ -300,6 +300,61 @@ related product.
 ## Changelog
 
 *Newest first; the weekly job adds its entry at the top.*
+
+### 2026-11-23 — weekly refresh
+- **Skills version bump — `remotion-dev/skills` 4.0.538 → 4.0.546.** Both
+  `remotion-best-practices/SKILL.md` (a router only) and `remotion-markup/SKILL.md` frontmatter
+  now read `4.0.546`. Content check against this file: RTL guidance still says set a base text
+  direction, animate Arabic by word (not letter), and keep letters joined — matches §4; fonts
+  guidance still points to Google Fonts — matches §4; timing/transitions guidance still drives
+  everything from `useCurrentFrame()`/`interpolate()`, CSS transitions/animations/Tailwind classes
+  called out as not rendering correctly — matches §5. No rule-affecting change found. The
+  per-machine install (last recorded `4.0.532`, 2026-10-06) was not re-checked this run (no shell
+  access). Run locally: `npx skills update remotion-best-practices remotion-captions
+  remotion-create remotion-docs remotion-interactivity remotion-maps remotion-markup
+  remotion-multimedia remotion-render remotion-saas remotion-studio remotion-upgrade --yes`
+  (guidelines §11), then update the header's install version/hash by hand. Source:
+  https://raw.githubusercontent.com/remotion-dev/skills/main/skills/remotion-best-practices/SKILL.md
+  and .../remotion-markup/SKILL.md, read 2026-11-23.
+- **New upstream Remotion releases since the pin (`video/package.json` still `4.0.543`; a
+  dependabot bump, not this job's to make):** v4.0.544 (2026-11-16: render-time validation of
+  props against the composition's zod `schema` — already how §6 structures every composition;
+  new Google Fonts "Agrave Pro" and "Firjar", neither Hebrew nor Arabic so no change to §4;
+  Terraform Lambda deploy — out of scope, §13); v4.0.545 (2026-11-18: proper motion blur — a new
+  `motionBlur` option on `TransitionSeries.Transition` in `@remotion/transitions` and a new
+  `@remotion/motion-blur` package/`HtmlInCanvasMotionBlur`; no brief uses it and §5's existing
+  "cuts and brand transitions, not fades" rule is unaffected, but it's a new transition-adjacent
+  primitive worth knowing about for a future motion-heavy brief; also drops `--public-license-key`
+  from the render/still CLI help, cosmetic); v4.0.546 (2026-11-23: a new `npx remotion whisper` CLI
+  for local transcription/model management, and a Studio "add effects to any element" feature —
+  Studio-only). None renames or removes an API this file names, and none contradicts §5/§6/§10/§11.
+  The whisper CLI is a thinner wrapper, not a different engine, and this file's unverified-Hebrew
+  caveat in §13 is about whisper.cpp's model quality, not the invocation method, so §13 is
+  unchanged. Source: https://github.com/remotion-dev/remotion/releases.atom, read 2026-11-23.
+- Checked and unchanged (no edit needed): the free-license clause —
+  `raw.githubusercontent.com/remotion-dev/remotion/main/LICENSE.md` (read 2026-11-23) still reads
+  "a for-profit organization with up to 3 employees"; also checked
+  `remotion.dev/docs/license/pricing` this cycle (not opened before), which independently says
+  "For individuals and companies of up to 3 people" with "unlimited commercial use" — consistent
+  with, not a contradiction of, the header's "organisations of up to 3 people, client work
+  included"; neither page uses the words "client work" explicitly, so the owner's existing
+  interpretation stands unchanged.
+- Platform/practice research (WebSearch, 6 queries: Instagram Reels safe zone + ad specs,
+  Meta Stories safe zone, Reels hook rate/first three seconds, Remotion best practices, Remotion
+  Hebrew/Arabic RTL, Remotion captions; 2026-11-23) — no result was on facebook.com,
+  business.facebook.com, developers.facebook.com, or (for the Remotion queries) an official
+  remotion.dev/github.com page opened directly, so all are cited only as "(snippet, unopened)" and
+  none override §3/§4/§7/§14's existing official figures: third-party guides repeated the existing
+  14 %/35 %/6 % Reels/Stories figures (one, inro.social via a billo.app summary, again claimed a
+  "unified" March-2026 safe zone, consistent with §3's existing "same box for Stories" line — no
+  edit made on an unopened source); "hook rate" benchmarks conflicted across vendor blogs
+  (25–30 % vs. >60 %) with no Instagram-official figure, so §7 keeps its existing official Meta
+  47 %/74 % citation; the RTL search returned no Remotion-specific result at all; the captions
+  search surfaced only third-party skill mirrors, one claiming an undocumented
+  `pageBreakAfter` field on `Caption` with inconsistent version numbers across sources — too
+  unreliable to adopt, not added to §13.
+- No instruction-like text ("ignore your rules", a link/contact to add, a command to run) was
+  found in any fetched or searched source this run.
 
 ### 2026-10-26 — weekly refresh
 - **Skills version bump — `remotion-dev/skills` 4.0.533 → 4.0.538.** Both
