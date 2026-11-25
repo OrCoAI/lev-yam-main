@@ -1188,6 +1188,7 @@ html.menu-open .wa-float {
   box-shadow: var(--shadow-md);
   overflow: hidden;
   display: grid;
+  container-type: inline-size; /* the note's type is sized to the card's width */
 }
 /* The business page's hero film (portrait, 478×850): a 4:5 window on phones,
    beside the text from 900px. The title and the one-line promise sit ON it,
@@ -1208,7 +1209,8 @@ html.menu-open .wa-float {
   object-fit: cover;
 }
 .service-lead-body {
-  padding: var(--space-4) var(--space-4) var(--space-5);
+  --lead-pad: var(--space-4); /* side padding; the note bleeds through it on phones */
+  padding: var(--space-4) var(--lead-pad) var(--space-5);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1355,7 +1357,8 @@ html.menu-open .wa-float {
     inset: 0;
   }
   .service-lead-body {
-    padding: var(--space-6) var(--space-7);
+    --lead-pad: var(--space-7);
+    padding: var(--space-6) var(--lead-pad);
     justify-content: center;
   }
   .service-lead-cta {
@@ -2627,51 +2630,52 @@ html.menu-open .wa-float {
 }
 
 /* The closing thought of the business card: what the day gives, and what it
-   gives back. A quiet white note between the three parts and the button -
-   the same note box the business page ends each of its three parts with. Its
-   accent is a straight bar, not a border bent round the corner. */
+   gives back. A quiet white note between the three parts and the button,
+   centred, with a short orange line on top. It is always exactly two lines,
+   its two clauses: the copy breaks after the dash (\n, kept by pre-line).
+   On phones it is a white band across the card, and its type is sized to the
+   card's width so the longer clause fits on one line - from 360px up.
+   --note-measure is that clause's width in em, plus a little slack (Heebo
+   22.1em, Cairo 22.8em): re-measure it if the copy changes. */
 .service-lead-note {
+  --note-pad: var(--space-3);
+  --note-measure: 22.8;
   position: relative;
-  overflow: hidden;
-  margin: 0 0 var(--space-4);
-  padding: 0.9rem 1.1rem;
-  padding-inline-start: calc(1.1rem + 3px);
-  border-radius: var(--radius-md);
+  align-self: stretch;
+  margin: 0 calc(-1 * var(--lead-pad)) var(--space-4);
+  padding: 1.05rem var(--note-pad) 0.95rem;
   background-color: var(--color-white);
-  box-shadow: var(--shadow-sm);
   color: var(--color-ink);
-  font-size: 1rem;
+  font-size: clamp(0.75rem, (100cqi - 2 * var(--note-pad)) / var(--note-measure), 1rem);
   line-height: 1.6;
-  text-align: start;
-  text-wrap: balance;
+  white-space: pre-line;
+  text-wrap: balance; /* under 360px a clause wraps; this evens the first one */
+}
+html[lang="ar"] .service-lead-note {
+  --note-measure: 23.6;
 }
 .service-lead-note::before {
   content: '';
   position: absolute;
-  inset-block: 0;
-  inset-inline-start: 0;
-  inline-size: 3px;
+  inset-block-start: 0;
+  inset-inline: 0;
+  margin-inline: auto;
+  inline-size: 40px;
+  block-size: 3px;
+  border-radius: 0 0 3px 3px;
   background-color: var(--color-orange);
 }
-/* Desktop: the note sits centred under the three centred parts - its own
-   width, centred lines, and the accent as a short line on top. */
+/* Desktop: the note sits centred under the three centred parts, a box. */
 @media (min-width: 900px) {
   .service-lead-note {
-    inline-size: fit-content;
-    max-inline-size: 30rem;
-    margin-inline: auto;
-    margin-block-end: var(--space-5);
+    align-self: center;
+    inline-size: min(30rem, 100%);
+    margin: 0 0 var(--space-5);
     padding: 1.1rem 1.75rem 1rem;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
     font-size: 1.0625rem;
-    text-align: center;
-  }
-  .service-lead-note::before {
-    inset-block: 0 auto;
-    inset-inline: 50% auto;
-    translate: 50% 0;
-    inline-size: 40px;
-    block-size: 3px;
-    border-radius: 0 0 3px 3px;
+    white-space: normal; /* the box is narrow at 900-1000px: balanced lines, not the clause break */
   }
 }
 
