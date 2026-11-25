@@ -5,7 +5,9 @@
   amends [0050](0050-story-pages-carry-no-body-links.md) (its "decide the form as its own
   decision" clause is used here) and §1 of [0058](0058-initiatives-stand-alone-cost-booking-fields-section-named-yozmot.md)
   ("share the site chrome and nothing else" — the chrome gains one line); both otherwise stand.
-  Number 0074 is held by a decision drafted on another branch.
+  Number 0074 is held by a decision drafted on another branch. Amended by
+  [0076](0076-one-shared-site-chrome-business-page-events-map-key-and-retired-subdomains.md)
+  (the redirect's form).
 - **Decided by:** owner + Claude Code (kickoff of [plans/site-redesign-business-first.md](../plans/site-redesign-business-first.md))
 - **Source:** the owner's request and the `feature-spec` alignment questions, 2026-11-23, in session
 

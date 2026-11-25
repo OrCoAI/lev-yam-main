@@ -14,7 +14,7 @@ deploy together to **levyam.com** via **GitHub Pages**:
 
 | Surface | Path | Purpose | Build | Backend |
 |---|---|---|---|---|
-| Marketing | `index.html`, `stories/` | Public marketing, booking, content (HE/AR) | none | none |
+| Marketing | `index.html`, `business/`, `stories/` | Public marketing, booking, content (HE/AR) | none | none |
 | Survey | `survey-june.html` | Community survey | none | Supabase |
 | POS | `pos.html` → `/app/pos` | Internal POS (cut over 2026-07-15; redirect only) | none | Supabase |
 | **Platform** | `/app` → `app-src/` | Internal staff platform (login + modules) | Vite + React + TS | Supabase |
@@ -31,21 +31,25 @@ block** — the roadmap's **Blocks** rule defines it and says where its mandate 
 
 ## Conventions & gotchas
 
-### Marketing site (`index.html`, `survey-june.html`)
+### Marketing site (`index.html`, `business/`, `survey-june.html`)
 - **No build tooling.** Edit HTML/CSS/JS directly; test with `python3 -m http.server 8080`.
-- **Bilingual (HE default + Levantine Arabic, RTL).** Dictionary in `js/app.js`; every copy change
+- **Bilingual (HE default + Levantine Arabic, RTL).** Dictionary in `js/app.js` (`/business/`:
+  `TRANSLATIONS` in `js/business.js`); every copy change
   updates **both** languages and the `data-i18n` keys. Fonts are self-hosted woff2 subsets in
   `fonts/` — no font CDN calls.
 - **Analytics — three vendors, deliberately unequal scopes.** A WhatsApp CTA click fans out through
   `js/wa-track.js` (`LevYamTrack.whatsappClick`) to Dynatrace `levyam.whatsapp_cta`, Meta Pixel
   `Contact`, and GA4 `whatsapp_click` (with `page_slug` from `<body data-page-slug>`). Everything
-  else (service interest, contact intent, FAQ opens, language switch) is homepage-only and goes to
-  **Dynatrace alone**. GA4 is `G-VWL45MKK76`, Enhanced Measurement ON; `whatsapp_click` and
-  `share_click` (a share of a `/happening/` landing page, `LevYamTrack.shareClick` → Dynatrace
-  `levyam.share` + GA4, no Meta — [ADR 0057](docs/decisions/0057-ga4-carries-share-click-for-happening-landing-pages.md))
+  else (service interest, contact intent, FAQ opens, language switch, `/business/`'s planner) is
+  homepage and `/business/` only and goes to **Dynatrace alone**. GA4 is `G-VWL45MKK76`, Enhanced
+  Measurement ON; `whatsapp_click` and `share_click` (a share of a `/happening/` landing page,
+  `LevYamTrack.shareClick` → Dynatrace `levyam.share` + GA4, no Meta — [ADR 0057](docs/decisions/0057-ga4-carries-share-click-for-happening-landing-pages.md))
   are the two hand-written GA4 events — adding another is a deliberate decision, not a default
   ([ADR 0006](docs/decisions/0006-ga4-carries-whatsapp-click-tier-separation-console-side.md)). **Staging is excluded from GA
   console-side** (hostname filter), never by a hostname guard in the snippet (same ADR).
+- **One chrome on every public page** — header, phone menu, footer, floating WhatsApp button.
+  Behaviour in `js/chrome.js`; CSS in `css/styles.css` **and** its scoped copy
+  `css/business-chrome.css` — a chrome change edits both ([ADR 0076](docs/decisions/0076-one-shared-site-chrome-business-page-events-map-key-and-retired-subdomains.md)).
 - **Contact details** stay consistent everywhere: WhatsApp `972506669138`, email `info@levyam.com`.
 
 ### Stories section (`stories/`, served at `/stories/`)
@@ -143,6 +147,8 @@ gates. Dev: `cd video && npm ci && npm run dev` (Studio); `npm run lint` before 
   "Staff login", never in `sitemap.xml`.
 - **Browser-side Supabase keys are the anon/publishable keys** — safe to commit. RLS + Auth are the
   guard. **Never** commit a service-role/secret key anywhere; service-role lives only in Edge Functions.
+  The map's ArcGIS key in `js/app.js` is a browser key too: referrer-restricted to `levyam.com` and
+  staging; it expires, and the owner's calendar holds the renewal — ADR 0076.
 - **Schemas:** `supabase/schema/*.sql` is the source of truth (`00_core.sql` identity & permissions).
   After a change: `node supabase/tests/build-baseline.mjs --write` (CI drift check), then
   `supabase db reset` (local). **Staging and prod are not on the migration pipeline:** apply each new
@@ -328,7 +334,7 @@ Phase 2 and the shakedown cruise for this machinery — decision log, tiers, out
 Push to `main` → `.github/workflows/deploy.yml` builds `app-src` → `/app`, assembles the site from the
 **explicit allowlist in `scripts/assemble-site.sh`** (shared with staging's `build-site.sh`; a new public
 page or asset folder must be added there or it 404s in prod), runs the grant audit and smoke-checks
-`/`, `/app/`, `/pos.html`, `/stories/`, `/stories/ar/`, `/happening/`, `/happening/ar/`, `/robots.txt`,
+`/`, `/app/`, `/pos.html`, `/business/`, `/stories/`, `/stories/ar/`, `/happening/`, `/happening/ar/`, `/robots.txt`,
 `/sitemap.xml`, `/llms.txt`, `/facts.txt`. `deploy.yml` also runs nightly (the `/happening/` pages are
 rebuilt from the feed) and on a `workflow_dispatch` from the `rebuild-site` function; both deploy
 jobs carry a `github.ref` guard so a dispatch on any other ref no-ops. `main` is branch-protected: PR + green `ci.yml` required, no direct pushes, admins

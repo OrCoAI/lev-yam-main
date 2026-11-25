@@ -122,13 +122,26 @@ session. Items 1, 2 and 5 start without item 7 and gain GBP / Instagram / Facebo
       [plans/marketing-weekly-report.md](plans/marketing-weekly-report.md) — **shipped 2026-11-06** ([PR #173](https://github.com/OrCoAI/lev-yam-main/pull/173), first issue #174); outcome check 2026-11-30.
       Still open: the email, once the owner watches the repo; Meta and Google numbers, once their secrets exist.
       Follow-up: take `gh` away from the report agents (plan, *Follow-ups found by the gate*).
-- [ ] **1a. Site redesign — business events first** *(owner, 2026-11-23; placed after item 1, nothing
+- [x] **1a. Site redesign — business events first** *(owner, 2026-11-23; placed after item 1, nothing
       renumbered — [ADR 0075](decisions/0075-site-redesign-business-first-two-looks-one-chrome-a-business-strip.md))* —
       the business page moves from `b2b.levyam.com` to `levyam.com/business/`; on the homepage business
       events lead "מה קורה בלב ים" and the other services are secondary; a shorter nav on every page;
       the WhatsApp planner for the whole site; one business strip on story and initiative pages; each
       page keeps its own look → *`whatsapp_click` from `/business/` per week; homepage click-through to it*.
-      [plans/site-redesign-business-first.md](plans/site-redesign-business-first.md) — **Gate 1 approved 2026-11-23**
+      [plans/site-redesign-business-first.md](plans/site-redesign-business-first.md) — **Gate 1 approved 2026-11-23**;
+      **shipped 2026-11-25** ([PR #196](https://github.com/OrCoAI/lev-yam-main/pull/196)); `b2b.levyam.com` redirects to
+      `/business/` and `lev-yam-b2b` is private ([ADR 0076](decisions/0076-one-shared-site-chrome-business-page-events-map-key-and-retired-subdomains.md));
+      outcome check 2026-12-16. Follow-ups:
+  - [ ] **The photo round** — sharper originals for both hero films, the business card film and
+        `gallery/01.jpg`; the photo for "מי אנחנו"; the gallery order; the business page's icons at their
+        drawn size (they ship at 372–613px)
+  - [ ] **One chrome, one copy** — `css/chrome.css` instead of `css/business-chrome.css`; menu open/close
+        in `js/chrome.js`; one header-height token; one `css/fonts.css`; the floating button's "step aside"
+        as a `data-` opt-in and one look for it; a no-JS menu for story and initiative pages — the gate's
+        list in the plan
+  - [ ] **One planner vocabulary** for the homepage planner and `/business/` (`js/planner.js` and
+        `js/business.js` keep their own strings today)
+  - [ ] A visible "page not found" on `404.html`
 - [ ] **3. Search & AI visibility** *(was 3 + 4)* — the same facts everywhere (site,
       GBP, socials), `facts.txt` / `llms.txt` expansion, internal links between stories, the local
       queries the story backlog does not cover → *local-pack impressions, direction requests, AI-answer
@@ -151,8 +164,8 @@ session. Items 1, 2 and 5 start without item 7 and gain GBP / Instagram / Facebo
         each page's prefilled message checked → *click-through rate per page*
   - [ ] **Content automation** *(was 11)* — `@claude` drafts a pair from a brief issue; on hold
         while pairs are written by hand (owner, 2026-10-07)
-  - [ ] Bug: desktop header nav overlaps the social icons at 961–1300px, site-wide, HE + AR — Tier B,
-        needs a design call (measurements in the plan's follow-ups)
+  - [x] Bug: desktop header nav overlaps the social icons at 961–1300px, site-wide, HE + AR — closed by
+        item 1a's shorter nav (re-measured 2026-11-25: no overlap at 961–1300px on four page types, HE + AR)
   - [ ] Script the extra-figure and video-montage steps (`story-images.sh --as`, `scripts/story-video.sh`) — Tier A
 - [ ] **5. Google Business Profile loop** *(was 7)* — posts, photos, review replies, Q&A; `AggregateRating`
       on site; the owner's weekly part lives in item 1's list; by hand until item 7 lands →
