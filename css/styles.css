@@ -1188,7 +1188,7 @@ html.menu-open .wa-float {
   box-shadow: var(--shadow-md);
   overflow: hidden;
   display: grid;
-  container-type: inline-size; /* the note's type is sized to the card's width */
+  container-type: inline-size; /* on phones the note's type is sized to the card's width */
 }
 /* The business page's hero film (portrait, 478×850): a 4:5 window on phones,
    beside the text from 900px. The title and the one-line promise sit ON it,
@@ -2632,14 +2632,14 @@ html.menu-open .wa-float {
 /* The closing thought of the business card: what the day gives, and what it
    gives back. A quiet white note between the three parts and the button,
    centred, with a short orange line on top. It is always exactly two lines,
-   its two clauses: the copy breaks after the dash (\n, kept by pre-line).
-   On phones it is a white band across the card, and its type is sized to the
-   card's width so the longer clause fits on one line - from 360px up.
+   its two clauses: the copy breaks between them (\n, kept by pre-line).
+   Its type is sized to the note's own width so the longer clause fits on one
+   line - on phones (a white band across the card) from 360px up.
    --note-measure is that clause's width in em, plus a little slack (Heebo
-   22.1em, Cairo 22.8em): re-measure it if the copy changes. */
+   21.1em, Cairo 22.8em): re-measure it if the copy changes. */
 .service-lead-note {
   --note-pad: var(--space-3);
-  --note-measure: 22.8;
+  --note-measure: 21.8;
   position: relative;
   align-self: stretch;
   margin: 0 calc(-1 * var(--lead-pad)) var(--space-4);
@@ -2665,17 +2665,22 @@ html[lang="ar"] .service-lead-note {
   border-radius: 0 0 3px 3px;
   background-color: var(--color-orange);
 }
-/* Desktop: the note sits centred under the three centred parts, a box. */
+/* Desktop: the note sits centred under the three centred parts, a box of up
+   to 30rem; its type steps down only where the body is narrow (<1000px). */
 @media (min-width: 900px) {
+  .service-lead-body {
+    container-type: inline-size; /* the note's box is measured against the body here */
+  }
   .service-lead-note {
+    --note-pad: 1.75rem;
+    --note-box: min(30rem, 100cqi);
     align-self: center;
-    inline-size: min(30rem, 100%);
+    inline-size: var(--note-box);
     margin: 0 0 var(--space-5);
-    padding: 1.1rem 1.75rem 1rem;
+    padding: 1.1rem var(--note-pad) 1rem;
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-sm);
-    font-size: 1.0625rem;
-    white-space: normal; /* the box is narrow at 900-1000px: balanced lines, not the clause break */
+    font-size: min(1.0625rem, (var(--note-box) - 2 * var(--note-pad)) / var(--note-measure));
   }
 }
 

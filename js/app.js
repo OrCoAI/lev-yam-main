@@ -53,8 +53,8 @@ const LevYamI18n = (function () {
       service_corp_title: 'אירועים עסקיים',
       service_corp_cta: 'בואו נתכנן את היום שלכם!',
       service_corp_lead: 'ימי צוות, מפגשי הנהלה ואירועי חברה במקום קצת אחר.',
-      // two lines, broken after the dash; css/styles.css --note-measure fits it (re-measure if this changes)
-      service_corp_note: 'הרגע הזה של שקט עבורכם, לטובת התארגנות מחדש —\nמקדם חזון של חיבור אנושי חיובי ושגשוג משותף.',
+      // two lines, one per clause; css/styles.css --note-measure fits it (re-measure if this changes)
+      service_corp_note: 'הרגע הזה של שקט עבורכם, לטובת התארגנות מחדש\nמקדם חזון של חיבור אנושי חיובי ושגשוג משותף.',
       service_corp_space: 'המרחב',
       service_corp_space_tag: 'משנים אווירה. פותחים את הראש.',
       service_corp_food: 'האוכל',
@@ -229,8 +229,8 @@ const LevYamI18n = (function () {
       service_corp_title: 'فعاليات الأعمال',
       service_corp_cta: 'لنخطّط يومكم معاً!',
       service_corp_lead: 'أيام فريق، لقاءات إدارة وفعاليات شركات في مكان مختلف قليلاً.',
-      // two lines, broken after the dash; css/styles.css --note-measure fits it (re-measure if this changes)
-      service_corp_note: 'هذه اللحظة من السكون لكم، لإعادة ترتيب الأمور —\nتدفع رؤيةً للتواصل الإنساني الإيجابي والازدهار المشترك.',
+      // two lines, one per clause; css/styles.css --note-measure fits it (re-measure if this changes)
+      service_corp_note: 'هذه اللحظة من السكون لكم، لإعادة ترتيب الأمور\nتدفع رؤيةً للتواصل الإنساني الإيجابي والازدهار المشترك.',
       service_corp_space: 'المكان',
       service_corp_space_tag: 'نغيّر الأجواء. نفتح الذهن.',
       service_corp_food: 'الطعام',
