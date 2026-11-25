@@ -367,7 +367,6 @@
         "ar": "فعالية أعمال جماعية تحت العريشة في ليف يام"
       },
       "used_in": [
-        "index.html",
         "stories/ar/dugma/index.html",
         "stories/dugma/index.html"
       ],
@@ -456,6 +455,7 @@
       "kind": "clip",
       "renditions": [
         "img/hero/hero.mp4",
+        "img/hero/hero-wide.mp4",
         "img/hero/hero-portrait.mp4",
         "img/hero/hero-poster.jpg"
       ],
@@ -1032,6 +1032,373 @@
       "people": "none",
       "consent": "none",
       "published": "2026-11"
+    },
+    {
+      "id": "2026-11-activity-01",
+      "kind": "image",
+      "renditions": [
+        "img/business/content-beach-400.webp",
+        "img/business/content-beach-800.webp",
+        "img/business/content-beach-1024.webp"
+      ],
+      "alt": {
+        "he": "קבוצה מצטלמת על חוף כפר הדייגים, מול המזח",
+        "ar": "مجموعة تتصوّر على شاطئ قرية الصيادين أمام الرصيف"
+      },
+      "used_in": [
+        "business/index.html"
+      ],
+      "people": "adults",
+      "consent": "site",
+      "published": "2026-10"
+    },
+    {
+      "id": "2026-11-activity-02",
+      "kind": "image",
+      "renditions": [
+        "img/business/content-boat-400.webp",
+        "img/business/content-boat-768.webp"
+      ],
+      "alt": {
+        "he": "קבוצה עולה לסירת דייגים במזח",
+        "ar": "مجموعة تصعد إلى قارب صيد عند الرصيف"
+      },
+      "used_in": [
+        "business/index.html"
+      ],
+      "people": "adults",
+      "consent": "site",
+      "published": "2026-10"
+    },
+    {
+      "id": "2026-11-activity-03",
+      "kind": "image",
+      "renditions": [
+        "img/business/content-circle-400.webp",
+        "img/business/content-circle-768.webp"
+      ],
+      "alt": {
+        "he": "מעגל שיחה בצל, ליד סירה על החוף",
+        "ar": "حلقة حديث في الظل بجانب قارب على الشاطئ"
+      },
+      "used_in": [
+        "business/index.html"
+      ],
+      "people": "adults",
+      "consent": "site",
+      "published": "2026-10"
+    },
+    {
+      "id": "2026-11-activity-04",
+      "kind": "image",
+      "renditions": [
+        "img/business/content-move-400.webp",
+        "img/business/content-move-768.webp"
+      ],
+      "alt": {
+        "he": "שיעור תנועה תחת הפרגולה מול הים",
+        "ar": "درس حركة تحت العريشة أمام البحر"
+      },
+      "used_in": [
+        "business/index.html"
+      ],
+      "people": "adults",
+      "consent": "site",
+      "published": "2026-10"
+    },
+    {
+      "id": "2026-11-activity-05",
+      "kind": "image",
+      "renditions": [
+        "img/business/content-sea-400.webp",
+        "img/business/content-sea-768.webp"
+      ],
+      "alt": {
+        "he": "קבוצה יושבת במים הרדודים מול הסלעים",
+        "ar": "مجموعة تجلس في المياه الضحلة أمام الصخور"
+      },
+      "used_in": [
+        "business/index.html"
+      ],
+      "people": "children",
+      "consent": "site",
+      "published": "2026-10"
+    },
+    {
+      "id": "2026-11-activity-06",
+      "kind": "image",
+      "renditions": [
+        "img/business/content-table-400.webp",
+        "img/business/content-table-800.webp",
+        "img/business/content-table-1024.webp"
+      ],
+      "alt": {
+        "he": "קבוצה סביב שולחן ארוך תחת הפרגולה",
+        "ar": "مجموعة حول طاولة طويلة تحت العريشة"
+      },
+      "used_in": [
+        "business/index.html"
+      ],
+      "people": "adults",
+      "consent": "site",
+      "published": "2026-10"
+    },
+    {
+      "id": "2026-11-activity-07",
+      "kind": "image",
+      "renditions": [
+        "img/business/content-yoga-400.webp",
+        "img/business/content-yoga-800.webp",
+        "img/business/content-yoga-1024.webp"
+      ],
+      "alt": {
+        "he": "שיעור יוגה על מזרנים תחת הפרגולה",
+        "ar": "درس يوغا على الحُصر تحت العريشة"
+      },
+      "used_in": [
+        "business/index.html"
+      ],
+      "people": "adults",
+      "consent": "site",
+      "published": "2026-10"
+    },
+    {
+      "id": "2026-11-food-01",
+      "kind": "image",
+      "renditions": [
+        "img/business/food-buffet-400.webp",
+        "img/business/food-buffet-768.webp"
+      ],
+      "alt": {
+        "he": "מגש דגים מטוגנים על שולחן הבופה",
+        "ar": "صينية سمك مقلي على طاولة البوفيه"
+      },
+      "used_in": [
+        "business/index.html"
+      ],
+      "people": "none",
+      "consent": "none",
+      "published": "2026-10"
+    },
+    {
+      "id": "2026-11-food-02",
+      "kind": "image",
+      "renditions": [
+        "img/business/food-manakish-400.webp",
+        "img/business/food-manakish-768.webp"
+      ],
+      "alt": {
+        "he": "מנאקיש זעתר ועגבניות על מגש",
+        "ar": "مناقيش زعتر وبندورة على صينية"
+      },
+      "used_in": [
+        "business/index.html"
+      ],
+      "people": "not-recognisable",
+      "consent": "none",
+      "published": "2026-10"
+    },
+    {
+      "id": "2026-11-food-03",
+      "kind": "image",
+      "renditions": [
+        "img/business/food-plate-400.webp",
+        "img/business/food-plate-768.webp"
+      ],
+      "alt": {
+        "he": "צלחת מטבלים מקומיים מול החוף",
+        "ar": "صحن مقبلات محلية أمام الشاطئ"
+      },
+      "used_in": [
+        "business/index.html"
+      ],
+      "people": "none",
+      "consent": "none",
+      "published": "2026-10"
+    },
+    {
+      "id": "2026-11-food-04",
+      "kind": "image",
+      "renditions": [
+        "img/business/food-salad-400.webp",
+        "img/business/food-salad-768.webp"
+      ],
+      "alt": {
+        "he": "צלחת סלט ירקות טרי",
+        "ar": "صحن سلطة خضار طازجة"
+      },
+      "used_in": [
+        "business/index.html"
+      ],
+      "people": "not-recognisable",
+      "consent": "none",
+      "published": "2026-10"
+    },
+    {
+      "id": "2026-11-food-05",
+      "kind": "image",
+      "renditions": [
+        "img/business/food-salads-400.webp",
+        "img/business/food-salads-724.webp"
+      ],
+      "alt": {
+        "he": "מגש סלטים וטחינה",
+        "ar": "صينية سلطات وطحينة"
+      },
+      "used_in": [
+        "business/index.html"
+      ],
+      "people": "not-recognisable",
+      "consent": "none",
+      "published": "2026-10"
+    },
+    {
+      "id": "2026-11-food-06",
+      "kind": "image",
+      "renditions": [
+        "img/business/food-stuffed-400.webp",
+        "img/business/food-stuffed-724.webp"
+      ],
+      "alt": {
+        "he": "צלחת ממולאים ועלי גפן",
+        "ar": "صحن محاشي وورق عنب"
+      },
+      "used_in": [
+        "business/index.html"
+      ],
+      "people": "not-recognisable",
+      "consent": "none",
+      "published": "2026-10"
+    },
+    {
+      "id": "2026-11-food-07",
+      "kind": "image",
+      "renditions": [
+        "img/business/food-vine-400.webp",
+        "img/business/food-vine-800.webp",
+        "img/business/food-vine-1024.webp"
+      ],
+      "alt": {
+        "he": "עלי גפן ממולאים ומטבלים על השולחן",
+        "ar": "ورق عنب محشي ومقبلات على الطاولة"
+      },
+      "used_in": [
+        "business/index.html"
+      ],
+      "people": "none",
+      "consent": "none",
+      "published": "2026-10"
+    },
+    {
+      "id": "2026-11-space-01",
+      "kind": "clip",
+      "renditions": [
+        "img/business/space-full.mp4",
+        "img/business/space-full-poster.webp"
+      ],
+      "alt": {
+        "he": "סיור במתחם: הפרגולה, החוף והחלל הפנימי",
+        "ar": "جولة في المكان: العريشة والشاطئ والمساحة الداخلية"
+      },
+      "used_in": [
+        "business/index.html"
+      ],
+      "people": "none",
+      "consent": "none",
+      "published": "2026-10"
+    },
+    {
+      "id": "2026-11-space-02",
+      "kind": "clip",
+      "renditions": [
+        "img/business/space-inside.mp4",
+        "img/business/space-inside-poster.webp"
+      ],
+      "alt": {
+        "he": "החלל הפנימי: פינות ישיבה ושולחן עבודה",
+        "ar": "المساحة الداخلية: جلسات وطاولة عمل"
+      },
+      "used_in": [
+        "business/index.html"
+      ],
+      "people": "none",
+      "consent": "none",
+      "published": "2026-10"
+    },
+    {
+      "id": "2026-11-space-03",
+      "kind": "clip",
+      "renditions": [
+        "img/business/space-sea.mp4"
+      ],
+      "alt": {
+        "he": "הפרגולה מול הים והסירות",
+        "ar": "العريشة أمام البحر والقوارب"
+      },
+      "used_in": [
+        "business/index.html"
+      ],
+      "people": "none",
+      "consent": "none",
+      "published": "2026-10"
+    },
+    {
+      "id": "2026-11-space-04",
+      "kind": "clip",
+      "renditions": [
+        "img/business/space-sunset.mp4",
+        "img/business/space-sunset-poster.webp"
+      ],
+      "alt": {
+        "he": "המתחם בשקיעה",
+        "ar": "المكان عند الغروب"
+      },
+      "used_in": [
+        "business/index.html"
+      ],
+      "people": "none",
+      "consent": "none",
+      "published": "2026-10"
+    },
+    {
+      "id": "2026-11-space-05",
+      "kind": "clip",
+      "renditions": [
+        "img/business/space-title.mp4",
+        "img/business/space-title-poster.webp"
+      ],
+      "alt": {
+        "he": "הפרגולה ושולחנות מול הים",
+        "ar": "العريشة وطاولات أمام البحر"
+      },
+      "used_in": [
+        "business/index.html"
+      ],
+      "people": "none",
+      "consent": "none",
+      "published": "2026-10"
+    },
+    {
+      "id": "2026-11-venue-film-01",
+      "kind": "clip",
+      "renditions": [
+        "img/business/hero.mp4",
+        "img/business/hero-poster.jpg",
+        "img/business/hero-card.mp4",
+        "img/business/hero-card-poster.jpg"
+      ],
+      "alt": {
+        "he": "רגעים במתחם: הקיר המצויר, ספרים, תה ושקיעה",
+        "ar": "لحظات في المكان: الجدار المرسوم، كتب، شاي وغروب"
+      },
+      "used_in": [
+        "business/index.html",
+        "css/business.css",
+        "index.html"
+      ],
+      "people": "not-recognisable",
+      "consent": "none",
+      "published": "2026-10"
     }
   ]
 }

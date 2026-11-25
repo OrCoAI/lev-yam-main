@@ -30,6 +30,8 @@
 ## האתר / Site
 
 - [דף הבית](https://levyam.com/): homepage, Hebrew and Arabic
+- [אירועים עסקיים](https://levyam.com/business/): team days, management offsites and company
+  events — the space, the food, the content, and a WhatsApp planner; Hebrew and Arabic
 - [מה קורה בלב ים](https://levyam.com/#services): services — corporate, private,
   venue rental, community day, weekends
 - [מי אנחנו](https://levyam.com/#why): who we are, the village, the partnership

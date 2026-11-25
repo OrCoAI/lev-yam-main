@@ -43,7 +43,6 @@
     <a id="t-header" href="https://wa.me/1" data-i18n-wa="wa_msg_general" data-bizevent-source="header">header</a>
     <a id="t-float"  href="https://wa.me/1" data-i18n-wa="wa_msg_general" data-bizevent-source="float">float</a>
     <a id="t-footer" href="https://wa.me/1"                                data-bizevent-source="footer">footer</a>
-    <a id="t-corp"   href="https://wa.me/1" data-i18n-wa="wa_msg_corp">corp</a>
     <a id="t-priv"   href="https://wa.me/1" data-i18n-wa="wa_msg_priv">priv</a>
     <a id="t-rent"   href="https://wa.me/1" data-i18n-wa="wa_msg_rent">rent</a>
     <a id="t-comm"   href="https://wa.me/1" data-i18n-wa="wa_msg_comm">comm</a>
@@ -115,15 +114,12 @@
     ok('footer WA → event.source = footer',   eq(find('levyam.whatsapp_cta').attrs['event.source'], 'footer'));
 
     // Service interest events
-    click('t-corp');
-    var si = find('levyam.service_interest');
-    ok('corp CTA → whatsapp_cta source = service_corp', eq(find('levyam.whatsapp_cta').attrs['event.source'], 'service_corp'));
-    ok('corp CTA → service_interest fired',             !!si);
-    ok('corp CTA → service.type = corp',                si && eq(si.attrs['service.type'], 'corp'));
-    ok('corp CTA → no contact_intent',                  !find('levyam.contact_intent'));
-
     click('t-priv');
-    ok('priv CTA → service.type = priv',      eq(find('levyam.service_interest').attrs['service.type'], 'priv'));
+    var si = find('levyam.service_interest');
+    ok('priv CTA → whatsapp_cta source = service_priv', eq(find('levyam.whatsapp_cta').attrs['event.source'], 'service_priv'));
+    ok('priv CTA → service_interest fired',             !!si);
+    ok('priv CTA → service.type = priv',                si && eq(si.attrs['service.type'], 'priv'));
+    ok('priv CTA → no contact_intent',                  !find('levyam.contact_intent'));
     click('t-rent');
     ok('rent CTA → service.type = rent',      eq(find('levyam.service_interest').attrs['service.type'], 'rent'));
     click('t-comm');
