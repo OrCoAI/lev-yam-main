@@ -336,7 +336,6 @@
         "img/gallery/18-480.webp",
         "img/gallery/18-960.webp",
         "img/gallery/18.jpg",
-        "img/og/levyam-share.jpg",
         "img/stories/dugma/hero-1600.jpg",
         "img/stories/dugma/hero-800.jpg",
         "img/stories/dugma/card.jpg"
@@ -577,13 +576,15 @@
       "renditions": [
         "img/stories/how-to-get-to-jisr-az-zarqa/clip.mp4",
         "img/stories/how-to-get-to-jisr-az-zarqa/clip-540.mp4",
-        "img/stories/how-to-get-to-jisr-az-zarqa/clip-poster.jpg"
+        "img/stories/how-to-get-to-jisr-az-zarqa/clip-poster.jpg",
+        "img/og/levyam-share-boat-sunset.jpg"
       ],
       "used_in": [
+        "index.html",
         "stories/ar/how-to-get-to-jisr-az-zarqa/index.html",
         "stories/how-to-get-to-jisr-az-zarqa/index.html"
       ],
-      "people": "none",
+      "people": "not-recognisable",
       "consent": "none",
       "published": "2026-09"
     },
