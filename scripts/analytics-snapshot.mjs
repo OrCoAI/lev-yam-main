@@ -31,7 +31,7 @@ import { createSign } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { ROOT, readPosts, addDays, isDate } from './lib/content.mjs'
-import { clean, reason } from './lib/scrub.mjs'
+import { clean, hide, reason } from './lib/scrub.mjs'
 import { dayFrom, settle, failed, errorsOf, fetchJson, exchangeToken, writeJson, statusLine } from './lib/snapshot.mjs'
 
 const PROPERTY = '549432476' // GA4 property "Lev Yam" (an id, not a credential)
@@ -83,6 +83,7 @@ const loadKey = () => {
     // Never echo the parse error: it quotes the start of the secret.
     throw new Error('GOOGLE_SA_KEY is not valid JSON')
   }
+  hide(key.private_key, key.private_key_id)
   if (!key.client_email || !key.private_key || !key.token_uri) throw new Error('GOOGLE_SA_KEY is not a service-account key')
   return key
 }
@@ -134,6 +135,8 @@ const ga4Report = async (token, w, { dimension, metrics, filter }) => {
     // `(direct) / (none)` is deliberately NOT in that set: it is a real attribution.
     const raw = values[valueAt]
     const rec = dimension ? { key: clean(raw), unset: UNSET.has(raw) } : {}
+    // compared and joined on, never printed: not enumerable, so no spread or JSON carries it
+    Object.defineProperty(rec, 'raw', { value: String(raw ?? '') })
     metrics.forEach((m, i) => { rec[m] = Number(row.metricValues?.[i]?.value) })
     split[values[rangeAt]]?.push(rec)
   }
@@ -194,7 +197,7 @@ const named = (part, range) => (failed(part) ? [] : part[range].filter((r) => !r
 const top = (part, range, label, metric, n = 3) => named(part, range).slice(0, n).map((r) => ({ [label]: r.key, [metric === 'eventCount' ? 'clicks' : metric]: r[metric] }))
 const pct = (value) => (Number.isFinite(value) ? Number(value.toFixed(1)) : null)
 const sumFor = (part, range, metric, wanted) => (failed(part) ? null : named(part, range).filter(wanted).reduce((n, r) => n + r[metric], 0))
-const fromChannel = (id) => (r) => CHANNEL_SOURCES[id].includes(r.key.split(' / ')[0].trim().toLowerCase())
+const fromChannel = (id) => (r) => CHANNEL_SOURCES[id].includes(r.raw.split(' / ')[0].trim().toLowerCase())
 
 // The marketing report's deep read (ADR 0073). A second batch, after the headline: GA4 allows
 // ten concurrent requests per property, and together they would pass it.
@@ -209,11 +212,11 @@ const deepRead = (token, w) => settle({
 
 const deepCurrent = (deep, bySource) => {
   const range = 'current'
-  const clicks = failed(deep.landingClicks) ? null : new Map(named(deep.landingClicks, range).map((r) => [r.key, r.eventCount]))
+  const clicks = failed(deep.landingClicks) ? null : new Map(named(deep.landingClicks, range).map((r) => [r.raw, r.eventCount]))
   return {
     // A landing page's clicks over its sessions: the page that opened the visit, wherever the click came.
     landing_pages: named(deep.landing, range).slice(0, DEEP_TOP).map((r) => {
-      const n = clicks ? (clicks.get(r.key) ?? 0) : null
+      const n = clicks ? (clicks.get(r.raw) ?? 0) : null
       return { page: r.key, sessions: r.sessions, engagement_rate_pct: pct(r.engagementRate * 100), whatsapp_click: n, conversion_pct: n === null || !r.sessions ? null : pct((n / r.sessions) * 100) }
     }),
     devices: top(deep.devices, range, 'device', 'sessions', DEEP_TOP),
@@ -221,8 +224,8 @@ const deepCurrent = (deep, bySource) => {
     visitors: top(deep.visitors, range, 'visitor', 'sessions', DEEP_TOP),
     // The homepage swaps language client-side, so its Arabic visits are not separable; this is Arabic URLs only.
     arabic_url_landings: {
-      sessions: sumFor(deep.landing, range, 'sessions', (r) => ARABIC_PATH.test(r.key)),
-      whatsapp_click: sumFor(deep.landingClicks, range, 'eventCount', (r) => ARABIC_PATH.test(r.key)),
+      sessions: sumFor(deep.landing, range, 'sessions', (r) => ARABIC_PATH.test(r.raw)),
+      whatsapp_click: sumFor(deep.landingClicks, range, 'eventCount', (r) => ARABIC_PATH.test(r.raw)),
     },
     channels_from_site: Object.fromEntries(Object.keys(CHANNEL_SOURCES).map((id) => [id, {
       sessions: sumFor(deep.sources, range, 'sessions', fromChannel(id)),
