@@ -25,9 +25,9 @@ The site does not say so yet:
 |---|---|
 | Metric | (1) `whatsapp_click` per week with `page_slug = business`; (2) the share of homepage sessions that click through to `/business/` |
 | Source | GA4, as delivered in the weekly marketing report (`.reports/analytics.json`). (2) is read from Enhanced Measurement's `page_view` on `/business/` with `page_referrer` = the homepage — no new GA4 event (ADR 0006); Dynatrace `levyam.service_interest` (`cta.source`) says which homepage link was used |
-| Baseline (today) | (1) 0 — the page is not in GA4; its Dynatrace `levyam.whatsapp.click` count is read once before ship and written here. (2) 0 — no link exists. Context: homepage 18 `whatsapp_click` / 50 sessions, week ending 2026-11-22 |
+| Baseline (today) | (1) 0 — the page is not in GA4; its Dynatrace `levyam.whatsapp.click` count is read once before ship and written here. **Not read:** the session that merged had no Dynatrace login for the site's environment; the old page now redirects, so GA4's 0 stands as the baseline. (2) 0 — no link exists. Context: homepage 18 `whatsapp_click` / 50 sessions, week ending 2026-11-22 |
 | Target | (1) at least 5 a week by the check date; (2) at least 15% of homepage sessions. Site-wide `whatsapp_click` does not fall below its 4-week average on the ship date (the guard) |
-| Check date | ship + 3 weeks — the date is written here at merge; the marketing report lists it when due |
+| Check date | **2026-12-16** (shipped 2026-11-25, + 3 weeks); the marketing report lists it when due |
 | Verdict owner | owner |
 
 ## Scope
@@ -132,7 +132,8 @@ Blocking (before the planner is built):
 
 Non-blocking:
 
-- The redirect's form (redirect page vs DNS) — decided at PR 2.
+- The redirect's form (redirect page vs DNS) — **decided 2026-11-25:** a redirect page served
+  from a repo of its own (below; [ADR 0076](../decisions/0076-one-shared-site-chrome-business-page-events-map-key-and-retired-subdomains.md)).
 - What happens to the old repo's own files — owner (answered 2026-11-25, below).
 - The exact nav items that stay — settled on the first screen review.
 
@@ -203,8 +204,18 @@ Non-blocking:
     that holds nothing else.
   - **Contrast (Claude's call):** cream on the brand blue is 3.3:1, so the few small lines on
     the blue bands are set large and bold (≥19px, 700) — the bands keep the brand blue.
-- **Still open:** the ArcGIS key (the map uses Esri's public endpoint until it arrives; not a
-  merge blocker). **After launch (follow-ups):** the photo round — sharper originals for both
+- 2026-11-25, on staging · owner's last calls before the merge:
+  - **The phone hero shows the whole boat:** the portrait cut is now the full frame of the
+    original film (it had been cropped to the palm tree).
+  - **The business card's closing note is exactly two lines** on phones: one clause per line
+    (a line break in the copy), its type sized to the card's width with container units. The
+    owner had the dash between the clauses removed, in both languages.
+- 2026-11-25, after the merge (owner's go-ahead) · `b2b.levyam.com` is served by
+  `OrCoAI/levyam-b2b-redirect`, which holds only a redirect page (`index.html` and the same
+  `404.html`, so old paths redirect too); the old repo's Pages site was removed to free the
+  domain, and `lev-yam-b2b` is private · [ADR 0076](../decisions/0076-one-shared-site-chrome-business-page-events-map-key-and-retired-subdomains.md)
+- **Still open:** none. *(The ArcGIS key was set on 2026-11-25; it expires 2027-11-25 and the
+  renewal is in the owner's calendar.)* **After launch (follow-ups):** the photo round — sharper originals for both
   hero films, the business card film and `gallery/01.jpg`, the photo for "מי אנחנו", the
   gallery order; the business page's icons at their drawn size (they ship at 372–613px).
 - **Gate cleanup (`/simplify`, 2026-11-25), left for after launch:**
@@ -224,7 +235,69 @@ Non-blocking:
     fixed-height header band).
 
 ## Close-out
-*(appended when done — CLAUDE.md "Roadmap item close-out")*
+
+*2026-11-25 — [PR #196](https://github.com/OrCoAI/lev-yam-main/pull/196) merged (`cf2fb6b`, Tier A,
+one PR instead of two on the owner's call); prod deploy green, smoke routes 200 including
+`/business/`.*
+
+**What shipped**
+
+- `/business/` on `levyam.com`, HE + AR, in its own cream look, wearing the site's chrome;
+  `whatsapp_click` with `page_slug=business` through `js/wa-track.js`; in the sitemap,
+  `llms.txt` and the assemble allowlist and deploy smoke routes.
+- The homepage: business events lead "מה קורה בלב ים" (one card in the business page's look,
+  linking to `/business/`), the other four services as quiet cards; the hero's first button
+  goes to `/business/`; the contact section is the planner (`js/planner.js`) that writes the
+  WhatsApp message.
+- One chrome on every public page — header, phone menu, footer, floating WhatsApp button —
+  with its behaviour in `js/chrome.js`; the business strip as the footer's first row on story
+  and initiative pages; the 961–1300px header overlap (roadmap item 4) is gone: re-measured at
+  961/1024/1100/1200/1300px on the homepage, `/business/`, a story page and `/happening/`, HE
+  and AR — no overlap, no page overflow.
+- `content/` and `brand/` records for every business-page photo and clip, with the owner's
+  consent; four business-page facts added to `FACTS.md`; all 189 new or changed Arabic lines
+  signed off by the owner.
+- The map's satellite view under Lev Yam's own ArcGIS key.
+- After the merge: `b2b.levyam.com` redirects to `/business/` (every path) from
+  `OrCoAI/levyam-b2b-redirect`; `lev-yam-b2b` is private.
+
+**Schema, RLS, permissions:** none applied — none were in scope.
+
+**Decided on the way:** the list above under *Decisions made on the way*. The ones that change
+how future work is done are [ADR 0075](../decisions/0075-site-redesign-business-first-two-looks-one-chrome-a-business-strip.md)
+(kickoff) and [ADR 0076](../decisions/0076-one-shared-site-chrome-business-page-events-map-key-and-retired-subdomains.md)
+(close-out: the shared chrome, the business page's Dynatrace events, the map key, retired
+subdomains, small text on the blue bands); `CLAUDE.md` carries their rules.
+
+**Left out** (each is on the roadmap or in a module log):
+
+- The proof section and one URL per language — out of scope at kickoff.
+- The photo round — after launch, on the owner's call (item 1a's follow-ups in the roadmap).
+- The gate's cleanup list above (`css/chrome.css`, menu open/close in `js/chrome.js`, one
+  header-height token, one planner vocabulary, one `css/fonts.css`, a `data-` opt-in for the
+  floating button, a no-JS story menu) — roadmap, item 1a's follow-ups.
+- A visible "page not found" on `404.html` — roadmap, item 1a's follow-ups.
+- The initiatives calendar reserving its space before the feed answers —
+  [docs/modules/events.md](../modules/events.md).
+- The Dynatrace baseline for the old page (see *Outcome metric*).
+
+**Rollback now:** revert `cf2fb6b`. For `b2b.levyam.com`, remove the custom domain from
+`levyam-b2b-redirect`; the old page is not brought back — its repo stays private (its history
+holds private working files), intact and not archived, until the outcome check.
+
+**Alignment.**
+- **VISION:** serves the Join circle and principle 4 (public by default). Principle 7
+  (evolution, not revolution) planned for `b2b.levyam.com` to keep working until `/business/`
+  was proven. The owner redirected it on launch day instead, because the old site had served
+  private working files. That decision is recorded (2026-11-25, above; ADR 0076). The old repo
+  stays intact, so the step can still be undone. No drift.
+- **ARCHITECTURE:** invariant 3 (no PII or secrets in a public repo) held: nothing was copied
+  from `lev-yam-b2b`'s private files, and the private repo closes the exposure in its
+  history. 5 (HE + AR) held: Arabic was signed off, and the later dash removal was punctuation
+  only. 1, 2, 4, 6, 7: no schema, no server key, no live tool replaced; the map key is a
+  referrer-restricted browser key (ADR 0076). 8: the roadmap is ticked. No drift.
+
+**Outcome check:** 2026-12-16.
 
 ## Outcome check
 *(appended on the check date: metric value vs target, verdict, what it changes)*
