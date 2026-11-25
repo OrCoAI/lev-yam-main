@@ -168,7 +168,9 @@ Non-blocking:
   - **Hub cards carry their own text** (`cardExcerpt()` in `gen-stories-index.mjs`): the
     description without its title-restating opening, cut at a whole word.
   - **Weekend hours stay on the weekend card** as a second line under the owner's new
-    sentence — `check-content` requires the FACTS Friday hours there.
+    sentence — `check-content` requires the FACTS Friday hours there. *(Reversed 2026-11-25,
+    after the close-out, at the owner's request: the card shows no hours; the homepage carries
+    them only in its JSON-LD, which `check-content` still checks against `FACTS.md`.)*
   - **Text on orange is ink everywhere**; the business nav pill is framed, not filled, on
     its own page.
   - **The homepage hero film has three renditions, each inside the phone budget:** a
