@@ -120,7 +120,8 @@ session. Items 1, 2 and 5 start without item 7 and gain GBP / Instagram / Facebo
       marketing sections and links here. Social / GBP numbers are read directly from Meta and Google and reach the agent as a
       file from a fixed pre-agent step, never as a credential (ADR 0047/0048 pattern). → *reports delivered weekly; the social cadence met*
       [plans/marketing-weekly-report.md](plans/marketing-weekly-report.md) — **shipped 2026-11-06** ([PR #173](https://github.com/OrCoAI/lev-yam-main/pull/173), first issue #174); outcome check 2026-11-30.
-      Still open: the email, once the owner watches the repo; Meta and Google numbers, once their secrets exist.
+      The email was proven 2026-11-08 and Meta's account numbers 2026-11-25; still open: Facebook's post list
+      (a fix is in, to be proven by the next run) and Google's numbers, once their secrets exist.
       Follow-up: take `gh` away from the report agents (plan, *Follow-ups found by the gate*).
 - [x] **1a. Site redesign — business events first** *(owner, 2026-11-23; placed after item 1, nothing
       renumbered — [ADR 0075](decisions/0075-site-redesign-business-first-two-looks-one-chrome-a-business-strip.md))* —
@@ -237,8 +238,8 @@ nothing deferred is invisible:*
   linking, SRG + SDLC events, dashboards-as-code, the Dynatrace MCP entry); the **dead Dynatrace RUM
   tag** on the marketing site (404 since 2026-09-09 — [ADR 0038](decisions/0038-new-dedicated-dynatrace-environment.md))
 - **`@simplewebauthn/server`** `^10.0.0` → latest — bump with a passkey re-test on staging, or defer again
-- **Credentials, one session:** regenerate `CLAUDE_CODE_OAUTH_TOKEN`, rotate `GOOGLE_SA_KEY`, delete
-  the unused `ANTHROPIC_API_KEY` secret (expires 2027-01-31 anyway)
+- **Credentials, one session:** regenerate `CLAUDE_CODE_OAUTH_TOKEN`, rotate `GOOGLE_SA_KEY` and
+  `META_ACCESS_TOKEN`, delete the unused `ANTHROPIC_API_KEY` secret (expires 2027-01-31 anyway)
 - **Break-glass account** — confirm it can sign in (email confirmed); owner action, any time before
 - **Skill evals** — the first real run of every `.claude/skills/*/EVALS.md`, done before the review
 

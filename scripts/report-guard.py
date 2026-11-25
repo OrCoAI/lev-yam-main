@@ -24,6 +24,7 @@ step; it is not a boundary. Nor is it the last word: the agent's report and the 
 summary can both carry an encoded value (ADR 0073).
 """
 
+import json
 import os
 import sys
 
@@ -41,19 +42,42 @@ PREFIX = 'SCAN_'
 MIN_LEN = 12  # below this a "secret" is too short to match without false positives
 
 
+def bare(text: str) -> str:
+    """Without whitespace or a byte-order mark, which the scripts trim and a paste can add."""
+    return ''.join(text.replace('\ufeff', '').split())
+
+
+def forms(value: str) -> set:
+    """What to look for: the value; for a JSON key file its secret parts, since the file itself never
+    appears whole; and each of these as JSON would escape it."""
+    found = {value}
+    try:
+        key = json.loads(value.replace('\ufeff', ''))
+    except ValueError:
+        key = None
+    if isinstance(key, dict):
+        pem = str(key.get('private_key') or '')
+        # Secret parts only. private_key_id and a 2048-bit key's first six lines (header and modulus) are
+        # public: a stranger who typed one into a page address could stop every report.
+        body = [line for line in pem.splitlines() if not line.startswith('-----')]
+        found |= {pem, *body[6:]}
+    found |= {json.dumps(form)[1:-1] for form in found}
+    # measured bare: a padded or blank value must not match everything
+    return {form for form in found if len(bare(form)) >= MIN_LEN}
+
+
 def find_hits(text: str) -> list:
     """Names of watched secrets whose value appears in `text`, plain or with whitespace
-    removed (a token pasted into markdown may pick up a line break)."""
+    removed on both sides (either copy of a token may have picked up a line break)."""
     hits = []
-    joined = ''.join(text.split())
+    joined = bare(text)
     for name, value in sorted(os.environ.items()):
         if not name.startswith(PREFIX):
             continue
-        if len(value) < MIN_LEN:
-            continue
-        if value in text:
+        wanted = forms(value)
+        if any(form in text for form in wanted):
             hits.append(name)
-        elif value in joined:
+        elif any(bare(form) in joined for form in wanted):
             hits.append(f'{name} (split across lines)')
     return hits
 

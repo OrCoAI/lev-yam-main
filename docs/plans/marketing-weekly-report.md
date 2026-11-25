@@ -124,8 +124,8 @@ tested the day the secrets exist. No part of the merge waits on it.
 **The owner's setup, before the first live run** (exact click paths go in the PR):
 1. **The label:** `marketing-report` created in the repo, or the first report cannot publish.
 2. **Meta:** the Instagram is a professional account linked to the Page; one Meta app; one long-lived
-   **Page** token, from a Business Manager system user where possible, with `instagram_basic`, `instagram_manage_insights`, `pages_read_engagement`, `read_insights`
-   (the last one to confirm at setup); the secret `META_ACCESS_TOKEN`.
+   **Page** token, from a Business Manager system user where possible, with `instagram_basic`, `instagram_manage_insights`, `pages_show_list`,
+   `pages_read_engagement` and `read_insights`, and never `pages_read_user_content` (ADR 0073 §8); the secret `META_ACCESS_TOKEN`.
 3. **Google:** a dedicated Google account added to the profile as a **Manager**, never the owner's login;
    a Cloud project; the Business Profile API access request, from that account; the OAuth client; the
    three `GBP_*` secrets, from that account. The OAuth app must not stay in "testing", or the refresh
@@ -159,6 +159,12 @@ and Google, not through Windsor.ai · ADR 0073.
 - **Confirm the `post-days` artifact on the first real run** — none has ever been produced.
 - **Take `gh` away from the report agents** — a fixed step dumps the issues and PRs they read into
   `.reports/`. The deny on URLs and `-R` is a pattern, and every report job has this exposure today.
+- **`follows_and_unfollows` has no number** (2026-11-25): Meta may want `breakdown=follow_type`, and its
+  docs don't say which row is follows. Left as a named gap, never guessed; followers week to week show the net.
+- **No test holds `reason()`** — the order of its rules matters, and nothing in the repo would notice a swap.
+- **Left open by the 2026-11-25 security review (low):** pieces of an echoed token under 12 characters pass.
+- **Compare one Facebook post's reaction and comment counts with the public Page** once the report lists
+  one: an answer of zero that Meta gives for want of a permission would look real.
 - **`video-guidelines-refresh.yml`** still sets `GITHUB_*: /dev/null`, which does nothing, and
   `id-token: write`. Its agent has no shell, so neither is urgent; the claim in its header is wrong.
 - **`git log -p` runs `textconv`** if the agent reaches `.git/config` by a redirect (weekly, monthly,
@@ -194,8 +200,19 @@ staging project was restored; production deployed on a re-run after a GitHub Pag
   repo, so GitHub created no notification. The owner set Watch → Custom → Issues, a dispatched run opened
   #176, and the owner confirmed its email arrived. A Custom watch shows as "not subscribed" in the API
   and is not counted among watchers; the notification list is the check.
-- **Meta and Google Business.** None of the four secrets exist, so every metric name is unproven; the
-  Delivery section's setup is the owner's.
+- **Meta** — *proven 2026-11-25.* The owner set `META_ACCESS_TOKEN`: a Page token from a system user,
+  with the Delivery section's five read permissions and no expiry. A
+  dispatched run commented on [#193](https://github.com/OrCoAI/lev-yam-main/issues/193) with real Instagram
+  and Facebook numbers, and the owner confirmed the email. Fixes followed the same day, to be proven
+  by the next run: Facebook's post list asked for `pages_read_user_content`, which can read what visitors
+  write, so the script now asks `published_posts` and the two counts separately, and the token stays without it
+  (a count Meta still refuses prints `n/a` with its reason);
+  `follows_and_unfollows` came back as a row with no number and is now named in `errors`; and `reason()`
+  cut digit runs before token runs, so a piece of a short echoed token could survive the scrub. The same
+  change hides every credential in error text by value as well as by shape, has the guard watch the secret parts of the
+  Google key file, and says once per channel why posts lack a number.
+- **Google Business.** None of its three secrets exist, so every metric name is unproven; the Delivery
+  section's setup is the owner's.
 - **The cadence lines.** #174 ran before the target's first week, so the agent filled the table from
   another count and printed `null`; the skill now says what to print, from its 0.1.1.
 

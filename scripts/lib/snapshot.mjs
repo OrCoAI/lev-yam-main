@@ -5,7 +5,7 @@
 
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
-import { reason } from './scrub.mjs'
+import { hide, reason } from './scrub.mjs'
 
 const TIMEOUT_MS = 20_000
 
@@ -23,6 +23,7 @@ export const errorsOf = (parts) => Object.fromEntries(Object.entries(parts).filt
 
 // A provider's error body is summarised, never dumped: the text reaches a public issue through reason().
 export const fetchJson = async (url, token, init = {}) => {
+  hide(token)
   const res = await fetch(url, { ...init, headers: { authorization: `Bearer ${token}`, ...init.headers }, signal: AbortSignal.timeout(TIMEOUT_MS) })
   const body = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(`${res.status} ${body.error?.status ?? body.error?.code ?? ''}: ${body.error?.message || 'request failed'}`.trim())
@@ -30,6 +31,7 @@ export const fetchJson = async (url, token, init = {}) => {
 }
 
 export const exchangeToken = async (url, params) => {
+  hide(params.client_secret, params.refresh_token, params.assertion)
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'content-type': 'application/x-www-form-urlencoded' },

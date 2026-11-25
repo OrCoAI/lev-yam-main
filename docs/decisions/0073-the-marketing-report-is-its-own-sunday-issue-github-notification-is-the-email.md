@@ -43,6 +43,8 @@ of them is a reel, while ADR 0072 asks for ten reels by 2026-11-30.
    write actions on Instagram and Google Business, and draft-only is ADR 0068's rule. A fixed pre-agent
    step holds the credentials and writes a file of totals (the ADR 0047 pattern). This is not a connector:
    ADR 0068 §2 stands, no agent holds one, and every channel stays in `draft`.
+   *(Amended 2026-11-25: the Meta token carries five read permissions and never `pages_read_user_content`,
+   which can read what visitors write. A number that needs it prints `n/a`.)*
 9. **Native totals may appear in the public issue,** extending ADR 0047 §3: followers, reach, saves,
    calls and directions are not PII, prices or customer data. Comment text, review text, handles and
    audience lists are never fetched, and a Google Business keyword is kept only with an exact count: a

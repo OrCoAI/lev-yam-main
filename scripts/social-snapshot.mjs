@@ -23,8 +23,8 @@
  * lists are never requested. Search keywords are Google's aggregate, and go through clean().
  */
 
-import { addDays } from './lib/content.mjs'
-import { clean } from './lib/scrub.mjs'
+import { addDays, isDate } from './lib/content.mjs'
+import { clean, hideKnown } from './lib/scrub.mjs'
 import { dayFrom, settle, failed, errorsOf, fetchJson, exchangeToken, writeJson, statusLine } from './lib/snapshot.mjs'
 
 const OUT = process.env.SOCIAL_OUT || '.reports/social.json'
@@ -56,9 +56,11 @@ const graph = (token, path, params) => fetchJson(`${GRAPH}/${path}?${new URLSear
 // too: nothing here is ever printed as a zero it didn't return.
 const NO_ROW = 'no data returned'
 const rowOf = (row) => { if (!row) throw new Error(NO_ROW); return row }
+const firstValue = (row) => count(row?.values?.[0]?.value)
 const named = (parts) => {
-  const errors = errorsOf(parts)
-  return { values: Object.fromEntries(Object.entries(parts).map(([n, p]) => [n, failed(p) ? null : p])), ...(Object.keys(errors).length && { errors }) }
+  const known = Object.fromEntries(Object.entries(parts).map(([n, p]) => [n, p ?? { error: 'a row with no number' }]))
+  const errors = errorsOf(known)
+  return { values: Object.fromEntries(Object.entries(known).map(([n, p]) => [n, failed(p) ? null : p])), ...(Object.keys(errors).length && { errors }) }
 }
 const perMetric = async (names, ask, value) => {
   let rows
@@ -72,6 +74,15 @@ const perMetric = async (names, ask, value) => {
 const inWindow = (w) => ({ period: 'day', since: unix(w.start), until: unix(w.end, true) })
 
 const IG_ACCOUNT = ['reach', 'views', 'accounts_engaged', 'total_interactions', 'saves', 'shares', 'profile_links_taps', 'follows_and_unfollows']
+// Post links skip the text rules, so they are held by shape and must carry no piece of a credential.
+const linkOf = (shape, url) => (shape.test(url) && hideKnown(url) === url ? url : null)
+// A post's date, and whether it is recent: a value that isn't a date is never printed, and costs the list.
+const dateOf = (stamp) => { const d = String(stamp).slice(0, 10); return isDate(d) ? d : null }
+const recentPosts = (rows, field) => {
+  if (!Array.isArray(rows)) throw new Error(NO_ROW)
+  if (rows.some((r) => !dateOf(r[field]))) throw new Error('a post with no readable date') // not an empty fortnight
+  return rows.filter((r) => dateOf(r[field]) >= day(POST_DAYS))
+}
 const igAccount = (token, id) => (w) => perMetric(IG_ACCOUNT,
   (metric) => graph(token, `${id}/insights`, { metric, metric_type: 'total_value', ...inWindow(w) }),
   (row) => count(row?.total_value?.value))
@@ -81,19 +92,22 @@ const IG_PERMALINK = /^https:\/\/www\.instagram\.com\/(p|reel|tv)\/[\w-]+\/?$/
 const igPost = async (token, media) => {
   const { values, errors } = await perMetric(IG_POST,
     (metric) => graph(token, `${media.id}/insights`, { metric }),
-    (row) => count(row?.values?.[0]?.value))
+    firstValue)
   return {
-    date: String(media.timestamp).slice(0, 10),
-    kind: clean(media.media_product_type || media.media_type),
-    // a carousel reports as one post: Meta gives no numbers for the slides inside it
-    link: IG_PERMALINK.test(media.permalink) ? media.permalink : null,
-    ...values,
-    ...(errors && { unavailable: Object.keys(errors) }),
+    errors,
+    post: {
+      date: dateOf(media.timestamp),
+      kind: /^[A-Z_]{1,24}$/.test(media.media_product_type || media.media_type) ? media.media_product_type || media.media_type : null,
+      // a carousel reports as one post: Meta gives no numbers for the slides inside it
+      link: linkOf(IG_PERMALINK, media.permalink),
+      ...values,
+      ...(errors && { unavailable: Object.keys(errors) }),
+    },
   }
 }
 const igPosts = async (token, id) => {
   const recent = await graph(token, `${id}/media`, { fields: 'id,timestamp,media_type,media_product_type,permalink', limit: POST_LIMIT })
-  return Promise.all((recent.data ?? []).filter((m) => String(m.timestamp).slice(0, 10) >= day(POST_DAYS)).map((m) => igPost(token, m)))
+  return Promise.all(recentPosts(recent.data, 'timestamp').map((m) => igPost(token, m)))
 }
 
 // page_impressions_unique and post_impressions_unique are retired (Graph API v25.0 changelog)
@@ -105,36 +119,53 @@ const fbPage = (token, id) => (w) => perMetric(FB_PAGE,
 
 const FB_LINK = /^https:\/\/(www\.)?facebook\.com\/[\w./?=&%-]+$/
 const fbPost = async (token, post) => {
-  // one call a post, not a field on the list: a retired metric then costs a null, not the list
-  const { values, errors } = await perMetric(['post_total_media_view_unique'],
-    (metric) => graph(token, `${post.id}/insights`, { metric }),
-    (row) => count(row?.values?.[0]?.value))
+  // each of these is its own call, not a field on the list: one Meta refuses costs a null, not the list.
+  // `shares` stays on the list: a plain field, left out when a post has none
+  const counted = (edge) => graph(token, post.id, { fields: `${edge}.summary(true).limit(0)` }) // limit(0): the count, no rows
+    .then((b) => count(b[edge]?.summary?.total_count))
+  const { values, errors } = named(await settle({
+    reach: graph(token, `${post.id}/insights`, { metric: 'post_total_media_view_unique' })
+      .then((b) => firstValue(rowOf(b.data?.find((r) => !r.period || r.period === 'lifetime')))), // never one day's
+    reactions: counted('reactions'),
+    comments: counted('comments'),
+  }))
   return {
-    date: String(post.created_time).slice(0, 10),
-    link: FB_LINK.test(post.permalink_url) ? post.permalink_url : null,
-    reach: values.post_total_media_view_unique,
-    reactions: count(post.reactions?.summary?.total_count),
-    comments: count(post.comments?.summary?.total_count),
-    shares: count(post.shares?.count ?? 0),
-    ...(errors && { unavailable: ['reach'] }),
+    errors,
+    post: {
+      date: dateOf(post.created_time),
+      link: linkOf(FB_LINK, post.permalink_url),
+      ...values,
+      shares: count(post.shares?.count ?? 0),
+      ...(errors && { unavailable: Object.keys(errors) }),
+    },
   }
 }
 const fbPosts = async (token, id) => {
-  // limit(0) asks for the counts and no comment or reaction rows
-  const recent = await graph(token, `${id}/posts`, { fields: 'id,created_time,permalink_url,shares,reactions.summary(true).limit(0),comments.summary(true).limit(0)', since: unix(day(POST_DAYS)), limit: POST_LIMIT })
-  return Promise.all((recent.data ?? []).map((p) => fbPost(token, p)))
+  // `posts` and `feed` need pages_read_user_content, which can read what visitors write: this token stays without it
+  const recent = await graph(token, `${id}/published_posts`, { fields: 'id,created_time,permalink_url,shares', since: unix(day(POST_DAYS)), limit: POST_LIMIT })
+  return Promise.all(recentPosts(recent.data, 'created_time').map((p) => fbPost(token, p)))
 }
 
 const channel = async (w, followers, account, posts) => {
   // settled alone: a refused post list costs the list, not the channel's other numbers
   const [current, previous, list] = await Promise.all([account(w.current), account(w.previous), settle({ posts })])
-  const errors = { ...previous.errors, ...current.errors, ...errorsOf(list) }
-  return { followers: count(followers), current: current.values, previous: previous.values, posts: failed(list.posts) ? [] : list.posts, ...(Object.keys(errors).length && { errors }) }
+  const items = failed(list.posts) ? [] : list.posts
+  // a post names what it lacks (`unavailable`); the commonest reason is said once for the channel, as `post_<name>`,
+  // which says when there are others
+  const reasons = {}
+  for (const i of items) for (const [n, e] of Object.entries(i.errors ?? {})) (reasons[`post_${n}`] ??= []).push(e)
+  const times = (list, e) => list.filter((x) => x === e).length
+  const why = Object.fromEntries(Object.entries(reasons).map(([n, list]) =>
+    [n, list.reduce((a, b) => (times(list, b) > times(list, a) ? b : a)) + (new Set(list).size > 1 ? ' (others differ)' : '')]))
+  const errors = { ...why, ...previous.errors, ...current.errors, ...errorsOf(list) }
+  return { followers: count(followers), current: current.values, previous: previous.values, posts: items.map((i) => i.post), ...(Object.keys(errors).length && { errors }) }
 }
 
 const meta = async () => {
-  const w = windows(META_LAG), token = process.env.META_ACCESS_TOKEN
-  if (!token) return { ig: { windows: w, error: 'META_ACCESS_TOKEN not set' }, fb: { windows: w, error: 'META_ACCESS_TOKEN not set' } }
+  const w = windows(META_LAG), token = process.env.META_ACCESS_TOKEN?.trim()
+  // a line break inside the secret would make Node quote it in its own error, in pieces no scrub can match
+  const bad = !token ? 'META_ACCESS_TOKEN not set' : /\W/.test(token) ? 'META_ACCESS_TOKEN is malformed' : null
+  if (bad) return { ig: { windows: w, error: bad }, fb: { windows: w, error: bad } }
   const page = graph(token, 'me', { fields: 'id,followers_count,instagram_business_account{id,followers_count}' })
   const { ig, fb } = await settle({
     ig: page.then(({ instagram_business_account: account }) => {
@@ -189,14 +220,15 @@ const keywords = async (token, location) => {
 
 const googleBusiness = async () => {
   const w = windows(GBP_LAG)
-  const missing = ['GBP_CLIENT_ID', 'GBP_CLIENT_SECRET', 'GBP_REFRESH_TOKEN'].filter((n) => !process.env[n])
+  const env = (n) => process.env[n]?.trim()
+  const missing = ['GBP_CLIENT_ID', 'GBP_CLIENT_SECRET', 'GBP_REFRESH_TOKEN'].filter((n) => !env(n))
   if (missing.length) return { windows: w, error: `${missing.join(', ')} not set` }
   const locate = async () => {
     const token = await exchangeToken('https://oauth2.googleapis.com/token', {
       grant_type: 'refresh_token',
-      client_id: process.env.GBP_CLIENT_ID,
-      client_secret: process.env.GBP_CLIENT_SECRET,
-      refresh_token: process.env.GBP_REFRESH_TOKEN,
+      client_id: env('GBP_CLIENT_ID'),
+      client_secret: env('GBP_CLIENT_SECRET'),
+      refresh_token: env('GBP_REFRESH_TOKEN'),
     })
     const { accounts = [] } = await fetchJson('https://mybusinessaccountmanagement.googleapis.com/v1/accounts', token)
     // the location can sit in a group, past a personal first account

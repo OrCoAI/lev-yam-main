@@ -50,6 +50,7 @@ The next review's evidence pack must carry these, and the agenda decides each:
 4. **Break-glass account** — email confirmation verified, or still unknown (roadmap item).
 5. **`GOOGLE_SA_KEY`** rotation, in the same session as item 3; delete the unused
    `ANTHROPIC_API_KEY` secret there too. *(added 2026-10-07, [0065](0065-roadmap-consolidated-q4-mandate-merged-to-five-lines.md))*
+   Rotate `META_ACCESS_TOKEN` with it: it does not expire by itself. *(added 2026-11-25, [plans/marketing-weekly-report.md](../plans/marketing-weekly-report.md), Delivery item 4 and Close-out)*
 6. **The dead Dynatrace RUM tag** on the marketing site (404 since 2026-09-09) — follows item 1's
    verdict. *(added 2026-10-07, 0065)*
 7. **Skill evals** — the first real run of every `.claude/skills/*/EVALS.md`, done before the review
