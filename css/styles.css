@@ -2802,19 +2802,6 @@ html[lang="ar"] .service-lead-note {
   cursor: default;
 }
 
-/* Weekend hours (FACTS.md): a second, quieter line under the weekend card's text */
-.service-hours {
-  display: block;
-  margin-block-start: 0.3rem;
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: var(--color-blue-deep);
-}
-.service-hours > span {
-  display: block; /* one day per line */
-  white-space: nowrap;
-}
-
 /* ═══ Final touch: accessibility ══════════════════════════════════════════ */
 
 /* A visitor who asked for less motion gets jumps, not glides */
