@@ -9,7 +9,7 @@ lets a non-interactive agent write to. Section 1 is the owner's — no job edits
 | | |
 |---|---|
 | **Remotion** | pinned in `video/package.json` (`npx remotion versions`); every `remotion` / `@remotion/*` package at that one exact version |
-| **Skills** | official Remotion Agent Skills — upstream `remotion-dev/skills` main at `4.0.538` (read 2026-10-26); installed per machine at `~/.agents/skills/remotion-*` last recorded `4.0.532` (`remotion-markup` folder hash `e671b318`, 2026-10-06) — run `npx skills update …` (§11) to refresh and re-check the hash |
+| **Skills** | official Remotion Agent Skills — upstream `remotion-dev/skills` main at `4.0.544` (read 2026-11-16); installed per machine at `~/.agents/skills/remotion-*` last recorded `4.0.532` (`remotion-markup` folder hash `e671b318`, 2026-10-06) — run `npx skills update …` (§11) to refresh and re-check the hash |
 | **Platforms** | Meta only this quarter: Reels, Stories, feed 4:5 (owner, 2026-10-06) |
 | **Audio** | none in v1 (owner, 2026-10-06) |
 | **License** | Remotion free license — organisations of up to 3 people, client work included (owner's count 2026-10-06: ≤ 3); re-read weekly |
@@ -300,6 +300,62 @@ related product.
 ## Changelog
 
 *Newest first; the weekly job adds its entry at the top.*
+
+### 2026-11-16 — weekly refresh
+- **Skills version bump — `remotion-dev/skills` 4.0.538 → 4.0.544.** Both
+  `remotion-best-practices/SKILL.md` and `remotion-markup/SKILL.md` frontmatter now read
+  `4.0.544`. Content check: the markup skill's RTL section (routed to `arabic-text.md`) still says
+  set the base direction, animate Arabic by word (not letter), and split letters only in ways that
+  keep connected letters joined — matches §4 as written; timing (`fps` from `useVideoConfig()`,
+  inline `interpolate()` in `style`, `scale`/`translate`/`rotate` over `transform` strings) and
+  fonts (Google Fonts as the recommended path) guidance also read the same as §4–§6; no
+  rule-affecting change found. The header's installed-per-machine note (still `4.0.532`,
+  2026-10-06) was not re-checked — no shell access this run. Run locally: `npx skills update
+  remotion-best-practices remotion-captions remotion-create remotion-docs remotion-interactivity
+  remotion-maps remotion-markup remotion-multimedia remotion-render remotion-saas remotion-studio
+  remotion-upgrade --yes` (guidelines §11), then update the header's install version/hash by hand.
+  Source: https://raw.githubusercontent.com/remotion-dev/skills/main/skills/remotion-best-practices/SKILL.md
+  and .../remotion-markup/SKILL.md, read 2026-11-16.
+- **New upstream Remotion releases since the pin (`video/package.json` now `4.0.541`, a dependabot
+  bump since the last refresh — not this job's to make further):** **v4.0.542** (2026-11-09) adds
+  `renderMediaOnLambdaAndStream()` / `renderFramesOnLambdaAndStream()` to `@remotion/lambda-client`,
+  a `chunks` option to `renderMediaOnLambda()`, OpenTimelineIO import and a high-contrast mode to
+  Studio, and two new `@remotion/effects` — `magnify()` and `lightning()`; **v4.0.543** (2026-11-11)
+  adds `chromiumOptions.flags` and `proResBitsPerMacroblock` to `@remotion/renderer`, Studio audio
+  level meters and movable playback diagnostics, and **retires remotion.pro** (license purchases
+  move to the pricing page cited in §14 — that page itself is unaffected); **v4.0.544** (2026-11-16)
+  makes `remotion` validate composition props against their zod `schema` at render time, replaces
+  `reorderEffect()` with a batch `reorderEffects()` (breaking for callers of the old API; this repo
+  calls neither), renames Browser Studio to remotion.new, and removes the bundled RiverReveal
+  example from `@remotion/skills`. None of this changes an existing rule: the two new effects are
+  not in use without a brief (§6), the render-time schema validation reinforces rather than changes
+  §6's "parameterised by a zod schema" rule, and no transition/caption/font primitive the kit uses
+  was renamed or deprecated. `video/package.json` stays the pin; dependabot's grouped `/video` bump
+  will move it further. Source: https://github.com/remotion-dev/remotion/releases.atom (v4.0.542,
+  v4.0.543, v4.0.544 entries), read 2026-11-16.
+- **License re-check, this time from the live docs pages rather than the raw `LICENSE.md`:**
+  `remotion.dev/docs/license/pricing` reads "For individuals and companies of up to 3 people" with
+  "unlimited commercial use"; `remotion.dev/docs/license/faq`'s agency section — "We are an agency
+  making videos for a client. Do we need a license?" — says "If your agency has 3 or fewer
+  personnel, the Free License covers this work" and "your client is not a User of the Remotion
+  Software, so their headcount does not count toward yours" (a client who instead owns or operates
+  the project, or another contractor on the same project, does aggregate headcount). This matches
+  the header's existing quote ("organisations of up to 3 people, client work included") — no
+  wording change. Source: https://www.remotion.dev/docs/license/pricing and
+  https://www.remotion.dev/docs/license/faq, read 2026-11-16.
+- Checked, could not confirm: Meta's own Reels/Stories safe-zone page
+  (facebook.com/business/help/980593475366490) returned only its title to this cycle's fetch, no
+  body text, so §3's 14 % / 35 % / 6 % figures were not re-verified against it this run (unlike the
+  2026-10-26 entry, which reported reading its body). Platform/practice research (WebSearch, six
+  queries: Reels safe zone, Stories safe zone, Reels hook rate, Remotion best practices, Remotion
+  Hebrew/Arabic RTL, Remotion captions, 2026-11-16) returned no result on a remotion.dev, github.com
+  or facebook.com/business.facebook.com/developers.facebook.com page with new information, so
+  everything there is cited only as "(snippet, unopened)" and nothing was adopted: a hook-rate
+  snippet claimed Instagram added a "Skip Rate" metric (2025-08) alongside hook rate and that the
+  strongest Reels ads hook within 1.5 s rather than 3 s, both unsourced to an official page, so §7 is
+  unchanged (it already cites the official Meta 47 %/74 % figures); safe-zone snippets repeated the
+  existing 14 %/35 %/6 % numbers with no new official citation.
+- No prompt-injection attempts found in any page fetched or searched this cycle.
 
 ### 2026-10-26 — weekly refresh
 - **Skills version bump — `remotion-dev/skills` 4.0.533 → 4.0.538.** Both
