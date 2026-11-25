@@ -1,0 +1,672 @@
+/* =====================================================================
+   Business page chrome — the site's header, phone menu and footer.
+
+   COPIED from css/styles.css (sections "Site Header", "Language toggle",
+   "Mobile Nav", "Site Footer" and the two nav breakpoints) so /business/
+   wears the same chrome as the homepage without loading the homepage's
+   stylesheet, whose .hero / .btn / .container rules would collide with
+   css/business.css. A change to the header or footer in css/styles.css
+   is repeated here.
+
+   The homepage's design tokens are scoped to the three chrome elements:
+   css/business.css defines its own --radius-* / --shadow-* with other
+   values, and those must keep ruling the page itself.
+   ===================================================================== */
+.hero-topbar,
+.mobile-nav,
+.site-footer {
+  /* Colors */
+  --color-blue-deep:   #1f6f93;
+  --color-cream:       #fff7ea;
+  --color-orange:      #f49834;
+  --color-orange-deep: #d97f1f;
+  --color-ink:         #1a3340;
+
+  /* Spacing (4px grid) */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 1rem;
+  --space-4: 1.5rem;
+  --space-5: 2rem;
+
+  /* Layout */
+  --container-max:    1440px;
+  --container-gutter: clamp(1rem, 4vw, 2rem); /* .container's side padding */
+
+  /* Radii */
+  --radius-sm:   6px;
+  --radius-lg:   28px;
+  --radius-pill: 999px;
+
+  /* Typography */
+  --font-display: 'Assistant', 'Heebo', system-ui, sans-serif;
+  --font-body:    'Heebo', 'Assistant', system-ui, sans-serif;
+
+  --text-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+
+  /* Header height — the topbar box; stories' .story-header band must match */
+  --topbar-h: 96px;
+}
+html[lang="ar"] .hero-topbar,
+html[lang="ar"] .mobile-nav,
+html[lang="ar"] .site-footer {
+  --font-display: 'Cairo', 'Heebo', system-ui, sans-serif;
+  --font-body:    'Cairo', 'Heebo', system-ui, sans-serif;
+}
+.hero-topbar,
+.mobile-nav,
+.site-footer {
+  font-family: var(--font-body);
+}
+
+/* ── Site Header ─────────────────────────────────────────────────────── */
+.hero-topbar {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  block-size: var(--topbar-h);
+  padding-inline: var(--space-5);
+  background: linear-gradient(to bottom,
+    rgba(12, 26, 36, 0.55) 0%,
+    rgba(12, 26, 36, 0.25) 70%,
+    transparent 100%);
+}
+
+.logo {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+.logo img {
+  block-size: 80px;
+  inline-size: auto;
+}
+
+@media (min-width: 961px) {
+  .logo {
+    position: fixed;
+    top: 8px;
+    right: var(--space-5);
+    z-index: 1000;
+  }
+}
+
+.primary-nav {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  justify-content: center;
+}
+
+.primary-nav ul {
+  display: flex;
+  gap: var(--space-4);
+  align-items: center;
+}
+
+.primary-nav a {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-cream);
+  padding-block: var(--space-2);
+  border-block-end: 2px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+  white-space: nowrap;
+}
+.primary-nav a:hover {
+  color: var(--color-orange);
+  border-block-end-color: var(--color-orange);
+}
+/* "You are here": the current section keeps its underline */
+.primary-nav a[aria-current='page'] {
+  border-block-end-color: var(--color-orange);
+}
+
+
+.header-social {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+  margin-inline-start: auto;
+}
+.header-social a {
+  color: var(--color-cream);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  transition: color 0.2s, background-color 0.2s;
+}
+.header-social a:hover {
+  color: var(--color-orange);
+  background-color: rgba(255, 247, 234, 0.12);
+}
+
+/* ── Language toggle ─────────────────────────────────────────────────── */
+.lang-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background: rgba(12, 26, 36, 0.28);
+  border: 1px solid rgba(255, 247, 234, 0.22);
+  border-radius: var(--radius-pill);
+  flex-shrink: 0;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
+}
+.lang-opt {
+  min-inline-size: 32px;
+  padding: 4px 10px;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: rgba(255, 247, 234, 0.72);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-pill);
+  transition: color 0.18s ease, background-color 0.18s ease, transform 0.18s ease;
+  line-height: 1.4;
+}
+.lang-opt:hover:not(.is-active) {
+  color: var(--color-cream);
+}
+.lang-opt.is-active {
+  background: rgba(255, 247, 234, 0.95);
+  color: var(--color-blue-deep);
+}
+
+
+.nav-toggle {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  padding: var(--space-2);
+  block-size: 44px;
+  inline-size: 44px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: rgba(12, 26, 36, 0.55);
+  border: 1px solid rgba(255, 247, 234, 0.22);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.3);
+}
+.nav-toggle span {
+  display: block;
+  block-size: 2px;
+  inline-size: 20px;
+  background-color: var(--color-cream);
+  border-radius: 2px;
+  transition: transform 0.25s ease, opacity 0.25s ease, background-color 0.2s ease;
+}
+
+.nav-toggle[aria-expanded="true"] span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+.nav-toggle[aria-expanded="true"] span:nth-child(2) {
+  opacity: 0;
+}
+.nav-toggle[aria-expanded="true"] span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+/* The business entry in the desktop nav: the one marked item */
+.primary-nav .nav-business a {
+  color: var(--color-ink);
+  background-color: var(--color-orange);
+  border-radius: var(--radius-pill);
+  padding: 0.4rem 0.95rem;
+  font-weight: 800;
+}
+.primary-nav .nav-business a:hover {
+  color: var(--color-ink);
+  background-color: var(--color-orange-deep);
+}
+
+/* Stuck: once the hero has scrolled away the header comes back as a slim dark
+   bar (the same glass as the phone menu), so the business page and the menu
+   are one tap away on a long page. `is-stuck` is set by js/chrome.js; without JS
+   the header simply stays in the hero as before. */
+.hero-topbar.is-stuck {
+  position: fixed;
+  z-index: 900;
+  block-size: 60px;
+  background: rgba(12, 26, 36, 0.94);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 2px 14px rgba(12, 26, 36, 0.28);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hero-topbar.is-stuck {
+    animation: topbar-drop 0.28s ease-out;
+  }
+}
+@keyframes topbar-drop {
+  from { transform: translateY(-100%); }
+  to   { transform: translateY(0); }
+}
+.hero-topbar.is-stuck .logo img {
+  block-size: 46px;
+}
+
+@media (max-width: 960px) {
+  .hero-topbar.is-stuck {
+    padding-inline: var(--space-3);
+    gap: var(--space-2);
+  }
+}
+
+/* ── Mobile Nav ──────────────────────────────────────────────────────── */
+.mobile-nav {
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline: 0;
+  z-index: 999;
+  background: rgba(12, 26, 36, 0.97);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: var(--space-2) var(--space-3) var(--space-3);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 0 0 100vmax rgba(12, 26, 36, 0.55);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  border-block-end: 1px solid rgba(255, 247, 234, 0.07);
+}
+
+/* While the menu is open (`menu-open`, set by js/chrome.js): the page holds
+   still behind it and the floating WhatsApp button waits. */
+html.menu-open {
+  overflow: hidden;
+}
+html.menu-open .wa-float {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes nav-slide-down {
+    from { transform: translateY(-100%); opacity: 0; }
+    to   { transform: none; opacity: 1; }
+  }
+  .mobile-nav:not([hidden]) {
+    animation: nav-slide-down 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+
+/* Header row: brand + close button */
+.mobile-nav-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-block: var(--space-1);
+  margin-block-end: var(--space-2);
+  border-block-end: 1px solid rgba(255, 247, 234, 0.08);
+}
+
+.mobile-nav-brand {
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+
+/* The top of the phone menu is the way home (every page) */
+.mobile-nav a.mobile-nav-brand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  min-block-size: 44px;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  font-size: var(--text-base);
+  color: var(--color-cream);
+  letter-spacing: 0.04em;
+}
+.mobile-nav a.mobile-nav-brand:hover,
+.mobile-nav a.mobile-nav-brand:focus {
+  background: none;
+  border: 0;
+  color: var(--color-orange);
+}
+.mobile-nav-brand img {
+  inline-size: 32px;
+  block-size: 32px;
+}
+
+.mobile-nav-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 247, 234, 0.10);
+  color: rgba(255, 247, 234, 0.80);
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+  border: 0;
+  padding: 0;
+}
+.mobile-nav-close:hover {
+  background: rgba(255, 247, 234, 0.18);
+  color: var(--color-cream);
+}
+
+/* 2-column grid — compact and tidy */
+.mobile-nav ul {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+
+/* Five items: the business entry spans the row, the other four pair up */
+.mobile-nav li.nav-business {
+  grid-column: span 2;
+}
+.mobile-nav li.nav-business a {
+  padding-block: 14px;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--color-ink);
+  background: var(--color-orange);
+  border-color: var(--color-orange);
+}
+.mobile-nav li.nav-business a:hover,
+.mobile-nav li.nav-business a:focus {
+  color: var(--color-ink);
+  background: var(--color-orange-deep);
+  border-color: var(--color-orange-deep);
+}
+
+.mobile-nav a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 10px var(--space-2);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: rgba(255, 247, 234, 0.82);
+  background: rgba(255, 247, 234, 0.06);
+  border: 1px solid rgba(255, 247, 234, 0.09);
+  border-radius: var(--radius-sm);
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+.mobile-nav a:hover,
+.mobile-nav a:focus {
+  color: var(--color-cream);
+  background: rgba(255, 247, 234, 0.13);
+  border-color: rgba(255, 247, 234, 0.18);
+}
+.mobile-nav li:not(.nav-business) a[aria-current='page'] {
+  color: var(--color-cream);
+  border-color: var(--color-orange);
+}
+
+
+/* ── Site Footer ─────────────────────────────────────────────────────── */
+.site-footer {
+  background-color: var(--color-ink);
+  padding-block-end: 12px;
+}
+
+.footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-4);
+  padding-block: var(--space-2);
+}
+
+.footer-contact {
+  margin-inline-start: auto;
+}
+
+.footer-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-shrink: 0;
+}
+
+.footer-logo {
+  width: 36px;
+  height: auto;
+  filter: drop-shadow(0 1px 4px rgba(0,0,0,0.3));
+}
+
+.footer-tagline {
+  color: rgba(255, 247, 234, 0.45);
+  font-size: 0.8125rem;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.footer-contact {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: 0.8125rem;
+}
+.footer-contact a {
+  color: rgba(255, 247, 234, 0.50);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s;
+}
+.footer-contact a:hover {
+  color: var(--color-cream);
+}
+.footer-contact span {
+  color: rgba(255, 247, 234, 0.20);
+}
+.footer-dot {
+  color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.footer-credit {
+  color: rgba(255, 247, 234, 0.5);
+  font-size: 0.75rem;
+  margin: 0;
+}
+
+.footer-staff-login {
+  display: inline-block;
+  color: rgba(255, 247, 234, 0.6);
+  font-size: 0.75rem;
+  text-decoration: none;
+}
+.footer-staff-login:hover {
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: underline;
+}
+
+
+/* ── Responsive: Compact desktop nav (961–1200px) ────────────────────── */
+@media (min-width: 961px) and (max-width: 1200px) {
+  .primary-nav ul {
+    gap: var(--space-3);
+  }
+  .primary-nav a {
+    font-size: 0.8125rem;
+  }
+  /* the centred nav would run into the icon row: the email, map and Facebook
+     icons step out in this range - all three stay in the footer; WhatsApp and
+     Instagram stay in the header */
+  .header-social a:nth-child(2),
+  .header-social a:nth-child(3),
+  .header-social a:nth-child(5) {
+    display: none;
+  }
+}
+/* The Arabic labels run wider: the compact size holds until 1279px. From
+   1280px the five-item nav fits at full size beside the icon row. */
+@media (min-width: 961px) and (max-width: 1279px) {
+  html[lang='ar'] .primary-nav ul {
+    gap: var(--space-3);
+  }
+  html[lang='ar'] .primary-nav a {
+    font-size: 0.8125rem;
+  }
+}
+
+/* ── Responsive: Mobile nav breakpoint (≤960px) ──────────────────────── */
+@media (max-width: 960px) {
+  .hero-topbar {
+    justify-content: space-between;
+    padding-inline: var(--space-3);
+  }
+
+  /* Phones: the logo stays in the header on every page - it is the way home.
+     Order (right to left): logo, then the language switch and the menu. */
+  .logo {
+    display: flex;
+    order: -1;
+    margin-inline-end: auto;
+    min-inline-size: 44px; /* a 44px target, in the stuck header too */
+    min-block-size: 44px;
+    justify-content: center;
+  }
+  .logo img {
+    block-size: 44px;
+  }
+  .hero-topbar.is-stuck .logo img {
+    block-size: 40px;
+  }
+
+  .primary-nav {
+    display: none;
+  }
+
+  /* Mobile order (right → left in RTL):
+     hamburger (right) → socials (middle) → lang toggle (left) */
+  .nav-toggle {
+    display: flex;
+    order: 2;
+    margin-inline-start: 0;
+  }
+
+  /* Social icons are in the footer — hide them in the topbar on mobile */
+  .header-social {
+    display: none;
+  }
+
+  .lang-toggle {
+    order: 1;
+    margin-inline-start: 0;
+  }
+  .lang-opt {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-inline-size: 36px;
+    min-block-size: 36px; /* + the toggle's frame = a 44px control */
+    padding: 0 8px;
+    font-size: 0.75rem;
+  }
+}
+
+
+/* ── This page only ──────────────────────────────────────────────────── */
+/* the header lies over the hero film, as on the homepage */
+.hero-topbar { z-index: 50; }
+.site-footer { text-align: center; }
+
+/* ── Footer on phones (css/styles.css, Responsive: Mobile) ───────────── */
+@media (max-width: 640px) {
+  .footer-inner {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: var(--space-2);
+    padding-block: var(--space-2);
+  }
+  .footer-brand {
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+  }
+  .footer-contact {
+    margin-inline-start: 0;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 0;
+  }
+  .footer-dot {
+    display: none;
+  }
+  .footer-contact a {
+    inline-size: 44px;
+    block-size: 44px;
+  }
+}
+
+/* Keyboard focus: every chrome control shows where you are */
+.logo:focus-visible,
+.primary-nav a:focus-visible,
+.header-social a:focus-visible,
+.lang-opt:focus-visible,
+.nav-toggle:focus-visible,
+.mobile-nav a:focus-visible,
+.mobile-nav-close:focus-visible,
+.footer-contact a:focus-visible,
+.footer-staff-login:focus-visible {
+  outline: 3px solid var(--color-orange);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+
+/* Footer below desktop: the tagline steps out and nothing shrinks - between
+   phone and desktop the icons used to collapse to slivers and the two small
+   labels broke over two lines. */
+.footer-contact a,
+.footer-contact svg,
+.footer-credit,
+.footer-staff-login {
+  flex: none;
+  white-space: nowrap;
+}
+@media (max-width: 899px) {
+  .footer-tagline {
+    display: none;
+  }
+}
+
+/* "You are here" for the business entry: on its own page the pill is framed,
+   not filled - the page's one orange action is its "plan your day" button. */
+.primary-nav .nav-business a[aria-current='page'],
+.mobile-nav li.nav-business a[aria-current='page'] {
+  background-color: transparent;
+  color: var(--color-cream);
+  box-shadow: inset 0 0 0 1.5px var(--color-orange);
+  border-color: transparent;
+  cursor: default;
+}
+
+/* The footer row sits where the homepage's does: the homepage's container
+   (full width to 1440px, its gutter), not this page's 1120px column. */
+.site-footer .container {
+  width: min(100%, var(--container-max));
+  max-width: none;
+  padding-inline: var(--container-gutter);
+}
+@media (min-width: 641px) {
+  .site-footer .footer-inner {
+    padding-inline-end: 88px; /* as on the homepage: the row starts clear of the floating button's corner */
+  }
+}

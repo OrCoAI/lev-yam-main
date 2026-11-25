@@ -99,6 +99,23 @@ window.LevYamTrack = (function () {
     });
   }
 
+  /* A click through to the business page (/business/) from anywhere on the
+     site: the homepage's hero, nav, card and planner, and the business strip
+     on story and initiative pages. Dynatrace only (ADR 0006) - it is interest,
+     not a lead; the lead is the WhatsApp click on the business page itself. */
+  document.addEventListener('click', function (e) {
+    var link = e.target && e.target.closest && e.target.closest('a[data-business-source]');
+    if (!link) return;
+    try {
+      bizEvent('levyam.service_interest', {
+        'service.type':    'corp',
+        'cta.source':      link.getAttribute('data-business-source'),
+        'event.lang':      document.documentElement.lang || 'he',
+        'event.page_slug': document.body.getAttribute('data-page-slug') || 'unknown'
+      });
+    } catch (err) { /* telemetry is additive, never load-bearing */ }
+  });
+
   return {
     bizEvent:        bizEvent,
     whatsappClick:   whatsappClick,

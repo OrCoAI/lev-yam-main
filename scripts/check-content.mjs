@@ -80,7 +80,7 @@ const filesUnder = (dir, re) => GIT_FILES.filter((rel) => rel.startsWith(dir + '
 // assemble-site.sh serves these root pages and the stories/ + happening/ trees, minus `_*` files,
 // which are templates. Templates still carry the public chrome, so the facts rules read them too —
 // a drifted footer is caught at its source, before the generators copy it into every page.
-const ROOT_PAGES = ['index.html', '404.html', 'survey-june.html', 'pos.html']
+const ROOT_PAGES = ['index.html', '404.html', 'survey-june.html', 'pos.html', 'business/index.html']
 const isTemplate = (rel) => /(^|\/)_[^/]*\.html$/.test(rel)
 const TREE = [...filesUnder('stories', /\.html$/), ...filesUnder('happening', /\.html$/)]
 const PAGES = [...ROOT_PAGES, ...TREE.filter((r) => !isTemplate(r))]

@@ -37,6 +37,15 @@
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
+@font-face {
+  font-family: 'Cairo';
+  src: url('../fonts/Cairo-arabic.woff2') format('woff2');
+  font-weight: 400 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+
 /* ── Design Tokens ───────────────────────────────────────────────────── */
 :root {
   /* Colors */
@@ -101,10 +110,11 @@
       var(--color-blue-deep) 100%);
 }
 
-/* ── Arabic font stack (Heebo/Assistant cover Hebrew + Latin only) ───── */
+/* ── Arabic font stack: Cairo, self-hosted (Heebo/Assistant cover Hebrew + Latin
+   only); the system faces stay as the fallback while it loads ───────────── */
 html[lang="ar"] {
-  --font-display: 'SF Arabic', 'Geeza Pro', 'Noto Sans Arabic', 'Tahoma', 'Segoe UI', system-ui, sans-serif;
-  --font-body:    'SF Arabic', 'Geeza Pro', 'Noto Sans Arabic', 'Tahoma', 'Segoe UI', system-ui, sans-serif;
+  --font-display: 'Cairo', 'SF Arabic', 'Geeza Pro', 'Noto Sans Arabic', 'Tahoma', 'Segoe UI', system-ui, sans-serif;
+  --font-body:    'Cairo', 'SF Arabic', 'Geeza Pro', 'Noto Sans Arabic', 'Tahoma', 'Segoe UI', system-ui, sans-serif;
 }
 html[lang="ar"] body {
   line-height: 1.7;
@@ -119,7 +129,7 @@ html[lang="ar"] body {
 
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: var(--space-5);
+  scroll-padding-top: 76px; /* the stuck header (60px) + air */
   -webkit-text-size-adjust: 100%;
 }
 
@@ -152,6 +162,11 @@ button {
   border: none;
   font: inherit;
   color: inherit;
+}
+
+/* `hidden` always hides: an author display rule (flex, grid) never beats it */
+[hidden] {
+  display: none !important;
 }
 
 /* ── Skip Link ───────────────────────────────────────────────────────── */
@@ -293,7 +308,7 @@ p:last-child {
 
 .btn-primary {
   background: linear-gradient(135deg, var(--color-orange), var(--color-orange-deep));
-  color: #fff;
+  color: var(--color-ink); /* white on orange fails contrast; ink is the site's one text colour on orange */
   box-shadow: 0 2px 10px rgba(244, 152, 52, 0.35);
 }
 .btn-primary:hover {
@@ -302,14 +317,14 @@ p:last-child {
 }
 
 .btn-ghost {
-  background-color: rgba(44, 146, 191, 0.22);
+  background-color: rgba(31, 111, 147, 0.5);
   color: var(--color-cream);
-  border: 2px solid rgba(44, 146, 191, 0.75);
+  border: 2px solid rgba(255, 247, 234, 0.85);
   backdrop-filter: blur(4px);
 }
 .btn-ghost:hover {
-  background-color: rgba(44, 146, 191, 0.38);
-  border-color: rgba(44, 146, 191, 0.95);
+  background-color: rgba(31, 111, 147, 0.72);
+  border-color: var(--color-cream);
 }
 
 /* ── Wave Divider ────────────────────────────────────────────────────── *
@@ -399,6 +414,10 @@ p:last-child {
   color: var(--color-orange);
   border-block-end-color: var(--color-orange);
 }
+/* "You are here": the current section keeps its underline */
+.primary-nav a[aria-current='page'] {
+  border-block-end-color: var(--color-orange);
+}
 
 
 .header-social {
@@ -458,10 +477,6 @@ p:last-child {
   background: rgba(255, 247, 234, 0.95);
   color: var(--color-blue-deep);
 }
-.lang-opt:focus-visible {
-  outline: 2px solid var(--color-orange);
-  outline-offset: 2px;
-}
 
 
 .nav-toggle {
@@ -500,6 +515,70 @@ p:last-child {
   transform: translateY(-7px) rotate(-45deg);
 }
 
+/* The business entry in the desktop nav: the one marked item */
+.primary-nav .nav-business a {
+  color: var(--color-ink);
+  background-color: var(--color-orange);
+  border-radius: var(--radius-pill);
+  padding: 0.4rem 0.95rem;
+  font-weight: 800;
+}
+.primary-nav .nav-business a:hover {
+  color: var(--color-ink);
+  background-color: var(--color-orange-deep);
+}
+
+/* The header pill: phones only, and only while the header is stuck */
+.topbar-business {
+  display: none;
+}
+
+/* Stuck: once the hero has scrolled away the header comes back as a slim dark
+   bar (the same glass as the phone menu), so the business page and the menu
+   are one tap away on a long page. `is-stuck` is set by js/chrome.js; without JS
+   the header simply stays in the hero as before. */
+.hero-topbar.is-stuck {
+  position: fixed;
+  z-index: 900;
+  block-size: 60px;
+  background: rgba(12, 26, 36, 0.94);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 2px 14px rgba(12, 26, 36, 0.28);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hero-topbar.is-stuck {
+    animation: topbar-drop 0.28s ease-out;
+  }
+}
+@keyframes topbar-drop {
+  from { transform: translateY(-100%); }
+  to   { transform: translateY(0); }
+}
+.hero-topbar.is-stuck .logo img {
+  block-size: 46px;
+}
+
+@media (max-width: 960px) {
+  .hero-topbar.is-stuck {
+    padding-inline: var(--space-3);
+    gap: var(--space-2);
+  }
+  .hero-topbar.is-stuck .topbar-business {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: 44px;
+    padding-inline: 1rem;
+    margin-inline-end: auto;
+    border-radius: var(--radius-pill);
+    background-color: var(--color-orange);
+    color: var(--color-ink);
+    font-weight: 800;
+    font-size: 0.95rem;
+    white-space: nowrap;
+  }
+}
+
 /* ── Mobile Nav ──────────────────────────────────────────────────────── */
 .mobile-nav {
   position: fixed;
@@ -510,13 +589,19 @@ p:last-child {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   padding: var(--space-2) var(--space-3) var(--space-3);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 0 0 100vmax rgba(12, 26, 36, 0.55);
   border-radius: 0 0 var(--radius-lg) var(--radius-lg);
   border-block-end: 1px solid rgba(255, 247, 234, 0.07);
 }
 
-.mobile-nav[hidden] {
-  display: none;
+/* While the menu is open (`menu-open`, set by js/chrome.js): the page holds
+   still behind it and the floating WhatsApp button waits. */
+html.menu-open {
+  overflow: hidden;
+}
+html.menu-open .wa-float {
+  opacity: 0;
+  pointer-events: none;
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -541,18 +626,41 @@ p:last-child {
 
 .mobile-nav-brand {
   font-family: var(--font-display);
-  font-size: var(--text-base);
   font-weight: 700;
-  color: rgba(255, 247, 234, 0.55);
+}
+
+/* The top of the phone menu is the way home (every page) */
+.mobile-nav a.mobile-nav-brand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  min-block-size: 44px;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  font-size: var(--text-base);
+  color: var(--color-cream);
   letter-spacing: 0.04em;
+}
+.mobile-nav a.mobile-nav-brand:hover,
+.mobile-nav a.mobile-nav-brand:focus {
+  background: none;
+  border: 0;
+  color: var(--color-orange);
+}
+.mobile-nav-brand img {
+  inline-size: 32px;
+  block-size: 32px;
 }
 
 .mobile-nav-close {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: rgba(255, 247, 234, 0.10);
   color: rgba(255, 247, 234, 0.80);
@@ -571,9 +679,23 @@ p:last-child {
   gap: var(--space-2);
 }
 
-/* Last item spans full width for balanced layout (5 items → 2+2+1) */
-.mobile-nav li:last-child {
+/* Five items: the business entry spans the row, the other four pair up */
+.mobile-nav li.nav-business {
   grid-column: span 2;
+}
+.mobile-nav li.nav-business a {
+  padding-block: 14px;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--color-ink);
+  background: var(--color-orange);
+  border-color: var(--color-orange);
+}
+.mobile-nav li.nav-business a:hover,
+.mobile-nav li.nav-business a:focus {
+  color: var(--color-ink);
+  background: var(--color-orange-deep);
+  border-color: var(--color-orange-deep);
 }
 
 .mobile-nav a {
@@ -596,9 +718,9 @@ p:last-child {
   background: rgba(255, 247, 234, 0.13);
   border-color: rgba(255, 247, 234, 0.18);
 }
-.mobile-nav a:focus-visible {
-  outline: 2px solid var(--color-orange);
-  outline-offset: 2px;
+.mobile-nav li:not(.nav-business) a[aria-current='page'] {
+  color: var(--color-cream);
+  border-color: var(--color-orange);
 }
 
 /* ── Hero ────────────────────────────────────────────────────────────── */
@@ -641,14 +763,10 @@ p:last-child {
   inset: 0;
   background:
     linear-gradient(to bottom,
-      rgba(26, 51, 64, 0.15) 0%,
-      rgba(26, 51, 64, 0.40) 40%,
-      rgba(26, 51, 64, 0.75) 72%,
-      rgba(26, 51, 64, 0.93) 100%
-    ),
-    radial-gradient(ellipse 100% 70% at 50% 45%,
-      transparent 35%,
-      rgba(26, 51, 64, 0.28) 100%
+      rgba(26, 51, 64, 0.10) 0%,
+      rgba(26, 51, 64, 0.22) 38%,
+      rgba(26, 51, 64, 0.58) 72%,
+      rgba(26, 51, 64, 0.88) 100%
     );
 }
 
@@ -743,6 +861,11 @@ p:last-child {
     0 2px 4px rgba(0, 0, 0, 0.6);
 }
 
+/* a place name never breaks at its hyphen */
+.nowrap {
+  white-space: nowrap;
+}
+
 .hero-lead {
   font-size: clamp(0.95rem, 3.6vw, 1.3rem);
   line-height: 1.55;
@@ -750,7 +873,9 @@ p:last-child {
   margin-block-end: 0;
   margin-inline: auto;
   font-weight: 500;
-  white-space: nowrap;
+  /* the line names the village now, so it wraps: two balanced lines on phones */
+  max-inline-size: min(100%, 34rem);
+  text-wrap: balance;
   letter-spacing: 0;
   text-shadow: 0 1px 12px rgba(0, 0, 0, 0.85);
 }
@@ -875,6 +1000,166 @@ p:last-child {
 }
 
 
+/* ── Floating WhatsApp button steps aside (js/chrome.js) ────────────────── */
+.wa-float.is-away {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.8);
+}
+
+/* ── Homepage planner (js/planner.js) ────────────────────────────────── */
+.planner-top {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+}
+.planner-top [data-act="skip"] {
+  justify-self: end;
+}
+.planner-top [data-act="back"] {
+  justify-self: start;
+}
+.planner-link {
+  min-block-size: 44px;
+  padding-inline: var(--space-2);
+  background: none;
+  border: 0;
+  color: rgba(255, 247, 234, 0.9);
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-decoration: underline;
+  text-decoration-color: rgba(244, 152, 52, 0.8);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.3em;
+  cursor: pointer;
+}
+.planner-link:focus-visible,
+.planner-choice:focus-visible {
+  outline: 3px solid var(--color-orange);
+  outline-offset: 3px;
+}
+.planner-dots {
+  display: flex;
+  gap: 6px;
+}
+.planner-dots i {
+  inline-size: 22px;
+  block-size: 4px;
+  border-radius: var(--radius-pill);
+  background-color: rgba(255, 247, 234, 0.3);
+}
+.planner-dots i.is-on {
+  background-color: var(--color-orange);
+}
+
+.planner-choices {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-2);
+}
+.planner-choices--when {
+  grid-template-columns: repeat(3, 1fr);
+}
+.planner-choices--when .planner-choice:nth-last-child(-n + 2) {
+  grid-column: span 3;
+}
+.planner-choice {
+  min-block-size: 56px;
+  padding: 0.6rem 0.5rem;
+  border-radius: var(--radius-md);
+  border: 2px solid transparent;
+  background-color: var(--color-cream);
+  color: var(--color-ink);
+  font: inherit;
+  font-weight: 700;
+  line-height: 1.3;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+}
+.planner-choice[aria-pressed="true"] {
+  border-color: var(--color-orange);
+  background-color: var(--color-white);
+}
+@media (hover: hover) {
+  .planner-choice:hover {
+    border-color: var(--color-orange);
+  }
+}
+
+.planner-panel {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background-color: var(--color-cream);
+  color: var(--color-ink);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.28);
+}
+.planner-ready {
+  margin: 0;
+  display: grid;
+  text-align: center;
+}
+.planner-ready strong {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--color-blue);
+}
+.planner-ready span {
+  color: var(--color-ink-soft);
+}
+.planner-label {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-blue-deep);
+}
+.planner-msg {
+  margin: 0;
+  font-size: var(--text-lead);
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+.planner-send {
+  margin-block-start: var(--space-2);
+  inline-size: 100%;
+  white-space: normal;
+  color: var(--color-ink);
+  background: var(--color-white);
+  border: 2px solid var(--color-orange);
+  box-shadow: none;
+}
+.planner-send:hover {
+  background: var(--color-white);
+}
+.planner-send.is-ready,
+.planner-send.is-ready:hover {
+  background: linear-gradient(135deg, var(--color-orange), var(--color-orange-deep));
+}
+.planner-note {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-ink-soft);
+  text-align: center;
+}
+.planner-business {
+  justify-self: center;
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 44px;
+  font-weight: 700;
+  color: var(--color-blue-deep);
+  text-decoration: underline;
+  text-decoration-color: var(--color-orange);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.3em;
+}
+.planner-panel .planner-restart {
+  justify-self: center;
+  color: var(--color-ink-soft);
+}
+
 /* ── Services ────────────────────────────────────────────────────────── */
 .services {
   padding-block: clamp(2rem, 2.5vw + 1.25rem, 3.5rem);
@@ -885,114 +1170,222 @@ p:last-child {
   color: var(--color-cream);
 }
 
-.services-grid {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--space-4);
-}
-
-.service-card {
-  flex: 0 0 calc(33.333% - 1rem);
-  background-color: var(--color-white);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .service-card:hover {
-    box-shadow: var(--shadow-md);
-    transform: translateY(-2px);
-  }
-}
-
-.service-media {
-  aspect-ratio: 4 / 3;
-  overflow: hidden;
-  background-color: color-mix(in srgb, var(--color-blue) 18%, var(--color-cream));
-}
-
-.service-media picture,
 .gallery-item picture {
   display: block;
   block-size: 100%;
 }
-.service-media picture img {
+/* Services, business first (plan: site-redesign-business-first). The lead card
+   speaks the business page's cream look — a window into /business/ — and the
+   other four services are quiet rows with text links: one orange button only. */
+.services-layout {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.service-lead {
+  background-color: var(--color-cream);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  display: grid;
+}
+/* The business page's hero film (portrait, 478×850): a 4:5 window on phones,
+   beside the text from 900px. The title and the one-line promise sit ON it,
+   like a poster, so it is clear at a glance what the film is about. */
+.service-lead-media {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  background-color: var(--color-blue);
+  color: var(--color-white);
+  text-decoration: none;
+}
+.service-lead-video {
+  display: block;
   inline-size: 100%;
   block-size: 100%;
   object-fit: cover;
-  object-position: center;
 }
-
-.service-media--illustration {
-  background-color: var(--color-cream);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.service-media--illustration picture {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-5);
-}
-
-.service-media--illustration picture img {
-  object-fit: contain;
-  max-height: 100%;
-}
-
-.service-body {
-  padding: var(--space-5);
+.service-lead-body {
+  padding: var(--space-4) var(--space-4) var(--space-5);
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  flex: 1;
-  text-align: center;
   align-items: center;
+  text-align: center;
+}
+.service-lead-parts {
+  list-style: none;
+  padding: 0;
+  margin-block: 0 var(--space-4);
+  inline-size: 100%;
+  display: grid;
+  gap: var(--space-3);
+  text-align: start;
+}
+.service-lead-parts li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.part-icon {
+  flex: none;
+  inline-size: 48px;
+  block-size: 48px;
+  border-radius: 50%;
+  background-color: var(--color-white);
+  box-shadow: var(--shadow-sm);
+  display: grid;
+  place-items: center;
+}
+.part-icon img {
+  inline-size: 28px;
+  block-size: 28px;
+  object-fit: contain;
+}
+.part-text {
+  display: grid;
+  line-height: 1.35;
+}
+/* The three parts' names: the deeper blue reads at 18px on cream (5.3:1) */
+.part-text strong {
+  color: var(--color-blue-deep);
+  font-size: 1.125rem;
+  font-weight: 800;
+}
+.part-text span {
+  color: var(--color-ink-soft);
+  font-size: 0.975rem;
+}
+/* Dark text on orange, as on the business page (white on orange fails contrast) */
+.service-lead-cta {
+  inline-size: 100%;
+  padding-block: 0.95rem;
+  font-size: 1.0625rem;
+  color: var(--color-ink);
+  white-space: normal;
 }
 
-.service-body h3 {
-  font-size: var(--text-lead);
-  font-weight: 600;
+.services-rest {
+  display: grid;
+  gap: var(--space-3);
+}
+.service-group {
+  background-color: var(--color-white);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+.service-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3);
+}
+.service-group .service-row + .service-row {
+  border-block-start: 1px solid var(--color-line);
+}
+.service-row-media {
+  flex: none;
+  inline-size: 72px;
+  block-size: 72px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.service-row-media picture {
+  display: block;
+  block-size: 100%;
+}
+.service-row-media img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+.service-row-body {
+  min-inline-size: 0;
+  display: grid;
+  gap: 0.2rem;
+}
+.service-row-body h3 {
+  font-size: 1.0625rem;
+  font-weight: 700;
   color: var(--color-blue-deep);
 }
-
-.service-body h3::after {
-  content: '';
-  display: block;
-  width: 24px;
-  height: 2px;
-  background: var(--color-blue);
-  margin-inline: auto;
-  margin-block-start: var(--space-2);
-  border-radius: 2px;
-  transition: width 0.25s ease;
-}
-
-.service-card:hover .service-body h3::after {
-  width: 44px;
-}
-
-.service-body p {
-  font-size: var(--text-base);
-  color: var(--color-ink-soft);
-  line-height: var(--leading-body);
-  flex: 1;
+.service-row-body p {
   margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--color-ink-soft);
+}
+/* one underlined line with its arrow; on desktop every link sits on the same
+   baseline whatever the text above it */
+.service-link {
+  justify-self: start;
+  display: inline-block;
+  align-items: center;
+  gap: 0.35rem;
+  padding-block: 0.7rem; /* a 44px tap target */
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--color-blue-deep);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--color-orange) 70%, transparent);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.3em;
+}
+.service-link::after {
+  content: '\00a0←'; /* glued to the last word: it never wraps alone */
+}
+.service-link:focus-visible {
+  outline: 3px solid var(--color-orange);
+  outline-offset: 3px;
+  border-radius: 4px;
 }
 
-.service-body .btn {
-  align-self: center;
-  margin-block-start: auto;
-  padding-block: 0.6rem;
-  padding-inline: var(--space-4);
-  font-size: 0.9375rem;
+@media (min-width: 900px) {
+  /* The film is 478px wide: a 2/5 column shows it near its own size, not stretched */
+  .service-lead {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  }
+  .service-lead-media {
+    aspect-ratio: auto;
+    min-block-size: 31rem;
+  }
+  .service-lead-video {
+    position: absolute;
+    inset: 0;
+  }
+  .service-lead-body {
+    padding: var(--space-6) var(--space-7);
+    justify-content: center;
+  }
+  .service-lead-cta {
+    inline-size: auto;
+    padding-inline: var(--space-6);
+  }
+  /* Four equal quiet cards under the lead */
+  .services-rest {
+    grid-template-columns: repeat(4, 1fr);
+    align-items: stretch;
+  }
+  .service-group {
+    display: contents;
+  }
+  .service-group .service-row {
+    background-color: var(--color-white);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    border: 0;
+    flex-direction: column;
+  }
+  .service-group .service-row .service-row-body {
+    flex: 1;
+    grid-template-rows: auto 1fr auto;
+  }
+  .service-row-media {
+    inline-size: 100%;
+    block-size: auto;
+    aspect-ratio: 4 / 3; /* the photos are 4:3 - 16:9 cut faces at the edge */
+  }
 }
 
 /* ── Why ─────────────────────────────────────────────────────────────── */
@@ -1008,12 +1401,22 @@ p:last-child {
 }
 
 .village-block {
+  position: relative;
+  overflow: hidden;
   margin-inline: auto;
   padding: var(--space-6) var(--space-7);
   background-color: var(--color-white);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
-  border-block-start: 3px solid var(--color-orange);
+}
+/* a straight accent bar, not a border bent round the corners */
+.village-block::before {
+  content: '';
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  block-size: 3px;
+  background-color: var(--color-orange);
 }
 
 .village-block .subsection-title {
@@ -1135,15 +1538,16 @@ p:last-child {
   margin-block-start: var(--space-3);
 }
 
+/* small text on the blue band: full cream, large-text size (3.3:1 on brand blue) */
 .carousel-counter {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: rgba(255, 247, 234, 0.50);
+  font-size: max(1.1875rem, 1em);
+  font-weight: 700;
+  color: var(--color-cream);
   letter-spacing: 0.08em;
   font-variant-numeric: tabular-nums;
 }
 .carousel-counter .counter-current {
-  color: rgba(255, 247, 234, 0.90);
+  color: var(--color-cream);
   font-size: 0.95rem;
 }
 
@@ -1190,7 +1594,7 @@ p:last-child {
 }
 
 .lightbox-img {
-  max-inline-size: min(90vw, 1400px);
+  max-inline-size: min(100%, 1400px);
   max-block-size: 85vh;
   object-fit: contain;
   border-radius: var(--radius-sm);
@@ -1217,8 +1621,14 @@ p:last-child {
   outline: 3px solid var(--color-orange);
 }
 
+/* previous on the left, next on the right - as in the strip - and both on
+   screen at every width */
 .lightbox-prev,
 .lightbox-next {
+  position: absolute;
+  inset-block-start: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
   color: var(--color-cream);
   block-size: 52px;
   inline-size: 52px;
@@ -1226,13 +1636,21 @@ p:last-child {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(12, 26, 36, 0.6);
+  border: 1.5px solid rgba(255, 247, 234, 0.28);
   flex-shrink: 0;
   transition: background 0.15s;
 }
+.lightbox-prev { left: var(--space-3); }
+.lightbox-next { right: var(--space-3); }
 .lightbox-prev:hover,
 .lightbox-next:hover {
-  background: rgba(255, 255, 255, 0.22);
+  background: rgba(12, 26, 36, 0.9);
+}
+@media (min-width: 641px) {
+  .lightbox {
+    padding-inline: calc(52px + var(--space-5)); /* the photo never lies under an arrow */
+  }
 }
 .lightbox-prev:focus-visible,
 .lightbox-next:focus-visible {
@@ -1251,7 +1669,6 @@ p:last-child {
 
 .faq-item {
   border-block-end: 1px solid var(--color-line);
-  padding-block: var(--space-5);
 }
 
 .faq-item:first-of-type {
@@ -1268,8 +1685,10 @@ p:last-child {
   align-items: center;
   gap: var(--space-3);
   list-style: none;
+  padding-block: var(--space-4); /* the whole row opens the answer */
   padding-inline-end: var(--space-2);
   user-select: none;
+  text-wrap: balance;
   transition: color 0.2s ease;
 }
 .faq-item summary:hover {
@@ -1304,7 +1723,7 @@ p:last-child {
 }
 
 .faq-answer {
-  padding-block-start: var(--space-3);
+  padding-block: 0 var(--space-4);
   padding-inline-end: var(--space-6);
 }
 
@@ -1345,15 +1764,18 @@ p:last-child {
 .contact .section-title {
   color: var(--color-cream);
 }
+/* small text on the blue band: full cream, large-text size (3.3:1 on brand blue) */
 .contact .section-sub {
-  color: rgba(255, 247, 234, 0.82);
+  color: var(--color-cream);
+  font-size: max(1.1875rem, 1em);
+  font-weight: 700;
 }
 
 .contact-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-7);
-  align-items: stretch;
+  align-items: start;
 }
 
 .contact-map {
@@ -1366,7 +1788,7 @@ p:last-child {
   border-radius: var(--radius-md);
   overflow: hidden;
   flex: 1;
-  min-block-size: 380px;
+  min-block-size: 420px;
   box-shadow:
     0 24px 50px -22px rgba(0, 0, 0, 0.5),
     0 0 0 1px rgba(255, 247, 234, 0.10),
@@ -1460,8 +1882,8 @@ p:last-child {
 .lev-yam-marker {
   position: relative;
   display: block;
-  width: 40px;
-  height: 52px;
+  width: 28px;
+  height: 36px;
   cursor: pointer;
 }
 .lev-yam-marker:focus-visible {
@@ -1475,11 +1897,11 @@ p:last-child {
 /* Pulsing ring centered on the pin tip (the geographic point) */
 .lev-yam-marker .lym-pulse {
   position: absolute;
-  inset-block-end: -6px;
+  inset-block-end: -4px;
   inset-inline-start: 50%;
-  width: 36px;
-  height: 36px;
-  margin-inline-start: -18px;
+  width: 24px;
+  height: 24px;
+  margin-inline-start: -12px;
   border-radius: 50%;
   background: radial-gradient(circle,
     rgba(244, 152, 52, 0.60) 0%,
@@ -1515,11 +1937,6 @@ p:last-child {
   }
 }
 
-/* Tone the Israel Hiking tiles to fit our palette: less green-saturated, slightly warmer */
-.map-canvas .leaflet-tile-pane {
-  filter: saturate(0.78) contrast(0.98) brightness(1.02) sepia(0.04);
-}
-
 /* Hide ugly default Leaflet attribution background, keep the link readable */
 .map-canvas .leaflet-control-attribution {
   background: rgba(255, 247, 234, 0.85) !important;
@@ -1544,9 +1961,9 @@ p:last-child {
   color: var(--color-ink) !important;
   border: none !important;
   font-weight: 700 !important;
-  width: 32px !important;
-  height: 32px !important;
-  line-height: 32px !important;
+  width: 40px !important;
+  height: 40px !important;
+  line-height: 40px !important;
   transition: background 0.15s ease;
 }
 .map-canvas .leaflet-control-zoom a:hover {
@@ -1555,17 +1972,22 @@ p:last-child {
 }
 
 
+/* the planner leads, the way here follows */
 .contact-actions {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: var(--space-4);
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 247, 234, 0.08);
+  border: 1px solid rgba(255, 247, 234, 0.16);
 }
 
 .contact-intro {
-  font-size: var(--text-lead);
-  color: rgba(255, 247, 234, 0.95);
-  font-weight: 500;
+  font-size: max(1.1875rem, 1em); /* small text on the blue band: large-text size */
+  color: var(--color-cream);
+  font-weight: 700;
   margin-block-end: 0;
   line-height: 1.6;
   text-align: center;
@@ -1583,20 +2005,23 @@ p:last-child {
   background: rgba(244, 152, 52, 0.7);
 }
 
+/* the five first answers are rows at every width: icon, title, one line */
 .contact-buttons {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--space-3);
+  grid-template-columns: 1fr;
+  gap: var(--space-2);
 }
 
 /* ── Contact action buttons — postcard cards ─────────────────────────── */
 .btn-contact {
   position: relative;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 48px 1fr 20px;
+  grid-template-rows: auto auto;
+  column-gap: var(--space-3);
   align-items: center;
-  text-align: center;
-  padding: 1.5rem 1.1rem 1.6rem;
+  text-align: start;
+  padding: 0.75rem 1rem 0.85rem;
   background: var(--color-cream);
   border-radius: var(--radius-md);
   color: var(--color-ink);
@@ -1610,36 +2035,17 @@ p:last-child {
               box-shadow 0.28s ease;
 }
 
-/* Soft warm halo behind the icon — subtle "golden hour" feel */
-.btn-contact::before {
-  content: '';
-  position: absolute;
-  top: -25%;
-  left: 50%;
-  width: 130%;
-  height: 70%;
-  transform: translateX(-50%);
-  background: radial-gradient(ellipse at center,
-    rgba(244, 152, 52, 0.16) 0%,
-    rgba(244, 152, 52, 0.04) 45%,
-    transparent 75%);
-  pointer-events: none;
-  z-index: -1;
-  transition: opacity 0.3s ease;
-  opacity: 0.85;
-}
-
 /* Brand zigzag wave at the bottom — the signature Lev Yam mark */
 .btn-contact::after {
   content: '';
   position: absolute;
   inset-block-end: 0;
   inset-inline: 0;
-  block-size: 10px;
+  block-size: 6px;
   background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='10' viewBox='0 0 80 10'%3E%3Cpath d='M0 5 L20 1 L60 9 L80 5' fill='none' stroke='%23f49834' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: repeat-x;
   background-position: center;
-  background-size: 56px 10px;
+  background-size: 36px 6px;
   opacity: 0.85;
   transition: opacity 0.3s ease, transform 0.3s ease;
   transform-origin: center;
@@ -1647,16 +2053,12 @@ p:last-child {
 
 .btn-contact:hover,
 .btn-contact:focus-visible {
-  transform: translateY(-5px);
+  transform: translateY(-2px);
   box-shadow:
     0 16px 36px rgba(0, 0, 0, 0.38),
     0 0 0 1px rgba(244, 152, 52, 0.25),
     0 1px 0 rgba(255, 255, 255, 0.7) inset;
   outline: none;
-}
-.btn-contact:hover::before,
-.btn-contact:focus-visible::before {
-  opacity: 1;
 }
 .btn-contact:hover::after,
 .btn-contact:focus-visible::after {
@@ -1672,12 +2074,14 @@ p:last-child {
 
 /* Brand icon */
 .btn-contact-icon {
-  width: 72px;
-  height: 72px;
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  width: 48px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-block-end: var(--space-3);
+  margin-block-end: 0;
   filter: drop-shadow(0 4px 8px rgba(31, 111, 147, 0.18));
 }
 .btn-contact-icon img {
@@ -1694,8 +2098,11 @@ p:last-child {
 
 /* Title */
 .btn-contact strong {
+  grid-column: 2;
+  grid-row: 1;
+  text-align: start;
   font-family: var(--font-display);
-  font-size: 1.05rem;
+  font-size: 1.0625rem;
   font-weight: 700;
   color: var(--color-blue-deep);
   letter-spacing: -0.01em;
@@ -1704,12 +2111,22 @@ p:last-child {
 
 /* Subtitle */
 .btn-contact small {
-  font-size: 0.815rem;
+  grid-column: 2;
+  grid-row: 2;
+  text-align: start;
+  text-wrap: balance;
+  font-size: 0.875rem;
   color: var(--color-ink-soft);
-  margin-block-start: 4px;
+  margin-block-start: 1px;
   line-height: 1.5;
   font-weight: 400;
-  max-inline-size: 22ch;
+}
+/* a chevron says "this continues" (RTL: it points left) */
+[data-planner].is-live .btn-contact {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d97f1f' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 5l-7 7 7 7'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-size: 18px 18px;
+  background-position: left 1rem center;
 }
 
 /* ── Site Footer ─────────────────────────────────────────────────────── */
@@ -1782,15 +2199,14 @@ p:last-child {
 }
 
 .footer-credit {
-  color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 247, 234, 0.5);
   font-size: 0.75rem;
   margin: 0;
 }
 
 .footer-staff-login {
   display: inline-block;
-  margin-top: 0.5rem;
-  color: rgba(255, 255, 255, 0.35);
+  color: rgba(255, 247, 234, 0.6);
   font-size: 0.75rem;
   text-decoration: none;
 }
@@ -1808,13 +2224,16 @@ p:last-child {
   inline-size: 56px;
   block-size: 56px;
   border-radius: 50%;
-  background-color: #25D366;
-  color: var(--color-white);
+  /* Two colours, both from the brand book: an orange disc, the mark and a
+     thin ring in blue (the owner's choice, 2026-11-23). */
+  background-color: var(--color-orange);
+  color: var(--color-blue);
+  border: 2.5px solid var(--color-blue);
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: opacity 0.2s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .wa-float:hover {
@@ -1823,7 +2242,7 @@ p:last-child {
 }
 
 .wa-float:focus-visible {
-  outline: 3px solid var(--color-orange);
+  outline: 3px solid var(--color-blue);
   outline-offset: 3px;
 }
 
@@ -1837,19 +2256,20 @@ p:last-child {
 }
 
 @keyframes wa-pulse {
-  0%   { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22), 0 0 0 0 rgba(37, 211, 102, 0.5); }
-  60%  { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22), 0 0 0 12px rgba(37, 211, 102, 0); }
-  100% { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22), 0 0 0 0 rgba(37, 211, 102, 0); }
+  0%   { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22), 0 0 0 0 rgba(244, 152, 52, 0.5); }
+  60%  { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22), 0 0 0 12px rgba(244, 152, 52, 0); }
+  100% { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22), 0 0 0 0 rgba(244, 152, 52, 0); }
 }
 
 /* ── Reveal Animation ────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: no-preference) {
-  .reveal {
+  /* `js` is set by an inline script in the page head: no JS, no hiding */
+  html.js .reveal {
     opacity: 0;
     transform: translateY(8px);
     transition: opacity 0.4s ease, transform 0.4s ease;
   }
-  .reveal.is-visible {
+  html.js .reveal.is-visible {
     opacity: 1;
     transform: none;
   }
@@ -1864,6 +2284,10 @@ p:last-child {
   .lightbox {
     display: none !important;
   }
+  html.js .reveal {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 /* ── Responsive: Tablet (≤900px) ─────────────────────────────────────── */
@@ -1871,7 +2295,6 @@ p:last-child {
   .contact-grid {
     grid-template-columns: 1fr;
     gap: var(--space-6);
-    align-items: start;
   }
 
   .contact-map {
@@ -1880,13 +2303,13 @@ p:last-child {
 
   .map-frame {
     flex: none;
-    block-size: 320px;
+    block-size: 280px;
     min-block-size: unset;
   }
 
   .contact-actions {
     justify-content: flex-start;
-    gap: var(--space-4);
+    padding: var(--space-3);
   }
 
   /* Gallery filmstrip — show ~2 images */
@@ -1901,11 +2324,18 @@ p:last-child {
   .primary-nav a {
     font-size: 0.8125rem;
   }
+  /* the centred nav would run into the icon row: the email, map and Facebook
+     icons step out in this range - all three stay in the footer; WhatsApp and
+     Instagram stay in the header */
+  .header-social a:nth-child(2),
+  .header-social a:nth-child(3),
+  .header-social a:nth-child(5) {
+    display: none;
+  }
 }
-/* The Arabic labels run wider (seven items since /happening/): the compact
-   size holds until 1366px, where the centred nav would otherwise overlap
-   the social icons at its inline end. */
-@media (min-width: 961px) and (max-width: 1366px) {
+/* The Arabic labels run wider: the compact size holds until 1279px. From
+   1280px the five-item nav fits at full size beside the icon row. */
+@media (min-width: 961px) and (max-width: 1279px) {
   html[lang='ar'] .primary-nav ul {
     gap: var(--space-3);
   }
@@ -1918,10 +2348,27 @@ p:last-child {
 @media (max-width: 960px) {
   .hero-topbar {
     justify-content: space-between;
+    padding-inline: var(--space-3);
   }
 
+  /* Phones: the logo stays in the header on every page - it is the way home.
+     Order (right to left): logo, then the language switch and the menu. */
   .logo {
-    display: none;
+    display: flex;
+    order: -1;
+    margin-inline-end: auto;
+    min-inline-size: 44px; /* a 44px target, in the stuck header too */
+    min-block-size: 44px;
+    justify-content: center;
+  }
+  .logo img {
+    block-size: 44px;
+  }
+  .hero-topbar.is-stuck .logo {
+    margin-inline-end: var(--space-1);
+  }
+  .hero-topbar.is-stuck .logo img {
+    block-size: 40px;
   }
 
   .primary-nav {
@@ -1932,7 +2379,7 @@ p:last-child {
      hamburger (right) → socials (middle) → lang toggle (left) */
   .nav-toggle {
     display: flex;
-    order: 0;
+    order: 2;
     margin-inline-start: 0;
   }
 
@@ -1946,33 +2393,21 @@ p:last-child {
     margin-inline-start: 0;
   }
   .lang-opt {
-    padding: 3px 8px;
-    font-size: 0.72rem;
-    min-inline-size: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-inline-size: 36px;
+    min-block-size: 36px; /* + the toggle's frame = a 44px control */
+    padding: 0 8px;
+    font-size: 0.75rem;
   }
 }
 
 /* ── Responsive: Mobile (≤640px) ────────────────────────────────────── */
-@media (max-width: 700px) {
-  .service-card {
-    flex: 0 0 calc(50% - var(--space-4));
-  }
-}
-
 @media (max-width: 640px) {
-  .service-card {
-    flex: 0 0 100%;
-  }
-
-  .service-body h3 {
-    font-size: 1.1rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
-  }
-
+  /* both buttons the width the design means (270px), not their words' */
   .hero-ctas {
+    inline-size: 100%;
     flex-direction: column;
     align-items: center;
     gap: var(--space-2);
@@ -1980,77 +2415,29 @@ p:last-child {
 
   .hero-ctas .btn {
     inline-size: min(100%, 270px);
-    padding-block: 0.6rem;
+    padding-block: 0.7rem;
     padding-inline: var(--space-4);
-    font-size: 0.9rem;
+    font-size: 1rem;
   }
 
   /* Gallery filmstrip — show ~1.3 images (peek next) */
   .gallery-item { width: calc(78% - 3px); }
 
   .carousel-btn {
-    width: 38px;
-    height: 38px;
+    width: 44px;
+    height: 44px;
+  }
+  .carousel-track {
+    height: clamp(240px, 66vw, 320px);
   }
 
   .carousel-prev { left: var(--space-2); }
   .carousel-next { right: var(--space-2); }
 
-  /* Contact buttons: thin horizontal cards, icon on inline-start, text truly centered */
-  .contact-buttons {
-    grid-template-columns: 1fr;
-    gap: var(--space-2);
-  }
-
-  .btn-contact {
-    display: grid;
-    grid-template-columns: 46px 1fr 46px;
-    grid-template-rows: auto auto;
-    column-gap: var(--space-2);
-    align-items: center;
-    text-align: center;
-    padding: 0.7rem 0.85rem 0.85rem;
-  }
-
-  .btn-contact-icon {
-    grid-column: 1;
-    grid-row: 1 / span 2;
-    width: 46px;
-    height: 46px;
-    margin-block-end: 0;
-  }
-
-  .btn-contact strong {
-    grid-column: 2;
-    grid-row: 1;
-    font-size: 1rem;
-  }
-
-  .btn-contact small {
-    grid-column: 2;
-    grid-row: 2;
-    font-size: 0.78rem;
-    margin-block-start: 1px;
-    max-inline-size: none;
-  }
-
-  /* Hide the soft halo on mobile — looks cleaner */
-  .btn-contact::before { display: none; }
-
-  /* Slimmer zigzag at the bottom on mobile */
-  .btn-contact::after {
-    block-size: 6px;
-    background-size: 36px 6px;
-  }
-
-  /* Map smaller on small screens */
-  .map-frame {
-    block-size: 280px;
-    min-block-size: unset;
-  }
   .map-cta {
-    font-size: 0.78rem;
-    padding: 0.45rem 0.8rem;
+    font-size: 0.875rem;
+    min-block-size: 44px;
+    padding: 0.45rem 0.95rem;
   }
 
   .footer-inner {
@@ -2067,21 +2454,21 @@ p:last-child {
     gap: var(--space-2);
   }
 
-  .footer-tagline {
-    display: none;
-  }
-
   .footer-contact {
     margin-inline-start: 0;
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: center;
     align-items: center;
-    gap: var(--space-3);
+    gap: 0;
   }
 
   .footer-dot {
     display: none;
+  }
+  .footer-contact a {
+    inline-size: 44px;
+    block-size: 44px;
   }
 
   .faq-answer {
@@ -2093,15 +2480,17 @@ p:last-child {
   }
 
   .lightbox {
-    padding: var(--space-3);
+    padding: var(--space-2);
     gap: var(--space-2);
   }
 
   .lightbox-prev,
   .lightbox-next {
-    block-size: 40px;
-    inline-size: 40px;
+    block-size: 44px;
+    inline-size: 44px;
   }
+  .lightbox-prev { left: var(--space-2); }
+  .lightbox-next { right: var(--space-2); }
 
   .hero {
     min-block-size: 100svh;
@@ -2118,20 +2507,315 @@ p:last-child {
     block-size: 52px;
   }
 
-  .service-body {
-    padding: var(--space-4);
-  }
-
   .why .container-narrow {
     margin-block-end: var(--space-4);
   }
 }
 
-/* ── Responsive: Small mobile (≤400px) ──────────────────────────────── */
-@media (max-width: 400px) {
-  .carousel-btn {
-    width: 36px;
-    height: 36px;
+
+/* The film's poster text: the title and the one-line promise, on a dark fade */
+.service-lead-cover {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.35rem;
+  padding: var(--space-5) var(--space-4);
+  text-align: center;
+  background: linear-gradient(to top,
+    rgba(12, 26, 36, 0.86) 0%,
+    rgba(12, 26, 36, 0.55) 34%,
+    rgba(12, 26, 36, 0) 62%);
+}
+.service-lead-title {
+  font-family: var(--font-display);
+  font-size: clamp(2.1rem, 1.5rem + 3vw, 3rem);
+  font-weight: 800;
+  line-height: 1.15;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.5);
+}
+.service-lead-title::after {
+  content: '';
+  display: block;
+  inline-size: 96px;
+  block-size: 9px;
+  margin: 0.45rem auto 0.15rem;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 12'%3E%3Cpath d='M0 9 L8 3 L16 9 L24 3 L32 9' fill='none' stroke='%23f49834' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 24px 9px repeat-x;
+}
+.service-lead-media .service-lead-sub {
+  margin: 0;
+  max-inline-size: 22rem;
+  color: var(--color-white);
+  font-size: var(--text-lead);
+  font-weight: 600;
+  line-height: 1.4;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.6);
+  text-wrap: balance;
+}
+
+/* the other four services: one quiet list under one label */
+.services-more-title {
+  margin: var(--space-3) 0 0;
+  text-align: center;
+  color: var(--color-cream);
+  font-family: var(--font-display);
+  font-size: max(1.1875rem, 1em); /* small text on the blue band: large-text size */
+  font-weight: 700;
+}
+.services-more-title::after {
+  content: '';
+  display: block;
+  inline-size: 28px;
+  block-size: 2px;
+  margin: 0.5rem auto 0;
+  border-radius: var(--radius-pill);
+  background: rgba(244, 152, 52, 0.8);
+}
+
+@media (min-width: 900px) {
+  .service-lead-parts {
+    gap: var(--space-4);
+  }
+  .part-icon {
+    inline-size: 60px;
+    block-size: 60px;
+  }
+  .part-icon img {
+    inline-size: 34px;
+    block-size: 34px;
+  }
+  .part-text strong {
+    font-size: 1.35rem;
+  }
+  .part-text span {
+    font-size: 1.0625rem;
+  }
+  .services-more-title {
+    grid-column: 1 / -1;
+    margin-block: var(--space-4) var(--space-2);
   }
 }
 
+.map-note {
+  margin: var(--space-3) 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem 1rem;
+  color: rgba(255, 247, 234, 0.92);
+  font-size: 0.95rem;
+  text-align: center;
+}
+.map-waze {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 44px;
+  color: var(--color-cream);
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-color: var(--color-orange);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.3em;
+}
+.map-waze:focus-visible {
+  outline: 3px solid var(--color-orange);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* The closing thought of the business card: what the day gives, and what it
+   gives back. A quiet white note between the three parts and the button -
+   the same note box the business page ends each of its three parts with. Its
+   accent is a straight bar, not a border bent round the corner. */
+.service-lead-note {
+  position: relative;
+  overflow: hidden;
+  margin: 0 0 var(--space-4);
+  padding: 0.9rem 1.1rem;
+  padding-inline-start: calc(1.1rem + 3px);
+  border-radius: var(--radius-md);
+  background-color: var(--color-white);
+  box-shadow: var(--shadow-sm);
+  color: var(--color-ink);
+  font-size: 1rem;
+  line-height: 1.6;
+  text-align: start;
+  text-wrap: balance;
+}
+.service-lead-note::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  inline-size: 3px;
+  background-color: var(--color-orange);
+}
+/* Desktop: the note sits centred under the three centred parts - its own
+   width, centred lines, and the accent as a short line on top. */
+@media (min-width: 900px) {
+  .service-lead-note {
+    inline-size: fit-content;
+    max-inline-size: 30rem;
+    margin-inline: auto;
+    margin-block-end: var(--space-5);
+    padding: 1.1rem 1.75rem 1rem;
+    font-size: 1.0625rem;
+    text-align: center;
+  }
+  .service-lead-note::before {
+    inset-block: 0 auto;
+    inset-inline: 50% auto;
+    translate: 50% 0;
+    inline-size: 40px;
+    block-size: 3px;
+    border-radius: 0 0 3px 3px;
+  }
+}
+
+/* The WhatsApp mark: the inside of the speech bubble is white, under the blue
+   outline and the blue phone (the bubble is a circle centred in the icon). */
+.wa-float svg {
+  background: radial-gradient(circle closest-side at 50% 49.6%, var(--color-white) 0 87%, transparent 89%);
+}
+
+/* Keyboard focus: every chrome control shows where you are */
+.logo:focus-visible,
+.primary-nav a:focus-visible,
+.header-social a:focus-visible,
+.lang-opt:focus-visible,
+.nav-toggle:focus-visible,
+.topbar-business:focus-visible,
+.mobile-nav a:focus-visible,
+.mobile-nav-close:focus-visible,
+.footer-contact a:focus-visible,
+.footer-staff-login:focus-visible {
+  outline: 3px solid var(--color-orange);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+
+/* ═══ Final touch: the homepage's details ═════════════════════════════════ */
+
+/* Business card, desktop: one centred axis. The three parts stand side by
+   side like the three pillars of the business page; the note and the button
+   sit under them on the same centre line. */
+@media (min-width: 900px) {
+  .service-lead-parts {
+    inline-size: fit-content;
+    margin-inline: auto;
+  }
+}
+@media (min-width: 1180px) {
+  .service-lead-parts {
+    inline-size: 100%;
+    grid-template-columns: repeat(3, 1fr);
+    align-items: start;
+    gap: var(--space-3);
+  }
+  .service-lead-parts li {
+    flex-direction: column;
+    text-align: center;
+    gap: var(--space-2);
+  }
+  /* each tagline is two short sentences: one per line, in all three columns */
+  .part-text span {
+    max-inline-size: 10.5rem;
+    margin-inline: auto;
+    text-wrap: balance;
+  }
+}
+
+/* "מי אנחנו": the card keeps the page gutter on phones, a straight accent
+   bar, and no extra space under the section's last block. */
+.why .village-block {
+  margin-block-end: 0;
+}
+@media (max-width: 640px) {
+  .village-block {
+    inline-size: calc(100% - 2 * var(--space-3));
+  }
+}
+.why .lead {
+  text-wrap: balance;
+}
+
+/* Gallery strip: an arrow that cannot go further says so; the bar fills in
+   the strip's own direction (photo 1 is on the left). */
+.carousel-btn:disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+.carousel-progress {
+  direction: ltr;
+}
+
+/* Planner: answers in one row share a height; small phones give the text
+   the room the frame was taking. */
+.planner-choices {
+  grid-auto-rows: 1fr;
+}
+@media (max-width: 430px) {
+  .contact-actions {
+    padding: var(--space-2);
+  }
+  .btn-contact {
+    column-gap: var(--space-2);
+  }
+}
+
+/* Footer below desktop: the tagline steps out and nothing shrinks - between
+   phone and desktop the icons used to collapse to slivers and the two small
+   labels broke over two lines. */
+.footer-contact a,
+.footer-contact svg,
+.footer-credit,
+.footer-staff-login {
+  flex: none;
+  white-space: nowrap;
+}
+@media (max-width: 899px) {
+  .footer-tagline {
+    display: none;
+  }
+}
+
+/* "You are here" for the business entry: on its own page the pill is framed,
+   not filled - the page's one orange action is its "plan your day" button. */
+.primary-nav .nav-business a[aria-current='page'],
+.mobile-nav li.nav-business a[aria-current='page'] {
+  background-color: transparent;
+  color: var(--color-cream);
+  box-shadow: inset 0 0 0 1.5px var(--color-orange);
+  border-color: transparent;
+  cursor: default;
+}
+
+/* Weekend hours (FACTS.md): a second, quieter line under the weekend card's text */
+.service-hours {
+  display: block;
+  margin-block-start: 0.3rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-blue-deep);
+}
+.service-hours > span {
+  display: block; /* one day per line */
+  white-space: nowrap;
+}
+
+/* ═══ Final touch: accessibility ══════════════════════════════════════════ */
+
+/* A visitor who asked for less motion gets jumps, not glides */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* The skip link lands on the title: no ring on a heading nobody tabbed to */
+.hero-title:focus {
+  outline: none;
+}
