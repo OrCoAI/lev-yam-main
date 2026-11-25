@@ -1,0 +1,1716 @@
+/* ══════════════════════════════════════════════════════════════
+   לב ים — venue landing page
+   RTL-first, mobile-first, no framework.
+   Palette: brand colours only (brand/tokens.json) — orange, cream,
+   blue — plus white and a neutral dark for text. Tints are the brand
+   colours at low alpha. Icons come from /img/business/brand/.
+   ══════════════════════════════════════════════════════════════ */
+
+/* Fonts — self-hosted (no font CDN). Heebo is the site's; Cairo is this page's
+   Arabic face and is fetched only once Arabic text is on screen. */
+@font-face {
+  font-family: 'Heebo';
+  src: url('/fonts/Heebo-hebrew.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0307-0308, U+0590-05FF, U+200C-2010, U+20AA, U+25CC, U+FB1D-FB4F;
+}
+@font-face {
+  font-family: 'Heebo';
+  src: url('/fonts/Heebo-latin.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Cairo';
+  src: url('/fonts/Cairo-arabic.woff2') format('woff2');
+  font-weight: 400 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+
+/* ── Tokens ──────────────────────────────────── */
+:root {
+  --orange: #f49834;
+  --cream: #fff7ea;
+  --blue: #2c92bf;
+  --white: #ffffff;
+  --ink: #222222;
+  --ink-soft: #5c5c5c;
+  --blue-soft: rgba(44, 146, 191, 0.12);
+  --orange-soft: rgba(244, 152, 52, 0.16);
+  --line: rgba(44, 146, 191, 0.28);
+
+  --radius-sm: 12px;
+  --radius: 20px;
+  --radius-pill: 999px;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05), 0 6px 18px rgba(44, 146, 191, 0.08);
+  --shadow: 0 10px 30px rgba(44, 146, 191, 0.14);
+  --container: 1120px;
+  --gutter: 1.25rem;   /* 1rem under 600px: see the phone block at the end */
+  --header-h: 64px;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Type scale — one size per role; the roles that grow with the viewport are fluid */
+  --fs-xs: 0.875rem;                                 /* captions, units, years, the "2/4" count */
+  --fs-sm: 0.95rem;                                  /* UI labels: tiles, pills, hints, small controls */
+  --fs-md: 1.0625rem;                                /* body, buttons, lists, labels */
+  --fs-lead: clamp(1.2rem, 0.5vw + 1rem, 1.35rem);   /* the bold opening line of a section; the message */
+  --fs-h3: clamp(1.4rem, 0.8vw + 1.1rem, 1.75rem);   /* card titles, planner questions, list titles */
+  --fs-h2: clamp(1.75rem, 1.5vw + 1.2rem, 2.5rem);
+  --fs-h1: clamp(2.25rem, 2.5vw + 1.6rem, 3.75rem);
+  --fs-btn-lg: 1.125rem;                             /* the large pills (hero, fit) */
+  --fs-ready: clamp(1.6rem, 1.2vw + 1.25rem, 2.1rem); /* "ההודעה מוכנה!" — the one celebratory title */
+  /* Line heights — four textures: headings, UI, leads, running text */
+  --lh-heading: 1.2;
+  --lh-ui: 1.35;
+  --lh-lead: 1.5;
+  --lh-body: 1.65;
+  /* Spacing — the same gap for the same relationship in every section */
+  --space-section: clamp(2.5rem, 5vw, 4rem);   /* a section's edge → its content, top and bottom (40px on phones → 64px wide) */
+  --space-title: 1.5rem;   /* section title (and its wave) → the text under it */
+  --space-object: 2.5rem;   /* section text → the thing it introduces: a CTA, the cards, the list, the planner */
+  --pad-card: 1.15rem;      /* inner gutter of cards and panels on phones */
+  --radius-md: 16px;
+  --radius-lg: 28px;
+  /* The brand's orange zig-zag wave (under section titles, inside the cards) */
+  --wave: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 12'%3E%3Cpath d='M0 9 L8 3 L16 9 L24 3 L32 9' fill='none' stroke='%23f49834' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+/* ── Reset & base ────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--header-h) + env(safe-area-inset-top, 0px) + 0.5rem);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: 'Heebo', system-ui, sans-serif;
+  font-size: var(--fs-md);
+  line-height: var(--lh-body);
+  color: var(--ink);
+  background: var(--white);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* Arabic: Cairo (fetched once these rules match; the language pill's "عر" always uses
+   it, so that one small face loads for Hebrew visitors too). Cairo carries taller
+   ascenders, diacritics and deep descenders, so Arabic gets more leading throughout. */
+html[lang="ar"] body,
+html[lang="ar"] .btn,
+html[lang="ar"] .choice {
+  font-family: 'Cairo', 'Heebo', system-ui, sans-serif;
+}
+html[lang="ar"] {
+  --lh-heading: 1.3;
+  --lh-ui: 1.45;
+  --lh-lead: 1.7;
+  --lh-body: 1.85;
+}
+
+img, video, svg { display: block; max-width: 100%; }
+img { height: auto; }
+a { color: inherit; text-decoration: none; }
+ul { list-style: none; }
+button { font: inherit; color: inherit; cursor: pointer; }
+[hidden] { display: none !important; }
+
+:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+/* Over the hero video the blue ring would vanish — there it is white */
+.hero :focus-visible,
+.skip-link:focus-visible { outline-color: var(--white); }
+/* No browser tap flash; every control has its own press state below */
+.btn, .answer, .flow-back, .flow-skip, .flow-restart, .wa-float, .pillar-more { -webkit-tap-highlight-color: transparent; }
+
+.skip-link {
+  position: absolute;
+  inset-inline-start: 1rem;
+  top: -4rem;
+  z-index: 1000;
+  padding: 0.6rem 1rem;
+  background: var(--orange);
+  color: var(--ink);
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+}
+.skip-link:focus { top: 1rem; }
+
+/* Read by screen readers, not shown */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Typography ──────────────────────────────── */
+h1, h2, h3, h4 {
+  line-height: var(--lh-heading);
+  font-weight: 900;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+/* Headings break evenly, never with one lonely word on the last line (progressive) */
+h1, h2, h3 { text-wrap: balance; }
+
+/* Blue headings are large enough (≥ 24px / ≥ 19px bold) to pass contrast on cream and white */
+h1 { font-size: var(--fs-h1); }
+h2 { font-size: var(--fs-h2); color: var(--blue); margin-bottom: 1rem; }
+h3 { font-size: var(--fs-h3); color: var(--blue); margin-bottom: 0.75rem; }
+
+/* Paragraph spacing follows each block's own line height (the rem value is the fallback) */
+p + p { margin-top: 0.875rem; margin-top: 0.5lh; }
+/* Paragraphs and list items wrap evenly too, so a last line is never a single word */
+p, li { text-wrap: pretty; }
+
+.center { text-align: center; }
+
+
+/* Orange zig-zag wave under centred section titles (brand motif) */
+.h2-accent {
+  position: relative;
+  padding-bottom: 1.1rem;
+  margin-bottom: var(--space-title);
+}
+/* Arabic letters reach lower below the line; give the wave more room */
+html[lang="ar"] .h2-accent { padding-bottom: 1.5rem; }
+.h2-accent::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  margin: 0 auto;
+  width: 96px;
+  height: 12px;
+  background: var(--wave) repeat-x left center / 32px 12px;
+}
+
+/* ── Layout ──────────────────────────────────── */
+.container {
+  width: min(100% - 2 * var(--gutter), var(--container));
+  margin-inline: auto;
+}
+.container.narrow { max-width: 600px; }  /* ≈ 72 characters of body text */
+
+.section { padding-block: var(--space-section); }
+.section-cream { background: var(--cream); }
+
+/* ── Buttons ─────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 0.85rem 1.75rem;
+  border: 2px solid transparent;
+  border-radius: var(--radius-pill);
+  font-weight: 700;
+  font-size: var(--fs-md);
+  line-height: var(--lh-heading);
+  text-align: center;
+  white-space: nowrap;
+  transition: filter 0.2s var(--ease), background-color 0.2s var(--ease), border-color 0.2s var(--ease),
+              transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+  touch-action: manipulation;
+}
+/* Hover effects only where there is a pointer that hovers — a tap must not leave a button raised */
+@media (hover: hover) {
+  .btn:hover { transform: translateY(-1px); }
+  .btn-primary:hover,
+  .btn-wa:hover { filter: brightness(0.95); }
+  .btn-ghost:hover { background: rgba(255, 255, 255, 0.18); }
+}
+.btn:active { transform: translateY(0) scale(0.98); }
+.btn-primary:active,
+.btn-wa:active { filter: brightness(0.92); }
+
+.btn-lg { padding: 1rem 2.1rem; font-size: var(--fs-btn-lg); }
+/* Cairo's heavy descenders pull its labels down; two pixels of padding lift them back to centre */
+html[lang="ar"] .btn-lg { padding-block: calc(1rem - 2px) calc(1rem + 2px); }
+.btn-xl { padding: 1.1rem 2.4rem; font-size: var(--fs-lead); }
+
+/* Orange is the brand's CTA colour; dark text keeps it readable (6.4:1) */
+.btn-primary,
+.btn-wa {
+  background: var(--orange);
+  color: var(--ink);
+  box-shadow: 0 6px 18px rgba(244, 152, 52, 0.35);
+}
+
+.btn-ghost {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--white);
+  border-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.wa-icon { width: 1.3em; height: 1.3em; flex: none; }
+
+/* ── Hero ────────────────────────────────────── */
+.hero {
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: calc(var(--header-h) + env(safe-area-inset-top, 0px) + 2.5rem) var(--gutter) 6rem;
+  background: var(--blue) url('/img/business/hero-poster.jpg') center / cover no-repeat;
+  color: var(--white);
+  text-align: center;
+  overflow: hidden;
+}
+.hero-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -2;
+}
+/* Blue tint on the video, darkening toward the bottom so the text reads; a
+   soft dark band at the very top keeps the white header legible on any frame */
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(180deg,
+    rgba(0, 0, 0, 0.42) 0%,
+    rgba(44, 146, 191, 0.4) 16%,
+    rgba(44, 146, 191, 0.45) 45%,
+    rgba(0, 0, 0, 0.62) 100%);
+}
+.hero-content { max-width: 780px; }
+/* The brand stamp opens the page. Lev Yam is the heart of the sea, and the
+   stamp is a sun over an island: it surfaces out of a soft blur, a warm light
+   blooms behind its sun and keeps a slow heartbeat (lub-dub, rest), and now
+   and then a glint of sun runs across the paper in reading direction (clipped
+   to the stamp's zig-zag edge). Without motion it rests in the glow, unmoving.
+   The planner's ready step still lands the stamp like a stamp on a letter.
+   The wrapper stays untransformed on purpose: that keeps the light in the
+   hero's own layer, where it adds to the video like light (screen) instead of
+   mixing with it like paint; the tilt and the entrance live on the stamp. */
+.hero-mark {
+  position: relative;
+  width: 84px;
+  margin: 0 auto 0.6rem;
+}
+@media (min-width: 900px) { .hero-mark { width: 104px; } }
+.hero-stamp {
+  display: block;
+  width: 100%;
+  height: auto;
+  rotate: -8deg;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.3));
+  animation: mark-in 1s cubic-bezier(0.22, 1, 0.36, 1) 0.2s backwards;
+}
+/* The light: a circle 2.4 stamps wide, centred on the sun (31% down the stamp) */
+.hero-mark::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset-inline: -70%;
+  top: -54%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 247, 234, 0.5), rgba(244, 152, 52, 0.6) 30%, rgba(244, 152, 52, 0.22) 62%, rgba(244, 152, 52, 0) 100%);
+  opacity: 0.8;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: glow-bloom 1.6s var(--ease) 0.55s backwards, heartbeat 5.2s ease-in-out 2.15s infinite;
+}
+/* The glint: a slanted band of light that crosses the stamp, right to left */
+.hero-mark::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  rotate: -8deg;   /* the stamp's tilt */
+  background: linear-gradient(110deg, rgba(255, 255, 255, 0) 40%, rgba(255, 255, 255, 0.75) 50%, rgba(255, 255, 255, 0) 60%) 100% 0 / 300% 100% no-repeat;
+  -webkit-mask: url('/img/business/brand/logo-stamp-320.png') center / 100% 100% no-repeat;
+  mask: url('/img/business/brand/logo-stamp-320.png') center / 100% 100% no-repeat;
+  pointer-events: none;
+  animation: glint 7.5s ease-in-out 1.25s infinite;
+}
+@keyframes mark-in {
+  from { opacity: 0; translate: 0 14px; scale: 0.88; rotate: -16deg; filter: blur(8px); }
+  to { opacity: 1; translate: 0 0; scale: 1; rotate: -8deg; filter: blur(0); }
+}
+@keyframes glow-bloom {
+  0% { opacity: 0; scale: 0.35; }
+  60% { opacity: 1; scale: 1.08; }
+  100% { opacity: 0.8; scale: 1; }
+}
+/* Lub-dub, then rest: the second beat a little softer than the first */
+@keyframes heartbeat {
+  0%, 38%, 100% { opacity: 0.8; scale: 1; }
+  8% { opacity: 1; scale: 1.08; }
+  16% { opacity: 0.84; scale: 1.01; }
+  25% { opacity: 0.96; scale: 1.05; }
+}
+@keyframes glint {
+  0% { background-position: 0% 0; }
+  17%, 100% { background-position: 100% 0; }
+}
+@keyframes stamp-in {
+  0% { opacity: 0; transform: rotate(-26deg) scale(1.9); }
+  60% { opacity: 1; }
+  100% { opacity: 1; transform: rotate(-8deg) scale(1); }
+}
+/* The headline is two sentences; each is one unit, so they share a line only
+   when both fit and otherwise stack, centred, with no stray indent */
+.hero h1 {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  column-gap: 0.35em;
+  color: var(--white);
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.35);
+  margin: 0.5rem 0 1rem;
+}
+.h1-line { display: block; }
+.hero-sub {
+  font-size: var(--fs-lead);
+  font-weight: 700;
+  line-height: var(--lh-lead);
+  text-wrap: balance;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.35);
+}
+.hero-lead {
+  max-width: 560px;   /* ≈ 75 characters */
+  margin: 1rem auto 0;
+  font-size: var(--fs-md);
+  line-height: var(--lh-body);
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.4);
+}
+/* Phones: a size step between the subtitle and the lead, so the two read as two things */
+@media (max-width: 599px) { .hero-lead { font-size: 1rem; line-height: 1.6; } }
+.hero-name { font-weight: 900; }  /* "לב ים" is bold in the copy doc */
+.hero-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 2rem;
+}
+.hero-ctas .btn { flex: 1 1 auto; max-width: 420px; }
+/* Once the pair fits on one line the buttons keep their natural widths */
+@media (min-width: 520px) { .hero-ctas .btn { flex: 0 0 auto; } }
+
+/* Short phones (667px and under): a tighter stack keeps both buttons above the fold */
+@media (max-width: 599px) and (max-height: 740px) {
+  .hero { padding-top: calc(var(--header-h) + env(safe-area-inset-top, 0px) + 1.25rem); padding-bottom: 4.5rem; }
+  .hero-mark { width: 68px; margin-bottom: 0.35rem; }
+  .hero h1 { margin: 0.35rem 0 0.75rem; }
+  .hero-lead { margin-top: 0.85rem; }
+  .hero-ctas { margin-top: 1.5rem; }
+}
+/* Landscape phones */
+@media (max-height: 480px) and (orientation: landscape) {
+  .hero { padding-top: calc(var(--header-h) + 0.75rem); padding-bottom: 4rem; }
+  .hero-mark { width: 56px; margin-bottom: 0.25rem; }
+  .hero h1 { margin: 0.25rem 0 0.5rem; }
+  .hero-ctas { margin-top: 1rem; }
+}
+/* Tall tablets: the hero stops at 56rem so the cream intro shows on the first screen */
+@media (min-width: 768px) and (max-width: 1279px) and (min-height: 1000px) { .hero { min-height: min(100svh, 56rem); } }
+/* Cairo runs wider than Heebo: on phones the headline scales with the width so each sentence keeps one line */
+html[lang="ar"] .hero h1 { font-size: min(var(--fs-h1), 8.9vw); }
+
+/* Soft curve into the cream section below (the intro) */
+.hero-curve {
+  position: absolute;
+  inset-inline: 0;
+  bottom: -1px;
+  height: 56px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 56' preserveAspectRatio='none'%3E%3Cpath fill='%23fff7ea' d='M0 32 C360 64 720 0 1080 28 C1260 42 1360 40 1440 30 L1440 56 L0 56 Z'/%3E%3C/svg%3E") no-repeat bottom center / 100% 100%;
+}
+
+/* ── Facts strip (hidden until data) ─────────── */
+.facts { background: var(--cream); padding-block: 0 2rem; }
+.facts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 1.25rem;
+  margin-top: -2rem;
+  position: relative;
+  z-index: 2;
+}
+@media (min-width: 768px) { .facts-grid { grid-template-columns: repeat(4, 1fr); } }
+.fact { text-align: center; }
+.fact-value { display: block; font-size: 1.6rem; font-weight: 900; color: var(--blue); }
+.fact-label { font-size: 0.9rem; color: var(--ink-soft); }
+
+/* ── Placeholder tile — brand icon on cream with the zig-zag wave, so it
+   reads as intentional until a real photo replaces it (data-pending) ── */
+.ph {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 16'%3E%3Cpath d='M0 12 L12 4 L24 12 L36 4 L48 12' fill='none' stroke='%232c92bf' stroke-opacity='0.16' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") repeat center / 48px 16px,
+    var(--cream);
+}
+.ph img {
+  width: 34%;
+  max-width: 180px;
+  height: auto;
+  box-shadow: none;
+  border-radius: 0;
+}
+/* On cream sections the tile needs a white base to stand out */
+.section-cream .ph { background-color: var(--white); }
+
+/* ── Intro — the two opening sentences, right under the hero ── */
+/* The hero's curve already hands some cream (≈ 26px on average) to the top of the section */
+.intro { padding-block: clamp(1.75rem, 3.5vw, 2.75rem) var(--space-section); }
+.lede {
+  max-width: 700px;   /* ≈ 72 characters of the lead size */
+  margin: 0 auto;
+  text-align: center;
+  font-size: var(--fs-lead);
+  font-weight: 700;
+  line-height: var(--lh-lead);
+}
+.lede p:first-child { text-wrap: balance; }
+.lede p + p { font-weight: 400; color: var(--ink-soft); }
+
+/* ── Testimonials (hidden until content) ─────── */
+.testi-grid { display: grid; gap: 1.25rem; margin-top: 1.5rem; }
+@media (min-width: 768px) { .testi-grid { grid-template-columns: repeat(3, 1fr); } }
+.testi {
+  background: var(--cream);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+}
+.testi footer { margin-top: 0.75rem; font-size: 0.9rem; color: var(--ink-soft); }
+.logo-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 2rem; margin-top: 2.5rem; }
+
+/* ── Three pillars — folded ──────────────────── */
+/* Same blocks in every item, same order, same spacing (Or's structure):
+   title → tagline → entry paragraph → list label + six bullets → end paragraph (white box).
+   Mobile: one cream list with three rows; a row opens in place, one at a time.
+   Desktop: three cream cards in a row (cream is the brand's package-card
+   colour); "מידע נוסף" opens all three together, and the matching blocks line
+   up across the cards (JS sets --row-* on the grid from the longest card). */
+.pillar-grid {
+  max-width: 880px;
+  margin: var(--space-title) auto 0;
+  background: var(--cream);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.pillar + .pillar { border-top: 1px solid var(--line); }
+
+.pillar-heading { margin: 0; font: inherit; color: inherit; }
+.pillar-head {
+  display: flex;
+  flex-wrap: wrap;            /* lets a cover photo take a line of its own; the row itself never wraps */
+  align-items: center;
+  gap: 0.9rem;
+  width: 100%;
+  padding: var(--pad-card);
+  border: 0;
+  background: transparent;
+  text-align: start;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.pillar-head:active .pillar-chevron,
+.pillar-more:active .pillar-chevron { background-color: var(--blue-soft); }
+.pillar-head:focus-visible,
+.pillar-more:focus-visible { outline-offset: -3px; }
+
+.pillar-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--white);
+}
+.pillar-icon img { width: auto; height: auto; max-width: 32px; max-height: 32px; }
+
+/* Photos and videos (Or, 2026-10-14) — on desktop the three cards share one frame, the
+   cover (Or, 2026-10-15: food and Space like התוכן). Its photos are framed on their subject
+   (data-focus, by JS; .focus-* is the fallback without it). The clock of a photo cover is a
+   CSS animation (the active story bar) and JS moves on when it ends, so pausing the animation
+   pauses the photos: under the pointer, while the card is open, off screen (JS). The Space
+   cover plays its clips one after another; each one's end brings the next, and its story bar
+   follows the clip (JS). */
+.pillar-cover img,
+.pillar-cover video { width: 100%; height: 100%; object-fit: cover; }
+
+/* The cover: a wide frame on a line of its own above the icon, titles and chevron.
+   Each photo sweeps in from the right behind a zig-zag edge — the brand's wave on its side —
+   while the photo on screen drifts slowly closer or away. A clip sweeps in the same way and
+   needs no drift: it moves by itself. */
+.pillar-cover {
+  position: relative;
+  display: block;
+  flex: 0 0 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--blue-soft);
+}
+.pillar-cover .slide { position: absolute; inset: 0; visibility: hidden; }
+.pillar-cover .slide.focus-top { object-position: 50% 30%; }
+/* Without JS (or with reduced motion) the first photo simply shows */
+.pillar-cover:not(.is-armed) .slide:first-of-type,
+.pillar-cover .slide.is-current,
+.pillar-cover .slide.is-leaving { visibility: visible; }
+/* is-leaving keeps the same animations, so the outgoing photo keeps drifting under the sweep */
+.pillar-cover .slide.is-current,
+.pillar-cover .slide.is-leaving {
+  animation: cover-wipe 1.1s cubic-bezier(0.7, 0, 0.3, 1) both, cover-drift-out 4.5s linear both;
+}
+.pillar-cover .slide:nth-of-type(even).is-current,
+.pillar-cover .slide:nth-of-type(even).is-leaving { animation-name: cover-wipe, cover-drift-in; }
+.pillar-cover.is-film .slide.is-current,
+.pillar-cover.is-film .slide.is-leaving { animation: cover-wipe 1.1s cubic-bezier(0.7, 0, 0.3, 1) both; }
+.pillar-cover .slide.is-current { z-index: 1; }
+/* The clips are tall and the cover is wide: frame the band with the pergola and the sea */
+.pillar-cover video { object-position: 50% 42%; background: var(--blue-soft); }
+/* With scripting off, browsers force their player controls onto videos; these are decoration
+   and have no source until JS gives them one, so the poster shows on its own */
+.pillar-cover video::-webkit-media-controls { display: none !important; }
+/* Story bars: one per photo, filling right to left; the active bar is the clock */
+.pillar-cover.is-armed::after {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  inset: 0 0 auto;
+  height: 32%;
+  background: linear-gradient(rgba(0, 0, 0, 0.24), transparent);
+  pointer-events: none;
+}
+.cover-bars {
+  position: absolute;
+  z-index: 3;
+  inset: 10px 12px auto;
+  display: flex;
+  gap: 4px;
+}
+.cover-bars span {
+  flex: 1;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.4);
+}
+.cover-bars span::after {
+  content: '';
+  display: block;
+  height: 100%;
+  background: var(--white);
+  transform: scaleX(0);
+  transform-origin: right;
+}
+.cover-bars span.is-done::after { transform: none; }
+.cover-bars span.is-active::after { animation: cover-bar 3s linear both; }
+/* A clip's bar is filled by the clip itself (JS sets --progress as it plays) */
+.pillar-cover.is-film .cover-bars span.is-active::after { animation: none; transform: scaleX(var(--progress, 0)); }
+.pillar.is-open .pillar-cover .slide,
+.pillar-cover.is-paused .slide { animation-play-state: running, paused; }
+.pillar.is-open .cover-bars span::after,
+.pillar-cover.is-paused .cover-bars span::after { animation-play-state: paused; }
+@media (hover: hover) {
+  .pillar-cover:hover .slide { animation-play-state: running, paused; }
+  .pillar-cover:hover .cover-bars span::after { animation-play-state: paused; }
+}
+/* Tablets: wider, but not so wide that the sea line falls out of the frame */
+@media (min-width: 600px) { .pillar-cover { aspect-ratio: 5 / 2; } }
+
+/* The sweep: a vertical zig-zag edge (six teeth) travels from the right edge past the left */
+@keyframes cover-wipe {
+  from {
+    clip-path: polygon(100% 0, 100% 100%,
+      calc(100% + 16px) 100%, 100% 91.667%, calc(100% + 16px) 83.333%, 100% 75%,
+      calc(100% + 16px) 66.667%, 100% 58.333%, calc(100% + 16px) 50%, 100% 41.667%,
+      calc(100% + 16px) 33.333%, 100% 25%, calc(100% + 16px) 16.667%, 100% 8.333%,
+      calc(100% + 16px) 0);
+  }
+  to {
+    clip-path: polygon(100% 0, 100% 100%,
+      -16px 100%, -32px 91.667%, -16px 83.333%, -32px 75%,
+      -16px 66.667%, -32px 58.333%, -16px 50%, -32px 41.667%,
+      -16px 33.333%, -32px 25%, -16px 16.667%, -32px 8.333%,
+      -16px 0);
+  }
+}
+@keyframes cover-drift-out { from { transform: scale(1.08); } to { transform: scale(1); } }
+@keyframes cover-drift-in { from { transform: scale(1); } to { transform: scale(1.08); } }
+@keyframes cover-bar { to { transform: none; } }
+
+/* The phone layers' videos (the living row's title film, the deck's chapters) */
+.row-video video,
+.stack-card video {
+  object-fit: cover;
+  background: var(--blue-soft);
+}
+
+/* ── Phones and tablets (the list): living rows and a flick deck (Or's pick, 2026-10-14) ──
+   With JS (html.phone-media) the list's rows stay as they were — icon, title, tagline,
+   chevron — and the desktop covers step aside: the card's photos (or title film) breathe
+   behind the chevron, and an open item ends with a flick deck. Without JS the phone shows
+   each cover's first photo (or poster) on a line of its own above the row. */
+.row-photos,
+.row-video,
+.pillar-stack { display: none; }
+@media (max-width: 1023px) {
+  html.phone-media .pillar-head > .pillar-cover { display: none; }
+}
+
+/* The row's photos cross-fade, each drifting a little closer; the drift is the clock */
+.peek {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 1s var(--ease);
+}
+[data-rotator]:not(.is-rotating) .peek:first-child,
+.peek.is-current,
+.peek.is-leaving { opacity: 1; }
+.peek.is-current { z-index: 1; animation: peek-drift 2.8s linear both; }
+.is-paused .peek { animation-play-state: paused; }
+@keyframes peek-drift { from { transform: scale(1.12); } to { transform: none; } }  /* a transform: it adds to a photo's zoom (the scale property, JS) */
+
+/* Living rows: the rows keep their height; on the far side, behind the chevron, the card's
+   photos (or the Space title film) breathe and melt into the cream before they reach the
+   text. The second card keeps its own time, so the two never change together. */
+@media (max-width: 1023px) {
+  html.phone-media .has-photos .pillar-head,
+  html.phone-media .has-film .pillar-head { position: relative; isolation: isolate; }
+  html.phone-media .row-photos,
+  html.phone-media .row-video {
+    position: absolute;
+    z-index: -1;
+    inset-block: 0;
+    inset-inline-end: 0;
+    display: block;
+    width: 42%;
+    overflow: hidden;
+  }
+  /* The photos fade out themselves (a mask, not a cream layer on top), so no edge of a
+     photo can show where the window ends: clear at the outer edge, gone before the text */
+  html.phone-media .row-photos,
+  html.phone-media .row-video {
+    -webkit-mask-image: linear-gradient(to right, #000 30%, rgba(0, 0, 0, 0.3) 70%, transparent 94%);
+    mask-image: linear-gradient(to right, #000 30%, rgba(0, 0, 0, 0.3) 70%, transparent 94%);
+    transition: opacity 0.4s var(--ease);
+  }
+  html.phone-media .has-photos ~ .has-photos .row-photos .peek.is-current { animation-duration: 3.4s; }
+  /* The title film fills the window, framed on the pergola and the sea */
+  .row-video video { width: 100%; height: 100%; object-position: 50% 40%; }
+  /* An open row hands its photos to the deck below: the row goes quiet */
+  html.phone-media .pillar.is-open .row-photos,
+  html.phone-media .pillar.is-open .row-video { opacity: 0; }
+  .pillar.is-open .row-photos .peek { animation-play-state: paused; }
+}
+
+/* Flick deck: an open row ends with a little pile of polaroids, after the white box
+   that closes its text, the brand's wave drawn on each white strip. Flick the top one (or
+   tap it) and it flies off and slips to the back; once it is on screen and until a finger
+   touches it, the pile deals itself every few seconds. */
+@media (max-width: 1023px) {
+  html.phone-media .pillar-stack {
+    position: relative;
+    display: grid;
+    place-items: center;
+    padding-block: 0.5rem 0.75rem;
+    touch-action: pan-y;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .stack-card {
+    position: relative;
+    grid-area: 1 / 1;
+    width: min(64%, 250px);
+    padding: 8px 8px 30px;
+    border-radius: 6px;
+    background: var(--white);
+    box-shadow: 0 10px 28px rgba(44, 146, 191, 0.18);
+    transform: translate(var(--x, 0px), var(--y, 0px)) rotate(var(--r, 0deg));
+    transition: transform 0.5s var(--spring), opacity 0.35s var(--ease);
+    touch-action: pan-y;
+  }
+  /* The photo's window clips it when it is zoomed onto its subject (JS) */
+  .stack-photo {
+    display: block;
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    border-radius: 3px;
+    background: var(--blue-soft);
+  }
+  .stack-card img,
+  .stack-card video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+  }
+  .stack-card::after {
+    content: '';
+    position: absolute;
+    bottom: 10px;
+    inset-inline-start: 50%;
+    width: 56px;
+    height: 10px;
+    translate: 50% 0;
+    background: var(--wave) repeat-x center / 28px 10px;
+  }
+  .stack-card[data-depth="0"] { z-index: 4; --r: -2deg; cursor: grab; }
+  .stack-card[data-depth="1"] { z-index: 3; --x: 14px; --y: 6px; --r: 5deg; }
+  .stack-card[data-depth="2"] { z-index: 2; --x: -14px; --y: 10px; --r: -7deg; }
+  .stack-card:not([data-depth="0"], [data-depth="1"], [data-depth="2"]) { z-index: 1; opacity: 0; --y: 14px; }
+  .stack-card.is-dragging,
+  .pillar-stack.is-settling .stack-card { transition: none; }
+  .stack-card.is-flying { opacity: 0; transition: transform 0.45s cubic-bezier(0.4, 0, 1, 1), opacity 0.45s ease-in; }
+}
+
+.pillar-titles { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+
+/* Title — the largest line; blue on cream passes contrast at this size */
+.pillar-title {
+  font-size: var(--fs-h3);
+  font-weight: 900;
+  line-height: var(--lh-heading);
+  color: var(--blue);
+}
+/* Subtitle — one step down */
+.pillar-subtitle {
+  font-size: var(--fs-md);
+  font-weight: 700;
+  line-height: var(--lh-ui);
+  color: var(--ink);
+  text-wrap: balance;
+}
+/* Narrow phones: a smaller icon leaves the title column room for two-line taglines */
+@media (max-width: 359px) {
+  .pillar-head { gap: 0.75rem; padding: 1rem 0.9rem; }
+  .pillar-icon { width: 48px; height: 48px; }
+  .pillar-icon img { max-width: 28px; max-height: 28px; }
+}
+
+.pillar-chevron {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--white) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 6 L8 10.5 L12.5 6' fill='none' stroke='%23222' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 16px no-repeat;
+  transition: transform 0.3s var(--ease), background-color 0.2s var(--ease);
+}
+.pillar.is-open .pillar-chevron { transform: rotate(180deg); background-color: var(--orange); }
+
+/* Panel height animates with the 0fr → 1fr grid technique; visibility keeps
+   closed content out of the tab order and the accessibility tree */
+.pillar-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s var(--ease);
+}
+.pillar.is-open .pillar-panel { grid-template-rows: 1fr; }
+.pillar-panel-inner {
+  min-height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  transition: visibility 0s linear 0.3s;
+}
+.pillar.is-open .pillar-panel-inner { visibility: visible; transition-delay: 0s; }
+/* Set by JS for one frame when an item above the tapped one closes instantly */
+.pillar.no-anim .pillar-panel,
+.pillar.no-anim .pillar-panel-inner,
+.pillar.no-anim .pillar-chevron { transition: none; }
+
+/* Body: the same blocks with the same spacing in every item */
+.pillar-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+  padding: 0.25rem var(--pad-card) 1.5rem;
+}
+.pillar-intro p { color: var(--ink-soft); }
+.pillar-label {
+  margin: 0 0 0.7rem;
+  font-size: var(--fs-md);
+  font-weight: 700;
+  line-height: var(--lh-ui);
+  color: var(--ink);
+}
+/* The end paragraph — the same white box closes every item */
+.pillar-note {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem var(--pad-card);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+}
+.pillar-note-text { color: var(--ink); }
+/* In the one-column list (phones, tablets) prose keeps a readable measure */
+.pillar-intro p,
+.pillar-note-text { max-width: 34em; }
+
+/* Checklist with blue check marks — the same line height as the paragraphs around it */
+.checklist { display: grid; gap: 0.55rem; }
+.checklist li {
+  position: relative;
+  padding-inline-start: 1.9rem;
+}
+.checklist li::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0;
+  top: 0.2em;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  background: var(--blue) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5.5 10.5 L8.5 13.5 L14.5 7' fill='none' stroke='%23fff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 100% no-repeat;
+}
+
+/* Desktop-only "מידע נוסף / סגור" bar. Both labels are rendered, stacked, so the
+   chevron never slides when the words swap */
+.pillar-more { display: none; }
+.pillar-more-labels { display: grid; justify-items: end; }   /* the shorter word stays beside the chevron */
+.pillar-more-labels > span { grid-area: 1 / 1; }
+.pillar-less-label,
+.pillar.is-open .pillar-more-label { visibility: hidden; }
+.pillar.is-open .pillar-less-label { visibility: visible; }
+
+/* Tablets in list form: two columns, where every bullet still fits one line */
+@media (min-width: 900px) and (max-width: 1023px) {
+  .checklist { grid-template-columns: 1fr 1fr; column-gap: 1.5rem; }
+}
+
+/* The row of three cards starts where each card has room for a full line of text */
+@media (min-width: 1024px) {
+  .pillar-grid {
+    max-width: 1040px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.5rem;
+    align-items: stretch;
+    background: none;
+    border-radius: 0;
+    overflow: visible;
+  }
+  .pillar + .pillar { border-top: 0; }
+  .pillar {
+    display: flex;
+    flex-direction: column;
+    background: var(--cream);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+  }
+  /* A closed card lifts under the pointer; an open one is for reading and stays put */
+  @media (hover: hover) { .pillar:not(.is-open):hover { transform: translateY(-3px); box-shadow: var(--shadow); } }
+
+  /* Every head reserves the same media band above its titles, so the three titles
+     start on one line (a card without a cover would show its icon in the band) */
+  .pillar-grid { --pillar-media: 15rem; }
+  .pillar-head {
+    display: grid;
+    grid-template-rows: var(--pillar-media) auto;
+    justify-items: center;
+    gap: 1rem;
+    padding: 0 1.75rem 1.5rem;
+    text-align: center;
+  }
+  .pillar-cover,
+  .pillar-icon { grid-area: 1 / 1; }
+  .pillar-icon { width: 92px; height: 92px; align-self: center; margin-top: 2.25rem; }
+  .pillar-icon img { max-width: 50px; max-height: 50px; }
+  .pillar-titles { align-items: center; gap: 0.5rem; }
+  .pillar-head .pillar-chevron { display: none; }
+
+  /* The cover: edge to edge across the top of the card; the icon sits on its lower
+     edge in a cream ring (the photo ends half an icon — 46px — above the band's end) */
+  .pillar-cover {
+    justify-self: stretch;
+    align-self: start;
+    height: calc(var(--pillar-media) - 46px);
+    margin-inline: -1.75rem;
+    aspect-ratio: auto;
+    border-radius: 0;
+  }
+  .pillar-cover + .pillar-icon {
+    align-self: end;
+    margin-top: 0;
+    z-index: 1;
+    box-shadow: 0 0 0 6px var(--cream);
+  }
+  .cover-bars { inset: 14px 16px auto; }
+  /* The panel fills the card, so the note can sit at the bottom of the body (the body
+     lives inside the panel's grid, not in the card's flex column) */
+  .pillar-panel { flex: 1; }
+  .pillar-panel-inner { display: flex; flex-direction: column; }
+  .pillar-body { flex: 1; padding: 0 1.75rem 1.75rem; }
+  .pillar-intro p,
+  .pillar-note-text { max-width: none; }
+  /* A small wave between the centred head and the body — the same motif as under the titles */
+  .pillar-body::before {
+    content: '';
+    align-self: center;
+    width: 64px;
+    height: 12px;
+    background: var(--wave) repeat-x left center / 32px 12px;
+  }
+
+  /* Matching blocks line up across the three cards: the taglines and the opening
+     paragraphs are equalised so the lists start on one line, and the note boxes
+     are equalised (text top-aligned) and sit on one line just above the foot
+     bars; a card's slack falls between its last bullet and its note — cream on
+     cream, invisible */
+  .pillar-subtitle { min-height: var(--row-subtitle, auto); }
+  .pillar-intro { min-height: var(--row-intro, auto); }
+  .pillar-note { margin-top: auto; min-height: var(--row-note, auto); }
+
+  .pillar-more {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    margin-top: auto;          /* pins the bar to the card bottom so all three line up */
+    width: 100%;
+    min-height: 52px;
+    padding: 0.75rem 1.5rem;
+    border: 0;
+    border-top: 1px solid var(--line);
+    background: transparent;
+    font-weight: 700;
+    font-size: var(--fs-md);
+    line-height: var(--lh-heading);
+    color: var(--ink);
+    transition: background-color 0.15s var(--ease);
+  }
+  @media (hover: hover) { .pillar-more:hover { background: var(--blue-soft); } }
+  html[lang="ar"] .pillar-more { padding-block: calc(0.75rem - 2px) calc(0.75rem + 2px); }
+  .pillar-more .pillar-chevron { width: 26px; height: 26px; background-size: 13px; }
+}
+
+/* ── Fit ─────────────────────────────────────── */
+/* Phones: one centred column — title, text, "מתאים במיוחד ל:", button.
+   From 900px: the text and the button on the start side, the six types on
+   the other, the two titles on one line. */
+.fit-layout {
+  display: grid;
+  max-width: 1040px;   /* the column the cards above and the planner below share */
+  justify-items: center;
+  text-align: center;
+}
+.fit-text { max-width: 680px; color: var(--ink-soft); }
+.fit-text p:first-child {
+  color: var(--ink);
+  font-weight: 700;
+  font-size: var(--fs-lead);
+  line-height: var(--lh-lead);
+  text-wrap: balance;
+}
+
+.fit-types { width: 100%; max-width: 560px; margin-top: var(--space-object); }
+.fit-types-title {
+  margin-bottom: 0.5rem;
+  font-size: var(--fs-h3);
+  color: var(--ink);
+}
+.fit-list { display: grid; text-align: start; }
+.fit-cta { margin-top: var(--space-object); }
+/* Phones: the button fills the column like the hero's buttons do */
+@media (max-width: 599px) {
+  .fit-cta { width: 100%; }
+  .fit-cta .btn { width: 100%; max-width: 420px; }
+}
+
+@media (min-width: 600px) {
+  .fit-types { max-width: 680px; }   /* the same column as the text above it */
+  .fit-list { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 2.5rem; }
+}
+@media (min-width: 600px) and (max-width: 899px) {
+  .fit-item:nth-last-child(2) { border-bottom: 0; }
+}
+
+@media (min-width: 900px) {
+  /* The title is centred over both columns, like every section title (Or, 2026-10-14). Under it,
+     the text and the button on one side, "מתאים במיוחד ל:" and the list on the other; the text's
+     first line and the list's title share one baseline. The two columns are equal, so the gap
+     between them sits right under the title's centre, under the wave (Or, 2026-10-15) */
+  .fit-layout {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas:
+      "head  head"
+      "text  types"
+      "cta   types";
+    column-gap: clamp(3rem, 7vw, 6.5rem);
+    justify-items: stretch;
+    align-items: start;
+    text-align: start;
+  }
+  .fit-h2 { grid-area: head; text-align: center; }
+  .fit-text { grid-area: text; align-self: baseline; }
+  .fit-cta { grid-area: cta; }
+  .fit-types { grid-area: types; align-self: baseline; max-width: none; margin-top: 0; }
+  .fit-list { grid-template-columns: minmax(0, 1fr); }
+  /* The button sits on the last row's centre line (Or, 2026-10-14): its box is one row tall
+     and ends where the list ends; the text above keeps at least a title's gap from it */
+  .fit-cta {
+    align-self: end;
+    display: flex;
+    align-items: center;
+    min-height: calc(var(--fit-icon) + 2 * var(--fit-row-pad));
+    margin-top: var(--space-title);
+  }
+}
+
+/* One type: the brand icon in a white circle and the name, on a hairline — a
+   list to read, not buttons to press (Or, 2026-10-13) */
+/* One row of the list: the icon circle and the padding around it (the button's box on desktop is one row tall) */
+.fit-layout { --fit-icon: 44px; --fit-row-pad: 0.55rem; }
+.fit-item {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: var(--fit-row-pad) 0;
+  border-bottom: 1px solid var(--line);
+  font-size: var(--fs-md);
+  font-weight: 700;
+  line-height: var(--lh-ui);
+}
+.fit-item:last-child { border-bottom: 0; }
+.fit-item-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--fit-icon);
+  height: var(--fit-icon);
+  border-radius: 50%;
+  background: var(--white);
+}
+/* Brand icons vary in shape, so cap both dimensions */
+.fit-item-icon img { width: auto; height: auto; max-width: 26px; max-height: 26px; }
+.fit-item-icon svg { width: 26px; height: 26px; }
+.fit-item-label { flex: 1; min-width: 0; overflow-wrap: anywhere; text-wrap: balance; }
+
+/* The first time they come into view the six rise in one after another and
+   each icon pops (js/main.js adds .will-rise, then .is-risen; never with
+   reduced motion) */
+.fit-list > li:nth-child(2) { --i: 1; }
+.fit-list > li:nth-child(3) { --i: 2; }
+.fit-list > li:nth-child(4) { --i: 3; }
+.fit-list > li:nth-child(5) { --i: 4; }
+.fit-list > li:nth-child(6) { --i: 5; }
+.fit-list.will-rise > li { opacity: 0; }
+.fit-list.will-rise.is-risen > li { opacity: 1; animation: item-rise 0.55s var(--ease) calc(var(--i, 0) * 70ms) backwards; }
+.fit-list.is-risen .fit-item-icon { animation: icon-pop 0.6s var(--spring) calc(120ms + var(--i, 0) * 70ms) backwards; }
+@keyframes item-rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes icon-pop {
+  from { transform: scale(0.3) rotate(-25deg); }
+  to { transform: none; }
+}
+
+/* ── Impact ──────────────────────────────────── */
+.impact { background: var(--white); text-align: center; }
+.impact-icon { width: 56px; margin: 0 auto 1rem; }
+.impact-content p { color: var(--ink-soft); }
+.impact-content .impact-lead {
+  font-size: var(--fs-lead);
+  font-weight: 700;
+  line-height: var(--lh-lead);
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+/* ── Plan + WhatsApp planner — the page's finale ── */
+/* Blue is the brand's dark background. Inside it, one white card in two
+   parts: the questions, one at a time and one tap each, and the cream
+   message panel they write, with the WhatsApp button. Orange always marks
+   the one thing to press next: a chosen answer, "המשך", and — once the
+   message is ready — the send button. The fun is in the motion, not in
+   decoration. */
+.plan {
+  background: var(--blue);
+  color: var(--white);
+  padding-bottom: calc(var(--space-section) + env(safe-area-inset-bottom, 0px));
+}
+.plan h2 { color: var(--white); }
+/* White on blue is read at ≥ 19px bold */
+.plan-intro {
+  max-width: 680px;
+  margin: 0 auto;
+  font-size: var(--fs-lead);   /* never below 19.2px bold — white on blue */
+  font-weight: 700;
+  line-height: var(--lh-lead);
+}
+
+.planner {
+  /* How far a question slides in. Both languages are RTL, so the next
+     question arrives from the left (the reading direction). */
+  --flow-in: -28px;
+  max-width: 1040px;
+  margin: var(--space-object) auto 0;
+  background: var(--white);
+  color: var(--ink);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+.planner.is-enhanced { display: grid; }
+/* The message beside the questions from 900px (Or, 2026-10-14: the message on the side, not under) */
+@media (min-width: 900px) {
+  .planner.is-enhanced { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); }
+}
+
+/* ── The questions ── */
+.flow {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+  padding: 1.25rem var(--pad-card) 1.5rem;
+}
+/* The two panels of the card share one inset at every width */
+@media (min-width: 600px) { .flow { padding: 1.75rem 2rem 2rem; gap: 1.5rem; } }
+@media (min-width: 1024px) { .flow { padding: 2.25rem 2.5rem 2.5rem; } }
+
+/* Top row: back · progress · 2/4 · skip — every control a 44px target */
+.flow-top { display: flex; align-items: center; gap: 0.75rem; min-height: 44px; }
+.flow-back {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1.5px solid var(--line);
+  border-radius: 50%;
+  background: var(--white);
+  color: var(--ink);
+  touch-action: manipulation;
+  transition: background-color 0.15s var(--ease), border-color 0.15s var(--ease);
+}
+.flow-back svg { width: 18px; height: 18px; }
+.flow-back:active { border-color: var(--blue); background: var(--blue-soft); }
+@media (hover: hover) { .flow-back:hover { border-color: var(--blue); background: var(--blue-soft); } }
+/* On the first question the back button keeps its place, faded (the row never jumps) */
+.planner[data-step="event"] .flow-back { opacity: 0.3; pointer-events: none; }
+
+.flow-progress { flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.flow-progress span {
+  position: relative;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--blue-soft);
+  overflow: hidden;
+}
+.flow-progress span::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--orange);
+  transform: scaleX(0);
+  transform-origin: right center;   /* fills from the start of the line (RTL) */
+  transition: transform 0.4s var(--ease);
+}
+.flow-progress span.is-done::after { transform: scaleX(1); }
+
+/* The count and "דלגו" (or "מתחילים מחדש") keep one width, so the bar never changes length */
+.flow-end { flex: none; display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem; min-width: 8.5rem; }
+.flow-count {
+  margin: 0;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.flow-skip,
+.flow-restart {
+  min-height: 44px;
+  padding: 0.5rem 0.5rem;
+  margin-inline-end: -0.5rem;   /* the text, not the tap padding, meets the card's edge */
+  border: 0;
+  background: none;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  line-height: var(--lh-heading);
+  color: var(--ink-soft);
+  text-decoration: underline;
+  text-decoration-color: var(--line);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.33em;
+  touch-action: manipulation;
+}
+html[lang="ar"] .flow-skip,
+html[lang="ar"] .flow-restart { padding-block: calc(0.5rem - 2px) calc(0.5rem + 2px); text-underline-offset: 0.6em; }   /* lifted 2px; the line under Cairo's tails, not through them */
+.flow-skip:active,
+.flow-restart:active { color: var(--ink); text-decoration-color: var(--orange); }
+@media (hover: hover) {
+  .flow-skip:hover,
+  .flow-restart:hover { color: var(--ink); text-decoration-color: var(--orange); }
+}
+/* On the ready step "מתחילים מחדש" takes the place of the count and "דלגו" */
+.flow-restart,
+.planner[data-step="ready"] .flow-count,
+.planner[data-step="ready"] .flow-skip { display: none; }
+.planner[data-step="ready"] .flow-restart { display: inline-flex; align-items: center; }
+
+/* Below 900px only the current step takes room, so the message sits right
+   under the answers (js/main.js glides the height between steps). From 900px
+   all steps share one grid cell: the card keeps the height of the tallest
+   one and the message beside it never moves. */
+.flow-steps { flex: 1 1 auto; display: grid; }   /* basis auto: js/main.js animates this box's height between steps */
+.step {
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+.planner.is-enhanced .step:not(.is-active) { display: none; }
+@media (min-width: 900px) {
+  .planner.is-enhanced .step:not(.is-active) { display: flex; visibility: hidden; }
+}
+.step.is-in { animation: step-in 0.4s var(--ease) backwards; }
+.step.is-in.is-back { animation-name: step-in-back; }
+@keyframes step-in {
+  from { opacity: 0; transform: translateX(var(--flow-in)); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes step-in-back {
+  from { opacity: 0; transform: translateX(calc(-1 * var(--flow-in))); }
+  to { opacity: 1; transform: none; }
+}
+/* The answers follow the question in, one after another */
+.step.is-in .choice { animation: choice-in 0.4s var(--ease) backwards; }
+.step.is-in .choice:nth-child(2) { animation-delay: 0.03s; }
+.step.is-in .choice:nth-child(3) { animation-delay: 0.06s; }
+.step.is-in .choice:nth-child(4) { animation-delay: 0.09s; }
+.step.is-in .choice:nth-child(5) { animation-delay: 0.12s; }
+.step.is-in .choice:nth-child(6) { animation-delay: 0.15s; }
+.step.is-in .choice:nth-child(n+7) { animation-delay: 0.18s; }
+@keyframes choice-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+.step-head { display: flex; flex-direction: column; gap: 0.3rem; }
+.step-q {
+  margin: 0;
+  font-size: var(--fs-h3);
+  font-weight: 900;
+  line-height: var(--lh-heading);
+  color: var(--ink);
+}
+.step-q:focus { outline: none; }  /* focused by script when the step changes, never by hand */
+html[lang="ar"] .step-q { padding-bottom: 0.25rem; }   /* Cairo's descenders reach below the box; keep the gap to the tiles */
+.step-hint { margin: 0; font-size: var(--fs-sm); line-height: var(--lh-ui); color: var(--ink-soft); }
+
+/* ── Answer tiles ── */
+.choices { display: grid; gap: 0.75rem; }
+/* Every tile in a grid shares the tallest one's height, so the rows read as one grid */
+.choices-event,
+.choices-comp { grid-auto-rows: 1fr; }
+.choices-event,
+.choices-size { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* Months three to a row — a quarter — with the two fixed answers sharing the last
+   row, so all eight answers fit one phone screen; the narrowest phones get two
+   months to a row and full-width fixed answers */
+.choices-when { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.choices-when .choice { grid-column: span 2; }
+.choices-when .choice-wide { grid-column: span 3; }
+@media (max-width: 359px) {
+  .choices-when { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .choices-when .choice { grid-column: auto; }
+  .choices-when .choice-wide { grid-column: 1 / -1; }
+}
+/* On phones the tiles are narrow: the check badge sits in the bottom corner beside the
+   short year, never over a month's name, and the fixed answers keep their label above it */
+@media (max-width: 599px) {
+  .choices-when .choice-check { top: auto; bottom: 6px; }
+  .choices-when .choice-wide { padding-block: 0.5rem; }
+  .choices-when .choice-wide .choice-check { top: 6px; bottom: auto; }
+}
+.choices-comp { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 600px) {
+  .choices-event,
+  .choices-comp { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .choices-size { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+.choice {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-width: 0;
+  min-height: 56px;
+  padding: 0.8rem 0.5rem;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--white);
+  color: var(--ink);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  line-height: var(--lh-ui);
+  text-align: center;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.15s var(--ease), border-color 0.15s var(--ease),
+              transform 0.15s var(--ease), box-shadow 0.2s var(--ease);
+}
+@media (hover: hover) {
+  .choice:hover { border-color: var(--blue); background: var(--blue-soft); }
+}
+@media (min-width: 600px) { .choice { font-size: 1rem; } }
+/* The first question: icons on one line, labels starting at one height */
+.choices-event .choice { justify-content: flex-start; padding-inline: 0.4rem; }
+.choice:active { transform: scale(0.96); }
+.choice[aria-pressed="true"] {
+  border-color: var(--orange);
+  background: var(--orange);
+  box-shadow: 0 8px 18px rgba(244, 152, 52, 0.35);
+}
+/* "מה הייתם רוצים לחוות?" takes several answers: two or three solid orange tiles
+   above the orange "המשך" read as four main buttons. There a chosen tile is tinted
+   and framed; its check badge says the rest. */
+.choices-comp .choice[aria-pressed="true"] {
+  background: var(--orange-soft);
+  box-shadow: none;
+}
+.choice:focus-visible { outline-offset: 2px; }
+
+/* Check badge pops in on the chosen tile */
+.choice-check {
+  position: absolute;
+  top: 6px;
+  inset-inline-end: 6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--white) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5.5 10.5 L8.5 13.5 L14.5 7' fill='none' stroke='%23222' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 14px no-repeat;
+  transform: scale(0);
+  transition: transform 0.3s var(--spring);
+}
+.choice[aria-pressed="true"] .choice-check { transform: scale(1); }
+
+/* Brand icon in a cream circle; it turns white and grows a little when chosen */
+.choice-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--cream);
+  transition: background-color 0.15s var(--ease), transform 0.3s var(--spring);
+}
+.choice-icon img { width: auto; height: auto; max-width: 25px; max-height: 25px; }
+.choice-icon svg { width: 25px; height: 25px; }
+.choice[aria-pressed="true"] .choice-icon { background: var(--white); transform: scale(1.08); }
+
+.choice-label { overflow-wrap: anywhere; text-wrap: balance; }
+
+/* Group size: big number, "people", and dots that grow with the group */
+.choice-num {
+  font-size: var(--fs-h3);
+  font-weight: 900;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.choice-unit { font-size: var(--fs-xs); font-weight: 400; line-height: 1.2; color: var(--ink-soft); }
+@media (min-width: 600px) { .choices-size .choice { min-height: 7.5rem; } }
+.choice-dots { display: flex; gap: 4px; margin-top: 0.15rem; }
+.choice-dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--blue); }
+.choice[aria-pressed="true"] .choice-unit { color: var(--ink); }
+.choice[aria-pressed="true"] .choice-dots i { background: var(--white); }
+
+/* Months — and the two fixed answers speak with the same voice, at the same height */
+.choices-when { grid-auto-rows: 1fr; }
+.choices-when .choice { min-height: 4.25rem; }
+.choice-month { gap: 0.1rem; padding-block: 0.7rem; }
+.choice-month .choice-label,
+.choices-when .choice-wide .choice-label { font-size: var(--fs-md); font-weight: 900; }
+.choice-month .choice-label { overflow-wrap: normal; }   /* a month name is never broken */
+.choice-year { font-size: var(--fs-xs); font-weight: 400; line-height: 1.2; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.choice[aria-pressed="true"] .choice-year { color: var(--ink); }
+
+/* Components: a row on phones (icon, name, line), a column from 600px */
+.choices-comp .choice {
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 0.85rem;
+  padding: 0.75rem 1rem;
+  padding-inline-end: 1.9rem;  /* room for the check badge */
+  text-align: start;
+}
+.choice-text { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+.choices-comp .choice-label { font-size: var(--fs-md); font-weight: 900; }
+.choice-sub { font-size: var(--fs-xs); font-weight: 400; line-height: var(--lh-ui); color: var(--ink-soft); text-wrap: balance; }
+.choice[aria-pressed="true"] .choice-sub { color: var(--ink); }
+@media (min-width: 600px) {
+  .choices-comp .choice {
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 1.1rem 0.75rem 1.2rem;
+    text-align: center;
+  }
+}
+
+.step-foot { display: flex; justify-content: flex-end; margin-top: auto; }
+.step-next { min-width: 9rem; }
+
+/* ── Ready ── */
+.step-ready { align-items: center; justify-content: center; gap: 0.6rem; text-align: center; }
+.ready-stamp { width: 64px; height: auto; transform: rotate(-8deg); }
+.planner.is-ready .ready-stamp { animation: stamp-in 0.65s cubic-bezier(0.2, 1.4, 0.4, 1) 0.05s backwards; }  /* lands like a stamp on a letter: the message is sealed */
+.step-ready .step-q { font-size: var(--fs-ready); }
+.ready-p { margin: 0; line-height: var(--lh-lead); color: var(--ink-soft); text-wrap: balance; }
+.answers {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+.answer {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--white);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  line-height: var(--lh-ui);
+  touch-action: manipulation;
+  transition: border-color 0.15s var(--ease), background-color 0.15s var(--ease);
+}
+html[lang="ar"] .answer { padding-inline: 0.7rem; }   /* the wider Arabic answers still pair up on a 375px row */
+/* Pencil: tap an answer to change it */
+.answer::after {
+  content: '';
+  flex: none;
+  width: 14px;
+  height: 14px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M10.5 2.5 L13.5 5.5 L5.5 13.5 L2.5 13.5 L2.5 10.5 Z' fill='none' stroke='%232c92bf' stroke-width='1.8' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.answer.is-empty { border-style: dashed; font-weight: 400; color: var(--ink-soft); }
+.answer.is-empty::after {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 3 V13 M3 8 H13' fill='none' stroke='%232c92bf' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+.answer:active { border-color: var(--blue); background: var(--blue-soft); }
+@media (hover: hover) { .answer:hover { border-color: var(--blue); background: var(--blue-soft); } }
+.step.is-in .answers li { animation: choice-in 0.4s var(--ease) backwards; }
+.step.is-in .answers li:nth-child(2) { animation-delay: 0.05s; }
+.step.is-in .answers li:nth-child(3) { animation-delay: 0.1s; }
+.step.is-in .answers li:nth-child(4) { animation-delay: 0.15s; }
+
+/* ── The message ── */
+.msg {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+  padding: 1.25rem var(--pad-card) 1.5rem;
+  background: var(--cream);
+}
+@media (min-width: 600px) { .msg { padding: 1.75rem 2rem 2rem; gap: 1.25rem; } }
+@media (min-width: 900px) { .msg-label { min-height: 44px; } }   /* its centre line is the top row's centre line */
+@media (min-width: 1024px) { .msg { padding: 2.25rem 2.5rem 2.5rem; } }
+
+.msg-label {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  line-height: var(--lh-heading);
+  color: var(--ink);
+}
+.msg-label .wa-icon { width: 22px; height: 22px; color: var(--blue); }
+
+/* The message reads like a message; the chosen words carry the weight and the marker */
+.chat-text {
+  margin: 0;
+  font-size: var(--fs-lead);
+  font-weight: 400;
+  line-height: var(--lh-lead);
+  overflow-wrap: anywhere;
+  text-wrap: balance;   /* never more than a few lines, so they can be even */
+}
+/* The venue name and the closing sentence never break across lines (js/main.js wraps them) */
+.chat-text .nobr { white-space: nowrap; }
+/* Chosen fragments: an orange marker stroke under the words. A fresh one
+   draws itself from the start of the line. */
+.chat-text .sel {
+  padding: 0 0.12em;
+  border-radius: 2px;
+  color: inherit;
+  font-weight: 700;
+  background: linear-gradient(transparent 52%, rgba(244, 152, 52, 0.55) 52%) no-repeat right / 100% 100%;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+/* Cairo's content area is taller than its line, so the band is shortened to stay on the line */
+html[lang="ar"] .chat-text .sel {
+  background-image: linear-gradient(transparent 55%, rgba(244, 152, 52, 0.55) 55%, rgba(244, 152, 52, 0.55) 91%, transparent 91%);
+}
+.chat-text .sel.is-new { animation: marker-draw 0.6s var(--ease) backwards; }
+@keyframes marker-draw {
+  from { background-size: 0% 100%; }
+  to { background-size: 100% 100%; }
+}
+/* A number range ("15-30") stays on one line and keeps its order inside RTL text */
+.chat-text .range { white-space: nowrap; unicode-bidi: isolate; }
+/* ...and so does the marker that starts with one: without this a sliver of the
+   orange stroke stayed at the end of the line above */
+.chat-text .sel:has(> .range:first-child) { white-space: nowrap; }
+
+/* The button follows the message, so the two read as one unit */
+.msg-foot { display: flex; flex-direction: column; gap: 0.65rem; margin-top: 0.5rem; }
+.planner-cta { width: 100%; padding-inline: 1.25rem; white-space: normal; }
+/* Until the message is ready the button waits quietly in white;
+   on the ready step it turns orange and glows twice */
+.planner.is-enhanced:not(.is-ready) .planner-cta {
+  border-color: var(--orange);
+  background: var(--white);
+  box-shadow: none;
+}
+/* While it waits, a press or hover warms it with the orange tint instead of greying it */
+.planner.is-enhanced:not(.is-ready) .planner-cta:active { filter: none; background: var(--orange-soft); }
+@media (hover: hover) { .planner.is-enhanced:not(.is-ready) .planner-cta:hover { filter: none; background: var(--orange-soft); } }
+.planner.is-ready .planner-cta { animation: cta-glow 1.3s var(--ease) 0.45s 2; }
+@keyframes cta-glow {
+  from { box-shadow: 0 6px 18px rgba(244, 152, 52, 0.35), 0 0 0 0 rgba(244, 152, 52, 0.6); }
+  to { box-shadow: 0 6px 18px rgba(244, 152, 52, 0.35), 0 0 0 16px rgba(244, 152, 52, 0); }
+}
+.msg-caption { margin: 0; font-size: var(--fs-xs); line-height: var(--lh-ui); color: var(--ink-soft); text-align: center; text-wrap: balance; }
+
+/* ── Floating WhatsApp ───────────────────────── */
+.wa-float {
+  position: fixed;
+  z-index: 250;
+  bottom: max(1.25rem, calc(env(safe-area-inset-bottom) + 0.75rem));
+  inset-inline-end: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 58px;
+  height: 58px;
+  border-radius: var(--radius-pill);
+  /* orange disc, blue mark and ring - the site's WhatsApp button (css/styles.css) */
+  background: var(--orange);
+  color: var(--blue);
+  border: 2.5px solid var(--blue);
+  font-weight: 700;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+  transition: transform 0.3s var(--ease), opacity 0.3s var(--ease), filter 0.2s var(--ease);
+}
+.wa-float .wa-icon {
+  width: 28px;
+  height: 28px;
+  /* the inside of the speech bubble is white, as on the rest of the site */
+  background: radial-gradient(circle closest-side at 50% 49.6%, var(--white) 0 87%, transparent 89%);
+}
+/* One shape at every width: the round disc. (From 768px it used to grow a text
+   label - blue on orange, 1.6:1 - beside the section's own orange button.) */
+.wa-float-label { display: none; }
+@media (max-width: 640px) {
+  .wa-float {
+    bottom: max(1rem, calc(env(safe-area-inset-bottom) + 0.5rem));
+    inset-inline-end: 1rem;
+    width: 52px;
+    height: 52px;
+  }
+  .wa-float .wa-icon { width: 26px; height: 26px; }
+}
+@media (hover: hover) { .wa-float:hover { filter: brightness(0.95); transform: translateY(-2px); } }
+.wa-float.is-away { opacity: 0; transform: translateY(16px); pointer-events: none; }
+/* Desktop: the header's WhatsApp link is always on screen — one entry point per viewport */
+@media (min-width: 900px) {
+  .wa-float { display: none; }
+}
+
+/* ── High-contrast modes: states that colour alone carried get a line ── */
+@media (forced-colors: active) {
+  .choice[aria-pressed="true"] { outline: 3px solid Highlight; outline-offset: -3px; }
+  .flow-progress span { border: 1px solid CanvasText; }
+  .flow-progress span.is-done::after { background: Highlight; }
+  .chat-text .sel { text-decoration: underline; text-decoration-thickness: 3px; }
+}
+
+/* ── Motion preferences ──────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+  .hero-video { display: none; }  /* poster stays as the hero background */
+}
+
+/* ── Final touch: phones ─────────────────────── */
+@media (max-width: 599px) {
+  :root { --gutter: 1rem; }
+
+  /* Planner top row: the progress bar gets the room the reserved label width was taking */
+  .flow-end { min-width: 0; }
+  .planner[data-step="ready"] .flow-progress { visibility: hidden; }
+
+  /* Ready step: tighter, so the heading, the message and the send button share one screen */
+  .ready-stamp { width: 48px; }
+  .step-ready { gap: 0.4rem; }
+  .msg { gap: 0.75rem; }
+  .msg-foot { margin-top: 0; }
+}
+/* The narrowest phones: six event tiles keep to two lines of label */
+@media (max-width: 374px) {
+  .choices-event .choice { padding-inline: 0.2rem; font-size: 0.875rem; }
+}
+/* A short label sits in the middle of the room under its icon, not against it */
+.choices-event .choice-label { flex: 1; display: flex; align-items: center; }
+
+/* Desktop: the send button keeps its place while the message above it grows */
+@media (min-width: 900px) {
+  .msg-foot { margin-top: auto; }
+  .chat-text { min-height: 5lh; }
+}

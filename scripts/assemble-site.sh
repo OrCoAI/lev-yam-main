@@ -37,7 +37,7 @@ mkdir -p _site/app
 # 404.html is what GitHub Pages serves for any unknown path; it routes /app/*
 # deep links into the SPA and sends other unknown paths to the marketing home.
 cp index.html survey-june.html pos.html sitemap.xml 404.html llms.txt _site/
-cp -r css js img fonts stories happening _site/
+cp -r css js img fonts stories happening business _site/
 # FACTS.md is served verbatim as /facts.txt — the single source every piece of
 # written content draws from, and what AI crawlers read.
 cp FACTS.md _site/facts.txt

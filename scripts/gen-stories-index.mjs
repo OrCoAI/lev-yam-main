@@ -19,6 +19,7 @@
  *   stories/_hub.html, _hub.ar.html  hub templates; the <!--STORY_LIST--> marker
  *                                  is replaced with the rendered list
  *   index.html                     homepage <meta name="levyam:updated">
+ *   business/index.html            business page <meta name="levyam:updated">
  *
  * A page is skipped everywhere (sitemap and hub) when it carries
  * <meta name="robots" content="noindex">. That is how stories/dugma/ — the
@@ -303,6 +304,22 @@ function assertTwins(byLang) {
 
 /* ── render ────────────────────────────────────────────────────────────── */
 
+// The text under a card's title. A page's description opens by restating its
+// title ("<the title, in other words>: <the answer>") - right for a search
+// result, a repeat on a card whose title sits one line above. The card starts
+// at the answer, and a long one is cut at a whole word with the ellipsis in the
+// text itself: a CSS clamp alone cut mid-word, and inside a number in Arabic
+// ("حوالي 10 دقايق" showed as "حوالي 0…").
+const CARD_EXCERPT_MAX = 120
+function cardExcerpt(description) {
+  const colon = description.indexOf(': ')
+  const text = colon > 0 && colon < 80 ? description.slice(colon + 2) : description
+  if (text.length <= CARD_EXCERPT_MAX) return text
+  const cut = text.slice(0, CARD_EXCERPT_MAX + 1)
+  const lastSpace = cut.lastIndexOf(' ')
+  return cut.slice(0, lastSpace > 0 ? lastSpace : CARD_EXCERPT_MAX).replace(/[\s,.;:\u05be\u2013\u2014-]+$/, '') + '…'
+}
+
 function renderHub(lang, pages) {
   const template = stampChrome(
     readFileSync(join(STORIES_DIR, lang.hubTemplate), 'utf8'), lang.code, HUB_VARS, lang.hubTemplate
@@ -326,7 +343,7 @@ function renderHub(lang, pages) {
             </div>
             <div class="story-card-body">
               <h2 class="story-card-title">${escapeHtml(p.title)}</h2>
-              <p class="story-card-desc">${escapeHtml(p.description)}</p>
+              <p class="story-card-desc">${escapeHtml(cardExcerpt(p.description))}</p>
               <time class="story-card-date" datetime="${escapeHtml(p.published)}">${escapeHtml(displayDate(p.published))}</time>
             </div>
           </a>
@@ -367,14 +384,17 @@ function alternateLinks(urls) {
 }
 
 function renderSitemap(byLang, urlsBySlug) {
-  const homeUpdated =
-    metaContent(readFileSync(join(ROOT, 'index.html'), 'utf8'), 'levyam:updated')
-  if (!homeUpdated) {
-    throw new Error('index.html is missing <meta name="levyam:updated"> — needed for the sitemap.')
-  }
-
-  // The homepage serves both languages from one URL, so it has no alternates.
-  const entries = [{ loc: '/', lastmod: homeUpdated, alternates: null }]
+  // The homepage and the business page each serve both languages from one URL
+  // (switched in the browser), so they have no alternates; each is dated by its
+  // own <meta name="levyam:updated">.
+  const entries = [['/', 'index.html'], ['/business/', 'business/index.html']].map(([loc, file]) => {
+    const lastmod = metaContent(readFileSync(join(ROOT, file), 'utf8'), 'levyam:updated')
+    if (!lastmod) {
+      throw new Error(`${file} is missing <meta name="levyam:updated"> — needed for the sitemap.`)
+    }
+    return { loc, lastmod, alternates: null }
+  })
+  const homeUpdated = entries[0].lastmod
 
   for (const lang of LANGS) {
     // A hub changes when one of its pages does, so its lastmod is the most

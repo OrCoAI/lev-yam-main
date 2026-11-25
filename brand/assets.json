@@ -10,6 +10,11 @@
     { "id": "brand-icon-heart",     "what": "icon — heart",                                   "served": ["img/icons/heart.png"] },
     { "id": "brand-icon-house",     "what": "icon — house (blue; orange recolour for reels)", "served": ["img/icons/house-blue.png", "video/public/brand/house-orange.png"] },
     { "id": "brand-icon-palm",      "what": "icon — palm (orange; blue + cream recolours for reels)", "served": ["img/icons/palm-orange.png", "video/public/brand/palm-blue.png", "video/public/brand/palm-cream.png"] },
-    { "id": "brand-icon-sun",       "what": "icon — sun (orange)",                            "served": ["img/icons/sun-orange.png"] }
+    { "id": "brand-icon-sun",       "what": "icon — sun (orange)",                            "served": ["img/icons/sun-orange.png"] },
+    { "id": "brand-icon-heart-trio", "what": "icon — heart in green, blue and orange (business page)", "served": ["img/business/brand/icons-16.png"] },
+    { "id": "brand-icon-burst",     "what": "icon — multicoloured burst (business page)",     "served": ["img/business/brand/icons-22.png"] },
+    { "id": "brand-logo-stamp",     "what": "the stamp logo — sun, palm and wordmark on a postage stamp", "served": ["img/business/brand/logo-stamp-320.png"] },
+    { "id": "brand-favicon-touch",  "what": "home-screen icon of the business page (180×180)", "served": ["img/business/brand/apple-touch-icon-180.png"] },
+    { "id": "brand-share-business", "what": "share image of /business/ — the logo on cream, 1200×630", "served": ["img/business/og-image.jpg"] }
   ]
 }

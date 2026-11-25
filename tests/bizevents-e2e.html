@@ -32,7 +32,7 @@
       <button type="button" class="lang-opt"            data-lang-set="ar" aria-pressed="false" lang="ar">عر</button>
     </div>
     <a id="t-hero"   href="https://wa.me/1" data-i18n-wa="wa_msg_general" data-bizevent-source="hero">hero</a>
-    <a id="t-corp"   href="https://wa.me/1" data-i18n-wa="wa_msg_corp">corp</a>
+    <a id="t-priv"   href="https://wa.me/1" data-i18n-wa="wa_msg_priv">priv</a>
     <a id="t-team"   href="https://wa.me/1" data-i18n-wa="wa_msg_team">team</a>
     <a class="wa-float" href="https://wa.me/1"></a>
   </div>
@@ -71,13 +71,13 @@
 
     function runTests() {
       click('t-hero');                                            // whatsapp_cta (hero)
-      click('t-corp');                                            // whatsapp_cta + service_interest (corp)
+      click('t-priv');                                            // whatsapp_cta + service_interest (priv)
       click('t-team');                                            // whatsapp_cta + contact_intent (team)
       document.querySelector('[data-lang-set="ar"]').click();    // language_switch (he→ar)
 
       var ok = fired.length === 5; // 3x whatsapp_cta + service_interest + contact_intent + language_switch = 6... let me count
       // hero: 1 (whatsapp_cta)
-      // corp: 2 (whatsapp_cta + service_interest)
+      // priv: 2 (whatsapp_cta + service_interest)
       // team: 2 (whatsapp_cta + contact_intent)
       // lang: 1 (language_switch)
       // total: 6

@@ -127,7 +127,7 @@ jobs:
       # (9 paths × 3 × 10s serial worst-case would sit ~4.5 min before failing).
       - name: Smoke-check production
         run: |
-          pending=(/ /app/ /pos.html /stories/ /stories/ar/ /happening/ /happening/ar/ /robots.txt /sitemap.xml /llms.txt /facts.txt)
+          pending=(/ /app/ /pos.html /business/ /stories/ /stories/ar/ /happening/ /happening/ar/ /robots.txt /sitemap.xml /llms.txt /facts.txt)
           for round in 1 2 3; do
             failed=()
             for path in "${pending[@]}"; do

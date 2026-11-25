@@ -13,7 +13,7 @@ const LevYamI18n = (function () {
   const translations = {
     he: {
       meta_title: 'לב ים | מרחב יזמות עסקית חברתית על קו המים',
-      meta_desc: 'מרחב ליזמות עסקית חברתית המבוסס על שותפות, פשטות וקבלה.',
+      meta_desc: 'מרחב ליזמות עסקית חברתית בכפר הדייגים ג\'סר א-זרקא, המבוסס על שותפות, פשטות וקבלה — לימי צוות, אירועים ומפגשים.',
       og_locale: 'he_IL',
 
       brand: 'לב ים',
@@ -22,13 +22,10 @@ const LevYamI18n = (function () {
       logo_aria: 'לב ים — דף הבית',
       nav_main_aria: 'תפריט ראשי',
       nav_services: 'מה קורה בלב ים',
-      nav_why: 'מי אנחנו',
-      nav_gallery: 'גלריה',
       nav_stories: 'סיפורים',
       nav_stories_href: '/stories/',
       nav_happening: 'יוזמות',
       nav_happening_href: '/happening/',
-      nav_faq: 'שאלות ותשובות',
       nav_contact: 'צור קשר',
 
       nav_open: 'פתיחת תפריט',
@@ -48,17 +45,22 @@ const LevYamI18n = (function () {
       hero_title_html: 'המקום שבו <span class="hero-accent">הלב</span> פוגש את <span class="hero-accent-blue">הים</span>',
       hero_lead: 'מרחב פתוח על קו המים - לעבודה, מפגש, יצירה ומנוחה.',
       hero_cta_wa: 'דברו איתנו',
-      hero_cta_services: 'מה קורה בלב ים',
 
       intro_p_html: 'על קו המים של כפר הדייגים הקסום, האחרון מסוגו בישראל, הקמנו את <strong class="intro-brand">לב ים</strong> - מרחב ליזמות עסקית חברתית המבוסס על שותפות, פשטות וקבלה.',
 
       services_title: 'מה קורה בלב ים',
-      services_intro: 'אל מול נוף עוצר נשימה, ליד הדייגים - בתוך הכפר, קורים הדברים הכי טובים',
 
       service_corp_title: 'אירועים עסקיים',
-      service_corp_desc: 'ימי גיבוש, אסטרטגיה ויציאה מהשגרה.',
-      service_corp_cta: 'השאירו פרטים',
-      service_corp_alt: 'אירוע עסקי קבוצתי תחת הפרגולה של לב ים',
+      service_corp_cta: 'בואו נתכנן את היום שלכם!',
+      service_corp_lead: 'ימי צוות, מפגשי הנהלה ואירועי חברה במקום קצת אחר.',
+      // two lines, one per clause; css/styles.css --note-measure fits it (re-measure if this changes)
+      service_corp_note: 'הרגע הזה של שקט עבורכם, לטובת התארגנות מחדש\nמקדם חזון של חיבור אנושי חיובי ושגשוג משותף.',
+      service_corp_space: 'המרחב',
+      service_corp_space_tag: 'משנים אווירה. פותחים את הראש.',
+      service_corp_food: 'האוכל',
+      service_corp_food_tag: 'טעמים מקומיים. אירוח מכל הלב.',
+      service_corp_content: 'התוכן',
+      service_corp_content_tag: 'חוויות שמחברות בין אנשים.',
 
       service_priv_title: 'אירועים פרטיים',
       service_priv_desc: 'חגיגות אינטימיות עם אוכל מקומי טרי.',
@@ -71,19 +73,18 @@ const LevYamI18n = (function () {
       service_rent_alt: 'שקיעה כתומה מהפרגולה עם ספסל מול הים בלב ים',
 
       service_comm_title: 'יום ראשון לקהילה',
-      service_comm_desc: 'מדי יום ראשון - יזמים ויוצרים מתכנסים לפתוח יחד את השבוע - לעבוד, לשוחח ולהתחבר.',
+      service_comm_desc: 'פותחים יחד את השבוע - לעבוד, לשוחח ולהתחבר.',
       service_comm_cta: 'הצטרפו ליום הקהילה',
       service_comm_alt: 'קהילת לב ים — אנשים מתכנסים תחת הפרגולה מול הים',
 
       service_week_title: 'סופי שבוע בלב ים',
-      service_week_desc_html: 'כל שישי ושבת - בית פתוח, אוכל מקומי ואירועי תוכן מתחלפים. שישי <bdi dir="ltr">10:00–15:00</bdi>, שבת מ־<bdi dir="ltr">10:00</bdi> עד השקיעה.',
+      service_week_desc_html: 'בית פתוח, אוכל מקומי ואירועי תוכן מתחלפים. <span class="service-hours"><span>שישי <bdi dir="ltr">10:00–15:00</bdi></span><span>שבת מ־<bdi dir="ltr">10:00</bdi> עד השקיעה</span></span>',
       service_week_cta: 'לפרטים על סופי שבוע',
       service_week_alt: 'ארוחה משפחתית עם נוף הים בלב ים',
 
       why_title: 'מי אנחנו',
-      why_p1: 'אנחנו אורחים כאן. נימר, המשפחה, הדייגים ותושבי הכפר פותחים את הבית, ואנחנו מוזמנים פנימה כדי לבנות, לא כדי לקחת.',
-      why_p2: 'כל מה שניזום בלב ים נעשה מתוך כבוד לכפר, לים ולאנשים שחיים כאן דורות.',
-      why_p3_html: '<strong class="brand-name">לב ים</strong> לא ״ממוקם״ בג\'סר, אלא פועל מתוכה ובשבילה. לא כרקע — אלא כשותפה. הרגע הזה של שקט עבורכם, לטובת התארגנות מחדש — מקדם חזון של חיבור אנושי חיובי ושגשוג משותף, ומבטיח שהלב ימשיך לפעום ולהדהד גם הרחק מעבר לקו המים.',
+      why_p1: 'אנחנו אורחים כאן. נימר, המשפחה, הדייגים ותושבי הכפר פותחים את הדלת ואנחנו מוזמנים פנימה כדי ליצור מתוך כבוד לכפר, לים ולאנשים שחיים כאן דורות.',
+      why_p2_html: '<strong class="brand-name">לב ים</strong> ממוקם ב<span class="nowrap">ג\'סר א-זרקא</span> ופועל מתוכה ובשבילה.',
       village_title: 'על ג\'סר א-זרקא וכפר הדייגים',
       village_p1_html: 'ג\'סר א-זרקא הוא הכפר הערבי-מוסלמי היחיד שנותר על קו החוף הישראלי, בלב רצועת חוף הכרמל. הפארק הלאומי, כפר הדייגים, בו ממוקם <strong class="brand-name">לב ים</strong> שומר על אופי ייחודי - סירות עץ, רשתות, ריח של ים והיסטוריה משפחתית.',
       village_p2: 'כל ביקור כאן הוא גם מפגש עם מקום, עם אנשים, ועם סיפור.',
@@ -112,6 +113,8 @@ const LevYamI18n = (function () {
         'שקיעה כתומה עם סירת דייגים מתחת לפרגולה בלב ים'
       ],
 
+      gallery_prev: 'תמונות קודמות',
+      gallery_next: 'תמונות הבאות',
       lightbox_aria: 'תמונה מוגדלת',
       lightbox_close: 'סגור תמונה',
       lightbox_prev: 'תמונה הקודמת',
@@ -122,6 +125,12 @@ const LevYamI18n = (function () {
       faq_a_arrive_html: 'ג\'סר א-זרקא נגישה ברכב מכביש <bdi>4</bdi>, כשעה מתל אביב וכ-<bdi>25</bdi> דקות מחיפה. בירידה בכפר לכיוון הים מגיעים לכפר הדייגים. יש חניה מסודרת בכניסה. הכי פשוט, שימו בוויז לב ים ותמצאו אותנו.',
       faq_q_capacity: 'כמה אנשים יכולים להגיע?',
       faq_a_capacity: 'המתחם גמיש ומתאים לקבוצות בגדלים שונים, ממפגש אינטימי ועד אירוע גדול. ספרו לנו כמה תהיו ומה אופי האירוע, ונתאים את המקום בשבילכם.',
+      faq_q_teamday: 'מה אפשר לשלב ביום גיבוש?',
+      faq_a_teamday: 'לפי בחירה ובתיאום מראש: סיורים בכפר הדייגים, סדנאות לצוותים (מנהלים, מנהיגות ועוד), מוזיקה חיה, פעילות ספורטיבית והרצאות.',
+      faq_q_kosher: 'האם האוכל כשר, ומה לגבי צמחונים ואלרגיות?',
+      faq_a_kosher: 'המטבח של לב ים אינו כשר. לאירוע שצריך כשרות אפשר להביא קייטרינג כשר לפי בקשה. צמחוני, טבעוני ואלרגנים מתאמים לפי בקשה לכל אירוע - ספרו לנו מראש.',
+      faq_q_rain: 'מה קורה בחורף או בגשם?',
+      faq_a_rain: 'אירועים מתקיימים כל השנה. יש במתחם חלל מקורה חלקי, ולקבוצות גדולות בחורף מתאמים מראש לפי מזג האוויר.',
       faq_q_amenities: 'מה כלול במתחם ומה לגבי אוכל?',
       faq_a_amenities: 'פינות ישיבה מגוונות, מטבח מאובזר, כלי מטבח והגשה, אינטרנט מהיר, טלוויזיה גדולה להקרנה, מדשאה מפנקת, מקלחות, שירותים וכלי עבודה. אפשר גם להזמין ארוחה מלאה, פינוקים בין הישיבות, או ארוחת ערב חגיגית — נשמח להתאים לכם את החוויה המושלמת.',
       faq_q_safety: 'האם המקום מתאים למשפחות ובטוח להגיע?',
@@ -138,10 +147,14 @@ const LevYamI18n = (function () {
       map_aria: 'המיקום של לב ים — כפר הדייגים, ג\'סר א-זרקא',
       map_fallback: 'לב ים · ג\'סר א-זרקא',
       map_cta: 'נווטו ב-Google Maps',
+      map_note: 'בוויז: "לב ים" · חניה מסודרת בכניסה',
+      map_waze: 'פתחו ב-Waze',
+      services_more: 'עוד בלב ים',
       map_marker_alt: 'לב ים — פתחו ב-Google Maps',
       map_marker_title: 'פתחו את לב ים ב-Google Maps',
 
       contact_intro: 'מה תרצו לעשות?',
+      contact_btn_week_sub: 'שישי ושבת - בית פתוח ואוכל מקומי',
       contact_btn_team_title: 'אנחנו צוות',
       contact_btn_team_sub: 'חוויה צוותית ויום גיבוש',
       contact_btn_join_title: 'אני רוצה להצטרף',
@@ -164,7 +177,6 @@ const LevYamI18n = (function () {
       wa_float_aria: 'צור קשר בוואטסאפ',
 
       wa_msg_general: 'שלום, אשמח לפרטים על לב ים',
-      wa_msg_corp: 'שלום, אנחנו מחפשים חוויה צוותית בלב ים',
       wa_msg_priv: 'שלום, אשמח להגיע עם המשפחה לחגיגה',
       wa_msg_rent: 'שלום, אשמח למצוא בית לחלום שלי',
       wa_msg_comm: 'שלום, אשמח להצטרף ליום הקהילה',
@@ -177,7 +189,7 @@ const LevYamI18n = (function () {
 
     ar: {
       meta_title: 'ليف يام | فضاء لريادة الأعمال الاجتماعية على خط الماء',
-      meta_desc: 'فضاء لريادة الأعمال الاجتماعية، قائم على الشراكة والبساطة والقبول.',
+      meta_desc: 'فضاء لريادة الأعمال الاجتماعية في قرية الصيادين في جسر الزرقاء، قائم على الشراكة والبساطة والقبول — لأيام الفرق والفعاليات واللقاءات.',
       og_locale: 'ar_IL',
 
       brand: 'ليف يام',
@@ -186,13 +198,10 @@ const LevYamI18n = (function () {
       logo_aria: 'ليف يام — الصفحة الرئيسية',
       nav_main_aria: 'القائمة الرئيسية',
       nav_services: 'ماذا يجري في ليف يام',
-      nav_why: 'مَن نحن',
-      nav_gallery: 'معرض الصور',
       nav_stories: 'حكايات',
       nav_stories_href: '/stories/ar/',
       nav_happening: 'مبادرات',
       nav_happening_href: '/happening/ar/',
-      nav_faq: 'أسئلة وأجوبة',
       nav_contact: 'تواصلوا معنا',
 
       nav_open: 'فتح القائمة',
@@ -212,17 +221,22 @@ const LevYamI18n = (function () {
       hero_title_html: 'حيث يلتقي <span class="hero-accent">القلب</span> بـ<span class="hero-accent-blue">البحر</span>',
       hero_lead: 'فضاء مفتوح على خط الماء — للعمل واللقاء والإبداع والراحة.',
       hero_cta_wa: 'تحدّثوا معنا',
-      hero_cta_services: 'ماذا يجري في ليف يام',
 
       intro_p_html: 'على خط الماء في قرية الصيادين الساحرة، الأخيرة من نوعها في البلاد، أقمنا <strong class="intro-brand">ليف يام</strong> — فضاءً لريادة الأعمال الاجتماعية، قائمًا على الشراكة والبساطة والقبول.',
 
       services_title: 'ماذا يجري في ليف يام',
-      services_intro: 'أمام منظر يخطف الأنفاس، إلى جانب الصيادين — في قلب القرية، تحدث أجمل الأشياء',
 
       service_corp_title: 'فعاليات الأعمال',
-      service_corp_desc: 'أيام تماسك للفريق، استراتيجية، وخروج من الروتين.',
-      service_corp_cta: 'اتركوا تفاصيلكم',
-      service_corp_alt: 'فعالية أعمال جماعية تحت العريشة في ليف يام',
+      service_corp_cta: 'لنخطّط يومكم معاً!',
+      service_corp_lead: 'أيام فريق، لقاءات إدارة وفعاليات شركات في مكان مختلف قليلاً.',
+      // two lines, one per clause; css/styles.css --note-measure fits it (re-measure if this changes)
+      service_corp_note: 'هذه اللحظة من السكون لكم، لإعادة ترتيب الأمور\nتدفع رؤيةً للتواصل الإنساني الإيجابي والازدهار المشترك.',
+      service_corp_space: 'المكان',
+      service_corp_space_tag: 'نغيّر الأجواء. نفتح الذهن.',
+      service_corp_food: 'الطعام',
+      service_corp_food_tag: 'نكهات محلية. ضيافة من القلب.',
+      service_corp_content: 'المحتوى',
+      service_corp_content_tag: 'تجارب تربط بين الناس.',
 
       service_priv_title: 'فعاليات خاصة',
       service_priv_desc: 'احتفالات حميمة مع طعام محلي طازج.',
@@ -235,19 +249,18 @@ const LevYamI18n = (function () {
       service_rent_alt: 'غروب برتقالي من العريشة مع مقعد مقابل البحر في ليف يام',
 
       service_comm_title: 'يوم الأحد للمجتمع',
-      service_comm_desc: 'كل يوم أحد — روّاد أعمال ومبدعون يجتمعون لافتتاح الأسبوع معًا — للعمل والحديث والتواصل.',
+      service_comm_desc: 'نفتتح الأسبوع معًا — للعمل والحديث والتواصل.',
       service_comm_cta: 'انضمّوا إلى يوم المجتمع',
       service_comm_alt: 'مجتمع ليف يام — ناس يجتمعون تحت العريشة أمام البحر',
 
       service_week_title: 'عطلات نهاية الأسبوع في ليف يام',
-      service_week_desc_html: 'كل جمعة وسبت — بيت مفتوح، طعام محلي، وفعاليات متجدّدة. الجمعة <bdi dir="ltr">10:00–15:00</bdi>، السبت من <bdi dir="ltr">10:00</bdi> حتى الغروب.',
+      service_week_desc_html: 'بيت مفتوح، طعام محلي، وفعاليات متجدّدة. <span class="service-hours"><span>الجمعة <bdi dir="ltr">10:00–15:00</bdi></span><span>السبت من <bdi dir="ltr">10:00</bdi> حتى الغروب</span></span>',
       service_week_cta: 'تفاصيل عن عطلات نهاية الأسبوع',
       service_week_alt: 'وجبة عائلية بإطلالة على البحر في ليف يام',
 
       why_title: 'مَن نحن',
-      why_p1: 'نحن ضيوف هنا. نمر والعائلة والصيادون وأهل القرية يفتحون البيت، ونحن مدعوّون إلى الداخل لنبني، لا لنأخذ.',
-      why_p2: 'كل ما نبادر إليه في ليف يام يُعمل باحترام للقرية وللبحر وللناس الذين يعيشون هنا منذ أجيال.',
-      why_p3_html: '<strong class="brand-name">ليف يام</strong> ليس "موجودًا" في جسر الزرقاء فحسب، بل يعمل من داخلها ولأجلها. ليس كخلفية — بل كشريكة. هذه اللحظة من السكون لكم، لإعادة ترتيب الأمور — تدفع رؤيةً للتواصل الإنساني الإيجابي والازدهار المشترك، وتضمن أن يبقى القلب خافقًا ومتردّدًا حتى بعيدًا عن خط الماء.',
+      why_p1: 'نحن ضيوف هنا. نمر والعائلة والصيادون وأهل القرية يفتحون الباب، ونحن مدعوّون إلى الداخل لنُبدع باحترام للقرية وللبحر وللناس الذين يعيشون هنا منذ أجيال.',
+      why_p2_html: '<strong class="brand-name">ليف يام</strong> يقع في <span class="nowrap">جسر الزرقاء</span> ويعمل من داخلها ولأجلها.',
       village_title: 'عن جسر الزرقاء وقرية الصيادين',
       village_p1_html: 'جسر الزرقاء هي القرية العربية المسلمة الوحيدة المتبقية على خط الساحل، في قلب شريط شاطئ الكرمل. الحديقة الوطنية، قرية الصيادين، التي يقع فيها <strong class="brand-name">ليف يام</strong> تحافظ على طابع فريد — قوارب خشبية، شِباك، رائحة البحر، وتاريخ عائلي.',
       village_p2: 'كل زيارة هنا هي لقاء مع المكان، مع الناس، ومع حكاية.',
@@ -276,6 +289,8 @@ const LevYamI18n = (function () {
         'غروب برتقالي مع قارب صياد تحت العريشة في ليف يام'
       ],
 
+      gallery_prev: 'الصور السابقة',
+      gallery_next: 'الصور التالية',
       lightbox_aria: 'صورة مكبّرة',
       lightbox_close: 'إغلاق الصورة',
       lightbox_prev: 'الصورة السابقة',
@@ -286,6 +301,12 @@ const LevYamI18n = (function () {
       faq_a_arrive_html: 'جسر الزرقاء يمكن الوصول إليها بالسيارة من شارع <bdi>4</bdi>، نحو ساعة من تل أبيب وحوالي <bdi>25</bdi> دقيقة من حيفا. عند النزول في القرية باتجاه البحر تصلون إلى قرية الصيادين. هناك موقف منظّم عند المدخل. الأبسط، اكتبوا في ويز "ليف يام" وستجدوننا.',
       faq_q_capacity: 'كم شخصًا يمكنه أن يأتي؟',
       faq_a_capacity: 'المكان مرن ويناسب مجموعات بأحجام مختلفة، من لقاء حميم حتى فعالية كبيرة. أخبرونا كم عددكم وما طبيعة الفعالية، ونجهّز المكان لكم.',
+      faq_q_teamday: 'ماذا يمكن أن يتضمّن يوم تماسك الفريق؟',
+      faq_a_teamday: 'حسب اختياركم وبتنسيق مسبق: جولات في قرية الصيادين، ورشات للفرق (مدراء، قيادة وغيرها)، موسيقى حيّة، نشاط رياضي ومحاضرات.',
+      faq_q_kosher: 'هل الطعام كوشير، وماذا عن النباتيين والحساسية؟',
+      faq_a_kosher: 'مطبخ ليف يام ليس كوشير. للفعالية التي تحتاج إلى كوشير يمكن إحضار تموين كوشير حسب الطلب. النباتي، النباتي الصِرف ومسبّبات الحساسية تُنسَّق حسب الطلب لكل فعالية — أخبرونا مسبقًا.',
+      faq_q_rain: 'ماذا يحدث في الشتاء أو في المطر؟',
+      faq_a_rain: 'الفعاليات تُقام على مدار السنة. في المكان مساحة مسقوفة جزئيًا، وللمجموعات الكبيرة في الشتاء ننسّق مسبقًا حسب حالة الطقس.',
       faq_q_amenities: 'ماذا يشمل المكان وماذا عن الطعام؟',
       faq_a_amenities: 'زوايا جلوس متنوّعة، مطبخ مجهّز، أدوات مطبخ وتقديم، إنترنت سريع، تلفاز كبير للعرض، حديقة جميلة، حمّامات استحمام، خدمات، وأدوات عمل. يمكنكم أيضًا طلب وجبة كاملة، أو ضيافات بين الجلسات، أو عشاء احتفالي — يسعدنا أن نُلائم لكم التجربة المثالية.',
       faq_q_safety: 'هل المكان مناسب للعائلات وآمن للوصول؟',
@@ -302,10 +323,14 @@ const LevYamI18n = (function () {
       map_aria: 'موقع ليف يام — قرية الصيادين، جسر الزرقاء',
       map_fallback: 'ليف يام · جسر الزرقاء',
       map_cta: 'تنقّلوا عبر Google Maps',
+      map_note: 'في Waze: "לב ים" · موقف منظّم عند المدخل',
+      map_waze: 'افتحوا في Waze',
+      services_more: 'المزيد في ليف يام',
       map_marker_alt: 'ليف يام — افتحوا في Google Maps',
       map_marker_title: 'افتحوا ليف يام في Google Maps',
 
       contact_intro: 'ماذا تريدون أن تفعلوا؟',
+      contact_btn_week_sub: 'الجمعة والسبت — بيت مفتوح وطعام محلي',
       contact_btn_team_title: 'نحن فريق',
       contact_btn_team_sub: 'تجربة جماعية ويوم تماسك',
       contact_btn_join_title: 'أريد أن أنضمّ',
@@ -328,7 +353,6 @@ const LevYamI18n = (function () {
       wa_float_aria: 'تواصلوا عبر واتساب',
 
       wa_msg_general: 'أهلًا، بحب آخذ تفاصيل عن ليف يام',
-      wa_msg_corp: 'أهلًا، نحن ندوّر على تجربة جماعية في ليف يام',
       wa_msg_priv: 'أهلًا، بحب آجي مع العيلة لاحتفال',
       wa_msg_rent: 'أهلًا، بحب ألاقي بيت لحلمي',
       wa_msg_comm: 'أهلًا، بحب أنضمّ ليوم المجتمع',
@@ -586,8 +610,9 @@ const LevYamI18n = (function () {
 
   // Keyboard navigation
   lightbox.addEventListener('keydown', function (e) {
-    if (e.key === 'ArrowRight' || e.key === 'ArrowUp')   navigate(-1);
-    if (e.key === 'ArrowLeft'  || e.key === 'ArrowDown')  navigate(1);
+    // as on screen: the next photo is to the right (the strip runs left to right)
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') navigate(1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   navigate(-1);
   });
 
   // Touch swipe
@@ -601,8 +626,14 @@ const LevYamI18n = (function () {
   }, { passive: true });
 })();
 
-/* ── Lev Yam map (Leaflet + CARTO tiles, lazy-loaded) ─────────────────── */
+/* ── Lev Yam map (Leaflet, lazy-loaded) ──────────────────────────────── */
 (function () {
+  // Lev Yam's ArcGIS Location Platform API key for the satellite tiles. Public by
+  // design, like the site's other browser keys: it is restricted at Esri to the
+  // levyam.com referrers and to the basemap privilege, and it expires - renew it
+  // before its date (the map falls back to the street map if it lapses).
+  const ESRI_KEY = 'AAPTajFotzdK1b6JmLsdzDlSq7Q..EMpZtML1uMKdpFD0SAZoK2XqoVNpDbFW-gVtv-QL3P3cHdrKEu64JtR9LAa3M4WdprLxxoRbc8Y8TUQYyb0jtxjAh9QLa0RpwKKMEV165or-yI16j6HgueErOd-VrP3hxwfVr98tBP_JopaRRyHHWwLo0OPo40JhcMIj97Ap1Vk1SCzhnTuzgSnQ8WY6-JY0-XYjAC0SL987rQZEH_pdfgZhDWuQi0C54JEytHSv24VfZppq09iNAT1_PY2LxHmU'; // expires 2027-11-25 (owner's calendar reminder)
+
   const frame = document.querySelector('.map-frame');
   const canvas = document.getElementById('lev-yam-map');
   if (!frame || !canvas) return;
@@ -663,27 +694,48 @@ const LevYamI18n = (function () {
 
     const map = L.map(canvas, {
       center: [lat, lng],
-      zoom: 15,
+      zoom: 16,
       minZoom: 8,
-      maxZoom: 16,
+      maxZoom: 18,
       scrollWheelZoom: false,
+      // Phones: one finger scrolls the page, not the map (two fingers move and
+      // zoom it) - a full-width map must never trap the scroll.
+      dragging: !L.Browser.mobile,
       zoomControl: true,
       attributionControl: true,
     });
 
-    // Israel Hiking Map (Hebrew) — free, no API key, Hebrew labels (attribution required)
-    L.tileLayer('https://israelhiking.osm.org.il/Hebrew/Tiles/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://israelhiking.osm.org.il" target="_blank" rel="noopener">Israel Hiking Map</a> · &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
-      maxZoom: 16,
+    // Satellite imagery shows the place itself - the bay, the fishing harbour,
+    // the beach: Esri World Imagery. The moment its tiles fail (an expired key,
+    // an outage), the map falls back to the Israel Hiking street map.
+    function streetMap() {
+      map.setMaxZoom(16);
+      if (map.getZoom() > 16) map.setZoom(16);
+      return L.tileLayer('https://israelhiking.osm.org.il/Hebrew/Tiles/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://israelhiking.osm.org.il" target="_blank" rel="noopener">Israel Hiking Map</a> · &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
+        maxZoom: 16,
+      }).addTo(map);
+    }
+    // With the key: Esri's keyed endpoint. Until it is set: the same imagery
+    // from the public endpoint (owner, 2026-11-25: the satellite view stays).
+    const satellite = L.tileLayer(ESRI_KEY
+      ? 'https://ibasemaps-api.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}?token=' + encodeURIComponent(ESRI_KEY)
+      : 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Powered by <a href="https://www.esri.com" target="_blank" rel="noopener">Esri</a> · Imagery: Esri, Maxar, Earthstar Geographics',
+      maxZoom: 18,
     }).addTo(map);
+    satellite.once('tileerror', function () {
+      map.removeLayer(satellite);
+      streetMap();
+    });
 
     const icon = L.divIcon({
       className: 'lev-yam-marker',
       html:
         '<span class="lym-pulse" aria-hidden="true"></span>' +
         PIN_SVG,
-      iconSize:   [40, 52],
-      iconAnchor: [20, 50],
+      iconSize:   [28, 36],
+      iconAnchor: [14, 35],
     });
 
     mapMarker = L.marker([lat, lng], {
@@ -775,15 +827,24 @@ const LevYamI18n = (function () {
     return items[0] ? items[0].offsetWidth + GAP : track.clientWidth + GAP;
   }
 
+  // The last position the strip can scroll to. On desktop three photos show at
+  // once, so the strip ends two steps before the last photo: without this the
+  // arrow kept "advancing" a counter while nothing moved.
+  function maxIndex() {
+    var room = track.scrollWidth - track.clientWidth - 2;
+    return Math.max(0, Math.min(total - 1, Math.ceil(room / itemStride())));
+  }
+
   function updateUI() {
-    if (elCurrent) elCurrent.textContent = current + 1;
-    if (progressFill) progressFill.style.width = ((current + 1) / total * 100) + '%';
+    var atEnd = current >= maxIndex(); // the last photo is on screen
+    if (elCurrent) elCurrent.textContent = atEnd ? total : current + 1;
+    if (progressFill) progressFill.style.width = (atEnd ? 100 : (current + 1) / total * 100) + '%';
     prevBtn.disabled = current === 0;
-    nextBtn.disabled = current === total - 1;
+    nextBtn.disabled = atEnd;
   }
 
   function goTo(index) {
-    current = Math.max(0, Math.min(index, total - 1));
+    current = Math.max(0, Math.min(index, maxIndex()));
     track.scrollTo({ left: current * itemStride(), behavior: 'smooth' });
     updateUI();
   }
@@ -797,7 +858,9 @@ const LevYamI18n = (function () {
     clearTimeout(scrollTimer);
     scrollTimer = setTimeout(function () {
       var idx = Math.round(track.scrollLeft / itemStride());
-      idx = Math.max(0, Math.min(idx, total - 1));
+      idx = Math.max(0, Math.min(idx, maxIndex()));
+      // at the very end the last step is shorter than a photo: rounding would say "one before last"
+      if (track.scrollLeft >= track.scrollWidth - track.clientWidth - 2) idx = maxIndex();
       if (idx !== current) { current = idx; updateUI(); }
     }, 60);
   }, { passive: true });
@@ -833,27 +896,26 @@ const LevYamI18n = (function () {
   });
 })();
 
-/* ── WhatsApp pulse — stop after first page interaction ──────────────── */
+/* ── Business card film: plays only while on screen ─────────────────── */
+// preload="none": the 2 MB film is fetched only when the card scrolls into
+// view. With reduced motion or save-data (ADR 0051), or without
+// IntersectionObserver, the poster stays.
 (function () {
-  const btn = document.querySelector('.wa-float');
-  if (!btn) return;
+  const video = document.querySelector('.service-lead-video');
+  if (!video || !('IntersectionObserver' in window)) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (navigator.connection && navigator.connection.saveData) return;
 
-  const STORAGE_KEY = 'lev-yam-wa-interacted';
-
-  if (localStorage.getItem(STORAGE_KEY)) {
-    btn.classList.add('pulse-stopped');
-    return;
-  }
-
-  function stopPulse() {
-    btn.classList.add('pulse-stopped');
-    localStorage.setItem(STORAGE_KEY, '1');
-    document.removeEventListener('click', stopPulse);
-    document.removeEventListener('scroll', stopPulse, { passive: true });
-  }
-
-  document.addEventListener('click', stopPulse);
-  document.addEventListener('scroll', stopPulse, { passive: true });
+  new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (entry.isIntersecting) {
+        const p = video.play();
+        if (p && typeof p.catch === 'function') p.catch(function () {});
+      } else {
+        video.pause();
+      }
+    });
+  }, { threshold: 0.25 }).observe(video);
 })();
 
 /* ── Analytics: Dynatrace business events, Meta Pixel, GA4 ──────────────── */
@@ -886,7 +948,6 @@ const LevYamI18n = (function () {
 
   // Maps data-i18n-wa key → whatsapp_cta source name
   var WA_KEY_SOURCE = {
-    wa_msg_corp:   'service_corp',
     wa_msg_priv:   'service_priv',
     wa_msg_rent:   'service_rent',
     wa_msg_comm:   'service_comm',
@@ -899,7 +960,6 @@ const LevYamI18n = (function () {
 
   // wa keys that represent a specific service offering
   var SERVICE_KEYS = {
-    wa_msg_corp: 'corp',
     wa_msg_priv: 'priv',
     wa_msg_rent: 'rent',
     wa_msg_comm: 'comm',

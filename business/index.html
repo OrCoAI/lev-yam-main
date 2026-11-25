@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>לב ים | ימי צוות, מפגשי הנהלה ואירועי חברה מול הים</title>
+  <meta name="description" content="לב ים בכפר הדייגים ג'סר א-זרקא — מרחב אירוח ייחודי לימי צוות, מפגשי הנהלה ואירועי חברה, בין הים לטבע.">
+  <meta name="theme-color" content="#fff7ea">
+  <link rel="canonical" href="https://levyam.com/business/">
+  <meta name="levyam:updated" content="2026-11-23">
+
+  <!-- Dynatrace RUM — the site's tag; synchronous on purpose, for full session coverage -->
+  <script type="text/javascript" src="https://js-cdn.dynatracelabs.com/jstag/14868fa4215/bf37083dis/716e4cb7cadaf3f3_complete.js" crossorigin="anonymous"></script>
+
+  <!-- Meta Pixel, no-JS fallback -->
+  <noscript><img height="1" width="1" style="display:none"
+    src="https://www.facebook.com/tr?id=3961552923978842&ev=PageView&noscript=1"/></noscript>
+
+  <!-- Meta Pixel + GA4: both bootstraps live in js/vendor-tags.js (one place for the IDs) -->
+  <script src="/js/vendor-tags.js" async></script>
+
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/img/logo/logo-mark.png" type="image/png">
+  <!-- With JS, phones swap the cards' covers for living rows (js/business.js,
+       initPhoneMedia): the class is set before the first layout, so the covers
+       they replace are never fetched. -->
+  <script>document.documentElement.classList.add('phone-media');</script>
+  <!-- Without JS: the menu is simply shown, and the three parts are open. -->
+  <noscript><style>
+    .nav-toggle, .mobile-nav-close { display: none !important; }
+    .mobile-nav[hidden] { display: block !important; position: static; box-shadow: none; }
+    .pillar-panel { grid-template-rows: 1fr !important; }
+    .pillar-panel-inner { visibility: visible !important; }
+  </style></noscript>
+  <link rel="apple-touch-icon" sizes="180x180" href="/img/business/brand/apple-touch-icon-180.png">
+
+  <!-- Open Graph — WhatsApp / social link preview (absolute URLs required) -->
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="he_IL">
+  <meta property="og:locale:alternate" content="ar_IL">
+  <meta property="og:site_name" content="לב ים">
+  <meta property="og:url" content="https://levyam.com/business/">
+  <meta property="og:title" content="לב ים | ימי צוות, מפגשי הנהלה ואירועי חברה מול הים">
+  <meta property="og:description" content="יוצאים מהשגרה. נפגשים אחרת. מרחב אירוח ייחודי בכפר הדייגים ג'סר א-זרקא, בין הים לטבע.">
+  <meta property="og:image" content="https://levyam.com/img/business/og-image.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+
+  <!-- Fonts are self-hosted (css/business.css): Heebo, and Cairo once Arabic is selected -->
+  <link rel="preload" href="/fonts/Heebo-hebrew.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/css/business.css">
+  <link rel="stylesheet" href="/css/business-chrome.css">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "EventVenue",
+    "@id": "https://levyam.com/#venue",
+    "name": "לב ים | Lev Yam",
+    "alternateName": ["Lev Yam", "ليف يام"],
+    "url": "https://levyam.com",
+    "telephone": "+972-50-666-9138",
+    "email": "info@levyam.com",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "ג'סר א-זרקא",
+      "addressRegion": "חוף הכרמל",
+      "addressCountry": "IL",
+      "streetAddress": "כפר הדייגים"
+    }
+  }
+  </script>
+</head>
+<body data-page-slug="business">
+
+<a class="skip-link" href="#main" data-i18n="skip">דלגו לתוכן</a>
+
+<!-- ── Header: the site's own (copied from the homepage; styles in css/business-chrome.css) ── -->
+<header class="hero-topbar" id="site-header">
+  <a href="/" class="logo" aria-label="לב ים — דף הבית" data-i18n-aria="chrome-home">
+    <img src="/img/logo/logo-mark.png" alt="לב ים" data-i18n-alt="brand-name" width="52" height="52">
+  </a>
+
+  <nav class="primary-nav" aria-label="תפריט ראשי" data-i18n-aria="chrome-primary-nav">
+    <ul>
+      <li class="nav-business"><a href="#hero" aria-current="page" data-i18n="nav-business">אירועים עסקיים</a></li>
+      <li><a href="/#services" data-i18n="foot-services">מה קורה בלב ים</a></li>
+      <li><a href="/happening/" data-i18n="foot-happening" data-href-ar="/happening/ar/">יוזמות</a></li>
+      <li><a href="/stories/" data-i18n="foot-stories" data-href-ar="/stories/ar/">סיפורים</a></li>
+      <li><a href="#plan" data-i18n="nav-contact">צור קשר</a></li>
+    </ul>
+  </nav>
+
+  <div class="header-social">
+    <a href="https://wa.me/972506669138?text=שלום%2C%20אשמח%20לפרטים%20על%20לב%20ים" target="_blank" rel="noopener" aria-label="לב ים בוואטסאפ" data-wa="header" data-i18n-aria="chrome-wa-me-972506669138">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.978-1.306A9.966 9.966 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+    </a>
+    <a href="mailto:info@levyam.com" aria-label="שלחו אימייל ללב ים" data-i18n-aria="chrome-mailto-info-levyam-com">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg>
+    </a>
+    <a href="https://maps.app.goo.gl/fFtCZYwK1KEcmFud6" target="_blank" rel="noopener" aria-label="נווט ללב ים במפות" data-i18n-aria="chrome-maps-app-goo-gl-fftczywk1kec">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+    </a>
+    <a href="https://www.instagram.com/levyam_" target="_blank" rel="noopener" aria-label="לב ים באינסטגרם" data-i18n-aria="chrome-www-instagram-com-levyam">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none"/></svg>
+    </a>
+    <a href="https://m.facebook.com/profile.php?id=61585790351617" target="_blank" rel="noopener" aria-label="לב ים בפייסבוק" data-i18n-aria="chrome-m-facebook-com-profile-php">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+    </a>
+  </div>
+
+  <div class="lang-toggle" role="group" aria-label="שפה / اللغة" data-i18n-aria="chrome-lang-toggle">
+    <button type="button" class="lang-opt is-active" data-lang="he" aria-pressed="true" lang="he">עב</button>
+    <button type="button" class="lang-opt" data-lang="ar" aria-pressed="false" lang="ar">عر</button>
+  </div>
+
+  <button class="nav-toggle" aria-label="פתיחת תפריט" aria-expanded="false" aria-controls="mobile-nav">
+    <span></span><span></span><span></span>
+  </button>
+</header>
+
+<nav id="mobile-nav" class="mobile-nav" hidden aria-label="תפריט נייד" data-i18n-aria="chrome-mobile-nav">
+  <div class="mobile-nav-header">
+    <a class="mobile-nav-brand" href="/" aria-label="לב ים — דף הבית" data-i18n-aria="chrome-home"><img src="/img/logo/logo-mark.png" alt="" width="32" height="32"><span data-i18n="brand-name">לב ים</span></a>
+    <button class="mobile-nav-close" aria-label="סגור תפריט" data-i18n-aria="chrome-mobile-nav-close">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <ul>
+    <li class="nav-business"><a href="#hero" aria-current="page" data-i18n="nav-business">אירועים עסקיים</a></li>
+    <li><a href="/#services" data-i18n="foot-services">מה קורה בלב ים</a></li>
+    <li><a href="/happening/" data-i18n="foot-happening" data-href-ar="/happening/ar/">יוזמות</a></li>
+    <li><a href="/stories/" data-i18n="foot-stories" data-href-ar="/stories/ar/">סיפורים</a></li>
+    <li><a href="#plan" data-i18n="nav-contact">צור קשר</a></li>
+  </ul>
+</nav>
+
+<main id="main">
+
+<!-- ── Hero ─────────────────────────────────── -->
+<section class="hero" id="hero">
+  <video class="hero-video" autoplay muted loop playsinline preload="metadata" poster="/img/business/hero-poster.jpg" aria-hidden="true" id="hero-video">
+    <source src="/img/business/hero.mp4" type="video/mp4" media="(prefers-reduced-motion: no-preference)">
+  </video>
+  <div class="hero-content">
+    <!-- The brand stamp opens the page: it surfaces, the sun's light glows with a heartbeat,
+         a glint runs across it (css/style.css). It lands again when the planner's message is ready. -->
+    <div class="hero-mark">
+      <img class="hero-stamp" src="/img/business/brand/logo-stamp-320.png" alt="לב ים" data-i18n-alt="brand-name" width="320" height="454">
+    </div>
+    <h1>
+      <span class="h1-line" data-i18n="hero-h1a">יוצאים מהשגרה.</span>
+      <span class="h1-line" data-i18n="hero-h1b">נפגשים אחרת.</span>
+    </h1>
+    <p class="hero-sub" data-i18n="hero-sub">ימי צוות, מפגשי הנהלה ואירועי חברה במקום קצת אחר.</p>
+    <p class="hero-lead"><span data-i18n="hero-lead-a">בכפר הדייגים ג'סר א-זרקא, בין הים לטבע, מחכה לכם</span> <strong class="hero-name" data-i18n="brand-name">לב ים</strong> <span data-i18n="hero-lead-b">- מרחב אירוח ייחודי המשלב נוף עוצר נשימה, אוכל מקומי, תוכן מעשיר ומפגש אנושי בגובה העיניים.</span></p>
+    <div class="hero-ctas">
+      <a href="#plan" class="btn btn-primary btn-lg" data-track="hero-plan" data-i18n="cta-plan">בואו נתכנן את היום שלכם!</a>
+      <a href="#intro" class="btn btn-ghost btn-lg" data-track="hero-discover" data-i18n="hero-cta-discover">גלו את לב ים</a>
+    </div>
+  </div>
+  <div class="hero-curve" aria-hidden="true"></div>
+</section>
+
+<!-- ── Facts strip — hidden until Or supplies the data ── -->
+<section class="facts" id="facts" hidden data-pending="distance, group size, spaces, parking">
+  <div class="container">
+    <ul class="facts-grid">
+      <li class="fact"><span class="fact-value">—</span><span class="fact-label" data-i18n="fact-distance">מרחק מתל אביב</span></li>
+      <li class="fact"><span class="fact-value">—</span><span class="fact-label" data-i18n="fact-size">גודל קבוצה</span></li>
+      <li class="fact"><span class="fact-value">—</span><span class="fact-label" data-i18n="fact-spaces">חללים</span></li>
+      <li class="fact"><span class="fact-value">—</span><span class="fact-label" data-i18n="fact-parking">חניה ונגישות</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ── Intro — the two opening sentences, right under the hero ── -->
+<section class="section section-cream intro" id="intro">
+  <div class="container">
+    <div class="lede">
+      <p data-i18n="intro-p1">מקום לצאת מהשגרה, לפתוח את הראש, להתחבר מחדש ולחזור עם אנרגיה ורעיונות חדשים.</p>
+      <p data-i18n="intro-p2">בין אם אתם מתכננים יום גיבוש, מפגש חשיבה, סדנה או אירוע חברה - ניצור יחד חוויה המותאמת לאנשים ולמטרות שלכם.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── Three components — folded ────────────── -->
+<!-- Every item uses the same blocks, in the same order, with the same spacing:
+     title → subtitle → intro paragraph(s) → list → note box. All copy from content/copy.md.
+     Desktop: three cards in a row; "מידע נוסף" opens all three together (as the old packages did),
+     and JS lines up the matching blocks across the cards (data-row).
+     Mobile: one grouped list; tapping a row opens it and closes the others.
+     Photos and videos (Or, 2026-10-14) — on desktop each card has its own frame (Or loves that they
+     differ): התוכן = cover, edge to edge, each photo sweeping in behind a zig-zag edge, story bars
+     counting them, the icon on its lower edge; האוכל = a fan of arches in the icon's place, the next
+     dish swinging to the front; המרחב = its films inside its own icon, the house. The media sit in the
+     head, so a tap opens the card. Without JS: the first photo / a still fan / the title film's poster.
+     Phones and tablets (list): JS builds from this markup — the rows stay as they were, with the card's
+     photos (or title film) breathing behind the chevron, and an open item ends with a flick deck.
+     data-focus on each photo is its subject (x y, as fractions of the photo): the phone crops are
+     framed around it. -->
+<section class="section pillars" id="pillars">
+  <div class="container">
+    <h2 class="center h2-accent" data-i18n="pillars-h2">שלושה מרכיבים. אינספור אפשרויות.</h2>
+
+    <div class="pillar-grid">
+
+      <!-- המרחב — videos (Or, 2026-10-14): the short one is the card's title film; the long one plays in
+           full in the desktop cover after it, like the photos of התוכן (Or, 2026-10-15). Phones take the
+           title film for the living row and the long one cut into three chapters (by the sea, inside,
+           sunset) for the deck — kept in the template below, which loads nothing.
+           Videos load (data-src) only when they are about to play; the posters show until then. -->
+      <article class="pillar" id="space">
+        <h3 class="pillar-heading">
+          <button type="button" class="pillar-head" id="pillar-head-space" aria-expanded="false" aria-controls="pillar-panel-space">
+            <span class="pillar-cover" aria-hidden="true" data-rotator="cover">
+              <video class="slide film-title" muted playsinline preload="none" poster="/img/business/space-title-poster.webp" data-src="/img/business/space-title.mp4"></video>
+              <video class="slide" muted playsinline preload="none" poster="/img/business/space-full-poster.webp" data-src="/img/business/space-full.mp4"></video>
+            </span>
+            <span class="pillar-icon" aria-hidden="true"><img src="/img/icons/house-blue.png" alt="" width="469" height="310"></span>
+            <span class="pillar-titles">
+              <span class="pillar-title"><span data-i18n="nav-space">המרחב</span></span>
+              <span class="pillar-subtitle" data-row="subtitle" data-i18n="p1-h3">משנים אווירה. פותחים את הראש.</span>
+            </span>
+            <span class="pillar-chevron" aria-hidden="true"></span>
+          </button>
+        </h3>
+        <template class="film-chapters">
+          <video muted playsinline poster="/img/business/space-full-poster.webp" data-src="/img/business/space-sea.mp4"></video>
+          <video muted playsinline poster="/img/business/space-inside-poster.webp" data-src="/img/business/space-inside.mp4"></video>
+          <video muted playsinline poster="/img/business/space-sunset-poster.webp" data-src="/img/business/space-sunset.mp4"></video>
+        </template>
+        <div class="pillar-panel" id="pillar-panel-space" role="region" aria-labelledby="pillar-head-space">
+          <div class="pillar-panel-inner">
+            <div class="pillar-body">
+              <div class="pillar-intro" data-row="intro">
+                <p data-i18n="p1-p1">יש מקומות שמספיק להגיע אליהם כדי להרגיש אחרת. לב ים שוכן בכפר דייגים על חוף הים התיכון, מוקף טבע ונוף פתוח. המרחב משלב אזורי התכנסות, פינות ישיבה נעימות ואווירה אינטימית ובלתי פורמלית, שמזמינה יצירתיות, שיחה פתוחה וחיבור אנושי.</p>
+              </div>
+              <div class="pillar-list" data-row="list">
+                <h4 class="pillar-label" data-i18n="p1-list-title">מה מחכה לכם?</h4>
+                <ul class="checklist">
+                  <li data-i18n="p1-li1">מרחבי התכנסות ועבודה לצוותים ולקבוצות</li>
+                  <li data-i18n="p1-li2">אפשרות לאירוח אינטימי או לשימוש במתחם כולו</li>
+                  <li data-i18n="p1-li3">פינות ישיבה נעימות בפנים ובחוץ</li>
+                  <li data-i18n="p1-li4">טבע, ים ונוף פתוח במרחק צעדים ספורים</li>
+                  <li data-i18n="p1-li5">שילוב של מפגשים מקצועיים וזמן חופשי</li>
+                  <li data-i18n="p1-li6">התאמת המרחב לאופי האירוע ולגודל הקבוצה</li>
+                </ul>
+              </div>
+              <div class="pillar-note" data-row="note">
+                <p class="pillar-note-text" data-i18n="p1-close">בין אם אתם מתכננים מפגש הנהלה, יום גיבוש או סדנה, נבחר יחד את המרחבים המתאימים וניצור את האווירה הנכונה עבורכם.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button type="button" class="pillar-more" aria-expanded="false" aria-controls="pillar-panel-space">
+          <span class="pillar-more-labels"><span class="pillar-more-label" data-i18n="pillar-more">מידע נוסף</span><span class="pillar-less-label" data-i18n="pillar-less">סגור</span></span><span class="pillar-chevron" aria-hidden="true"></span>
+        </button>
+      </article>
+
+      <!-- האוכל -->
+      <article class="pillar" id="food">
+        <h3 class="pillar-heading">
+          <button type="button" class="pillar-head" id="pillar-head-food" aria-expanded="false" aria-controls="pillar-panel-food">
+            <span class="pillar-cover" aria-hidden="true" data-rotator="cover">
+              <img class="slide" src="/img/business/food-salads-400.webp" data-focus="0.5 0.57 0.96 0.36" srcset="/img/business/food-salads-400.webp 400w, /img/business/food-salads-724.webp 724w" sizes="(min-width: 1024px) 340px, 92vw" alt="" width="724" height="1086" loading="lazy" decoding="async">
+              <img class="slide" data-src="/img/business/food-manakish-400.webp" data-focus="0.52 0.48 0.92 0.42" data-srcset="/img/business/food-manakish-400.webp 400w, /img/business/food-manakish-768.webp 768w" sizes="(min-width: 1024px) 340px, 92vw" alt="" width="768" height="1024" loading="lazy" decoding="async">
+              <img class="slide" data-src="/img/business/food-stuffed-400.webp" data-focus="0.52 0.58 0.94 0.38" data-srcset="/img/business/food-stuffed-400.webp 400w, /img/business/food-stuffed-724.webp 724w" sizes="(min-width: 1024px) 340px, 92vw" alt="" width="724" height="1086" loading="lazy" decoding="async">
+              <img class="slide" data-src="/img/business/food-salad-400.webp" data-focus="0.53 0.66 0.88 0.34" data-srcset="/img/business/food-salad-400.webp 400w, /img/business/food-salad-768.webp 768w" sizes="(min-width: 1024px) 340px, 92vw" alt="" width="768" height="1024" loading="lazy" decoding="async">
+              <img class="slide" data-src="/img/business/food-vine-400.webp" data-focus="0.4 0.62 0.7 0.46" data-srcset="/img/business/food-vine-400.webp 400w, /img/business/food-vine-800.webp 800w, /img/business/food-vine-1024.webp 1024w" sizes="(min-width: 1024px) 340px, 92vw" alt="" width="1024" height="768" loading="lazy" decoding="async">
+              <img class="slide" data-src="/img/business/food-buffet-400.webp" data-focus="0.5 0.64 0.92 0.42" data-srcset="/img/business/food-buffet-400.webp 400w, /img/business/food-buffet-768.webp 768w" sizes="(min-width: 1024px) 340px, 92vw" alt="" width="768" height="1024" loading="lazy" decoding="async">
+              <img class="slide" data-src="/img/business/food-plate-400.webp" data-focus="0.52 0.66 0.68 0.34" data-srcset="/img/business/food-plate-400.webp 400w, /img/business/food-plate-768.webp 768w" sizes="(min-width: 1024px) 340px, 92vw" alt="" width="768" height="1024" loading="lazy" decoding="async">
+            </span>
+            <span class="pillar-icon" aria-hidden="true"><img src="/img/icons/palm-orange.png" alt="" width="613" height="949"></span>
+            <span class="pillar-titles">
+              <span class="pillar-title"><span data-i18n="nav-food">האוכל</span></span>
+              <span class="pillar-subtitle" data-row="subtitle" data-i18n="p2-h3">טעמים מקומיים. אירוח מכל הלב.</span>
+            </span>
+            <span class="pillar-chevron" aria-hidden="true"></span>
+          </button>
+        </h3>
+        <div class="pillar-panel" id="pillar-panel-food" role="region" aria-labelledby="pillar-head-food">
+          <div class="pillar-panel-inner">
+            <div class="pillar-body">
+              <div class="pillar-intro" data-row="intro">
+                <p data-i18n="p2-p1">אוכל טוב הוא חלק בלתי נפרד ממפגש מוצלח. בלב ים מחכה לכם חוויה קולינרית בהשראת המטבח המקומי המוגש באהבה ובפשטות. ממסיבת תה מסורתית ומאפי בוקר מהכפר ועד לארוחות עשירות ומפנקות.</p>
+              </div>
+              <div class="pillar-list" data-row="list">
+                <h4 class="pillar-label" data-i18n="p2-list-title">מה אפשר לשלב?</h4>
+                <ul class="checklist">
+                  <li data-i18n="p2-li1">קבלת פנים עם מסיבת תה מסורתית</li>
+                  <li data-i18n="p2-li2">מאפי בוקר מקומיים ופירות העונה</li>
+                  <li data-i18n="p2-li3">ארוחות צהריים עשירות בהשראת המטבח המקומי</li>
+                  <li data-i18n="p2-li4">משקאות טבעיים, כיבוד ומתוקים לאורך היום</li>
+                  <li data-i18n="p2-li5">אירוח שף אורח לחוויה קולינרית מיוחדת</li>
+                  <li data-i18n="p2-li6">אפשרות להביא קייטרינג חיצוני מטעמכם</li>
+                </ul>
+              </div>
+              <div class="pillar-note" data-row="note">
+                <p class="pillar-note-text" data-i18n="p2-close">תוכלו לבחור בין האירוח המקומי שלנו, שף אורח או קייטרינג משלכם, ולבנות חוויה קולינרית שמתאימה לטעם, לאופי ולרצונות הקבוצה.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button type="button" class="pillar-more" aria-expanded="false" aria-controls="pillar-panel-food">
+          <span class="pillar-more-labels"><span class="pillar-more-label" data-i18n="pillar-more">מידע נוסף</span><span class="pillar-less-label" data-i18n="pillar-less">סגור</span></span><span class="pillar-chevron" aria-hidden="true"></span>
+        </button>
+      </article>
+
+      <!-- התוכן -->
+      <article class="pillar" id="content">
+        <h3 class="pillar-heading">
+          <button type="button" class="pillar-head" id="pillar-head-content" aria-expanded="false" aria-controls="pillar-panel-content">
+            <span class="pillar-cover" aria-hidden="true" data-rotator="cover">
+              <img class="slide" src="/img/business/content-yoga-800.webp" data-focus="0.5 0.55" srcset="/img/business/content-yoga-400.webp 400w, /img/business/content-yoga-800.webp 800w, /img/business/content-yoga-1024.webp 1024w" sizes="(min-width: 1024px) 340px, 92vw" alt="" width="1024" height="768" loading="lazy" decoding="async">
+              <img class="slide" data-src="/img/business/content-boat-768.webp" data-focus="0.48 0.30" data-srcset="/img/business/content-boat-400.webp 400w, /img/business/content-boat-768.webp 768w" sizes="(min-width: 1024px) 340px, 92vw" alt="" width="768" height="1024" loading="lazy" decoding="async">
+              <img class="slide" data-src="/img/business/content-table-800.webp" data-focus="0.55 0.5" data-srcset="/img/business/content-table-400.webp 400w, /img/business/content-table-800.webp 800w, /img/business/content-table-1024.webp 1024w" sizes="(min-width: 1024px) 340px, 92vw" alt="" width="1024" height="768" loading="lazy" decoding="async">
+              <img class="slide focus-top" data-src="/img/business/content-sea-768.webp" data-focus="0.5 0.36" data-srcset="/img/business/content-sea-400.webp 400w, /img/business/content-sea-768.webp 768w" sizes="(min-width: 1024px) 340px, 92vw" alt="" width="768" height="1024" loading="lazy" decoding="async">
+              <img class="slide" data-src="/img/business/content-circle-768.webp" data-focus="0.5 0.48" data-srcset="/img/business/content-circle-400.webp 400w, /img/business/content-circle-768.webp 768w" sizes="(min-width: 1024px) 340px, 92vw" alt="" width="768" height="1024" loading="lazy" decoding="async">
+              <img class="slide focus-top" data-src="/img/business/content-move-768.webp" data-focus="0.45 0.45" data-srcset="/img/business/content-move-400.webp 400w, /img/business/content-move-768.webp 768w" sizes="(min-width: 1024px) 340px, 92vw" alt="" width="768" height="1024" loading="lazy" decoding="async">
+              <img class="slide" data-src="/img/business/content-beach-800.webp" data-focus="0.5 0.58" data-srcset="/img/business/content-beach-400.webp 400w, /img/business/content-beach-800.webp 800w, /img/business/content-beach-1024.webp 1024w" sizes="(min-width: 1024px) 340px, 92vw" alt="" width="1024" height="768" loading="lazy" decoding="async">
+            </span>
+            <span class="pillar-icon" aria-hidden="true"><img src="/img/business/brand/icons-22.png" alt="" width="370" height="340"></span>
+            <span class="pillar-titles">
+              <span class="pillar-title"><span data-i18n="nav-content">התוכן</span></span>
+              <span class="pillar-subtitle" data-row="subtitle" data-i18n="p3-h3">חוויות שמחברות בין אנשים.</span>
+            </span>
+            <span class="pillar-chevron" aria-hidden="true"></span>
+          </button>
+        </h3>
+        <div class="pillar-panel" id="pillar-panel-content" role="region" aria-labelledby="pillar-head-content">
+          <div class="pillar-panel-inner">
+            <div class="pillar-body">
+              <div class="pillar-intro" data-row="intro">
+                <p data-i18n="p3-p1">לפעמים כדי לחשוב אחרת, צריך פשוט לעשות משהו אחר. בלב ים תוכלו לשלב תוכן מעשיר ומעורר השראה, מתנועה ורוגע ועד חוויות בטבע ומפגשים עם התרבות המקומית. הפעילויות מזמינות סקרנות, התנסות משותפת וחיבור בין אנשים.</p>
+              </div>
+              <div class="pillar-list" data-row="list">
+                <h4 class="pillar-label" data-i18n="p3-list-title">מה אפשר לשלב?</h4>
+                <ul class="checklist">
+                  <li data-i18n="p3-li1">סדנאות יוגה, תנועה ומדיטציה</li>
+                  <li data-i18n="p3-li2">פעילויות חווייתיות בטבע ובים</li>
+                  <li data-i18n="p3-li3">סיורים והיכרות עם כפר הדייגים</li>
+                  <li data-i18n="p3-li4">מפגשים עם אנשים וסיפורים מקומיים</li>
+                  <li data-i18n="p3-li5">סדנאות יצירה, העשרה וגיבוש צוותי</li>
+                  <li data-i18n="p3-li6">אפשרות לתוכן עצמאי או לתוכנית מותאמת אישית</li>
+                </ul>
+              </div>
+              <div class="pillar-note" data-row="note">
+                <p class="pillar-note-text" data-i18n="p3-close">תוכלו לבחור מתוך מגוון הפעילויות שלנו, להביא תוכן משלכם או לשלב בין האפשרויות, וליצור יחד תוכנית שמתאימה לאופי הקבוצה ולמטרות המפגש.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button type="button" class="pillar-more" aria-expanded="false" aria-controls="pillar-panel-content">
+          <span class="pillar-more-labels"><span class="pillar-more-label" data-i18n="pillar-more">מידע נוסף</span><span class="pillar-less-label" data-i18n="pillar-less">סגור</span></span><span class="pillar-chevron" aria-hidden="true"></span>
+        </button>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── Testimonials + logos — hidden until real quotes arrive ── -->
+<section class="section testimonials" id="testimonials" hidden data-pending="2-3 testimonials + company logos">
+  <div class="container">
+    <h2 class="center" data-i18n="testi-h2">מה אומרים מי שכבר היו כאן</h2>
+    <div class="testi-grid">
+      <blockquote class="testi"><p>…</p><footer><cite>שם, תפקיד, חברה</cite></footer></blockquote>
+      <blockquote class="testi"><p>…</p><footer><cite>שם, תפקיד, חברה</cite></footer></blockquote>
+      <blockquote class="testi"><p>…</p><footer><cite>שם, תפקיד, חברה</cite></footer></blockquote>
+    </div>
+    <ul class="logo-row" aria-label="חברות וארגונים שהתארחו בלב ים"></ul>
+  </div>
+</section>
+
+<!-- ── Fit ──────────────────────────────────── -->
+<section class="section section-cream fit" id="fit">
+  <!-- Phones: one column. From 900px the text and the button sit on one side and
+       "מתאים במיוחד ל:" on the other. -->
+  <div class="container fit-layout">
+    <h2 class="h2-accent fit-h2" data-i18n="fit-h2">יום אחד. בדיוק בשבילכם.</h2>
+    <div class="fit-text">
+      <p data-i18n="fit-p1">אין שני צוותים זהים, ולכן גם אין שני ימים זהים בלב ים.</p>
+      <p data-i18n="fit-p2">יש צוותים שמגיעים ליום עבודה וחשיבה, אחרים מחפשים גיבוש וחוויה משותפת, ויש מי שרוצים פשוט לצאת מהמשרד ולבלות יחד במקום יפה ומיוחד.</p>
+      <p data-i18n="fit-p3">אנחנו כאן כדי להקשיב, להציע ולבנות יחד את השילוב הנכון של מרחב, אוכל ותוכן.</p>
+    </div>
+    <!-- The six types, each with its brand icon. A plain list, not controls: Or asked
+         that nothing here touches the planner (2026-10-13). -->
+    <div class="fit-types">
+      <h3 class="fit-types-title" id="fit-list-title" data-i18n="fit-list-title">מתאים במיוחד ל:</h3>
+      <ul class="fit-list" aria-labelledby="fit-list-title">
+        <li class="fit-item"><span class="fit-item-icon" aria-hidden="true"><img src="/img/business/brand/icons-16.png" alt="" width="444" height="391"></span><span class="fit-item-label" data-i18n="fit-li1">ימי גיבוש וצוות</span></li>
+        <li class="fit-item"><span class="fit-item-icon" aria-hidden="true"><img src="/img/icons/house-blue.png" alt="" width="469" height="310"></span><span class="fit-item-label" data-i18n="fit-li2">מפגשי הנהלה וימי אסטרטגיה</span></li>
+        <li class="fit-item"><span class="fit-item-icon" aria-hidden="true"><img src="/img/business/brand/icons-22.png" alt="" width="370" height="340"></span><span class="fit-item-label" data-i18n="fit-li3">סדנאות והכשרות</span></li>
+        <li class="fit-item"><span class="fit-item-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#icon-sun"/></svg></span><span class="fit-item-label" data-i18n="fit-li4">ימי חשיבה ויצירה</span></li>
+        <li class="fit-item"><span class="fit-item-icon" aria-hidden="true"><img src="/img/icons/palm-orange.png" alt="" width="613" height="949"></span><span class="fit-item-label" data-i18n="fit-li5">אירועי חברה ומפגשים מקצועיים</span></li>
+        <li class="fit-item"><span class="fit-item-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#icon-arch"/></svg></span><span class="fit-item-label" data-i18n="fit-li6">מפגשי קהילה וארגונים</span></li>
+      </ul>
+    </div>
+    <div class="fit-cta">
+      <a href="#plan" class="btn btn-primary btn-lg" data-track="fit-plan" data-i18n="fit-cta">בואו ליצור את היום שלכם!</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── Impact ───────────────────────────────── -->
+<section class="section impact" id="impact">
+  <div class="container narrow impact-content">
+    <img src="/img/business/brand/icons-16.png" alt="" width="444" height="391" class="impact-icon">
+    <h2 class="h2-accent" data-i18n="impact-h2">חוויה טובה. השפעה טובה.</h2>
+    <p class="impact-lead" data-i18n="impact-p1">לב ים הוא הרבה יותר ממקום לאירוע.</p>
+    <p data-i18n="impact-p2">הבחירה להתארח אצלנו היא גם הזדמנות להכיר מקרוב את ג'סר א-זרקא, לפגוש את האנשים והסיפורים של הכפר ולתמוך בעשייה ובכלכלה המקומית.</p>
+    <p data-i18n="impact-p3">אנחנו מאמינים בכוחם של מפגשים פשוטים ואמיתיים לקרב בין אנשים, לפתוח נקודות מבט חדשות וליצור חיבורים שנשארים הרבה אחרי שהיום מסתיים.</p>
+    <p data-i18n="impact-p4">כאן חוויה מהנה ומשמעותית יכולה גם לייצר ערך לקהילה שמארחת אותה.</p>
+  </div>
+</section>
+
+<!-- ── Plan (closing + WhatsApp planner) — the page's finale ── -->
+<section class="section plan" id="plan">
+  <div class="container">
+    <h2 class="center h2-accent" data-i18n="plan-h2">בואו להיפגש בלב ים.</h2>
+    <div class="plan-intro center">
+      <p data-i18n="plan-p1">יש משהו מיוחד ביום שמתחיל מול הים, ממשיך עם אוכל טוב, שיחות מעניינות וחוויות משותפות, ומסתיים בתחושה שהיה שווה לצאת מהשגרה.</p>
+      <p data-i18n="plan-p2">ספרו לנו מה אתם מתכננים, כמה אנשים אתם ומה הייתם רוצים לחוות ונשמח ליצור יחד יום שמתאים בדיוק לכם.</p>
+    </div>
+
+    <!-- The planner: four questions, one at a time, one tap each (the flow moves on by
+         itself), then a "ready" step. The message beside it (below on phones) writes
+         itself with every answer, and the button sends it to WhatsApp at any point.
+         Orange always marks the one thing to press next: a chosen answer, "המשך" and,
+         once the message is ready, the send button. Without JS only the message and
+         the button show (.flow is hidden until js/main.js enhances the card). -->
+    <div class="planner" id="planner">
+
+      <div class="flow" hidden>
+        <div class="flow-top">
+          <button type="button" class="flow-back" aria-label="חזרה" data-i18n-aria="plan-back">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="flow-progress" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+          <div class="flow-end">
+            <p class="flow-count" id="flow-count"><span class="flow-count-num" aria-hidden="true">1/4</span><span class="sr-only">שאלה 1 מתוך 4</span></p>
+            <button type="button" class="flow-skip" data-i18n="plan-skip">דלגו</button>
+            <button type="button" class="flow-restart" data-i18n="plan-restart">מתחילים מחדש</button>
+          </div>
+        </div>
+
+        <div class="flow-steps">
+
+          <!-- 1 | What are you planning — the six types from #fit, with the same icons -->
+          <div class="step" data-step="event" role="group" aria-labelledby="plan-q1" aria-describedby="flow-count">
+            <h3 class="step-q" id="plan-q1" tabindex="-1" data-i18n="plan-q1">מה אתם מתכננים?</h3>
+            <div class="choices choices-event">
+              <button type="button" class="choice" data-group="event" data-value="team" data-msg="plan-ev1-msg" data-label="fit-li1" aria-pressed="false">
+                <span class="choice-icon" aria-hidden="true"><img src="/img/business/brand/icons-16.png" alt="" width="444" height="392"></span>
+                <span class="choice-label" data-i18n="fit-li1">ימי גיבוש וצוות</span>
+                <span class="choice-check" aria-hidden="true"></span>
+              </button>
+              <button type="button" class="choice" data-group="event" data-value="mgmt" data-msg="plan-ev2-msg" data-label="fit-li2" aria-pressed="false">
+                <span class="choice-icon" aria-hidden="true"><img src="/img/icons/house-blue.png" alt="" width="469" height="310"></span>
+                <span class="choice-label" data-i18n="fit-li2">מפגשי הנהלה וימי אסטרטגיה</span>
+                <span class="choice-check" aria-hidden="true"></span>
+              </button>
+              <button type="button" class="choice" data-group="event" data-value="workshop" data-msg="plan-ev3-msg" data-label="fit-li3" aria-pressed="false">
+                <span class="choice-icon" aria-hidden="true"><img src="/img/business/brand/icons-22.png" alt="" width="372" height="337"></span>
+                <span class="choice-label" data-i18n="fit-li3">סדנאות והכשרות</span>
+                <span class="choice-check" aria-hidden="true"></span>
+              </button>
+              <button type="button" class="choice" data-group="event" data-value="thinking" data-msg="plan-ev4-msg" data-label="fit-li4" aria-pressed="false">
+                <span class="choice-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#icon-sun"/></svg></span>
+                <span class="choice-label" data-i18n="fit-li4">ימי חשיבה ויצירה</span>
+                <span class="choice-check" aria-hidden="true"></span>
+              </button>
+              <button type="button" class="choice" data-group="event" data-value="company" data-msg="plan-ev5-msg" data-label="fit-li5" aria-pressed="false">
+                <span class="choice-icon" aria-hidden="true"><img src="/img/icons/palm-orange.png" alt="" width="613" height="951"></span>
+                <span class="choice-label" data-i18n="fit-li5">אירועי חברה ומפגשים מקצועיים</span>
+                <span class="choice-check" aria-hidden="true"></span>
+              </button>
+              <button type="button" class="choice" data-group="event" data-value="community" data-msg="plan-ev6-msg" data-label="fit-li6" aria-pressed="false">
+                <span class="choice-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#icon-arch"/></svg></span>
+                <span class="choice-label" data-i18n="fit-li6">מפגשי קהילה וארגונים</span>
+                <span class="choice-check" aria-hidden="true"></span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 2 | Group size — the dots grow with the group -->
+          <div class="step" data-step="size" role="group" aria-labelledby="plan-q2" aria-describedby="flow-count">
+            <h3 class="step-q" id="plan-q2" tabindex="-1" data-i18n="plan-q2">כמה אנשים אתם?</h3>
+            <div class="choices choices-size">
+              <button type="button" class="choice" data-group="size" data-value="lt15" aria-pressed="false">
+                <span class="choice-num" data-i18n="plan-size1">עד 15</span>
+                <span class="choice-unit" data-i18n="plan-size-unit">אנשים</span>
+                <span class="choice-dots" aria-hidden="true"><i></i></span>
+                <span class="choice-check" aria-hidden="true"></span>
+              </button>
+              <button type="button" class="choice" data-group="size" data-value="15-30" aria-pressed="false">
+                <span class="choice-num" dir="ltr">15–30</span>
+                <span class="choice-unit" data-i18n="plan-size-unit">אנשים</span>
+                <span class="choice-dots" aria-hidden="true"><i></i><i></i></span>
+                <span class="choice-check" aria-hidden="true"></span>
+              </button>
+              <button type="button" class="choice" data-group="size" data-value="30-50" aria-pressed="false">
+                <span class="choice-num" dir="ltr">30–50</span>
+                <span class="choice-unit" data-i18n="plan-size-unit">אנשים</span>
+                <span class="choice-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+                <span class="choice-check" aria-hidden="true"></span>
+              </button>
+              <button type="button" class="choice" data-group="size" data-value="50plus" aria-pressed="false">
+                <span class="choice-num" dir="ltr">50+</span>
+                <span class="choice-unit" data-i18n="plan-size-unit">אנשים</span>
+                <span class="choice-dots" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+                <span class="choice-check" aria-hidden="true"></span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 3 | When — js/main.js adds the next six months before the two fixed answers -->
+          <div class="step" data-step="when" role="group" aria-labelledby="plan-q-when" aria-describedby="flow-count">
+            <h3 class="step-q" id="plan-q-when" tabindex="-1" data-i18n="plan-q-when">מתי תרצו להגיע?</h3>
+            <div class="choices choices-when" id="when-choices">
+              <button type="button" class="choice choice-wide" data-group="when" data-value="later" aria-pressed="false">
+                <span class="choice-label" data-i18n="plan-when-later">מאוחר יותר</span>
+                <span class="choice-check" aria-hidden="true"></span>
+              </button>
+              <button type="button" class="choice choice-wide" data-group="when" data-value="open" aria-pressed="false">
+                <span class="choice-label" data-i18n="plan-when-open">עוד לא סגרנו תאריך</span>
+                <span class="choice-check" aria-hidden="true"></span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 4 | Components — several allowed; icons and lines from the three components above -->
+          <div class="step" data-step="comp" role="group" aria-labelledby="plan-q3" aria-describedby="flow-count">
+            <div class="step-head">
+              <h3 class="step-q" id="plan-q3" tabindex="-1" data-i18n="plan-q3">מה הייתם רוצים לחוות?</h3>
+              <p class="step-hint" data-i18n="plan-q3-hint">אפשר לבחור יותר מאחד</p>
+            </div>
+            <div class="choices choices-comp">
+              <button type="button" class="choice" data-group="comp" data-value="space" data-label="plan-comp1" aria-pressed="false">
+                <span class="choice-icon" aria-hidden="true"><img src="/img/icons/house-blue.png" alt="" width="469" height="310"></span>
+                <span class="choice-text">
+                  <span class="choice-label" data-i18n="plan-comp1">המרחב</span>
+                  <span class="choice-sub" data-i18n="p1-h3">משנים אווירה. פותחים את הראש.</span>
+                </span>
+                <span class="choice-check" aria-hidden="true"></span>
+              </button>
+              <button type="button" class="choice" data-group="comp" data-value="food" data-label="plan-comp2" aria-pressed="false">
+                <span class="choice-icon" aria-hidden="true"><img src="/img/icons/palm-orange.png" alt="" width="613" height="951"></span>
+                <span class="choice-text">
+                  <span class="choice-label" data-i18n="plan-comp2">האוכל</span>
+                  <span class="choice-sub" data-i18n="p2-h3">טעמים מקומיים. אירוח מכל הלב.</span>
+                </span>
+                <span class="choice-check" aria-hidden="true"></span>
+              </button>
+              <button type="button" class="choice" data-group="comp" data-value="content" data-label="plan-comp3" aria-pressed="false">
+                <span class="choice-icon" aria-hidden="true"><img src="/img/business/brand/icons-22.png" alt="" width="372" height="337"></span>
+                <span class="choice-text">
+                  <span class="choice-label" data-i18n="plan-comp3">התוכן</span>
+                  <span class="choice-sub" data-i18n="p3-h3">חוויות שמחברות בין אנשים.</span>
+                </span>
+                <span class="choice-check" aria-hidden="true"></span>
+              </button>
+            </div>
+            <div class="step-foot">
+              <button type="button" class="btn btn-primary step-next" data-i18n="plan-next">המשך</button>
+            </div>
+          </div>
+
+          <!-- Ready — the brand stamp lands; each answer can be changed from here,
+               and "מתחילים מחדש" takes the place of "דלגו" in the top row -->
+          <div class="step step-ready" data-step="ready" role="group" aria-labelledby="plan-ready-h">
+            <img class="ready-stamp" src="/img/business/brand/logo-stamp-320.png" alt="" width="320" height="454">
+            <h3 class="step-q" id="plan-ready-h" tabindex="-1" data-i18n="plan-ready-h">ההודעה מוכנה!</h3>
+            <p class="ready-p" data-i18n="plan-ready-p">עוד לחיצה אחת ואנחנו מדברים בוואטסאפ.</p>
+            <ul class="answers" id="plan-answers"></ul>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- The message itself — the exact text the button opens in WhatsApp -->
+      <div class="msg" id="chat-bubble">
+        <p class="msg-label">
+          <svg class="wa-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-wa"/></svg>
+          <span data-i18n="plan-msg-label">ההודעה שלכם</span>
+        </p>
+        <p class="chat-text" id="chat-text">היי, אנחנו רוצים לתכנן יום בלב ים. נשמח לשמוע פרטים.</p>
+        <div class="msg-foot">
+          <a href="https://wa.me/972506669138?text=%D7%A9%D7%9C%D7%95%D7%9D%2C%20%D7%90%D7%A9%D7%9E%D7%97%20%D7%9C%D7%A4%D7%A8%D7%98%D7%99%D7%9D%20%D7%A2%D7%9C%20%D7%9C%D7%91%20%D7%99%D7%9D" class="btn btn-wa btn-xl planner-cta" id="plan-cta" data-wa="planner" target="_blank" rel="noopener noreferrer">
+            <svg class="wa-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-wa"/></svg>
+            <span data-i18n="plan-send">שלחו בוואטסאפ</span>
+          </a>
+          <p class="msg-caption" data-i18n="chat-caption">זו ההודעה שתישלח. אפשר לערוך אותה בוואטסאפ לפני השליחה.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ── Footer: the site's own ─────────────────────────────── -->
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <div class="footer-brand">
+      <img src="/img/logo/logo-mark.png" alt="לב ים" data-i18n-alt="brand-name" class="footer-logo" width="40" height="40">
+      <p class="footer-tagline" data-i18n="foot-tagline">מרחב יזמות עסקית חברתית על קו המים</p>
+    </div>
+
+    <div class="footer-contact">
+      <a href="tel:+972506669138" aria-label="התקשרו ללב ים" data-i18n-aria="foot-tel-972506669138">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8 19.79 19.79 0 01.01 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14v2.92z"/></svg>
+      </a>
+      <span class="footer-dot" aria-hidden="true">·</span>
+      <a href="mailto:info@levyam.com" aria-label="שלחו מייל ללב ים" data-i18n-aria="foot-mailto-info-levyam-com">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg>
+      </a>
+      <span class="footer-dot" aria-hidden="true">·</span>
+      <a href="https://wa.me/972506669138?text=%D7%A9%D7%9C%D7%95%D7%9D%2C%20%D7%90%D7%A9%D7%9E%D7%97%20%D7%9C%D7%A4%D7%A8%D7%98%D7%99%D7%9D%20%D7%A2%D7%9C%20%D7%9C%D7%91%20%D7%99%D7%9D" target="_blank" rel="noopener" aria-label="וואטסאפ לב ים" data-wa="footer" data-i18n-aria="foot-wa-me-972506669138">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 1.5C6.201 1.5 1.5 6.201 1.5 12c0 1.867.487 3.618 1.34 5.14L1.5 22.5l5.513-1.316A10.454 10.454 0 0012 22.5c5.799 0 10.5-4.701 10.5-10.5S17.799 1.5 12 1.5z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+      </a>
+      <span class="footer-dot" aria-hidden="true">·</span>
+      <a href="https://www.instagram.com/levyam_" target="_blank" rel="noopener" aria-label="אינסטגרם לב ים" data-i18n-aria="foot-www-instagram-com-levyam">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none"/></svg>
+      </a>
+      <span class="footer-dot" aria-hidden="true">·</span>
+      <a href="https://m.facebook.com/profile.php?id=61585790351617" target="_blank" rel="noopener" aria-label="פייסבוק לב ים" data-i18n-aria="foot-m-facebook-com-profile-p">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+      </a>
+      <span class="footer-dot" aria-hidden="true">·</span>
+      <a href="https://maps.app.goo.gl/fFtCZYwK1KEcmFud6" target="_blank" rel="noopener" aria-label="מיקום לב ים" data-i18n-aria="foot-maps-app-goo-gl-fftczywk">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+      </a>
+    </div>
+
+    <p class="footer-credit">© <span data-i18n="brand-name">לב ים</span> <bdi>2026</bdi></p>
+    <a href="/app" class="footer-staff-login" rel="nofollow" data-i18n="foot-staff">כניסת צוות</a>
+  </div>
+</footer>
+
+<!-- Footer removed for now (Or, 2026-10-12). Language switch lives in the header. -->
+
+<!-- ── Floating WhatsApp ────────────────────── -->
+<a href="https://wa.me/972506669138?text=%D7%A9%D7%9C%D7%95%D7%9D%2C%20%D7%90%D7%A9%D7%9E%D7%97%20%D7%9C%D7%A4%D7%A8%D7%98%D7%99%D7%9D%20%D7%A2%D7%9C%20%D7%9C%D7%91%20%D7%99%D7%9D" class="wa-float" id="wa-float" data-wa="floating" target="_blank" rel="noopener noreferrer" aria-label="דברו איתנו בוואטסאפ" data-i18n-aria="wa-aria">
+  <svg class="wa-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#icon-wa"/></svg>
+</a>
+
+<!-- ── SVG sprite ───────────────────────────── -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="icon-wa" viewBox="0 0 24 24">
+      <path fill="currentColor" d="M20.52 3.449C18.245 1.16 15.205 0 12.013 0 5.457 0 .104 5.336.101 11.893c0 2.096.548 4.14 1.591 5.945L0 24l6.335-1.652a11.96 11.96 0 0 0 5.68 1.445h.005c6.554 0 11.906-5.337 11.91-11.894 0-3.179-1.24-6.166-3.41-8.45zm-8.507 18.3h-.004a9.928 9.928 0 0 1-5.042-1.372l-.362-.214-3.754.981 1.004-3.649-.235-.375a9.862 9.862 0 0 1-1.519-5.27c.003-5.453 4.453-9.887 9.924-9.887 2.65 0 5.138 1.03 7.009 2.9a9.822 9.822 0 0 1 2.906 6.99c-.003 5.455-4.455 9.896-9.927 9.896zm5.44-7.402c-.299-.149-1.768-.87-2.042-.969-.273-.099-.472-.149-.67.15-.2.298-.77.969-.944 1.168-.174.199-.347.224-.646.075-.299-.15-1.261-.463-2.402-1.476-.888-.788-1.487-1.761-1.661-2.059-.174-.298-.018-.459.13-.607.135-.135.299-.349.449-.524.15-.175.199-.299.299-.498.1-.2.05-.374-.025-.524-.074-.15-.67-1.612-.917-2.207-.242-.58-.488-.5-.67-.51l-.57-.01c-.199 0-.522.075-.795.374-.273.3-1.043 1.018-1.043 2.481s1.068 2.878 1.217 3.077c.15.199 2.1 3.205 5.089 4.494.71.307 1.265.49 1.697.627.713.228 1.362.195 1.875.118.572-.085 1.763-.72 2.012-1.414.248-.695.248-1.29.174-1.414-.075-.124-.273-.199-.573-.348z"/>
+    </symbol>
+    <!-- Brand elements drawn in brand colours: sun (filled circle) and arch (local architecture) -->
+    <symbol id="icon-sun" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9" fill="#f49834"/>
+    </symbol>
+    <symbol id="icon-arch" viewBox="0 0 24 24" fill="none" stroke="#2c92bf" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5 21V12a7 7 0 0 1 14 0v9"/><path d="M3 21h18"/>
+    </symbol>
+  </defs>
+</svg>
+
+<script src="/js/wa-track.js"></script>
+<script src="/js/chrome.js"></script>
+<script src="/js/business.js"></script>
+</body>
+</html>

@@ -122,6 +122,13 @@ session. Items 1, 2 and 5 start without item 7 and gain GBP / Instagram / Facebo
       [plans/marketing-weekly-report.md](plans/marketing-weekly-report.md) — **shipped 2026-11-06** ([PR #173](https://github.com/OrCoAI/lev-yam-main/pull/173), first issue #174); outcome check 2026-11-30.
       Still open: the email, once the owner watches the repo; Meta and Google numbers, once their secrets exist.
       Follow-up: take `gh` away from the report agents (plan, *Follow-ups found by the gate*).
+- [ ] **1a. Site redesign — business events first** *(owner, 2026-11-23; placed after item 1, nothing
+      renumbered — [ADR 0075](decisions/0075-site-redesign-business-first-two-looks-one-chrome-a-business-strip.md))* —
+      the business page moves from `b2b.levyam.com` to `levyam.com/business/`; on the homepage business
+      events lead "מה קורה בלב ים" and the other services are secondary; a shorter nav on every page;
+      the WhatsApp planner for the whole site; one business strip on story and initiative pages; each
+      page keeps its own look → *`whatsapp_click` from `/business/` per week; homepage click-through to it*.
+      [plans/site-redesign-business-first.md](plans/site-redesign-business-first.md) — **Gate 1 approved 2026-11-23**
 - [ ] **3. Search & AI visibility** *(was 3 + 4)* — the same facts everywhere (site,
       GBP, socials), `facts.txt` / `llms.txt` expansion, internal links between stories, the local
       queries the story backlog does not cover → *local-pack impressions, direction requests, AI-answer
