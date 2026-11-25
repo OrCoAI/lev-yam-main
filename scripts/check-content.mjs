@@ -19,7 +19,7 @@
  *   meta      no committed image or clip carries metadata (pixels only — ADR 0069 §6): JPEG EXIF / XMP /
  *             IPTC / comments, WebP EXIF / XMP, PNG eXIf / text chunks, an MP4's location, Apple camera keys,
  *             capture time or a data track (v3)
- *   facts     against FACTS.md: phone, email, venue coordinates, weekend hours (homepage text +
+ *   facts     against FACTS.md: phone, email, venue coordinates, weekend hours (the homepage's
  *             JSON-LD), the village spelling; no long google.com/maps/place links (their viewport
  *             drifts — use the short place link)
  *   prices    no price pattern anywhere served (CLAUDE.md: no prices anywhere in the repo)
@@ -279,10 +279,6 @@ for (const [what, re, want] of PAIRS) {
   const hits = [...home.matchAll(re)]
   if (!hits.length) fail('index.html', 1, 'facts', `no ${what} — FACTS says ${want.join(' / ')}`)
   for (const m of hits) if (m[1] !== want[0] || m[2] !== want[1]) fail('index.html', lineOf(home, m.index), 'facts', `${what} ${m[1]} / ${m[2]} is not FACTS ${want.join(' / ')}`)
-}
-if (FACTS.friday) {
-  const fri = FACTS.friday.join('–')
-  for (const lang of LANGS) if (!(dict[lang].service_week_desc_html || '').includes(fri)) fail('js/app.js', 1, 'facts', `${lang} weekend card does not show the FACTS Friday hours ${fri}`)
 }
 
 /* ── files: metadata and weight ─────────────────────────────────────── */

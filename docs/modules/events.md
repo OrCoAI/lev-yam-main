@@ -12,7 +12,9 @@ touching schema, permissions, or the events/finance spine graduates to a `docs/p
 
 ## Open bugs
 
-_(none)_
+- The `/happening/` hub's month calendar takes no space until the feed answers, so the page
+  below it jumps when it renders: reserve its height first. Tier B. Logged 2026-11-25 from
+  [plans/site-redesign-business-first.md](../plans/site-redesign-business-first.md).
 
 ## Open feature ideas
 

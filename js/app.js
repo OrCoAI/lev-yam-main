@@ -78,7 +78,7 @@ const LevYamI18n = (function () {
       service_comm_alt: 'קהילת לב ים — אנשים מתכנסים תחת הפרגולה מול הים',
 
       service_week_title: 'סופי שבוע בלב ים',
-      service_week_desc_html: 'בית פתוח, אוכל מקומי ואירועי תוכן מתחלפים. <span class="service-hours"><span>שישי <bdi dir="ltr">10:00–15:00</bdi></span><span>שבת מ־<bdi dir="ltr">10:00</bdi> עד השקיעה</span></span>',
+      service_week_desc: 'בית פתוח, אוכל מקומי ואירועי תוכן מתחלפים.',
       service_week_cta: 'לפרטים על סופי שבוע',
       service_week_alt: 'ארוחה משפחתית עם נוף הים בלב ים',
 
@@ -254,7 +254,7 @@ const LevYamI18n = (function () {
       service_comm_alt: 'مجتمع ليف يام — ناس يجتمعون تحت العريشة أمام البحر',
 
       service_week_title: 'عطلات نهاية الأسبوع في ليف يام',
-      service_week_desc_html: 'بيت مفتوح، طعام محلي، وفعاليات متجدّدة. <span class="service-hours"><span>الجمعة <bdi dir="ltr">10:00–15:00</bdi></span><span>السبت من <bdi dir="ltr">10:00</bdi> حتى الغروب</span></span>',
+      service_week_desc: 'بيت مفتوح، طعام محلي، وفعاليات متجدّدة.',
       service_week_cta: 'تفاصيل عن عطلات نهاية الأسبوع',
       service_week_alt: 'وجبة عائلية بإطلالة على البحر في ليف يام',
 
